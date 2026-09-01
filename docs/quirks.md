@@ -45,9 +45,36 @@ cache, per site.
 
 ## Requests
 
-| Claim | Probe |
-|---|---|
-| Entity and multi-entity fields return array or hash form depending on request headers | 004 |
+| Claim | Probe | Outcome |
+|---|---|---|
+| Entity and multi-entity fields return array or hash form depending on request headers | 004 | **False for REST** |
 
-Suspected content negotiation on `Accept` (an `api3_array` vs `api3_hash` variant). Unconfirmed — 004 decides,
-and the client then picks one form and never varies it.
+Probe 004: `api3_array+json` and `api3_hash+json` both return 406. REST always renders entity and multi-entity
+fields under `relationships` as `{data, links}`, with no negotiation. The array/hash distinction belongs to
+`shotgun_api3`, not to REST — relevant to the setup path only.
+
+## Pagination
+
+| Claim | Probe | Needed by comfyui-fpt |
+|---|---|---|
+| The final `next` link claims more results but returns zero rows | 006 | yes — enumeration |
+| `page[size]` is capped at 100 regardless of what is requested | 005 | **confirmed** |
+
+Never trust `links.next` alone. Stop on an empty `data`, not on a missing `next`.
+
+## Field types
+
+Every field type has its own read, write, search and sort behaviour. They must be handled one type at a time;
+there is no generic path.
+
+| Claim | Probe | Needed by comfyui-fpt |
+|---|---|---|
+| Dotted reads differ for single vs multi-entity targets — `sg_version.Version.code` vs `sg_version.Version.entity` | — | yes, before Phase 2 |
+| Query fields need a batched follow-up call per result | — | no |
+| TimeLog duration is stored in minutes but displayed in hours or days | — | no |
+| Hours-per-day is a site setting that is not obviously exposed | — | no |
+| Calculated and query fields cannot be written | — | no |
+
+**Scope rule.** Mapping every field type is weeks of work and this repo grows only to serve a shipped consumer.
+Probe the types the node writes and reads — text, entity, multi-entity, list/status, file and attachment.
+Everything else stays a claim until something needs it.

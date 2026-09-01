@@ -49,7 +49,14 @@ class FPT:
             self._authenticate()
         headers = {"Authorization": f"Bearer {self._token}", "Accept": "application/json"}
         headers.update(kw.pop("headers", {}))
-        url = path if path.startswith("http") else f"{self.site}{API}{path}"
+        # links.next and links.self come back root-relative *including* the /api/v1 prefix (probe 006),
+        # so prepending API again would 404.
+        if path.startswith("http"):
+            url = path
+        elif path.startswith(API):
+            url = f"{self.site}{path}"
+        else:
+            url = f"{self.site}{API}{path}"
         return requests.request(method, url, headers=headers, timeout=60, **kw)
 
     def get(self, path, **kw):

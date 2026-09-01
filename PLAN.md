@@ -13,36 +13,38 @@ actually filled; writing test Versions into it would skew the statistics the ins
 Writes go to our own project, created in Phase 3 and seeded with our own generated media — which also keeps the
 public demo clear of anyone else's asset licensing.
 
-## Phase 0 — prove the API
+## Phase 0 — prove the API  *(read half done)*
 
 No product code. Read-only. Every finding cited later by the code that depends on it.
 
 - [x] 001 auth, token lifetime
-- [ ] 002 schema: full site schema — size, shape, cost to fetch
-- [ ] 003 query shape: deep-linked and bubbled fields (`sg_task.Task.content`), filters, paging
-- [ ] 004 array vs hash: which header controls entity/multi-entity representation
-- [ ] 005 link usage: on BBB, what do Versions actually attach to, and at what rate
-- [ ] 006 fill rates: which Version fields are populated on recent entries
-- [ ] 007 custom entities: which `CustomEntityNN` are enabled, and their display names
-- [ ] 008 status lists: per-project values, and what REST cannot see or set
+- [x] 002 schema: full site schema — size, shape, cost to fetch
+- [x] 003 query shape: deep-linked and bubbled fields (`sg_task.Task.content`), filters, paging
+- [x] 004 array vs hash: which header controls entity/multi-entity representation
+- [x] 005 link usage: on BBB, what do Versions actually attach to, and at what rate
+- [x] 006 pagination: does links.next terminate
+- [x] 007 fill rates: which Version fields are populated on recent entries
+- [x] 008 custom entities: which `CustomEntityNN` are enabled, and their display names
+- [x] 009 status lists: per-project values, and what REST cannot see or set
 
 Writes — sandbox only, and see the litter warning in `docs/quirks.md`:
 
-- [ ] 009 custom field creation: allowed types, `sg_` prefix, display to programmatic name mapping
-- [ ] 010 trashed field collision: revive, type mismatch, rename recovery
-- [ ] 011 media upload: how media actually attaches to a Version, step by step
-- [ ] 012 attachments: arbitrary file (workflow JSON) on a Version
-- [ ] 013 create Version
+- [ ] 010 custom field creation: allowed types, `sg_` prefix, display to programmatic name mapping
+- [ ] 011 trashed field collision: revive, type mismatch, rename recovery
+- [ ] 012 media upload: how media actually attaches to a Version, step by step
+- [ ] 013 attachments: arbitrary file (workflow JSON) on a Version
+- [ ] 014 create Version
+- [ ] 015 dotted reads on multi-entity targets (needed before Phase 2)
 
-009 and 010 decide where provenance lives: real typed custom fields, filterable in Flow PT's own UI, or a JSON
+010 and 011 decide where provenance lives: real typed custom fields, filterable in Flow PT's own UI, or a JSON
 blob in an existing text field plus an attachment. Do not design provenance storage before they land.
 
-**009 and 010 change site-wide schema, not project data.** A sandbox project does not contain them.
+**010 and 011 change site-wide schema, not project data.** A sandbox project does not contain them.
 
 ## Phase 1 — inspector
 
 - `src/fpt_llm_api/schema.py`: fetch, cache, digest, query CLI
-- `inspect.py` turns 005–008 into `profile.local.json` for one project
+- `inspect.py` turns 005, 007, 008, 009 into `profile.local.json` for one project
 - `/inspect-site` command: agent runs it, explains findings in plain language, operator edits and confirms
 
 ## Phase 2 — node (in `comfyui-fpt`)
