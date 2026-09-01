@@ -2,11 +2,26 @@
 
 ## Thesis
 
-Existing Flow PT MCPs give a model *access* without *knowledge*. It still guesses field names, filter syntax and
-return shapes, and gets them wrong — because nothing it was trained on is verified against a live site.
+Three MIT-licensed Flow PT MCPs exist: `loonghao/shotgrid-mcp-server` (the incumbent, on PyPI),
+`huikku/shotgrid-mcp` (a lean repackaging of it), and `rfletchr/ShotgunMcpGo`. Checked 2026-09-01.
 
-This repo is the knowledge. Verified calls, real responses, recorded gotchas, from probes run against an actual
-site. A model reading it outperforms one reasoning from training data or poking a generic API proxy.
+The last already ships guidance — a hand-written `query_guide.md` plus an `sg_initialize` tool returning
+"gotchas". So "MCPs give access without knowledge" is false, and this repo is not differentiated by having a
+knowledge layer at all.
+
+It is differentiated by what kind of knowledge, and how much:
+
+- **Verified, not recalled.** Their guides are an author's recollection, undated, never checked against a live
+  site — the same category this repo calls `docs/quirks.md` and refuses to code against. Every entry here comes
+  from a probe that ran.
+- **The wounds, not the basics.** They cover entity types, field discovery, filters, dot notation. Nothing
+  covers trashed-field collision, the revive/type-mismatch state machine, `sg_` name mangling from display
+  names, `CustomEntityNN` resolution, array-vs-hash negotiation, or per-project status opacity.
+- **The write path.** They are read-focused with dry-run gates. The multi-step media upload and attachment flow
+  is undocumented everywhere.
+- **Recipes.** A verified call with its real response is a different artifact from a guide.
+
+Re-check this section before making the claim publicly. It was wrong once.
 
 ## Two artifact types
 
@@ -40,9 +55,11 @@ legal being able to say yes without reading anything. Nothing AGPL enters this r
 
 ## Horizon
 
-An MCP that serves the corpus, not just the API. Every Flow PT MCP so far is a thin proxy; one that answers
-"how do I query X" with a verified example is a different category of thing. Not now — the corpus has to exist
-and be good first.
+Do not assume a fourth MCP is the answer. All three incumbents are MIT, the industry is small, and being the
+knowledge layer they consume is worth more than owning a competitor nobody installs. The corpus is
+format-independent; they already have the plumbing.
+
+Decide that after the corpus is good. Not before.
 
 ## Consumers
 
