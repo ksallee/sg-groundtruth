@@ -27,6 +27,8 @@ The REST docs are incomplete and sometimes wrong. Probe, record, then code again
 - Sanitize before commit: no tokens, no site URL, no project or entity names
 - Every probe that produces a usable call also records a recipe
 - `python probes/index.py` after any probe
+- Tags drive retrieval, so the vocabulary must not drift. Reuse an existing tag from `corpus/INDEX.md` or add
+  one deliberately. Singular, lowercase: `version`, not `versions` or `Version`.
 - Code cites entries: `# probe 004`
 
 Schema-writing probes use `sg_zzprobe_<nnn>_*`. See `docs/quirks.md`.
