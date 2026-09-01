@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(~/dev/fpt-ai/**)",
+      "Read(~/dev/flow-data-api-docs/**)",
+      "Read(~/dev/flow-data-sdk-python/**)",
+      "Read(~/dev/tk-core/**)",
+      "Read(~/dev/tk-config-*/**)",
+      "Read(~/dev/tk-framework-*/**)",
+      "Read(~/dev/fpt-api/**)",
+      "Read(./.env.local)"
+    ]
+  }
+}
