@@ -18,7 +18,10 @@ ACTUAL_MAX = 30
 SECTIONS = ("**Q**", "**Endpoint**", "**Docs claim**", "**Actual**", "**Teaches**")
 # The field-type matrix answers a different shape of question, so it has its own required sections.
 TYPE_SECTIONS = ("**Data type**", "**Read**", "**Write**", "**Clear**", "**Filter**", "**Traps**")
-TYPE_MAX_LINES = 125  # 120 of content, plus the frontmatter
+# Cap the prose, not the file. A card with forty rows of table is doing its job; forty
+# lines of paragraph is not. Counting both the same penalised measured cases exactly as
+# much as waffle, and nine of the first twenty-four cards ended up pinned to the ceiling.
+TYPE_MAX_PROSE = 45
 
 env = _load(ROOT) if (ROOT / ".env.local").exists() else {}
 secrets = [v for k, v in env.items()
@@ -110,9 +113,13 @@ for f in sorted(CORPUS.rglob("*.md")):
     if is_type:
         if "|---" not in text.replace(" ", ""):
             fail(f, "no table — a field type enumerates cases, one row each (CLAUDE.md Style)")
-        n = len(text.splitlines())
-        if n > TYPE_MAX_LINES:
-            fail(f, f"{n} lines, max {TYPE_MAX_LINES} — a field type is a reference card, not a transcript")
+        body = re.sub(r"^---\n.*?\n---\n", "", text, flags=re.S)
+        body = FENCE_RE.sub("", body)
+        n = len([ln for ln in body.splitlines()
+                 if ln.strip() and not ln.lstrip().startswith(("|", "---"))])
+        if n > TYPE_MAX_PROSE:
+            fail(f, f"{n} lines of prose, max {TYPE_MAX_PROSE}. Tables and evidence do not count; "
+                    f"paragraphs do")
         if text.count("**Verdict**"):
             fail(f, "verdict repeated in the body; it belongs in the frontmatter only")
         continue
