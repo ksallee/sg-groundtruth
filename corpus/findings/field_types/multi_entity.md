@@ -124,8 +124,10 @@ Two filter rows intersect, and a dotted path reaches the target's own fields:
   between the two calls. Use the `multi_entity_update_mode` wrapper, not read-modify-write.
 - `in [X]` means "links any of X" and `not_in [X]` means "links none of X", so it matches empty rows, as
   does `is_not`. "Links all of X" has no operator: repeat `is` once per entity, as separate filter rows.
-- `in` with only unresolvable ids degenerates: `in [{type:Version,id:99999999}]` returns the rows linking
-  nothing rather than zero rows, so that negative control lies. Mixed, `in [A, 99999999]` returns A's rows.
+- `in` with only unresolvable ids is field-dependent, so a negative control built that way must be checked
+  per field. On `Version.sg_ai_generated_from` it returns the rows linking nothing rather than zero rows;
+  on `Note.note_links` it returns zero rows though rows with an empty list exist (`recipes/009`). Mixed,
+  `in [A, 99999999]` returns A's rows. Which side varies, and why, is unprobed.
 - A dotted path through this field reads back nothing: 200, key absent from `attributes`, in `GET ?fields`
   and in `_search` alike, while the identical path filters correctly (probe 016). To read the far side,
   query the child entity filtered by the parent.
