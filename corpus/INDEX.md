@@ -22,8 +22,10 @@ Read this first. Open an entry only when its one-liner does not already answer t
   `version inspector schema fill-rate`
 - **008_custom_entities** — /schema returns ONLY enabled custom entities (11 slots, all visible) - a disabled slot is simply absent, so presence in /schema is the enablement test. Slot numbers are non-contiguous and site-specific (01-07, 19, 29, 66 here); resolve display names from name.value and never hardcode a number. Connection entities appear as their own type.  
   `schema custom-entity discovery`
-- **009_status_lists** — Status lists are per entity type, not global - Version and Task share no vocabulary. valid_values, display_values, hidden_values and default_value are ALL readable over REST, so hidden values are visible even if not settable. On this site project_id changed nothing, which does not disprove project scoping - it means no per-project override exists here. Always read display_values: raw codes like 'pndvs' are meaningless to a user.  
+- **009_status_lists** — A project's usable statuses are valid_values MINUS hidden_values, read with project_id. valid_values is identical at every scope and is NOT the answer on its own; hidden_values is what varies (site-wide hides 0, one project hides 2, another hides 6). Status lists are also per entity type - Version and Task share no vocabulary. Always read display_values: raw codes like 'pndvs' mean nothing to a user.  
   `schema status list-field inspector`
+- **010_status_icons** — Status is a real queryable entity (32 rows, 11 fields) holding bg_color, name, code and a `system` flag separating built-in from custom statuses. bg_color is comma-separated RGB ('25,118,27'), NOT hex. GAP: `icon` is null on all 32 statuses on this site, so the standard/custom-icon branches are unverified - set a custom icon on one status to close it.  
+  `status icon cache schema colour`
 
 ## Recipes
 
@@ -32,7 +34,9 @@ Read this first. Open an entry only when its one-liner does not already answer t
 ## By tag
 
 - **auth** — 001_auth (finding)
+- **cache** — 010_status_icons (finding)
 - **client** — 001_auth (finding)
+- **colour** — 010_status_icons (finding)
 - **cost** — 002_schema (finding)
 - **custom-entity** — 008_custom_entities (finding)
 - **discovery** — 002_schema (finding), 008_custom_entities (finding)
@@ -43,12 +47,13 @@ Read this first. Open an entry only when its one-liner does not already answer t
 - **fill-rate** — 007_fill_rates (finding)
 - **filter** — 003_query (finding)
 - **header** — 004_array_vs_hash (finding)
+- **icon** — 010_status_icons (finding)
 - **inspector** — 005_link_usage (finding), 007_fill_rates (finding), 009_status_lists (finding)
 - **link** — 005_link_usage (finding)
 - **list-field** — 009_status_lists (finding)
 - **paging** — 003_query (finding), 005_link_usage (finding), 006_pagination (finding)
 - **query** — 003_query (finding), 004_array_vs_hash (finding), 006_pagination (finding)
-- **schema** — 002_schema (finding), 007_fill_rates (finding), 008_custom_entities (finding), 009_status_lists (finding)
-- **status** — 009_status_lists (finding)
+- **schema** — 002_schema (finding), 007_fill_rates (finding), 008_custom_entities (finding), 009_status_lists (finding), 010_status_icons (finding)
+- **status** — 009_status_lists (finding), 010_status_icons (finding)
 - **token** — 001_auth (finding)
 - **version** — 003_query (finding), 005_link_usage (finding), 007_fill_rates (finding)

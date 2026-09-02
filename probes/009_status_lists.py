@@ -13,8 +13,13 @@ def statuses(entity, params=None):
     return r.status_code, (r.json().get("data") if r.ok else r.text[:200])
 
 
+projects = {p["id"]: p["attributes"]["name"]
+            for p in c.get("/entity/projects", params={"fields": "name", "page[size]": 20}).json()["data"]}
+_lib.register_names(*projects.values())
+
 rows = []
-for label, params in (("site-wide", None), (f"project_id={BBB}", {"project_id": BBB})):
+scopes = [("site-wide", None)] + [(f"project {pid}", {"project_id": pid}) for pid in sorted(projects)]
+for label, params in scopes:
     code, d = statuses("Version", params)
     if isinstance(d, dict):
         props = d.get("properties", {})
@@ -40,10 +45,10 @@ actual = "\n".join(rows)
 _lib.record("009_status_lists", "GET /schema/<Type>/fields/sg_status_list ± project_id",
             "Status lists are project-scoped; REST cannot see or set some of it.",
             actual,
-            "Status lists are per entity type, not global - Version and Task share no vocabulary. "
-            "valid_values, display_values, hidden_values and default_value are ALL readable over REST, so "
-            "hidden values are visible even if not settable. On this site project_id changed nothing, which "
-            "does not disprove project scoping - it means no per-project override exists here. Always read "
-            "display_values: raw codes like 'pndvs' are meaningless to a user.",
+            "A project's usable statuses are valid_values MINUS hidden_values, read with project_id. "
+            "valid_values is identical at every scope and is NOT the answer on its own; hidden_values is what "
+            "varies (site-wide hides 0, one project hides 2, another hides 6). Status lists are also per "
+            "entity type - Version and Task share no vocabulary. Always read display_values: raw codes like "
+            "'pndvs' mean nothing to a user.",
             env, tags=("schema", "status", "list-field", "inspector"))
 print(actual)

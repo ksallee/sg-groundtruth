@@ -78,3 +78,15 @@ there is no generic path.
 **Scope rule.** Mapping every field type is weeks of work and this repo grows only to serve a shipped consumer.
 Probe the types the node writes and reads — text, entity, multi-entity, list/status, file and attachment.
 Everything else stays a claim until something needs it.
+
+## Statuses and icons
+
+| Claim | Probe | Needed by comfyui-fpt |
+|---|---|---|
+| Status lists are site-wide; per-project usage is `valid_values` minus `hidden_values` when the field schema is read with `project_id` | 009 | yes |
+| A status may be standard, custom with a standard icon, or custom with an uploaded icon | 010 | yes |
+| Resolving the right icon for all three cases takes real code | 010 | yes |
+| Icons must be cached, not refetched per render | 010 | yes |
+
+The node displays statuses, so this is in scope under the scope rule. Icons belong in the schema cache
+alongside the field definitions, keyed per site, with the binary stored on disk rather than re-downloaded.

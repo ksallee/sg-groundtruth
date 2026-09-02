@@ -26,20 +26,22 @@ No product code. Read-only. Every finding cited later by the code that depends o
 - [x] 007 fill rates: which Version fields are populated on recent entries
 - [x] 008 custom entities: which `CustomEntityNN` are enabled, and their display names
 - [x] 009 status lists: per-project values, and what REST cannot see or set
+- [x] 010 status icons and colours (Status entity)
+- [ ] ~~009 old~~ per-project values, and what REST cannot see or set
 
 Writes — sandbox only, and see the litter warning in `docs/quirks.md`:
 
-- [ ] 010 custom field creation: allowed types, `sg_` prefix, display to programmatic name mapping
-- [ ] 011 trashed field collision: revive, type mismatch, rename recovery
-- [ ] 012 media upload: how media actually attaches to a Version, step by step
-- [ ] 013 attachments: arbitrary file (workflow JSON) on a Version
-- [ ] 014 create Version
-- [ ] 015 dotted reads on multi-entity targets (needed before Phase 2)
+- [ ] 011 custom field creation: allowed types, `sg_` prefix, display to programmatic name mapping
+- [ ] 012 trashed field collision: revive, type mismatch, rename recovery
+- [ ] 013 media upload: how media actually attaches to a Version, step by step
+- [ ] 014 attachments: arbitrary file (workflow JSON) on a Version
+- [ ] 015 create Version
+- [ ] 016 dotted reads on multi-entity targets (needed before Phase 2)
 
-010 and 011 decide where provenance lives: real typed custom fields, filterable in Flow PT's own UI, or a JSON
+011 and 012 decide where provenance lives: real typed custom fields, filterable in Flow PT's own UI, or a JSON
 blob in an existing text field plus an attachment. Do not design provenance storage before they land.
 
-**010 and 011 change site-wide schema, not project data.** A sandbox project does not contain them.
+**011 and 012 change site-wide schema, not project data.** A sandbox project does not contain them.
 
 ## Phase 1 — inspector
 
@@ -61,6 +63,10 @@ blob in an existing text field plus an attachment. Do not design provenance stor
 - Recorded demo; publish repo, `probes/findings/` becomes the public cookbook
 
 ## Open
+
+- Probe 010 left a gap: no status on this site has an icon, so the standard-vs-custom icon branches are
+  unverified. Setting one custom icon by hand unblocks it.
+
 
 - Does ComfyUI re-evaluate `INPUT_TYPES` on refresh, or does a profile change need a restart? Decides whether
   re-inspection is live or requires a bounce.
