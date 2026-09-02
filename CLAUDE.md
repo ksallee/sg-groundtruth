@@ -71,6 +71,20 @@ only with `--refresh`.
 `inspect_site.py` measures one project and proposes a profile; `/inspect-site` is the operator-facing
 version of the same run. It proposes with evidence and never decides. See PLAN Phase 1.
 
+## The local overlay
+
+`probes/build_overlay.py` writes `corpus.local/`, which the site reads as its `site` and `project`
+reading levels. Read-only, re-runnable, and it replaces each tier wholesale.
+
+    python probes/build_overlay.py                 site tier, then every FPT_PROBE_SAMPLE_PROJECTS project
+    python probes/build_overlay.py --site          site tier only
+    python probes/build_overlay.py --project 70    one project, plus the site tier
+    python probes/build_overlay.py --refresh       re-fetch the schema cache instead of reading it
+
+Its output is deliberately **not** scrubbed. `corpus.local/` is gitignored and never deployed, and real
+slot numbers, display names and vocabularies are the entire point of it. `probes/check_corpus.py` lints
+`corpus/` only. The file layout and frontmatter are the contract in `site/README.md`.
+
 ## Stack
 
 Python 3.11, `requests`. A new dependency needs a line in DESIGN.md.

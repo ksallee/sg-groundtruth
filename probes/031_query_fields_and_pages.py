@@ -387,7 +387,9 @@ for p in pages:
     project_ids(f, named)
     for n in named - {own["id"]}:
         stale.append((p["id"], own["id"], n, c.get(f"/entity/projects/{n}", params={"fields": "id"}).status_code))
-rows.append(f"  pages whose stored filter names a project other than the page's own: {len(stale)}")
+rows.append(f"  pages whose stored filter names a project other than the page's own: {len(stale)}, "
+            f"over {len(set(x[2] for x in stale))} named ids; "
+            f"GET on those ids: {json.dumps(collections.Counter(x[3] for x in stale))}")
 for pid, own_id, other, status in stale[:4]:
     rows.append(f"    page {pid}: Page.project is {own_id}, the stored filter names project {other}, "
                 f"GET /entity/projects/{other} -> {status}")

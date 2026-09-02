@@ -192,7 +192,8 @@ control, written by hand rather than translated
 ### The field is not a shortcut
 
 `GET` the field and you get a value with no way to tell whether it was computed. On the probed site
-every custom query field reads `null` while its own query matches rows:
+the stock `open_notes_count` agrees with its own query and every custom query field reads `null`
+while its query matches rows:
 
 | field | `summary_default` | the field reads | its own query returns |
 |---|---|---|---|
@@ -257,7 +258,7 @@ Translation is the only path (probe 030). What survives and what does not:
 | a group whose `conditions` is `[]` | keep or drop under `and`; it is no filter, not a no-match |
 
 An empty group matches every row: `{"logical_operator": "and", "conditions": [{"logical_operator":
-"and", "conditions": []}]}` returned the site-wide Shot count. Under `and` that is the identity, and
+"and", "conditions": []}]}` returned 749, against 749 Shots site-wide. Under `and` that is the identity, and
 every empty group on the probed site sits under one. Dropping it under an `or` would narrow the query.
 
 ### Tokens
@@ -300,7 +301,7 @@ decision on the relation rather than on how many values happen to be present.
 
 - `columns` are schema field names in display order and go straight into `?fields`. All six on the
   page above were returned. On the probed site another Shot page lists the pivot columns `step_35` and
-  `step_106`, which look invented and are real fields in `/schema/Shot/fields`, returned like any other.
+  `step_106`, which are real fields in `/schema/Shot/fields` and were returned like any other.
 - `id` is a legal column and is not a field. On an EventLogEntry page listing it, `?fields=id,user`
   answered 200 with `attributes: {}` and the id under the row's own `id` key. Drop `id` from the list
   and read `row["id"]`.
@@ -312,19 +313,20 @@ decision on the relation rather than on how many values happen to be present.
 ### The stored project can be a project that is gone
 
 The `top_level_project_filter` condition duplicates the page's project scope and is not maintained.
-On the probed site 19 pages store a filter naming a project other than their own `Page.project`, and
-in each case `GET /entity/projects/<that id>` is 404: the project was deleted and the stored filter
-kept its id. Translated verbatim, those pages return 0 rows at 200. Substitute `Page.project` over
-whatever the tree names, which is what `page_query` above does through `project_token`.
+On the probed site 19 pages store a filter naming a project other than their own `Page.project`. All
+19 name the same id, and `GET /entity/projects/<that id>` is 404 on every one: the project was deleted
+and the stored filter kept its id. Translated verbatim, those pages return 0 rows at 200. Substitute
+`Page.project` over whatever the tree names, which is what `page_query` above does through
+`project_token`.
 
-The same insensitivity works in your favour on a live row: a stored entity value's `name` is a stale
-label and the id decides. `["project", "is", {"type": "Project", "id": 70}]`,
-the same with `"name": "zzz_not_the_projects_name"`, and the same again with `valid` and `uuid`
-attached all returned 300.
+On a live row the id decides and a stored `name` is a stale label the server never reads.
+`["project", "is", {"type": "Project", "id": 70}]`, the same with
+`"name": "zzz_not_the_projects_name"`, and the same again with `valid` and `uuid` attached all
+returned 300.
 
 ### Once translated, the field is still unusable as a field
 
-Re-running the query is not an optimisation, it is the only way to select on one of these:
+Re-running the query is the only way to select on one of these:
 
 | attempt | result |
 |---|---|
