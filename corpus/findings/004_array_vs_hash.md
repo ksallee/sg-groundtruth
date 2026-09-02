@@ -1,6 +1,6 @@
 ---
 tags: [query, header, entity-field, error-handling]
-verdict: REST has NO array/hash negotiation - api3_array+json and api3_hash+json both 406; entity and multi-entity fields always come back under relationships as {data, links}. TRAP: a bogus name in ?fields is silently dropped (HTTP 200, field simply absent), while the same name in filter[] errors 400 - so a typo reads as 'no data' instead of 'wrong field'.
+verdict: The array/hash choice is a REQUEST Content-Type on POST _search, NOT an Accept header on GET - sending those vendor types as Accept on a GET returns 406 (see below), but POST /entity/<type>/_search REJECTS application/json with 415 and demands application/vnd+shotgun.api3_array+json or ...api3_hash+json (probe 014). Array form takes filters as [[field, op, value]]. Responses are unaffected: entity and multi-entity fields always arrive under relationships as {data, links}. TRAP: a bogus name in ?fields is silently dropped (HTTP 200, field simply absent), while the same name in filter[] errors 400 - so a typo reads as 'no data' rather than 'wrong field'.
 ---
 
 # 004_array_vs_hash
@@ -21,7 +21,7 @@ verdict: REST has NO array/hash negotiation - api3_array+json and api3_hash+json
 406 api3_hash+json:  
 
 bogus field: HTTP 200; attributes returned = ['code']
-bogus filter field: HTTP 400 {"errors":[{"id":"30a18f2ec5f6c3959718fab7a644e446","status":400,"code":103,"title":"THICKET quill() Version.sg_not_a_field slate't quill.","source":{"Version.sg_not
+bogus filter field: HTTP 400 {"errors":[{"id":"e180a0cc97e141d2c99748971dd89b43","status":400,"code":103,"title":"THICKET quill() Version.sg_not_a_field slate't quill.","source":{"Version.sg_not
 ```
 
-**Verdict** REST has NO array/hash negotiation - api3_array+json and api3_hash+json both 406; entity and multi-entity fields always come back under relationships as {data, links}. TRAP: a bogus name in ?fields is silently dropped (HTTP 200, field simply absent), while the same name in filter[] errors 400 - so a typo reads as 'no data' instead of 'wrong field'.
+**Verdict** The array/hash choice is a REQUEST Content-Type on POST _search, NOT an Accept header on GET - sending those vendor types as Accept on a GET returns 406 (see below), but POST /entity/<type>/_search REJECTS application/json with 415 and demands application/vnd+shotgun.api3_array+json or ...api3_hash+json (probe 014). Array form takes filters as [[field, op, value]]. Responses are unaffected: entity and multi-entity fields always arrive under relationships as {data, links}. TRAP: a bogus name in ?fields is silently dropped (HTTP 200, field simply absent), while the same name in filter[] errors 400 - so a typo reads as 'no data' rather than 'wrong field'.

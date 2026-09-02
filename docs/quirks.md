@@ -49,9 +49,10 @@ cache, per site.
 |---|---|---|
 | Entity and multi-entity fields return array or hash form depending on request headers | 004 | **False for REST** |
 
-Probe 004: `api3_array+json` and `api3_hash+json` both return 406. REST always renders entity and multi-entity
-fields under `relationships` as `{data, links}`, with no negotiation. The array/hash distinction belongs to
-`shotgun_api3`, not to REST — relevant to the setup path only.
+Probes 004 and 014: **true, but it is a request `Content-Type` on `POST _search`, not an `Accept` header on
+`GET`.** Those vendor types sent as `Accept` on a GET return 406; `POST /entity/<type>/_search` rejects
+`application/json` with 415 and requires `application/vnd+shotgun.api3_array+json` or `...api3_hash+json`.
+Responses are unaffected — entity fields always arrive under `relationships`.
 
 ## Pagination
 
