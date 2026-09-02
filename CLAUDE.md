@@ -33,6 +33,19 @@ The REST docs are incomplete and sometimes wrong. Probe, record, then code again
 
 Schema-writing probes use `sg_zzprobe_<nnn>_*`. See `docs/quirks.md`.
 
+## Schema cache and inspector
+
+Ask; never read the raw dump. `.schema-cache/<site>/<site|pNNN>/` holds the JSON, gitignored, refreshed
+only with `--refresh`.
+
+    python -m fpt_llm_api.schema entities --custom          enabled CustomEntityNN and their display names
+    python -m fpt_llm_api.schema fields Version --editable  one type at a time; 42KB and 300ms each
+    python -m fpt_llm_api.schema --project N field Version sg_status_list
+    python -m fpt_llm_api.schema --project N statuses Version
+
+`inspect_site.py` measures one project and proposes a profile; `/inspect-site` is the operator-facing
+version of the same run. It proposes with evidence and never decides — see PLAN Phase 1.
+
 ## Stack
 
 Python 3.11, `requests`. A new dependency needs a line in DESIGN.md.

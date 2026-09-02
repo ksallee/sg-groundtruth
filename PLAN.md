@@ -5,7 +5,8 @@ Phases 0 and 1 happen entirely here. `comfyui-fpt` comes alive at Phase 2.
 
 ## State
 
-Both repos scaffolded. Auth proved (probe 001). Nothing built yet.
+Phase 0 read and write probes done. Phase 1 done: schema cache, CLI, inspector, `/inspect-site`.
+`comfyui-fpt` has `FPT Publish Version` publishing end to end, so Phase 2 ran ahead of Phase 1.
 
 **Big Buck Bunny (70) is the inference sample, and stays read-only.** Probes 004/005 measure which fields are
 actually filled; writing test Versions into it would skew the statistics the inspector reads.
@@ -47,11 +48,17 @@ Where provenance lands is the operator's mapping, not a project default. See DES
 
 **The write path is proven end to end.** The node can be built.
 
-## Phase 1 — inspector
+## Phase 1 — inspector  *(done)*
 
-- `src/fpt_llm_api/schema.py`: fetch, cache, digest, query CLI
-- `inspect.py` turns 005, 007, 008, 009, 020 into `profile.local.json` for one project
-- `/inspect-site` command: agent runs it, explains findings in plain language, operator edits and confirms
+- [x] `src/fpt_llm_api/schema.py`: fetch, cache, digest, query CLI
+- [x] `inspect_site.py` turns 005, 007, 008, 009, 018, 020 into `profile.local.json` for one project
+- [x] `/inspect-site` command: agent runs it, explains findings in plain language, operator edits and confirms
+
+Named `inspect_site.py`, not `inspect.py`: a top-level `inspect.py` shadows the stdlib module for
+everything imported after it, and `requests` is in that blast radius.
+
+Verified against Big Buck Bunny: the inspector independently reproduces probe 005 (`entity` 100%, Shot 99
+Asset 1, `sg_task` 1%) without being told the answer.
 
 **Two passes, for a measured reason (probe 020).** Fill rate alone is misleading: on BBB, 13 of the 18
 fields at ~100% are system fields or checkboxes reading full because `False` is not null, while `image`
