@@ -222,16 +222,28 @@ def report(project_id, name, found, inferred):
     return "\n".join(out)
 
 
-def write_profile(path, inferred, overwrite):
-    """Operator edits win over inference (DESIGN: site profile), so a re-run keeps what is already
-    there and reports where it disagreed rather than quietly replacing it."""
-    existing = json.loads(path.read_text()) if path.is_file() else {}
-    out = dict(inferred)
+def write_profile(path, project_id, name, inferred, overwrite):
+    """Merge one project's findings into the profile.
+
+    Keyed per project, because one studio runs shows with different conventions (DESIGN: site
+    profile) — inspecting a second show adds a block, it does not replace the first. Top-level keys
+    stay untouched as the site-wide default.
+
+    Operator edits win over inference, so a re-run keeps what is already there and reports where it
+    disagreed rather than quietly replacing it.
+    """
+    doc = json.loads(path.read_text()) if path.is_file() else {}
+    doc.setdefault("default_project", project_id)
+    blocks = doc.setdefault("projects", {})
+    existing = blocks.get(str(project_id), {})
+    out = dict(name=name, **inferred)
     if not overwrite:
         out.update(existing)
-    path.write_text(json.dumps(out, indent=2) + "\n")
-    kept = [k for k, v in inferred.items() if k in existing and existing[k] != v and not overwrite]
-    return out, kept
+    blocks[str(project_id)] = out
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(doc, indent=2) + "\n")
+    kept = [] if overwrite else [k for k, v in out.items() if existing.get(k, v) != inferred.get(k, v)]
+    return doc, out, kept
 
 
 def main(argv=None):
@@ -251,13 +263,16 @@ def main(argv=None):
 
     name = dict((i, n) for i, n in projects(fpt)).get(args.project, "")
     found = inspect(fpt, args.project, args.versions, args.shortlist)
-    inferred = dict(project_id=args.project, **infer(found))
+    inferred = infer(found)
     print(report(args.project, name, found, inferred))
 
-    written, kept = write_profile(args.out, inferred, args.overwrite)
-    print(f"\nwrote {args.out}")
-    for k, v in written.items():
+    doc, block, kept = write_profile(args.out, args.project, name, inferred, args.overwrite)
+    print(f"\nwrote {args.out}  ->  projects.{args.project}")
+    for k, v in block.items():
         print(f"  {k:<14} {json.dumps(v)}" + ("   (yours, kept)" if k in kept else ""))
+    others = [k for k in doc["projects"] if k != str(args.project)]
+    if others:
+        print(f"  untouched: projects {', '.join(others)}")
     if kept:
         print("  --overwrite replaces these with the inferred values.")
     return 0
