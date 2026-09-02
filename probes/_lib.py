@@ -1,5 +1,15 @@
-"""Shared probe plumbing: env, client, sanitised finding output."""
-import hashlib
+"""Shared probe plumbing: env, client, and a scrubber for the values a machine can redact safely.
+
+A probe prints. It does not write the corpus. The agent running the probe reads the output, judges
+what is identifying, and writes the finding by hand — see `.claude/commands/probe.md`.
+
+That split exists because the two kinds of redaction have opposite failure modes. Substituting the
+site URL, the script name, the key, a bearer token, an email or a presigned URL is a string replace
+that cannot misfire. Deciding whether a token is a project name, an English word, a file extension or
+an API error message needs judgment; an earlier version of this file guessed, and rewrote
+`application/vnd+shotgun.api3_array+json` into `eddy/xenon+pylon.thicket3_array+json` inside the one
+finding that string exists to teach.
+"""
 import json
 import os
 import re
@@ -30,138 +40,59 @@ def writes_allowed():
     return "--write" in sys.argv
 
 
-# Industry-generic vocabulary. Never redacted: it carries the teaching value of the corpus and
-# identifies nobody. Pipeline steps, statuses, entity types, schema words.
-SAFE = {
-    "comp", "anim", "layout", "light", "lighting", "fx", "model", "modeling", "rig", "rigging", "previz",
-    "roto", "paint", "matte", "track", "tracking", "lookdev", "surfacing", "groom", "cloth", "crowd",
-    "edit", "editorial", "conform", "grade", "online", "plate", "element", "render", "review", "final",
-    "shot", "asset", "sequence", "scene", "task", "version", "note", "playlist", "project", "step",
-    "status", "type", "name", "code", "description", "image", "movie", "thumbnail", "attachment",
-    "user", "group", "department", "pipeline", "delivery", "vendor", "client", "artist", "supervisor",
-    "wtg", "ip", "fin", "apr", "rev", "omt", "hld", "dis", "cmpt", "clsd", "vwd", "cfrm", "part", "pass",
-    "and", "the", "for", "not", "all", "any", "date", "time", "list", "text", "float",
-    "entity", "field", "value", "true", "false", "null", "none", "custom", "default", "system",
-    "pending", "approved", "progress", "complete", "viewed", "confirmed", "closed", "omitted",
-    "ready", "waiting", "hold", "disabled", "cbb", "icon", "active",
-}
-# Standard entity types are safe. Anything else capitalised is a name until proven otherwise —
-# an earlier version used [A-Z]\w* here and leaked every single-word display name.
-STD_ENTITIES = {
-    "Project", "Shot", "Asset", "Sequence", "Scene", "Task", "Version", "Note", "Playlist", "Step",
-    "HumanUser", "ApiUser", "Group", "Department", "Attachment", "Delivery", "PublishedFile",
-    "PublishedFileType", "Ticket", "Phase", "Cut", "CutItem", "Status", "Icon", "Reply", "Element",
-    "TimeLog", "Booking", "EventLogEntry", "Camera", "Release", "Launcher", "Software", "LocalStorage",
-}
-ENTITY_RE = re.compile(r"^Custom(Entity|NonProject\w*)\d*(_\w+_Connection)?$")
-
-_FIRST = ["Ari", "Bo", "Cy", "Dev", "Eli", "Fen", "Gus", "Hana", "Ivo", "Jules", "Kai", "Lux",
-          "Mira", "Nico", "Oona", "Piet", "Quin", "Rune", "Sol", "Tao", "Uma", "Vera", "Wren", "Zia"]
-_LAST = ["Alder", "Brenn", "Cove", "Dray", "Ember", "Frost", "Gale", "Hollow", "Iris", "Jarn",
-         "Kestrel", "Larkin", "Mourne", "Nesbit", "Orrin", "Pell", "Quarry", "Raske", "Stilt", "Thorne"]
-_WORDS = ["cobalt", "dovetail", "ember", "fathom", "girder", "harrow", "indigo", "jetty", "kelp",
-          "lantern", "marrow", "nimbus", "orchard", "pylon", "quartz", "rivet", "sable", "tundra",
-          "umber", "vellum", "willow", "xenon", "yarrow", "zephyr", "anvil", "basalt", "cinder",
-          "drift", "eddy", "flint", "gable", "haven", "inlet", "juniper", "kiln", "loom", "mesa",
-          "notch", "obsidian", "prism", "quill", "ridge", "slate", "thicket", "updraft", "vapor",
-          "warren", "yonder", "zenith", "alcove", "bramble", "cairn", "delta", "escarp", "fjord"]
+def _need(env, key, what):
+    v = (env.get(key) or "").strip()
+    if not v:
+        raise SystemExit(f"set {key} in .env.local — {what}")
+    return v
 
 
-def _pick(seq, s, salt):
-    h = hashlib.sha256(f"{salt}{s.lower()}".encode()).hexdigest()
-    return seq[int(h, 16) % len(seq)]
+_PROJECTS = {}
 
 
-def pseudonym(real, salt=""):
-    """Stable fictional stand-in. Same input always yields the same output, so a name referenced by
-    two findings reads the same in both. Shape is preserved: codes stay code-shaped."""
-    real = real.strip()
-    if (not real or len(real) < 3 or ENTITY_RE.match(real) or real.startswith("sg_")
-            or real in STD_ENTITIES):
-        return real
-    words = real.split()
-    if (len(words) == 2 and all(w[:1].isupper() and w.isalpha() for w in words)
-            and not any(w.lower() in SAFE for w in words)):
-        return f"{_pick(_FIRST, words[0], salt)} {_pick(_LAST, words[1], salt)}"
-
-    def swap(m):
-        tok = m.group(0)
-        # Acronyms are identifying even at two letters, and split across digits (E2E -> E, E).
-        if tok.lower() in SAFE or (len(tok) < 3 and not tok.isupper()):
-            return tok
-        new = _pick(_WORDS, tok, salt)
-        return new.upper() if tok.isupper() else (new.capitalize() if tok[:1].isupper() else new)
-
-    return re.sub(r"[A-Za-z]+", swap, real)
+def _projects(c):
+    """One listing, cached, so name lookups cost nothing after the first."""
+    if not _PROJECTS:
+        r = c.get("/entity/projects", params={"fields": "name", "page[size]": 200}).json()
+        _PROJECTS.update({p["attributes"]["name"]: p["id"] for p in r["data"]})
+    return _PROJECTS
 
 
-def _redactable(v):
-    v = v.strip()
-    return not (
-        len(v) < 3
-        or v.startswith("sg_")
-        or v.startswith("<")
-        or ENTITY_RE.match(v)
-        or v in STD_ENTITIES
-        or v.lower() in SAFE
-        or not any(c.isalpha() for c in v)
-    )
+def resolve_project(c, ref):
+    """A project id or a project name. Names are readable in a setup doc; ids survive a rename."""
+    ref = str(ref).strip()
+    if ref.isdigit():
+        return int(ref)
+    by_name = _projects(c)
+    if ref not in by_name:
+        raise SystemExit(f"no project named {ref!r} on this site")
+    return by_name[ref]
 
 
-_NAME_KEYS = r"name|code|login|firstname|lastname|content|description|cached_display_name|display|title"
-_REGISTERED = set()
+def sample_projects(c, env):
+    """Read-only projects a probe may measure, most interesting first. Ids or names, comma separated.
 
-
-def register_names(*names):
-    """Values a probe knows are identifying — project names, user names, codes pulled from the site."""
-    _REGISTERED.update(n for n in names if n and isinstance(n, str) and len(n) >= 3)
-
-
-_NAMEISH = {"name", "code", "login", "firstname", "lastname", "content", "description",
-            "cached_display_name", "title", "subject", "email", "sg_description"}
-
-
-def register_from(obj):
-    """Walk a decoded response and register every name-ish value. Probes call this on raw payloads so
-    that names reformatted into tables or tuples still get redacted — matching on key shape alone missed
-    anything the probe pretty-printed itself."""
-    if isinstance(obj, dict):
-        for k, v in obj.items():
-            if k in _NAMEISH and isinstance(v, str):
-                register_names(v)
-            else:
-                register_from(v)
-    elif isinstance(obj, list):
-        for x in obj:
-            register_from(x)
-
-
-def register_path(path):
-    """Register every segment of a filesystem path.
-
-    Paths carry show, asset and user names that never appear in a name-ish field, so register_from
-    cannot see them — a publish path leaked a real asset name until this existed.
+    Site ids and names are site data: hardcoding one in committed source is the same leak either way.
     """
-    for seg in re.split(r"[/\\.]", str(path or "")):
-        register_names(seg)
+    raw = _need(env, "FPT_PROBE_SAMPLE_PROJECTS", "comma-separated project ids or names probes may READ")
+    return [resolve_project(c, x) for x in raw.split(",") if x.strip()]
 
 
-def _redact_names(text, salt):
-    for real in sorted(_REGISTERED, key=len, reverse=True):
-        if _redactable(real):
-            # Word-bounded, not a bare substring: a registered 3-letter name once rewrote the middle
-            # of ordinary English, turning "resolve" into "basaltolve" inside a committed finding.
-            text = re.sub(rf"(?<!\w){re.escape(real)}(?!\w)", lambda m: pseudonym(real, salt), text)
-
-    def json_val(m):
-        return m.group(0).replace(m.group(1), pseudonym(m.group(1), salt)) if _redactable(m.group(1)) else m.group(0)
-
-    text = re.sub(rf'"(?:{_NAME_KEYS})"\s*:\s*"([^"]{{1,200}})"', json_val, text)
-    text = re.sub(rf"\b(?:{_NAME_KEYS})\s*=\s*'([^']{{1,200}})'", json_val, text)
-    return text
+def sandbox_name(env):
+    """The one project a probe may WRITE into. A name, because probe 011 creates it if absent."""
+    return _need(env, "FPT_PROBE_SANDBOX_PROJECT", "the project name probes may WRITE into")
 
 
-def sanitize(text, env):
+def sandbox_id(c, env):
+    """Resolve the sandbox name to an id. Fails loudly rather than writing into the wrong project."""
+    name = sandbox_name(env)
+    if name not in _projects(c):
+        raise SystemExit(f"no project named {name!r}; run probe 011 --write to create the sandbox")
+    return _projects(c)[name]
+
+
+def scrub(text, env):
+    """Mechanical substitutions only. Never touches ordinary words."""
     for key in ("FPT_API_SITE_URL", "FPT_API_SCRIPT_NAME", "FPT_API_API_KEY"):
         v = env.get(key)
         if v:
@@ -169,74 +100,86 @@ def sanitize(text, env):
     host = (env.get("FPT_API_SITE_URL") or "").split("//")[-1].split(".")[0]
     if host:
         text = text.replace(host, "<site>")
+    home = os.path.expanduser("~")
+    if home and home != "/":
+        text = text.replace(home, "<home>")
     text = re.sub(r"[\w.+-]+@[\w-]+\.[\w.]+", "<email>", text)
     text = re.sub(r"(?i)(bearer\s+|access_token\"?\s*[:=]\s*\"?)[\w.\-]{20,}", r"\1<token>", text)
-    # Presigned media URLs carry the site host and signatures.
+    # Presigned media URLs carry the site host and a signature.
     text = re.sub(r"https://[\w.\-]*(amazonaws|shotgrid|shotgunstudio)[\w.\-]*/\S+", "<media-url>", text)
-    return _redact_names(text, env.get("FPT_REDACTION_SALT", ""))
+    return text
 
 
-def record(slug, endpoint, doc_claim, actual, verdict, env, tags=(), python_equivalent=None):
-    """Write a finding. `verdict` is one actionable sentence — it lands in INDEX.md and is often
-    all an agent reads. `tags` drive retrieval; see probes/index.py."""
-    extra = f"\n**Python equivalent**\n\n```python\n{python_equivalent.strip()}\n```\n" if python_equivalent else ""
-    body = f"""---
-tags: [{", ".join(tags)}]
-verdict: {verdict}
----
+_NAMEISH = {"name", "code", "login", "firstname", "lastname", "content", "description",
+            "cached_display_name", "title", "subject", "email", "sg_description"}
+_SEEN = set()
 
-# {slug}
 
-**Endpoint** `{endpoint}`
+def note_names(*values):
+    """Flag a value as probably identifying. Printed at the end of a run so the agent writing the
+    finding knows what to replace; never rewritten automatically."""
+    _SEEN.update(v.strip() for v in values if isinstance(v, str) and len(v.strip()) >= 3)
 
-**Docs claim** {doc_claim}
 
-**Actual**
+def note_from(obj):
+    """Walk a decoded response and flag every name-ish value. Skips `errors` payloads: JSON:API puts
+    the message under `title`/`detail`, and those are teaching content, not names."""
+    if isinstance(obj, dict):
+        if "errors" in obj:
+            obj = {k: v for k, v in obj.items() if k != "errors"}
+        for k, v in obj.items():
+            if k in _NAMEISH and isinstance(v, str):
+                note_names(v)
+            else:
+                note_from(v)
+    elif isinstance(obj, list):
+        for x in obj:
+            note_from(x)
 
-```
-{actual.strip()}
-```
 
-**Verdict** {verdict}
-{extra}"""
-    FINDINGS.mkdir(parents=True, exist_ok=True)
-    (FINDINGS / f"{slug}.md").write_text(sanitize(body, env))
-    print(f"wrote corpus/findings/{slug}.md")
+def note_path(path):
+    """Flag every segment of a filesystem path. Paths carry show, asset and user names that never
+    appear in a name-ish field."""
+    for seg in re.split(r"[/\\]", str(path or "")):
+        note_names(seg)
+
+
+class Created:
+    """Rows a probe made, deleted when it finishes.
+
+    A probe leaves no trace. Sandbox rows outlive the run otherwise, and the next probe measures them.
+
+        with _lib.Created(c) as made:
+            v = c.post("/entity/versions", json={...}).json()["data"]
+            made.add("versions", v["id"])
+    """
+
+    def __init__(self, c):
+        self.c, self.rows = c, []
+
+    def add(self, slug, entity_id):
+        self.rows.append((slug, entity_id))
+        return entity_id
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        for slug, i in reversed(self.rows):
+            r = self.c.delete(f"/entity/{slug}/{i}")
+            print(f"  deleted /entity/{slug}/{i} -> {r.status_code}")
+        return False
+
+
+def emit(slug, actual, env):
+    """Print the probe's evidence, scrubbed, plus the names the agent must judge."""
+    print(f"===== {slug} =====")
+    print(scrub(actual.strip(), env))
+    if _SEEN:
+        flagged = sorted(scrub(n, env) for n in _SEEN)
+        print("\n----- identifying, replace with a placeholder before writing the finding -----")
+        print("\n".join(f"  {n}" for n in flagged))
 
 
 def dump(obj, limit=2000):
     return json.dumps(obj, indent=2, default=str)[:limit]
-
-
-def record_recipe(slug, intent, call, response, env, tags=(), notes=(), lang="python"):
-    """A verified task -> call -> real response pair. This is the corpus an LLM reads to *do*
-    something, as opposed to a finding, which it reads to reason about the API."""
-    note_lines = "\n".join(f"- {n}" for n in notes)
-    body = f"""---
-intent: {intent}
-tags: [{", ".join(tags)}]
----
-
-# {slug}
-
-{intent}
-
-## Call
-
-```{lang}
-{call.strip()}
-```
-
-## Response
-
-```json
-{response.strip()}
-```
-
-## Notes
-
-{note_lines or "- none"}
-"""
-    RECIPES.mkdir(parents=True, exist_ok=True)
-    (RECIPES / f"{slug}.md").write_text(sanitize(body, env))
-    print(f"wrote corpus/recipes/{slug}.md")

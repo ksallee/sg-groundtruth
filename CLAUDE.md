@@ -11,9 +11,17 @@ Derive only from public Flow PT REST docs and this repo's own probes.
 
 ## The corpus is the product
 
-`corpus/findings/` — how the API behaves. Produced by probes.
-`corpus/recipes/` — a verified call and its real response. Produced by probes.
-`corpus/INDEX.md` — generated. Read this first, always. Open an entry only when its one-liner falls short.
+`corpus/findings/`: how the API behaves. Produced by probes.
+`corpus/recipes/`: a verified call and its real response. Produced by probes.
+`corpus/INDEX.md`: generated. Read this first, always. Open an entry only when its one-liner falls short.
+
+Every finding carries `scope: api` or `scope: site`. `api` behaviour holds on any Flow PT site and is what
+ships publicly. `site` is a measurement of one site: useful as a worked example, never something to code
+against elsewhere. Inside an `api` finding, an individual site measurement is attributed inline, beginning
+"On the probed site, ...".
+
+`corpus.local/` is the per-site overlay: custom entities, status vocabularies, fill rates and examples drawn
+from the reader's own site. Gitignored, never deployed publicly, generated rather than written.
 
 Never code against `docs/quirks.md`. Those are unverified operator claims. A job that depends on one has a gap;
 probe it.
@@ -24,9 +32,17 @@ The REST docs are incomplete and sometimes wrong. Probe, record, then code again
 
 - One question per probe: `probes/NNN_slug.py`
 - Read-only by default. Writes require `--write`.
-- Sanitize before commit: no tokens, no site URL, no project or entity names
+- **A probe leaves no trace.** Anything it creates, it deletes before it exits. Use `_lib.Created`, which
+  deletes in reverse order on the way out. Rows that outlive a run become data the next probe measures.
+  Schema fields are the exception: a deleted field name is never freed (`docs/quirks.md`), so never create
+  one to test with.
+- **A probe prints; it never writes the corpus.** The agent running it judges what is identifying and
+  writes the finding by hand. `_lib.scrub` handles only what a string replace can do safely: site URL,
+  script name, key, home directory, emails, tokens, presigned URLs. Names are judgment; see
+  `.claude/commands/probe.md` for the rules and the finding template.
+- Never rewrite an API error, a MIME type, a field name or a file extension. Those are the teaching content.
 - Every probe that produces a usable call also records a recipe
-- `python probes/index.py` after any probe
+- `python probes/check_corpus.py` then `python probes/index.py` after any probe
 - Tags drive retrieval, so the vocabulary must not drift. Reuse an existing tag from `corpus/INDEX.md` or add
   one deliberately. Singular, lowercase: `version`, not `versions` or `Version`.
 - Code cites entries: `# probe 004`
@@ -44,7 +60,7 @@ only with `--refresh`.
     python -m fpt_llm_api.schema --project N statuses Version
 
 `inspect_site.py` measures one project and proposes a profile; `/inspect-site` is the operator-facing
-version of the same run. It proposes with evidence and never decides — see PLAN Phase 1.
+version of the same run. It proposes with evidence and never decides. See PLAN Phase 1.
 
 ## Stack
 
@@ -54,6 +70,59 @@ Python 3.11, `requests`. A new dependency needs a line in DESIGN.md.
 
 `.env.local`, gitignored, never printed. `FPT_API_SITE_URL`, `FPT_API_SCRIPT_NAME`, `FPT_API_API_KEY`.
 
+Probe targets live there too, because a project id is site data exactly as a project name is:
+`FPT_PROBE_SAMPLE_PROJECTS` (read-only targets, names or ids mixed, most interesting first),
+`FPT_PROBE_SANDBOX_PROJECT` (the only project a probe may write into), `FPT_PROBE_FRAMES_DIR` (probe 022).
+Never hardcode a project in a probe. `_lib.sample_projects` and `_lib.sandbox_id` resolve them.
+
 ## Style
 
 Terse. Comments explain why, never what. Say a thing once, in one place.
+
+**The corpus is public documentation.** It is read by people and models deciding how to call this API, and it
+competes with the official docs. Write it to win that comparison.
+
+- State the fact. No preamble, no restatement, no summary of what you just said.
+- One explanation per fact, in one place. A second pass at the same idea means the first one failed. Fix it.
+- No metaphors for data. A field **is returned under** `relationships`; it does not arrive, land, travel,
+  carry, ride or live anywhere.
+- No emphasis words: simply, essentially, basically, obviously, actually, really, just, of course.
+  No `note that`, no `worth noting`, no `the whole point`.
+- No ALL-CAPS for emphasis. Capitals are for API literals only: `NULL`, `PUT`, `CustomEntity19`.
+- Bold only a term being defined or a genuine hazard. Not for volume.
+- Give the number, the status code and the error string verbatim. They are the argument; adjectives are not.
+- Say what a caller should do. "Subtract `hidden_values` yourself" beats "the API is permissive here".
+- No rhetorical scaffolding. The evidence is on the page; do not announce it. Cut "that error is the proof",
+  "which is why", "in other words", "the takeaway", "crucially". Show the error, state the rule, stop.
+- **Attribute every site measurement inline.** `scope:` marks the file; a single sentence inside an `api`
+  file can still be local. Counts, field censuses, fill rates and "there are N of these" all begin
+  "On the probed site, ...". A reader forking this repo must be able to tell, sentence by sentence, what
+  transfers to their site and what they have to measure again.
+- No em dashes. They join two thoughts that should be two sentences. Recast:
+  a full stop when both halves stand alone, a colon when the second explains the first, commas or
+  parentheses for an aside. If none of those fit, the sentence needs rewriting, not punctuating.
+
+**Enumerations are tables, never sentences.** Whenever a section lists what happens for several inputs,
+give one row per input. Prose that walks through cases in sequence is the single most common failure.
+
+Wrong:
+
+> **Clear** null clears. "" is also accepted, at 200, and stored as null — the empty string does not survive
+> the round trip, so there is no "set but blank" state to read back. Omitting the key from a PUT leaves the
+> field alone; it is not a clear.
+
+Right:
+
+> **Clear**
+>
+> | sent | result |
+> |---|---|
+> | `null` | cleared |
+> | `""` | 200, stored as `null` |
+> | key omitted from the PUT | unchanged |
+>
+> There is no "set but blank" state: `""` and `null` read back identically.
+
+The table is the content. A sentence after it earns its place only by saying something no row can.
+
+`probes/check_corpus.py` enforces the banned register mechanically.

@@ -5,3 +5,4 @@ __pycache__/
 .schema-cache/
 *.local.json
 .DS_Store
+corpus.local/
