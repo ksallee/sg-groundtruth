@@ -1,7 +1,7 @@
 ---
 tags: [field-type, entity-field, write, filter, operator, dotted-field, trap]
 scope: api
-verdict: An entity link is a {type,id} hash under relationships, cleared only by null; valid_types binds on two of Version's seven editable entity fields, so the API will point sg_task at a Shot.
+verdict: An entity link is a {type,id} hash under relationships, cleared only by null; valid_types is advisory on most fields and binding on a few, with nothing in the schema telling the two apart.
 ---
 
 # entity
@@ -42,24 +42,32 @@ picker. A dotted path reads back on a single link (unlike multi_entity, probe 01
 `Value is not legal` is the only signal for both a wrong `type` and a missing id, and it has no `source`
 and no `detail`. Every failed write left the previous value intact: no partial update.
 
-Whether `valid_types` binds is per field. Every entity field on Version, each sent a type its own list
-omits:
+Whether `valid_types` binds is per field, and the schema does not mark which. Every entity field on
+Version, each sent a type its own list omits, and every other case the type cards measured:
 
-| field | `valid_types` | sent | result |
-|---|---|---|---|
-| `client_approved_by` | `['HumanUser','ClientUser']` | Shot | 200, reads back as a Shot |
-| `entity` | 15 types | Task | 200, reads back as a Task |
-| `sg_task` | `['Task']` | Shot | 200, reads back as a Shot |
-| `source_clip` | `['SourceClip']` | Shot | 200, reads back as a Shot |
-| `user` | `['HumanUser','ApiUser','Group']` | Shot | 200, reads back as a Shot |
-| `project` | `['Project']` | Shot | 400 `Update failed for [Version.project]: Project expected, got Shot` |
-| `task_template` | `['TaskTemplate']` | Shot | 400 `Update failed for [Version.task_template]: TaskTemplate expected, got Shot` |
-| `created_by`, `updated_by` | `['HumanUser','ApiUser']` | Shot | 400 `API update() Version.created_by is editable on create only.` |
-| `image_source_entity` | 114 types | Task | 400 `API update() Version.image_source_entity is read only.` |
+| field | `valid_types` | sent | result | measured in |
+|---|---|---|---|---|
+| `Version.client_approved_by` | `['HumanUser','ClientUser']` | Shot | 200, reads back as a Shot | here |
+| `Version.entity` | 15 types | Task | 200, reads back as a Task | here |
+| `Version.sg_task` | `['Task']` | Shot | 200, reads back as a Shot | here |
+| `Version.source_clip` | `['SourceClip']` | Shot | 200, reads back as a Shot | here |
+| `Version.user` | `['HumanUser','ApiUser','Group']` | Shot | 200, reads back as a Shot | here |
+| `Shot.sg_sequence` | `['Sequence']` | Shot | 200, reads back as a Shot | `entity_types/Shot` |
+| `Task.entity` | 8 types | Task | 200, reads back as a Task | `entity_types/Task` |
+| `TimeLog.entity` | `['Task']` | Shot, Project | 201 each, stored as sent | `entity_types/TimeLog` |
+| `Note.note_links`, multi_entity | 36 types | Project, HumanUser | 201 each, the link read back | `entity_types/Note` |
+| `Version.project` | `['Project']` | Shot | 400 `Update failed for [Version.project]: Project expected, got Shot` | here |
+| `Version.task_template` | `['TaskTemplate']` | Shot | 400 `Update failed for [Version.task_template]: TaskTemplate expected, got Shot` | here |
+| `Sequence.episode` | `['Episode']` | Sequence | 400 `Update failed for [Sequence.episode]: Episode expected, got Sequence` | `entity_types/Sequence` |
+| `TimeLog.user` | `['HumanUser']` | ApiUser, Project | 400 `Invalid field value, update failed [5 - Update failed for [TimeLog.user]: HumanUser expected, got ApiUser]` | `entity_types/TimeLog` |
+| `Version.created_by`, `updated_by` | `['HumanUser','ApiUser']` | Shot | 400 `API update() Version.created_by is editable on create only.` | here |
+| `Version.image_source_entity` | 114 types | Task | 400 `API update() Version.image_source_entity is read only.` | here |
 
-The two that bind name the expected type and answer `code: 104`; the five that do not are indistinguishable
-in the schema from the two that do. One valid type is not the rule: `sg_task` and `source_clip` list one
-each and took a Shot.
+A field that binds names the expected type, `<Expected> expected, got <Sent>`, at `code: 104` on the two
+Version fields; the last two rows refuse for editability, not for type. Nothing in the schema separates
+the groups: `sg_task`, `source_clip` and `task_template` each declare one valid type and only
+`task_template` refused. One type does both: `TimeLog.entity` took a Project and `TimeLog.user`
+refused one.
 
 **Clear**
 
@@ -109,9 +117,9 @@ Dotted paths work, and every negative control returns 0 rather than the baseline
 | `entity is None` | 0 (all 100 linked here) |
 
 **Traps**
-- `valid_types` is documentation on five of the seven editable fields and a constraint on the other two,
-  with nothing in the schema separating them. Validate against `valid_types` client-side or store
-  nonsense: `sg_task` (`['Task']`) took a Shot at 200 and read it back as a Shot.
+- Validate the type against `valid_types` client-side, on every field. A client cannot predict which
+  field will protect it, and an unenforced write stores nonsense at 200: `sg_task` (`['Task']`) took a
+  Shot and read it back as a Shot.
 - No project-consistency check. Pointing a sandbox Version at a Shot in another project returned 200 and
   read back linked, with nothing in the response flagging it. Compare projects before writing.
 - A wrong `type` for a real id 400s here only because ids come from one site-wide sequence (250 shots
