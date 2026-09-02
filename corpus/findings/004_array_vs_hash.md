@@ -38,6 +38,11 @@ bogus filter field: HTTP 400 {"errors":[{"id":"f1afdea626bdfbd08e283bf75aa5daeb"
 ```
 
 **Teaches**
+- `?fields` can change the value of a field you did ask for, not only drop ones you did not.
+  `?fields=display_type,url` on an Icon returns `url` as `""`; adding `image_data` to the same request
+  returns the real `data:image/png;base64` URI, and omitting `?fields` returns it too. Narrowing a
+  projection is not free, and the wrong answer is a plausible one (`recipes/010`).
+
 
 **Trap.** Where a bogus name appears decides whether you hear about it:
 

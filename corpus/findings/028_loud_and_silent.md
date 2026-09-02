@@ -70,6 +70,7 @@ field-type matrix cheap to build.
 |---|---|---|
 | a name in `?fields` that is not a field, on a read | 200, the key absent from `attributes` (verified) | probe 004, probe 023 |
 | `?fields` on a create or an update | ignored entirely, both verbs, plain names and dotted paths alike | probe 024 |
+| `?fields=display_type,url` on an Icon | 200 with `url` reading `""`, which is indistinguishable from no image; adding `image_data` to the same request returns the real data URI, and omitting `?fields` also returns it | `recipes/010` |
 | a `list` filter value outside `valid_values` | 0 rows, no error; inside `in` the junk member is evaluated and matches nothing, so the rest of the list still returns (verified) | `field_types/list` |
 | `sort` on an unsortable or unknown field | 200 in default order, identical to no sort, ascending and descending alike (verified) | probe 026, `field_types/summary`, `field_types/url` |
 | `["id", "in", [...]]` | 200, id ascending; the order of the list is discarded (verified) | probe 026 |
