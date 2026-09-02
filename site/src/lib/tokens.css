@@ -11,11 +11,12 @@
 	color-scheme: light dark;
 
 	/* --- colour ----------------------------------------------------------
-	   Neutrals sit at zero chroma so the one accent is the only hue on the
-	   page. Two accents exist and mean different things: --accent is a link
-	   or a shipped fact, --accent-local marks content measured on one site.
-	   Meaning never rests on colour alone; the local band is also labelled
-	   and boxed. */
+	   Neutrals sit at zero chroma so the accents are the only hues on the
+	   page. Three accents exist, one per level of truth: --accent is a link
+	   or a shipped fact, --accent-local marks content measured on one site,
+	   --accent-project marks content measured on one project inside it.
+	   Meaning never rests on colour alone; each band is also labelled and
+	   boxed. */
 	--ground: light-dark(oklch(0.985 0 0), oklch(0.17 0 0));
 	--ground-raised: light-dark(oklch(1 0 0), oklch(0.21 0 0));
 	--ground-sunken: light-dark(oklch(0.955 0 0), oklch(0.14 0 0));
@@ -33,6 +34,12 @@
 	   tell a measurement from a rule at a glance. */
 	--accent-local: light-dark(oklch(0.5 0.12 65), oklch(0.8 0.1 70));
 	--accent-local-quiet: light-dark(oklch(0.96 0.03 75), oklch(0.25 0.04 60));
+
+	/* Project-specific content, one level narrower again. A third hue, so the
+	   three levels of truth are three colours. Every band that uses it is also
+	   labelled and boxed, so nothing rests on the hue alone. */
+	--accent-project: light-dark(oklch(0.47 0.11 150), oklch(0.79 0.1 155));
+	--accent-project-quiet: light-dark(oklch(0.95 0.03 155), oklch(0.24 0.04 155));
 
 	/* Code slabs are the darkest surface in both schemes, so quoted API
 	   payloads read as one object at any brightness. */

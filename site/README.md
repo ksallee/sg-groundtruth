@@ -20,13 +20,25 @@ because an unfound corpus otherwise renders as a site that merely looks thin.
 
 Nothing on this site is written here. Every page is generated from markdown in `corpus/`.
 
-| source | committed | filter | renders as |
-|---|---|---|---|
-| `corpus/` | yes | `scope: api` only | the public site |
-| `corpus.local/` | no, gitignored | `scope: site` only | labelled bands, plus `/site` |
+The corpus has three levels of truth, and the probes are what proved they are distinct. Probe 009 is the
+clearest case: `valid_values` is byte-identical at every scope and only `hidden_values` varies by project,
+so "which statuses can I use" has no site-level answer.
 
-`corpus/findings/` and `corpus/findings/field_types/` and `corpus/recipes/` each become a route. Frontmatter
-supplies the one-line verdict and the tags; the body is rendered to HTML at build time.
+| level | true of | source | committed | filter | renders as |
+|---|---|---|---|---|---|
+| `api` | any Flow PT site | `corpus/` | yes | `scope: api` | the public site |
+| `site` | one Flow PT site | `corpus.local/site/` | no, gitignored | `scope: site` | labelled bands, plus `/site` |
+| `project` | one project inside it | `corpus.local/projects/<id>/` | no, gitignored | `scope: project` with a `project:` key | labelled bands, plus `/site` |
+
+`corpus/findings/`, `corpus/findings/field_types/`, `corpus/findings/entity_types/` and `corpus/recipes/`
+each become a route. Frontmatter supplies the one-line verdict and the tags; the body is rendered to HTML at
+build time. A group is declared once, in `GROUPS` in `src/lib/content/sources.js`; adding one there gives the
+overlay the matching directory for free.
+
+Entity-type slugs are schema names, so they keep their capitalisation in the URL and in the heading:
+`/entity-types/PublishedFile`, not a lowercased spelling of it. That is the string the API answers to.
+Nothing in the site hardcodes how many entries a group has or which entries it holds; every count on a page
+is read off the corpus at build time.
 
 Two shipped findings are `scope: site` (`005_link_usage`, `007_fill_rates`). They are measurements of one
 Flow PT installation, so they are excluded from this site and never appear as a public fact. That exclusion
@@ -39,11 +51,19 @@ also covers that site: their custom entities, their status vocabularies, their f
 their own data. Drop markdown into `corpus.local/` at the repository root and rebuild. Nothing has to be
 registered.
 
-    corpus.local/findings/<nnn>_<slug>.md          a measurement of one site
-    corpus.local/findings/field_types/<type>.md    keyed to a data_type name
-    corpus.local/recipes/<nnn>_<slug>.md           a call made against one site
+    corpus.local/site/findings/<nnn>_<slug>.md                a measurement of one site
+    corpus.local/site/findings/field_types/<type>.md          keyed to a data_type name
+    corpus.local/site/findings/entity_types/<Type>.md         keyed to a schema name
+    corpus.local/site/recipes/<nnn>_<slug>.md                 a call made against one site
+    corpus.local/projects/<id>/findings/<nnn>_<slug>.md       a measurement of one project
+    corpus.local/projects/<id>/findings/field_types/<type>.md
+    corpus.local/projects/<id>/findings/entity_types/<Type>.md
+    corpus.local/projects/<id>/recipes/<nnn>_<slug>.md
 
-Required frontmatter, the same shape the shipped corpus uses:
+`<id>` is a directory name of your choosing and is what groups a project's files. The name shown to a reader
+comes from the `project:` key the files carry, so a directory named `p101` can present itself as `Aurora`.
+
+Required frontmatter, the same shape the shipped corpus uses. The scope has to match the directory.
 
     ---
     tags: [version, status]
@@ -53,18 +73,32 @@ Required frontmatter, the same shape the shipped corpus uses:
 
     # <heading>
 
+A project file carries one key more, naming which project it was measured on. `probes/check_corpus.py`
+enforces it, and this site skips a file that omits it.
+
+    ---
+    tags: [version, status]
+    scope: project
+    project: <the project it was measured on>
+    verdict: One line. What a reader of this site should do.
+    ---
+
+    # <heading>
+
 How a file is picked up:
 
 | file | renders |
 |---|---|
-| slug matches a shipped entry | on that entry's page, in a labelled band below the shipped card |
-| slug matches nothing shipped | in full on `/site`, under an anchor |
-| `scope` is not `site` | skipped, with a warning on the build log |
+| slug matches a shipped entry | on that entry's page, in a labelled band beside the shipped card |
+| slug matches nothing shipped | in full on `/site`, under its level, at an anchor |
+| `scope` does not match the directory | skipped, with a warning on the build log |
+| `scope: project` with no `project:` key | skipped, with a warning on the build log |
+| a project directory with no readable file | not offered as a reading level |
 | directory absent or empty | nothing changes; the public build is this case |
 
-An absent overlay is the normal case and is a first-class one: no dead links, no empty sections, and the
-`This site` nav entry is not rendered at all. `/site` still exists in that state and explains the contract,
-so someone who cloned the repo lands on instructions rather than a blank page.
+An absent overlay is the normal case and is a first-class one: no dead links, no empty sections, no reading
+level switch, and the `This site` nav entry is not rendered at all. `/site` still exists in that state and
+explains the contract, so someone who cloned the repo lands on instructions rather than a blank page.
 
 `corpus.local/` is gitignored, so it is never committed and therefore can never reach a public deployment.
 That is the whole enforcement mechanism; there is no runtime check.
@@ -72,9 +106,41 @@ That is the whole enforcement mechanism; there is no runtime check.
 The generator that populates the overlay lives in `probes/` and is deliberately not part of this site. The
 site consumes the contract above and does not care what wrote the files.
 
+### The reading level
+
+One global choice, set once in the header and applied to every page. It is additive rather than a filter:
+the API content is on the page at every level, and local material renders beside it inside a band that names
+where it was read from.
+
+| level | on the page |
+|---|---|
+| API | the shipped corpus; the default, and the only level a public build has |
+| Site | that, plus what one Flow PT site configures |
+| Project | both of those, plus one project, chosen from the projects the overlay holds |
+
+Stored in `localStorage` under `sg-groundtruth.reading-level`, as `api`, `site` or `project:<id>`. Every read
+and write is wrapped in try/catch, so a browser that throws or holds nothing renders at `api`. A remembered
+level this build cannot show, a project that has since been removed, falls back to `api` rather than leaving
+the switch pointing at nothing. The value is read once per page load; after that the switch on screen is the
+truth, so a failed write cannot revert a choice on the next navigation.
+
+The switch only offers the levels the overlay can show. With site content but no projects there is
+no project control; with projects but no site content there is no `Site` step; with no overlay the switch is
+not rendered at all. There is no disabled state and no level that yields nothing.
+
+Every page is prerendered at the `api` level, so local material appears on hydration. Nothing that is hidden
+at the current level is ever removed from the page's data: the overlay is local by construction, and the
+data it puts in a page is the same data a public build does not have.
+
 ## Which files are design surface
 
 Touch these first.
+
+Start with `src/lib/tokens.css`: every colour, length and face on the site is one line in it, so the whole
+look changes from that file alone. Then the two pages that carry the most structure and the least prose,
+`src/routes/+page.svelte` (the landing page, now a short stack of `Section` bands) and
+`src/routes/filters/+page.svelte` (a generated table, the densest page on the site). `Prose.svelte` is third:
+it styles every rendered corpus body, so a change there lands on every entry page at once.
 
 | file | what it decides |
 |---|---|
@@ -94,9 +160,14 @@ The components:
 | `SiteHeader` / `SiteFooter` | the shell |
 | `Section` | one band of a page: mono label, headline, lede, slot |
 | `EntryList` | the corpus index as a list of name, verdict, tags |
-| `EntryDetail` | one entry in full, plus its local overlay if there is one |
+| `EntryDetail` | one entry in full, plus whatever the overlay measured about the same subject |
 | `Prose` | rendered corpus markdown, and all the table and code-slab styling |
 | `LocalBand` | wraps anything that came from the overlay, so it can never be read as an API fact |
+| `ReadingLevel` | the global level switch; rendered only when the build read an overlay |
+
+Three accents, one per level: `--accent` for a shipped fact or a link, `--accent-local` for one site,
+`--accent-project` for one project. Nothing rests on the hue alone. Every band is also labelled with where
+it was read from, and every flag in a list carries its own text.
 
 ## Which files are content plumbing
 
@@ -104,23 +175,69 @@ Leave these alone unless the pipeline itself is the problem.
 
 | file | what it does |
 |---|---|
-| `src/lib/content/sources.js` | the seam: the two content roots and the scope rules |
+| `src/lib/content/sources.js` | the seam: the three content roots and the scope rules |
 | `src/lib/content/corpus.js` | reads, parses frontmatter, renders markdown, merges the overlay |
-| `src/lib/site.js` | repo URL, and which field type is sampled on the landing page |
+| `src/lib/reading.svelte.js` | the reading level: what is stored, what is restored, what is shown |
+| `src/lib/site.js` | repo URL and overlay directory name |
+| `src/lib/content/filters.js` | the operator vocabulary read out of each field-type card, and the families it groups them into |
 | `svelte.config.js`, `vite.config.js`, `vercel.json` | build and deploy |
 
 ## Routes
 
+Four groups are the systematic reference: field types, entity types, filters and recipes. Each covers its
+subject completely and is addressed by name. Findings are separate, because they are chronological and
+question-shaped and some correct an earlier one, which is worth keeping legible rather than folding in.
+
 | route | on it |
 |---|---|
-| `/` | what it does, what it is for, how it works, enabling it for your site, cited examples, the field-type index, one card in full, findings, recipes |
+| `/` | five facts about what it does, what it is for, how it works, enabling it for your site, the reference links, then the cited examples |
 | `/field-types` | every data type with verdicts and tags |
 | `/field-types/[slug]` | one reference card in full |
-| `/findings` | the numbered corpus, plus recipes |
-| `/findings/[slug]` | one finding in full |
+| `/entity-types` | every entity type with verdicts and tags |
+| `/entity-types/[slug]` | one entity-type card in full |
+| `/filters` | every filter operator the API accepts, per data type, generated from the field-type cards |
+| `/recipes` | every recipe |
 | `/recipes/[slug]` | one recipe in full |
-| `/use` | pointing a model at it, running the probes, the scope field, the overlay contract |
-| `/site` | local measurements, or the overlay contract when there is no overlay |
+| `/findings` | the numbered corpus |
+| `/findings/[slug]` | one finding in full |
+| `/use` | pointing a model at it, running the probes, the scope field, the overlay contract, the reading level, using it alongside an MCP server |
+| `/site` | everything the overlay holds at every level, or the overlay contract when there is no overlay |
+
+Navigation carries four entries: Field types, Entity types, Findings, How to use it. `/filters` and
+`/recipes` are reached from the reference list on `/` and from the page they belong to. `/site` is added to
+the navigation only when the build read an overlay.
+
+An entity-type card sets its own sections (`**Type**`, `**Identity**`, `**Create**`, `**Links**`,
+`**Status**`, `**Traps**`) and they are not the field-type ones. `EntryDetail` renders whatever the markdown
+holds and assumes no section, which is why the two groups share it.
+
+### Where the Filters table comes from
+
+`/filters` is generated at build time from the field-type cards, so it cannot drift from them.
+`src/lib/content/filters.js` reads each card's markdown and pulls out the operator vocabulary the API
+returns for that data type. The corpus is never edited to make that easier; other agents own those files.
+
+A card states its vocabulary in one of three shapes, because it quotes the API's own 400 in whichever form
+the probe printed it:
+
+| in the card | example | types today |
+|---|---|---|
+| the pretty-printed error | `Valid relations: ["is", "is_not"]` | most of them |
+| the raw JSON body, quotes still escaped | `Valid relations: [\"is\", \"is_not\"]` | `date_time`, `jsonb`, `uuid` |
+| no list, and a 400 that reads `... data type cannot be used in a filter` | | `calculated`, `password`, `serializable`, `summary`, `url` |
+
+A list may also wrap across lines inside a fence, so the match runs over the whole file rather than line by
+line. Both quote forms are read by one token pattern, so the second shape needs no special case beyond
+allowing the backslash.
+
+A card that matches none of the three throws, and the build stops with the file named. The same happens when
+a card quotes two `Valid relations` lists that disagree. An unparseable card must never become a blank row:
+a reader cannot tell an empty cell from "this type accepts no operator", and the second is a real answer the
+table publishes for five types.
+
+Rows are grouped into families by the vocabulary itself rather than by a list of type names, so a data type
+added to the corpus lands in the right family with no edit. A family whose members all return the identical
+list says so, with the count read off the data.
 
 ## Deployment
 
@@ -160,8 +277,25 @@ person watching the site. `marked` renders a string to a string and cannot be br
   `**Filter**`, `**Traps**` open a paragraph. They cannot be styled as real section heads without either
   editing the corpus to use `###` or pattern-matching bold-leading paragraphs. Left as plain bold. Noted in
   `Prose.svelte`.
-- **The three counts in the hero.** Honest and they answer "how big is this", but a row of numbers is the
-  most conventional gesture on the page. Cut them if they read as marketing.
+- **The landing page carries the cited examples below the reference links.** They are evidence for a reader
+  who has already decided, rather than an opener, and could become a page of their own if the landing page
+  needs to be shorter still. The MCP integrations moved to `/use`, under `#mcp`: they answer a question a
+  reader already has rather than one they arrive with. `integrations` in `src/routes/use/+page.svelte` is
+  still structure only, and the section renders nothing when the array is empty.
+- **The five facts sit under "What it does", not under "How it works".** Four of the five state what the
+  thing does rather than how it was built, and the privacy fact leads because it is stated nowhere else.
+  "How it works" keeps one sentence and restates none of them.
+- **`PERMISSIONS_CAVEAT` in `src/routes/+page.svelte` is an empty slot.** Every finding was measured by a
+  script user with broad access, and what the API shows differs by permission level even though the API does
+  not. `corpus/findings/027_auth_permissions.md` is being probed; when it lands, write one line into that
+  constant from what it says and link it. It renders nothing until then rather than guessing.
+- **`/filters` is flat, not `/reference/filters`.** Every other reference route is one segment and no page
+  renders a `/reference` index, so a segment that never resolves on its own would be the only nesting on the
+  site. The grouping is stated on the landing page instead.
+- **The landing page no longer renders the overlay band or a sample card in full.** A local build sees its
+  overlay on the entry pages and on `/site`, not on `/`.
+- **Family notes on `/filters` are written here, not read from the corpus.** The rows, the operators, the
+  counts and the grouping are all derived; the one-line note under each family heading is site copy.
 - **No search and no tag index.** Tags render but do not link. At 39 entries browsing works; past a hundred
   it will not.
 - **No `llms.txt` and no per-page raw markdown link.** Every page is prerendered static HTML and each entry
@@ -169,3 +303,8 @@ person watching the site. `marked` renders a string to a string and cannot be br
 - **Typography is system faces.** `--font-text` and `--font-mono` are one line each in `tokens.css`.
 - **`/site` is `noindex` but not otherwise protected.** It is harmless in a public build, where it holds
   only the contract.
+- **`/site` ignores the reading level.** It inventories the whole overlay so a reader can see what is
+  available before choosing a level. Every other page answers at the level in force.
+- **The level switch is not in the URL.** A link to a page carries no level with it, so a reader following
+  one sees whatever they last chose. A query parameter would make a level shareable and would also make a
+  local measurement linkable, which is the opposite of what the overlay is for.

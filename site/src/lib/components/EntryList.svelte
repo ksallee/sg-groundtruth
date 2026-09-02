@@ -1,23 +1,29 @@
 <script>
+	import { visible } from '$lib/reading.svelte.js';
+
 	// The corpus index, as a list. One row is a name, its one-line verdict and
 	// its tags. Used on the landing page and on every index route.
-	let { entries = [], tone = 'api', showTags = true } = $props();
+	//
+	// A row is coloured by the level it came from, and flagged with whatever the
+	// overlay adds to it at the reading level in force. In a public build every
+	// row is `api` and no flag is drawn.
+	let { entries = [], showTags = true } = $props();
 </script>
 
-<ul class="list" class:local={tone === 'site'}>
-	{#each entries as entry (entry.group + entry.slug)}
-		<li>
+<ul class="list">
+	{#each entries as entry (entry.level + entry.project + entry.group + entry.slug)}
+		<li data-level={entry.level}>
 			<article>
 				<h3>
 					<a href={entry.href}>
 						{#if entry.number}<span class="num">{entry.number}</span>{/if}
 						<span class="name">{entry.name}</span>
 					</a>
-					{#if entry.hasLocal}
-						<span class="flag" title="This entry also has a measurement of your site"
-							>+ this site</span
-						>
-					{/if}
+					{#each visible(entry.locals ?? []) as local (local.level + local.project)}
+						<span class="flag" data-level={local.level}>
+							+ {local.level === 'project' ? local.projectLabel : 'this site'}
+						</span>
+					{/each}
 				</h3>
 				<p class="verdict">{entry.verdict}</p>
 				{#if showTags && entry.tags.length}
@@ -96,6 +102,11 @@
 		padding: 0 var(--space-2);
 	}
 
+	.flag[data-level='project'] {
+		color: var(--accent-project);
+		background: var(--accent-project-quiet);
+	}
+
 	.verdict {
 		color: var(--ink-muted);
 	}
@@ -116,7 +127,11 @@
 		opacity: 0.5;
 	}
 
-	.list.local h3 a {
+	.list > li[data-level='site'] h3 a {
 		color: var(--accent-local);
+	}
+
+	.list > li[data-level='project'] h3 a {
+		color: var(--accent-project);
 	}
 </style>

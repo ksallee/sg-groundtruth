@@ -1,9 +1,9 @@
-import { index, entry } from '$lib/content/corpus.js';
-import { SAMPLE_FIELD_TYPE } from '$lib/site.js';
+import { index } from '$lib/content/corpus.js';
 
-// The four examples on the landing page. Each states a behaviour and cites the
-// entry that measured it. Slugs are resolved against the corpus at build time,
-// so an example whose entry has been renamed drops out instead of dead-linking.
+// The cited examples at the foot of the landing page. Each states a behaviour
+// and cites the entry that measured it. Slugs are resolved against the corpus at
+// build time, so an example whose entry has been renamed drops out instead of
+// dead-linking.
 const EXAMPLES = [
 	{
 		group: 'findings',
@@ -38,7 +38,10 @@ const EXAMPLES = [
 export function load() {
 	const data = index();
 	const bySlug = new Map(
-		[...data.findings, ...data.fieldTypes, ...data.recipes].map((e) => [e.group + '/' + e.slug, e])
+		[...data.findings, ...data.fieldTypes, ...data.entityTypes, ...data.recipes].map((e) => [
+			e.group + '/' + e.slug,
+			e
+		])
 	);
 
 	const examples = EXAMPLES.map((ex) => {
@@ -46,13 +49,5 @@ export function load() {
 		return found ? { ...ex, href: found.href, cite: found.name } : null;
 	}).filter(Boolean);
 
-	return {
-		findings: data.findings,
-		fieldTypes: data.fieldTypes,
-		recipes: data.recipes,
-		localOnly: data.localOnly,
-		counts: data.counts,
-		examples,
-		sample: entry('field_types', SAMPLE_FIELD_TYPE)
-	};
+	return { counts: data.counts, examples };
 }

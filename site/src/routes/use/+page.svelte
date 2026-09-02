@@ -2,6 +2,34 @@
 	import { REPO } from '$lib/site.js';
 
 	let { data } = $props();
+
+	// Third-party integrations. Rendered only when this array has entries; empty
+	// is the shipped state. Fill it from site/RESEARCH-mcp.md when that research
+	// lands: one object per project, { name, href, note }. Nothing goes in here
+	// that is not a project someone can open.
+	// Verified against each repository's default-branch HEAD; see site/RESEARCH-mcp.md
+	// for commit anchors. Say what this corpus adds, never what another project
+	// gets wrong: the specifics belong in an issue on their tracker, not here.
+	//
+	// On this page rather than the landing page: an MCP server is a question a
+	// reader already has, not one they arrive with.
+	const integrations = [
+		{
+			name: 'fpt-mcp',
+			href: 'https://github.com/abrahamADSK/fpt-mcp',
+			note: 'A Python MCP server that bundles its own REST reference to ground model output. Read alongside it, this corpus adds the operator vocabulary the API returns per data type, and the condition that ends a paged read.'
+		},
+		{
+			name: 'ShotgunMcpGo',
+			href: 'https://github.com/rfletchr/ShotgunMcpGo',
+			note: 'A Go MCP server over the REST API, with per-data_type operator and value tables. The matrix here covers the same ground measured against a live site, including the color type and the read shapes for float and status_list.'
+		},
+		{
+			name: 'shotgrid-mcp-server',
+			href: 'https://github.com/loonghao/shotgrid-mcp-server',
+			note: 'A Python MCP server on PyPI, wrapping shotgun_api3. Its status resource exposes a field\'s valid values; field_types/status_list records that a project\'s usable set is those minus hidden_values, which the server does not subtract for you.'
+		}
+	];
 </script>
 
 <svelte:head>
@@ -54,8 +82,8 @@ python probes/017_filter_operators.py</pre>
 	<section id="scope">
 		<h2>Read the scope field</h2>
 		<p>
-			Every corpus file declares a <code>scope</code> in its frontmatter. It is the difference between
-			a fact about the API and a fact about one installation of it.
+			Every corpus file declares a <code>scope</code> in its frontmatter. There are three levels, and
+			the probes are what proved they are distinct.
 		</p>
 		<div class="scroll-x">
 			<table>
@@ -75,13 +103,25 @@ python probes/017_filter_operators.py</pre>
 					</tr>
 					<tr>
 						<td><code>site</code></td>
-						<td>A measurement of one site: which custom entities are enabled, which statuses a
-							project hides, which fields are populated and how often.</td>
+						<td>True of one Flow PT site: which custom entities are enabled, which custom fields
+							exist, a field's <code>valid_values</code>, what <code>/preferences</code> returns.</td>
 						<td>No. It does not generalise, so it is not stated as fact on a public page.</td>
+					</tr>
+					<tr>
+						<td><code>project</code></td>
+						<td>True of one project inside one site: <code>hidden_values</code>, page settings and
+							visible columns, fill rates. The file also carries a <code>project:</code> key naming
+							which project it was measured on.</td>
+						<td>No. Not even another project on the same site can be assumed to match.</td>
 					</tr>
 				</tbody>
 			</table>
 		</div>
+		<p>
+			Probe 009 is why the last two are not one level. A status field's <code>valid_values</code> is
+			byte-identical at every scope, and only <code>hidden_values</code> varies by project. "Which
+			statuses can I use" has no site-level answer.
+		</p>
 		<p>
 			A reader forking this repository has to be able to tell, sentence by sentence, what transfers to
 			their site and what they have to measure again. That is what the field is for. Findings marked
@@ -92,12 +132,11 @@ python probes/017_filter_operators.py</pre>
 	<section id="overlay">
 		<h2>Build a local copy that covers your own site</h2>
 		<p>
-			This site builds from two content sources. The first is <code>corpus/</code>, committed and
-			public, filtered to <code>scope: api</code>. The second is
-			<code>{data.overlayDir}/</code>, a gitignored directory generated against your own Flow PT site.
-			When it is present, its entries render alongside the shipped ones, inside a labelled band, and
-			the navigation gains a
-			<a href="/site">This site</a> section.
+			This site builds from three content sources, one per level. The first is
+			<code>corpus/</code>, committed and public, filtered to <code>scope: api</code>. The other two
+			are directories under <code>{data.overlayDir}/</code>, gitignored and generated against your own
+			Flow PT site. When either is present the navigation gains a <a href="/site">This site</a>
+			section, and the header gains a switch that sets which level every page answers at.
 		</p>
 		<p>
 			The overlay is never committed and so never reaches a public deployment. Building it is how you
@@ -107,13 +146,22 @@ python probes/017_filter_operators.py</pre>
 
 		<h3>The contract</h3>
 		<p>Drop a markdown file in the matching directory. Nothing has to be registered.</p>
-		<pre>{data.overlayDir}/findings/&lt;nnn&gt;_&lt;slug&gt;.md          a measurement of one site
-{data.overlayDir}/findings/field_types/&lt;type&gt;.md    keyed to a data_type name
-{data.overlayDir}/recipes/&lt;nnn&gt;_&lt;slug&gt;.md           a call made against one site</pre>
-		<p>Frontmatter is the same shape the shipped corpus uses, with one difference.</p>
+		<pre>{data.overlayDir}/site/findings/&lt;nnn&gt;_&lt;slug&gt;.md               one Flow PT site
+{data.overlayDir}/site/findings/field_types/&lt;type&gt;.md
+{data.overlayDir}/site/findings/entity_types/&lt;Type&gt;.md
+{data.overlayDir}/site/recipes/&lt;nnn&gt;_&lt;slug&gt;.md
+{data.overlayDir}/projects/&lt;id&gt;/findings/&lt;nnn&gt;_&lt;slug&gt;.md       one project inside it
+{data.overlayDir}/projects/&lt;id&gt;/findings/field_types/&lt;type&gt;.md
+{data.overlayDir}/projects/&lt;id&gt;/findings/entity_types/&lt;Type&gt;.md
+{data.overlayDir}/projects/&lt;id&gt;/recipes/&lt;nnn&gt;_&lt;slug&gt;.md</pre>
+		<p>
+			Frontmatter is the same shape the shipped corpus uses. The scope has to match the directory, and
+			a project file names its project.
+		</p>
 		<pre>---
 tags: [version, status]
-scope: site
+scope: project
+project: &lt;the project this was measured on&gt;
 verdict: One line. What a reader of this site should do.
 ---
 
@@ -129,16 +177,20 @@ verdict: One line. What a reader of this site should do.
 				<tbody>
 					<tr>
 						<td>slug matches a shipped entry</td>
-						<td>On that entry's page, under a labelled band below the shipped card.</td>
+						<td>On that entry's page, in a labelled band beside the shipped card.</td>
 					</tr>
 					<tr>
 						<td>slug matches nothing shipped</td>
-						<td>On <code>/site</code>, as a local-only entry.</td>
+						<td>On <code>/site</code>, under its level.</td>
 					</tr>
 					<tr>
-						<td><code>scope</code> is not <code>site</code></td>
+						<td><code>scope</code> does not match the directory</td>
 						<td>Skipped, with a warning on the build log. An overlay file can never be published
 							as a general fact.</td>
+					</tr>
+					<tr>
+						<td><code>scope: project</code> with no <code>project:</code> key</td>
+						<td>Skipped, with a warning on the build log.</td>
 					</tr>
 					<tr>
 						<td>directory absent or empty</td>
@@ -152,6 +204,65 @@ verdict: One line. What a reader of this site should do.
 			site. The site consumes the contract above and does not care what wrote the files.
 		</p>
 	</section>
+
+	<section id="level">
+		<h2>Set the reading level once</h2>
+		<p>
+			The switch in the header is global. It is chosen once, applied to every page, and remembered
+			across navigation and reloads in <code>localStorage</code>. Each level adds to the one before
+			it, so the API content is on the page whatever is selected.
+		</p>
+		<div class="scroll-x">
+			<table>
+				<thead>
+					<tr>
+						<th>level</th>
+						<th>on the page</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>API</td>
+						<td>The shipped corpus. The default, and the only level a public build has.</td>
+					</tr>
+					<tr>
+						<td>Site</td>
+						<td>The shipped corpus, and what one Flow PT site configures.</td>
+					</tr>
+					<tr>
+						<td>Project</td>
+						<td>Both of those, and one project inside that site, chosen from the projects the
+							overlay holds.</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		<p>
+			Local material is always inside a labelled band that names where it was read from, so a
+			measurement is never presented as API behaviour. With no overlay the switch is not drawn.
+		</p>
+	</section>
+
+	<!-- Structure only: the copy is a content edit that fills `integrations` in
+	     the script above, from site/RESEARCH-mcp.md. Renders nothing when the
+	     list is empty. -->
+	{#if integrations.length}
+		<section id="mcp">
+			<h2>Using this alongside an MCP server</h2>
+			<p>
+				Each of these is MIT licensed and maintained. The corpus is markdown, so an agent can read it
+				alongside any of them with no change to either project.
+			</p>
+			<ul class="integrations">
+				{#each integrations as it (it.href)}
+					<li>
+						<h3><a href={it.href}>{it.name}</a></h3>
+						<p>{it.note}</p>
+					</li>
+				{/each}
+			</ul>
+		</section>
+	{/if}
 </div>
 
 <style>
@@ -241,5 +352,29 @@ verdict: One line. What a reader of this site should do.
 		font-size: var(--text-sm);
 		border-left: 3px solid var(--rule-strong);
 		padding-left: var(--space-4);
+	}
+
+	.integrations {
+		list-style: none;
+		padding: 0;
+		display: grid;
+		gap: var(--space-5);
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+	}
+
+	.integrations li {
+		display: grid;
+		gap: var(--space-2);
+		align-content: start;
+		border-top: 2px solid var(--rule-strong);
+		padding-top: var(--space-3);
+	}
+
+	.integrations h3 {
+		margin-top: 0;
+	}
+
+	.integrations p {
+		font-size: var(--text-sm);
 	}
 </style>

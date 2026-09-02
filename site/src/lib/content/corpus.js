@@ -11,12 +11,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { marked } from 'marked';
-import { SHIPPED, OVERLAY, GROUPS } from './sources.js';
+import { SHIPPED, SITE, GROUPS, projectSources } from './sources.js';
+import { filterMatrix } from './filters.js';
 
 // --- frontmatter -----------------------------------------------------------
 // The corpus writes a fixed, flat block: `tags: [a, b]`, `scope:`, `verdict:`,
-// `intent:`. One key per line, values never wrap. A full YAML parser would be a
-// dependency for three keys.
+// `intent:`, `project:`. One key per line, values never wrap. A full YAML parser
+// would be a dependency for five keys.
 
 function parseFrontmatter(raw) {
 	const m = /^---\n([\s\S]*?)\n---\n?/.exec(raw);
@@ -78,7 +79,9 @@ function readGroup(source, group) {
 			return {
 				slug,
 				group: group.id,
-				origin: source.id,
+				level: source.level,
+				project: source.project,
+				projectName: meta.project ?? '',
 				scope: meta.scope ?? '',
 				// `verdict` on a finding, `intent` on a recipe. One line either way.
 				verdict: meta.verdict ?? meta.intent ?? '',
@@ -89,22 +92,34 @@ function readGroup(source, group) {
 				fullName: [numberOf(slug), displayName(slug, group.id)].filter(Boolean).join(' '),
 				number: numberOf(slug),
 				href: `${group.base}/${slug}`,
-				html: render(body)
+				html: render(body),
+				// The markdown as written. /filters reads the operator vocabulary
+				// back out of it. Stripped before anything reaches a page, so it
+				// never doubles a payload.
+				raw: body
 			};
 		})
 		.filter((entry) => {
 			// The scope filter is the whole public/local boundary. A shipped entry
 			// that measures one site (005, 007) is not published; an overlay entry
-			// that forgot `scope: site` is not silently treated as general.
-			if (entry.scope === source.scope) return true;
-			if (source.id === OVERLAY.id) {
-				console.warn(
-					`[corpus] skipped ${source.root}/${group.dir}/${entry.slug}.md: ` +
-						`overlay files need \`scope: site\`, found \`${entry.scope || 'nothing'}\``
-				);
+			// that forgot its scope is not silently treated as general.
+			if (entry.scope !== source.scope) {
+				warn(source, group, entry.slug, `needs \`scope: ${source.scope}\`, found \`${entry.scope || 'nothing'}\``);
+				return false;
 			}
-			return false;
+			// The same key `probes/check_corpus.py` requires, for the same reason:
+			// a project measurement that does not name its project cannot be read.
+			if (source.level === 'project' && !entry.projectName) {
+				warn(source, group, entry.slug, 'needs a `project:` key naming which project it was measured on');
+				return false;
+			}
+			return true;
 		});
+}
+
+function warn(source, group, slug, reason) {
+	if (source.id === SHIPPED.id) return;
+	console.warn(`[corpus] skipped ${source.root}/${group.dir}/${slug}.md: ${reason}`);
 }
 
 function numberOf(slug) {
@@ -112,11 +127,17 @@ function numberOf(slug) {
 	return m ? m[1] : null;
 }
 
-// `003_query` reads as `query` next to its own number. `multi_entity` is the
-// API's own `data_type` literal and is left exactly as the API spells it.
+// `003_query` reads as `query` next to its own number. `multi_entity` and
+// `PublishedFile` are the API's own literals, a `data_type` and a schema name,
+// and are left exactly as the API spells them. Case included: the entity-type
+// slug is the string the API answers to, so it is not lowercased for the URL.
 function displayName(slug, groupId) {
-	if (groupId === 'field_types') return slug;
+	if (groupId === 'field_types' || groupId === 'entity_types') return slug;
 	return slug.replace(/^\d+_/, '').replace(/_/g, ' ');
+}
+
+function anchorSafe(s) {
+	return s.replace(/[^A-Za-z0-9_-]+/g, '-');
 }
 
 // --- the public API used by routes ------------------------------------------
@@ -124,43 +145,67 @@ function displayName(slug, groupId) {
 let cache = null;
 
 function build() {
+	const sources = [SITE, ...projectSources()];
+
 	const shipped = {};
 	const overlay = {};
 	for (const group of GROUPS) {
 		shipped[group.id] = readGroup(SHIPPED, group);
-		overlay[group.id] = readGroup(OVERLAY, group);
+		overlay[group.id] = sources.flatMap((source) => readGroup(source, group));
 	}
 
+	const local = GROUPS.flatMap((g) => overlay[g.id]);
+
+	// A project with no readable file is not offered as a reading level, because
+	// selecting it would show the reader nothing.
+	const projects = projectSources()
+		.map((source) => {
+			const mine = local.filter((e) => e.project === source.project);
+			return {
+				id: source.project,
+				label: mine.find((e) => e.projectName)?.projectName || source.project,
+				count: mine.length
+			};
+		})
+		.filter((p) => p.count > 0);
+
+	// One label per project, so every band and flag names it the same way.
+	const labels = new Map(projects.map((p) => [p.id, p.label]));
+	for (const entry of local) entry.projectLabel = labels.get(entry.project) ?? '';
+
 	// Attach each overlay entry to its shipped counterpart by slug. What is left
-	// over has no counterpart and is rendered in full on /site, so the overlay
-	// never needs a route of its own.
+	// over has no counterpart and renders in full on /site, so the overlay never
+	// needs a route of its own.
 	const localOnly = [];
 	for (const group of GROUPS) {
 		const bySlug = new Map(shipped[group.id].map((e) => [e.slug, e]));
-		for (const local of overlay[group.id]) {
-			const target = bySlug.get(local.slug);
+		for (const entry of overlay[group.id]) {
+			const target = bySlug.get(entry.slug);
 			if (target) {
-				target.local = local;
+				(target.locals ??= []).push(entry);
 			} else {
-				local.anchor = `${local.group}-${local.slug}`;
-				local.href = `/site#${local.anchor}`;
-				localOnly.push(local);
+				entry.anchor = anchorSafe(`${entry.level}-${entry.project ?? ''}-${entry.group}-${entry.slug}`);
+				entry.href = `/site#${entry.anchor}`;
+				localOnly.push(entry);
 			}
 		}
 	}
 
-	const overlayCount = GROUPS.reduce((n, g) => n + overlay[g.id].length, 0);
+	const hasSite = local.some((e) => e.level === 'site');
 
 	cache = {
 		shipped,
 		localOnly,
+		hasSite,
+		projects,
 		// Every conditional in the routes reads this one flag.
-		hasOverlay: overlayCount > 0,
+		hasOverlay: hasSite || projects.length > 0,
 		counts: {
 			findings: shipped.findings.length,
 			fieldTypes: shipped.field_types.length,
+			entityTypes: shipped.entity_types.length,
 			recipes: shipped.recipes.length,
-			overlay: overlayCount
+			overlay: local.length
 		}
 	};
 	return cache;
@@ -173,11 +218,17 @@ function all() {
 	return build();
 }
 
+// What a reading level needs to decide whether a local entry is shown. The
+// bodies stay behind, so an index costs nothing to draw.
+function stub(entry) {
+	return { level: entry.level, project: entry.project, projectLabel: entry.projectLabel };
+}
+
 // A list entry is everything except the rendered body, which is the expensive
 // part and is not needed to draw an index.
 function summary(entry) {
-	const { html, local, ...rest } = entry;
-	return { ...rest, hasLocal: Boolean(local) };
+	const { html, raw, locals, ...rest } = entry;
+	return { ...rest, locals: (locals ?? []).map(stub) };
 }
 
 export function index() {
@@ -185,8 +236,11 @@ export function index() {
 	return {
 		findings: data.shipped.findings.map(summary),
 		fieldTypes: data.shipped.field_types.map(summary),
+		entityTypes: data.shipped.entity_types.map(summary),
 		recipes: data.shipped.recipes.map(summary),
 		localOnly: data.localOnly.map(summary),
+		hasSite: data.hasSite,
+		projects: data.projects,
 		hasOverlay: data.hasOverlay,
 		counts: data.counts
 	};
@@ -195,13 +249,20 @@ export function index() {
 export function entry(groupId, slug) {
 	const found = all().shipped[groupId]?.find((e) => e.slug === slug);
 	if (!found) return null;
-	return { ...found, hasLocal: Boolean(found.local) };
+	const { raw, ...rest } = found;
+	return { ...rest, locals: found.locals ?? [] };
+}
+
+// The filter matrix, built from the field-type cards. Throws, with the file
+// named, if a card records no operator vocabulary: see src/lib/content/filters.js.
+export function filterIndex() {
+	return filterMatrix(all().shipped.field_types);
 }
 
 // Overlay entries with no shipped counterpart, bodies included. They render in
 // full on /site rather than getting a route each.
 export function localEntries() {
-	return all().localOnly;
+	return all().localOnly.map(({ raw, ...rest }) => rest);
 }
 
 export function slugs(groupId) {

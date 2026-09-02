@@ -2,12 +2,17 @@
 	import '../app.css';
 	import SiteHeader from '$lib/components/SiteHeader.svelte';
 	import SiteFooter from '$lib/components/SiteFooter.svelte';
+	import { restore } from '$lib/reading.svelte.js';
 
 	let { data, children } = $props();
+
+	// Browser only, so the prerendered HTML is always the API level and a build
+	// with no overlay has nothing to restore.
+	$effect(() => restore(data));
 </script>
 
 <a class="skip" href="#main">Skip to content</a>
-<SiteHeader hasOverlay={data.hasOverlay} />
+<SiteHeader hasOverlay={data.hasOverlay} hasSite={data.hasSite} projects={data.projects} />
 <main id="main">
 	{@render children?.()}
 </main>

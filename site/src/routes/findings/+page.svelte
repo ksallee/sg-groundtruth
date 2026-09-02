@@ -19,9 +19,15 @@
 			One finding answers one question and ends in a single actionable sentence. Each names the probe
 			that produced it and quotes the status code and error string verbatim.
 		</p>
+		<p class="lede">
+			Findings are chronological and question-shaped, and some correct an earlier one. The reference
+			is elsewhere: <a href="/field-types">field types</a>, <a href="/entity-types">entity types</a>,
+			<a href="/filters">filters</a> and <a href="/recipes">recipes</a> are complete and addressed by
+			name.
+		</p>
 		<p class="scope">
 			Only findings marked <code>scope: api</code> are published here. A finding that measures one
-			site's configuration stays in the repository and is excluded from this build.
+			site, or one project inside it, stays in the repository and is excluded from this build.
 			<a href="/use">Why that distinction exists</a>.
 		</p>
 	</header>
@@ -29,11 +35,10 @@
 	<EntryList entries={data.findings} />
 
 	{#if data.recipes.length}
-		<section>
-			<h2>Recipes</h2>
-			<p class="lede">A verified call and its real response.</p>
-			<EntryList entries={data.recipes} />
-		</section>
+		<p class="onward">
+			A finding answers a question. <a href="/recipes">A recipe</a> is a call that ran, with the
+			response it returned.
+		</p>
 	{/if}
 </div>
 
@@ -56,15 +61,9 @@
 		font-size: var(--text-xl);
 	}
 
-	h2 {
-		font-size: var(--text-lg);
-		margin-bottom: var(--space-2);
-	}
-
-	section {
-		display: grid;
-		gap: var(--space-3);
-		margin-top: var(--space-5);
+	.onward {
+		color: var(--ink-muted);
+		max-width: var(--measure);
 	}
 
 	.lede {

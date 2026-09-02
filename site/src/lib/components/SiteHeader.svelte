@@ -1,9 +1,11 @@
 <script>
 	import { NAME } from '$lib/site.js';
+	import ReadingLevel from './ReadingLevel.svelte';
 
-	// `hasOverlay` comes from the layout load. The /site link exists only when
-	// a local overlay was found at build time, so the nav never has a dead entry.
-	let { hasOverlay = false } = $props();
+	// The overlay facts come from the layout load. The /site link and the reading
+	// level switch exist only when a local overlay was found at build time, so a
+	// public build has neither a dead nav entry nor a control that does nothing.
+	let { hasOverlay = false, hasSite = false, projects = [] } = $props();
 </script>
 
 <header>
@@ -11,12 +13,16 @@
 		<a class="mark" href="/">{NAME}</a>
 		<nav aria-label="Sections">
 			<a href="/field-types">Field types</a>
+			<a href="/entity-types">Entity types</a>
 			<a href="/findings">Findings</a>
 			<a href="/use">How to use it</a>
 			{#if hasOverlay}
 				<a class="local" href="/site">This site</a>
 			{/if}
 		</nav>
+		{#if hasOverlay}
+			<ReadingLevel {hasSite} {projects} />
+		{/if}
 	</div>
 </header>
 

@@ -5,24 +5,24 @@
 </script>
 
 <svelte:head>
-	<title>Field types: {data.counts.fieldTypes} Flow PT data types, read, write, clear and filter</title>
+	<title>Entity types: Flow PT schema names, create contracts and links</title>
 	<meta
 		name="description"
-		content="One reference card per Flow Production Tracking data_type: the read shape, every value accepted on write, every value that clears it, the full operator list, and the traps."
+		content="One reference card per Flow Production Tracking entity type: the schema name and REST slug, the identity field, what a create requires, every link field and its valid types, the status field, and the traps."
 	/>
 </svelte:head>
 
 <div class="page">
 	<header>
-		<h1>Field types</h1>
+		<h1>Entity types</h1>
 		<p class="lede">
-			One card per <code>data_type</code>, {data.counts.fieldTypes} in all. Each was probed on a real
-			field of that type: how it reads, every value accepted on write, every value that clears it, the
-			complete operator list the API returns when sent a bogus one, and the traps.
+			One card per entity type. Each gives the schema name and the REST slug, the field that
+			identifies a row, what a create is refused without, every link field with the types it accepts,
+			the status field, and the traps.
 		</p>
 		<p class="note">
-			Every card's operator list is collected into one table on
-			<a href="/filters">Filters</a>.
+			The card is named for the schema name, so <code>/entity-types/Version</code> is the same string
+			the API answers to.
 		</p>
 	</header>
 

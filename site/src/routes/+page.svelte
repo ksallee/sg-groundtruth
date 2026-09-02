@@ -1,11 +1,23 @@
 <script>
 	import Section from '$lib/components/Section.svelte';
-	import EntryList from '$lib/components/EntryList.svelte';
-	import Prose from '$lib/components/Prose.svelte';
-	import LocalBand from '$lib/components/LocalBand.svelte';
 	import { REPO } from '$lib/site.js';
 
 	let { data } = $props();
+
+	// PLACEHOLDER, deliberately empty. Every finding in the corpus was measured by
+	// a script user with broad access. The API is the same for everyone; what it
+	// shows is not, so an administrator's script sees more than a technical
+	// director's and far more than an artist's. Probe 027 is establishing what the
+	// API exposes about that. When `corpus/findings/027_auth_permissions.md`
+	// lands, write one line here from what it says, and link it. Until then this
+	// renders nothing rather than guessing.
+	// Written from finding 027. The API is the same for every caller; what it
+	// returns is filtered by permission, and every entry here was measured by a
+	// script user with broad access.
+	const PERMISSIONS_CAVEAT =
+		'Every entry was measured by a script user with broad access. The API is the same for '
+		+ 'every caller, but what it returns is filtered by permission, so a lower-permission '
+		+ 'account may see fewer rows and fewer fields than an entry records.';
 
 	// Handed to an agent verbatim, so every command in it is one the repository
 	// has. The two site-scope probe slugs never appear in it: those are what the
@@ -25,8 +37,10 @@
 5. Ask the schema what my site calls things, one type at a time:
      PYTHONPATH=src python -m sg_groundtruth.schema entities --custom
      PYTHONPATH=src python -m sg_groundtruth.schema --project N statuses Version
-6. Record what you measured as scope: site markdown under corpus.local/, following the
-   contract in site/README.md. corpus.local/ is gitignored and is never committed.
+6. Record what you measured as markdown under corpus.local/, following the contract in
+   site/README.md: scope: site files in corpus.local/site/, and scope: project files,
+   each with a project: key, in corpus.local/projects/<id>/. corpus.local/ is gitignored
+   and is never committed.
 7. Build the docs: cd site && npm install && npm run dev, then open http://localhost:5173.`;
 
 	let copied = $state(false);
@@ -39,30 +53,40 @@
 		copyTimer = setTimeout(() => (copied = false), 2000);
 	}
 
-	// Third-party integrations. Rendered only when this array has entries; empty
-	// is the shipped state. Fill it from site/RESEARCH-mcp.md when that research
-	// lands: one object per project, { name, href, note }. Nothing goes in here
-	// that is not a project someone can open.
-	// Verified against each repository's default-branch HEAD; see site/RESEARCH-mcp.md
-	// for commit anchors. Say what this corpus adds, never what another project
-	// gets wrong: the specifics belong in an issue on their tracker, not here.
-	const integrations = [
+	// The reference, in the order a reader meets it. Counts come from the corpus,
+	// so a group that grows says so without an edit here. `count: null` is a page
+	// derived from the cards rather than a set of entries.
+	const reference = $derived([
 		{
-			name: 'fpt-mcp',
-			href: 'https://github.com/abrahamADSK/fpt-mcp',
-			note: 'A Python MCP server that bundles its own REST reference to ground model output. Read alongside it, this corpus adds the operator vocabulary the API returns per data type, and the condition that ends a paged read.'
+			href: '/field-types',
+			title: 'Field types',
+			count: data.counts.fieldTypes,
+			unit: 'data types',
+			note: 'How each type reads, every value accepted on write, every value that clears it, and the traps.'
 		},
 		{
-			name: 'ShotgunMcpGo',
-			href: 'https://github.com/rfletchr/ShotgunMcpGo',
-			note: 'A Go MCP server over the REST API, with per-data_type operator and value tables. The matrix here covers the same ground measured against a live site, including the color type and the read shapes for float and status_list.'
+			href: '/entity-types',
+			title: 'Entity types',
+			count: data.counts.entityTypes,
+			unit: 'entity types',
+			note: 'The schema name and REST slug, the identity field, what a create requires, and every link field with the types it accepts.'
 		},
 		{
-			name: 'shotgrid-mcp-server',
-			href: 'https://github.com/loonghao/shotgrid-mcp-server',
-			note: 'A Python MCP server on PyPI, wrapping shotgun_api3. Its status resource exposes a field\'s valid values; field_types/status_list records that a project\'s usable set is those minus hidden_values, which the server does not subtract for you.'
+			href: '/filters',
+			title: 'Filters',
+			count: null,
+			unit: '',
+			note: 'Every operator the API accepts per data type, in one table, and the five types that accept none.'
+		},
+		{
+			href: '/recipes',
+			title: 'Recipes',
+			count: data.counts.recipes,
+			unit: data.counts.recipes === 1 ? 'recipe' : 'recipes',
+			note: 'A call that ran, the response it returned, and the errors hit on the way to it.'
 		}
-	];
+	]);
+
 </script>
 
 <svelte:head>
@@ -81,36 +105,50 @@
 			and run against any site.
 		</p>
 
-		<p class="counts">
-			{data.counts.fieldTypes} data types, {data.counts.findings} findings, {data.counts.recipes}
-			{data.counts.recipes === 1 ? 'recipe' : 'recipes'}.
-		</p>
-
 		<p class="actions">
-			<a class="button" href="/field-types">The field-type matrix</a>
+			<a class="button" href="/field-types">The reference</a>
 			<a href={REPO}>Read it on GitHub</a>
 		</p>
 	</div>
 </section>
 
-<Section
-	label="What it does"
-	title="Two corpora."
-	lede="The first is published here. The second is generated on your own machine and stays there."
->
-	<ul class="pair">
+<!-- Five flat facts, one line each. They sit under "What it does" rather than
+     under "How it works" because four of the five are what the thing does; the
+     privacy one leads, because it is the fact a reader most needs and it is
+     stated nowhere else. "How it works" below keeps the one sentence it needs
+     and does not restate any of these. -->
+<Section label="What it does" title="One corpus ships, one is written on your machine.">
+	<ul class="facts">
 		<li>
-			<h3>Verified Flow PT REST API behaviour</h3>
+			<h3>Two corpora</h3>
 			<p>
-				Findings, recipes and one card per <code>data_type</code>. Every entry is the recorded output
-				of a probe: what the API answered, not what a guide remembers.
+				One describes the Flow Production Tracking REST API and ships with the repository. One
+				describes your site and is written on your machine.
 			</p>
 		</li>
 		<li>
-			<h3>A description of your own site</h3>
+			<h3>Your site's data never leaves it</h3>
 			<p>
-				Your custom entities, your status vocabularies, your fill rates. It is generated locally into
-				a gitignored directory and is never published here.
+				The files describing your site are written to <code>corpus.local/</code>, which is gitignored
+				and never deployed. Nothing is sent anywhere, including to whoever maintains this.
+			</p>
+		</li>
+		<li>
+			<h3>One reading level, set once</h3>
+			<p>The API, your site, or one project in it. Every page answers at that level.</p>
+		</li>
+		<li>
+			<h3>Every claim re-runs</h3>
+			<p>
+				Each entry names the probe that produced it. Run that probe against your own site and
+				compare.
+			</p>
+		</li>
+		<li>
+			<h3>Read-only by default</h3>
+			<p>
+				A probe changes nothing without <code>--write</code>, and deletes anything it creates before
+				it exits.
 			</p>
 		</li>
 	</ul>
@@ -126,42 +164,22 @@
 		measurement and the documentation disagree, the measurement is what gets published, in the words
 		the API used.
 	</p>
+
+	{#if PERMISSIONS_CAVEAT}
+		<p class="body">{PERMISSIONS_CAVEAT}</p>
+	{/if}
 </Section>
 
 <Section
 	label="How it works"
 	title="One question per probe."
-	lede="A probe runs against a live site. Its recorded output is the reference on this page."
->
-	<ol class="steps">
-		<li>
-			<h3>A probe asks one question</h3>
-			<p>
-				<code>probes/NNN_slug.py</code> calls a live site. It is read-only unless given
-				<code>--write</code>, and deletes anything it creates before it exits.
-			</p>
-		</li>
-		<li>
-			<h3>The probe prints</h3>
-			<p>
-				It writes nothing to the corpus. Its output is the raw answer, with the site URL, the script
-				name and the key removed.
-			</p>
-		</li>
-		<li>
-			<h3>The finding records it</h3>
-			<p>
-				The status code, the error string and the response shape, and one sentence saying what a
-				caller should do. That file is what this page renders.
-			</p>
-		</li>
-	</ol>
-</Section>
+	lede="A probe is a script that asks a live Flow Production Tracking site one question. What it prints is the reference."
+/>
 
 <Section
 	label="Enabling it for your site"
 	title="The same documentation on localhost, with your own data in it."
-	lede="Point a clone at your Flow PT site and rebuild. Its custom entities, status vocabularies and fill rates render alongside the shipped corpus, in a labelled band."
+	lede="Point a clone at your Flow PT site and rebuild. Its custom entities, status vocabularies and fill rates render beside the shipped corpus, in a labelled band, at the level the header switch is set to."
 >
 	<p class="body">
 		Hand the following to an LLM agent with a terminal. It clones the repository, fills in the
@@ -184,7 +202,34 @@
 </Section>
 
 <Section
-	label="Why it is useful, in detail"
+	label="Reference"
+	title="Complete, and addressed by name."
+	lede="Four groups. Each covers its subject completely, so a name that is missing from one is a name the corpus does not have yet."
+>
+	<ul class="reference">
+		{#each reference as item (item.href)}
+			<li>
+				<h3><a href={item.href}>{item.title}</a></h3>
+				{#if item.count !== null}
+					<p class="count">{item.count} {item.unit}</p>
+				{/if}
+				<p>{item.note}</p>
+			</li>
+		{/each}
+	</ul>
+
+	<p class="body">
+		<a href="/findings">Findings</a> are separate. They are chronological and question-shaped, and
+		some correct an earlier one, which is worth keeping legible rather than folding in.
+		{data.counts.findings} are published.
+	</p>
+</Section>
+
+<!-- Evidence, for a reader who has already decided the reference is worth
+     reading. Below the reference links by intent: these are four cases, not a
+     summary of the corpus, and they used to open the page. -->
+<Section
+	label="Cited examples"
 	title="{data.examples.length} behaviours the REST documentation does not describe."
 	lede="Each is a recorded probe result. The entry that measured it is linked below it."
 >
@@ -202,102 +247,6 @@
 	</ul>
 </Section>
 
-<!-- The matrix index, then one card rendered in full. -->
-<Section
-	label="The field-type matrix"
-	title="{data.counts.fieldTypes} data types, each with how it reads, writes, clears and filters."
-	lede="One card per data_type. Each gives the schema shape, a real response, the values accepted on write, the values that clear the field, the operator list the API returns for a bogus operator, and the traps."
->
-	<EntryList entries={data.fieldTypes} showTags={false} />
-</Section>
-
-{#if data.sample}
-	<Section label="One card in full" title={data.sample.name} wide>
-		<p class="sample-note">
-			The <code>{data.sample.name}</code> card in full.
-			<a href={data.sample.href}>Its page</a>, or
-			<a href="/field-types">the other {data.counts.fieldTypes - 1}</a>.
-		</p>
-		<div class="sample">
-			<p class="verdict">{data.sample.verdict}</p>
-			<Prose html={data.sample.html} />
-		</div>
-	</Section>
-{/if}
-
-<!-- FINDINGS. The numbered corpus with its one-line verdicts, exactly as
-     corpus/INDEX.md lists them. -->
-<Section
-	label="Findings"
-	title="How the API behaves, one question at a time."
-	lede="A finding answers one question and ends in one sentence. Site-scope measurements are not published here."
->
-	<EntryList entries={data.findings} showTags={false} />
-</Section>
-
-{#if data.recipes.length}
-	<Section
-		label="Recipes"
-		title="A call and the response it returned."
-		lede="A recipe records an executable call, the real response, and the errors hit on the way."
-	>
-		<EntryList entries={data.recipes} showTags={false} />
-	</Section>
-{/if}
-
-<!-- The overlay band. Absent from every public build, because corpus.local/ is
-     gitignored and so never reaches the deployed repository. -->
-{#if data.localOnly.length}
-	<Section label="This site" title="Measured on the site this build was pointed at." wide>
-		<LocalBand title="Local entries">
-			<EntryList entries={data.localOnly} tone="site" showTags={false} />
-		</LocalBand>
-	</Section>
-{/if}
-
-<!-- Third-party integrations. Structure only: the copy is a content edit that
-     fills `integrations` in the script above, from site/RESEARCH-mcp.md. -->
-{#if integrations.length}
-	<Section
-		label="Integrations"
-		title="MCP servers for Flow Production Tracking."
-		lede="Each is MIT licensed and maintained. The corpus is markdown, so an agent can read it alongside any of them with no change to either project."
-	>
-		<ul class="pair">
-			{#each integrations as it (it.href)}
-				<li>
-					<h3><a href={it.href}>{it.name}</a></h3>
-					<p>{it.note}</p>
-				</li>
-			{/each}
-		</ul>
-	</Section>
-{/if}
-
-<Section
-	label="How to use it"
-	title="Using the corpus."
-	lede="The corpus is markdown. Every file carries a one-line verdict in its frontmatter."
->
-	<ol class="steps">
-		<li>
-			<h3>Give a model the index, not the corpus</h3>
-			<p>
-				<code>corpus/INDEX.md</code> is generated and small enough to load whole. A model reads it,
-				then opens the entries it needs.
-			</p>
-		</li>
-		<li>
-			<h3>Read the scope field</h3>
-			<p>
-				<code>scope: api</code> is behaviour that holds anywhere, and is the only content published
-				here. <code>scope: site</code> is a measurement of one site's configuration. Those do not
-				transfer, so measure them again.
-			</p>
-		</li>
-	</ol>
-	<p><a href="/use">The longer version, including the local overlay</a></p>
-</Section>
 
 <style>
 	.hero {
@@ -322,15 +271,6 @@
 		font-size: var(--text-md);
 		color: var(--ink-muted);
 		max-width: var(--measure);
-	}
-
-	.counts {
-		margin: 0;
-		padding-block: var(--space-3);
-		border-block: var(--border) solid var(--rule);
-		width: fit-content;
-		font-family: var(--font-mono);
-		font-size: var(--text-sm);
 	}
 
 	.actions {
@@ -359,9 +299,11 @@
 		max-width: var(--measure);
 	}
 
-	/* Two things of equal weight, so two columns of equal width rather than a
-	   list that implies an order. */
-	.pair {
+	/* Things of equal weight, so columns of equal width rather than a list that
+	   implies an order. */
+	.pair,
+	.reference,
+	.facts {
 		list-style: none;
 		padding: 0;
 		display: grid;
@@ -369,7 +311,9 @@
 		grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
 	}
 
-	.pair li {
+	.pair li,
+	.reference li,
+	.facts li {
 		display: grid;
 		gap: var(--space-2);
 		align-content: start;
@@ -377,13 +321,31 @@
 		padding-top: var(--space-3);
 	}
 
-	.pair h3 {
+	.pair h3,
+	.reference h3,
+	.facts h3 {
 		font-size: var(--text-md);
 	}
 
-	.pair p {
+	.pair p,
+	.reference p,
+	.facts p {
 		color: var(--ink-muted);
 		font-size: var(--text-sm);
+	}
+
+	.reference {
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+	}
+
+	/* Five short facts, so a narrower column than the two-up bands above. */
+	.facts {
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+	}
+
+	.reference .count {
+		font-family: var(--font-mono);
+		font-size: var(--text-xs);
 	}
 
 	/* The prompt is meant to be selected whole, so it scrolls inside its own box
@@ -485,61 +447,5 @@
 	.cite {
 		font-family: var(--font-mono);
 		font-size: var(--text-xs);
-	}
-
-	.sample-note {
-		color: var(--ink-muted);
-		max-width: var(--measure);
-	}
-
-	.sample {
-		background: var(--ground-raised);
-		border: var(--border) solid var(--rule);
-		border-radius: var(--radius);
-		padding: var(--space-5);
-		display: grid;
-		gap: var(--space-4);
-		overflow: hidden;
-	}
-
-	.sample .verdict {
-		font-size: var(--text-md);
-		border-left: 3px solid var(--accent);
-		padding-left: var(--space-4);
-		max-width: var(--measure);
-	}
-
-	.steps {
-		list-style: none;
-		padding: 0;
-		counter-reset: step;
-		display: grid;
-		gap: var(--space-5);
-		grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
-	}
-
-	.steps li {
-		counter-increment: step;
-		display: grid;
-		gap: var(--space-2);
-		align-content: start;
-		border-top: 2px solid var(--rule-strong);
-		padding-top: var(--space-3);
-	}
-
-	.steps li::before {
-		content: counter(step);
-		font-family: var(--font-mono);
-		font-size: var(--text-xs);
-		color: var(--ink-muted);
-	}
-
-	.steps h3 {
-		font-size: var(--text-md);
-	}
-
-	.steps p {
-		color: var(--ink-muted);
-		font-size: var(--text-sm);
 	}
 </style>

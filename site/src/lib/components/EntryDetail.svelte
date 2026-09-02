@@ -2,19 +2,25 @@
 	import Prose from './Prose.svelte';
 	import LocalBand from './LocalBand.svelte';
 	import { REPO } from '$lib/site.js';
+	import { visible } from '$lib/reading.svelte.js';
 
-	// One corpus entry, rendered in full: the shipped card, then the local
-	// overlay for the same slug if one was generated. `entry.local` is absent in
-	// every public build.
+	// One corpus entry, rendered in full: the shipped card, then whatever the
+	// overlay measured about the same subject, at the reading level in force.
+	// `entry.locals` is empty in every public build.
 	let { entry, kicker = '', backHref = '', backLabel = '' } = $props();
 
-	const sourcePath = $derived(
-		entry.group === 'recipes'
-			? `corpus/recipes/${entry.slug}.md`
-			: entry.group === 'field_types'
-				? `corpus/findings/field_types/${entry.slug}.md`
-				: `corpus/findings/${entry.slug}.md`
-	);
+	const locals = $derived(visible(entry.locals ?? []));
+
+	// One directory per group, mirroring corpus/. Kept as a lookup rather than a
+	// chain of ternaries so a new group is one line.
+	const SOURCE_DIR = {
+		recipes: 'corpus/recipes',
+		field_types: 'corpus/findings/field_types',
+		entity_types: 'corpus/findings/entity_types',
+		findings: 'corpus/findings'
+	};
+
+	const sourcePath = $derived(`${SOURCE_DIR[entry.group] ?? 'corpus/findings'}/${entry.slug}.md`);
 </script>
 
 <article class="entry">
@@ -35,11 +41,12 @@
 
 	<Prose html={entry.html} />
 
-	{#if entry.local}
-		<LocalBand>
-			<Prose html={entry.local.html} tone="site" />
+	{#each locals as local (local.level + local.project + local.slug)}
+		<LocalBand level={local.level} project={local.projectLabel}>
+			<p class="local-verdict" class:project={local.level === 'project'}>{local.verdict}</p>
+			<Prose html={local.html} tone={local.level} />
 		</LocalBand>
-	{/if}
+	{/each}
 </article>
 
 <style>
@@ -101,5 +108,15 @@
 
 	.src {
 		margin-left: auto;
+	}
+
+	.local-verdict {
+		border-left: 3px solid var(--accent-local);
+		padding-left: var(--space-4);
+		max-width: var(--measure);
+	}
+
+	.local-verdict.project {
+		border-left-color: var(--accent-project);
 	}
 </style>

@@ -6,7 +6,6 @@ export const NAME = 'SG Ground Truth';
 
 export const REPO = 'https://github.com/ksallee/sg-groundtruth';
 
-// The field type rendered in full on the landing page, to show the depth of a
-// reference card without asking the reader to click. Any slug in
-// corpus/findings/field_types/ works.
-export const SAMPLE_FIELD_TYPE = 'checkbox';
+// The local overlay's directory, relative to the repository root. Named once:
+// server code resolves it, components and page copy quote it.
+export const OVERLAY_DIR = 'corpus.local';

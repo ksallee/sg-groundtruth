@@ -1,22 +1,33 @@
-// THE SEAM between the two content sources. Everything about where content comes
-// from, and what is allowed to be published from each source, is decided here and
-// nowhere else. Routes never touch the filesystem.
+// THE SEAM between the content sources. Everything about where content comes
+// from, and what is allowed to be published from each source, is decided here
+// and nowhere else. Routes never touch the filesystem.
 //
-// SHIPPED  ../corpus          committed, public, `scope: api` only.
-//                             How the Flow PT REST API behaves anywhere.
-// OVERLAY  ../corpus.local    gitignored, generated per site, `scope: site` only.
-//                             How one Flow PT site is configured. Never deploys,
-//                             because it is never committed.
+// Three levels of truth, and the probes are what proved they are distinct.
+// Probe 009 is the clearest case: `valid_values` is byte-identical at every
+// scope and only `hidden_values` varies by project, so "which statuses can I
+// use" has no site-level answer.
 //
-// The overlay is optional. An absent or empty `corpus.local/` is the normal case:
-// every page below renders complete without it, and nothing links to a section
-// that is not there.
+//   api      ../corpus                      committed, public, `scope: api`.
+//                                           True of any Flow PT site.
+//   site     ../corpus.local/site           gitignored, `scope: site`.
+//                                           True of one Flow PT site.
+//   project  ../corpus.local/projects/<id>  gitignored, `scope: project`.
+//                                           True of one project inside it.
+//
+// The overlay is optional and an absent `corpus.local/` is the normal case.
+// Every page renders complete without it, the reading-level switch is not
+// drawn, and nothing links to a section that is not there.
 //
 // OVERLAY CONTRACT (see site/README.md for the long version)
 //
-//   corpus.local/findings/<nnn>_<slug>.md          a measurement of one site
-//   corpus.local/findings/field_types/<type>.md    keyed to a data_type name
-//   corpus.local/recipes/<nnn>_<slug>.md           a call made against one site
+//   corpus.local/site/findings/<nnn>_<slug>.md
+//   corpus.local/site/findings/field_types/<type>.md
+//   corpus.local/site/findings/entity_types/<Type>.md
+//   corpus.local/site/recipes/<nnn>_<slug>.md
+//   corpus.local/projects/<id>/findings/<nnn>_<slug>.md
+//   corpus.local/projects/<id>/findings/field_types/<type>.md
+//   corpus.local/projects/<id>/findings/entity_types/<Type>.md
+//   corpus.local/projects/<id>/recipes/<nnn>_<slug>.md
 //
 //   Frontmatter, same shape as the shipped corpus:
 //     ---
@@ -26,16 +37,20 @@
 //     ---
 //     # <heading>
 //
-//   `scope: site` is mandatory in the overlay and is rejected in the shipped
-//   corpus, so a local measurement can never be published by mistake and a
-//   general finding can never be filed as site-specific.
+//   A `scope: project` file also carries `project: <name>`, naming which
+//   project it was measured on. `probes/check_corpus.py` enforces both.
 //
-//   A file whose slug matches a shipped entry is rendered on that entry's page,
-//   under its own labelled heading. A file with no shipped counterpart is listed
-//   on /site as a local-only entry. Nothing else has to be registered.
+//   The scope a file declares has to match the directory it sits in, so a
+//   local measurement can never be published by mistake and a project number
+//   can never be filed as true of the whole site.
+//
+//   A file whose slug matches a shipped entry renders on that entry's page,
+//   beside the shipped card. A file with no shipped counterpart is listed on
+//   /site. Nothing else has to be registered.
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { OVERLAY_DIR } from '$lib/site.js';
 
 // Found by walking up from the working directory looking for `corpus/`, so the
 // build works from `site/` and from the repository root alike.
@@ -60,27 +75,62 @@ function findRepoRoot() {
 
 const repoRoot = findRepoRoot();
 
+const overlayRoot = path.join(repoRoot, OVERLAY_DIR);
+
 export const SHIPPED = {
-	id: 'shipped',
+	id: 'api',
+	level: 'api',
+	project: null,
 	root: path.join(repoRoot, 'corpus'),
 	// A shipped entry is published only if it claims to generalise.
 	scope: 'api',
-	label: 'Flow PT REST API',
-	note: 'Behaviour that holds on any Flow PT site.'
+	label: 'Flow PT REST API'
 };
 
-export const OVERLAY = {
-	id: 'overlay',
-	root: path.join(repoRoot, 'corpus.local'),
-	// An overlay entry is a measurement of one site and is labelled as such.
+export const SITE = {
+	id: 'site',
+	level: 'site',
+	project: null,
+	root: path.join(overlayRoot, 'site'),
 	scope: 'site',
-	label: 'This site',
-	note: 'Measured on the site this build was pointed at. It does not generalise.'
+	label: 'This site'
 };
 
-// Both sources use the same three groups and the same directory layout.
+// One source per directory under corpus.local/projects/. The directory name is
+// the id; the display name comes from the `project:` key its files carry.
+export function projectSources() {
+	const dir = path.join(overlayRoot, 'projects');
+	if (!fs.existsSync(dir)) return [];
+	return fs
+		.readdirSync(dir, { withFileTypes: true })
+		.filter((d) => d.isDirectory())
+		.map((d) => d.name)
+		.sort()
+		.map((id) => ({
+			id: `project:${id}`,
+			level: 'project',
+			project: id,
+			root: path.join(dir, id),
+			scope: 'project',
+			label: id
+		}));
+}
+
+// Both sources use the same groups and the same directory layout. A group is
+// the only thing a route needs to exist; adding one here gives the overlay the
+// matching directory for free.
+//
+// `entity_types` slugs are schema names (`Version`, `PublishedFile`) and keep
+// their capitalisation in the URL, because that is the string the API answers
+// to. Every other group is lowercase.
 export const GROUPS = [
 	{ id: 'findings', dir: 'findings', base: '/findings', title: 'Findings' },
 	{ id: 'field_types', dir: 'findings/field_types', base: '/field-types', title: 'Field types' },
+	{
+		id: 'entity_types',
+		dir: 'findings/entity_types',
+		base: '/entity-types',
+		title: 'Entity types'
+	},
 	{ id: 'recipes', dir: 'recipes', base: '/recipes', title: 'Recipes' }
 ];

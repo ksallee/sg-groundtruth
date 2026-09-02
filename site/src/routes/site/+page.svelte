@@ -15,31 +15,38 @@
 	<header>
 		<h1>This site</h1>
 		<p class="lede">
-			Measurements of one Flow PT installation, read from <code>{data.overlayDir}/</code>. They
-			describe a configuration, not the API, and do not transfer to another site.
+			Measurements read from <code>{data.overlayDir}/</code>. They describe one Flow Production
+			Tracking installation, and one project inside it, rather than the API. They do not transfer to
+			another site.
 		</p>
+		{#if data.hasOverlay}
+			<p class="note">
+				This page inventories everything the overlay holds, at every level. The switch in the header
+				decides which of it renders on the rest of the site.
+			</p>
+		{/if}
 	</header>
 
-	{#if data.hasOverlay}
-		{#if data.attached.length}
-			<section>
-				<h2>Attached to a published entry</h2>
-				<p>
-					These local measurements render at the bottom of the shipped card they extend, rather than
-					on this page.
-				</p>
-				<EntryList entries={data.attached} showTags={false} />
-			</section>
-		{/if}
+	{#each data.levels as band (band.level + band.id)}
+		<section>
+			<h2>{band.label}</h2>
 
-		{#each data.locals as local (local.anchor)}
-			<LocalBand title={local.name}>
-				<div id={local.anchor} class="local-entry">
-					<p class="verdict">{local.verdict}</p>
-					<Prose html={local.html} tone="site" />
-				</div>
-			</LocalBand>
-		{/each}
+			{#if band.attached.length}
+				<p>
+					These measurements render beside the shipped card they extend, on that entry's own page.
+				</p>
+				<EntryList entries={band.attached} showTags={false} />
+			{/if}
+
+			{#each band.locals as local (local.anchor)}
+				<LocalBand level={local.level} project={local.projectLabel} title={local.name}>
+					<div id={local.anchor} class="local-entry">
+						<p class="verdict" class:project={local.level === 'project'}>{local.verdict}</p>
+						<Prose html={local.html} tone={local.level} />
+					</div>
+				</LocalBand>
+			{/each}
+		</section>
 	{:else}
 		<!-- The public build is this branch. Nothing links here from the navigation
 		     in this state, so no visitor reaches an empty section. -->
@@ -47,14 +54,15 @@
 			<h2>No overlay found</h2>
 			<p>
 				This build read no <code>{data.overlayDir}/</code> directory, so it shows the shipped corpus
-				only. To document your own site, generate markdown into that directory and rebuild.
+				only, and the reading level switch is not drawn. To document your own site, generate markdown
+				into that directory and rebuild.
 				<a href="/use#overlay">The overlay contract</a> gives the filenames and the frontmatter.
 			</p>
 			<p>
 				The directory is gitignored. It is never committed and never reaches a public deployment.
 			</p>
 		</section>
-	{/if}
+	{/each}
 </div>
 
 <style>
@@ -90,6 +98,12 @@
 		max-width: var(--measure);
 	}
 
+	.note {
+		font-size: var(--text-sm);
+		border-left: 3px solid var(--rule-strong);
+		padding-left: var(--space-4);
+	}
+
 	.local-entry {
 		display: grid;
 		gap: var(--space-4);
@@ -100,6 +114,10 @@
 		color: var(--ink);
 		border-left: 3px solid var(--accent-local);
 		padding-left: var(--space-4);
+	}
+
+	.verdict.project {
+		border-left-color: var(--accent-project);
 	}
 
 	.empty {

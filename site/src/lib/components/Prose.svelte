@@ -4,7 +4,7 @@
 	let { html, tone = 'api' } = $props();
 </script>
 
-<div class="prose" class:local={tone === 'site'}>
+<div class="prose" class:local={tone === 'site'} class:project={tone === 'project'}>
 	{@html html}
 </div>
 
@@ -133,9 +133,13 @@
 		color: var(--ink-muted);
 	}
 
-	/* Site-measured content reuses every rule above and changes only the accent,
-	   so a reader never has to learn a second layout. */
+	/* Locally measured content reuses every rule above and changes only the
+	   accent, so a reader never has to learn a second layout. */
 	.prose.local :global(a) {
 		color: var(--accent-local);
+	}
+
+	.prose.project :global(a) {
+		color: var(--accent-project);
 	}
 </style>
