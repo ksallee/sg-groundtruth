@@ -1,7 +1,7 @@
 ---
 tags: [query, filter, sort, write, operator, error-handling, trap]
 scope: api
-verdict: A 400 is trustworthy and usually names the legal set; an unrecognised ?fields name, sort key, list value or update mode is a 200 no-op, so verify a write and a sort by re-reading.
+verdict: A 400 is trustworthy and usually names the legal set, but a 200 proves nothing: an unknown field, sort key or query param is a no-op, and a batch can return an id for a row it never made.
 ---
 
 # 028_loud_and_silent
@@ -75,6 +75,8 @@ field-type matrix cheap to build.
 | `["id", "in", [...]]` | 200, id ascending; the order of the list is discarded (verified) | probe 026 |
 | any filter on `PageSetting.settings_json` | 200 and the full unfiltered set, while another field on the same type filters (verified) | probe 023 |
 | any filter on `EventLogEntry.audit_trail` | the same (verified) | `field_types/jsonb` |
+| `filter[]` query params on `POST _search` | ignored entirely: a body filter wins and a bogus param name still returns 200, while the same param filters correctly on `GET /entity/<type>` | probe 030 |
+| a batch create missing a required attribute | 200 with an id for a row that does not exist: `GET` 404s, `_search` returns 0, `DELETE` answers 204. The single-create path 400s on the same body | `recipes/002_batch` |
 
 **Silent and destructive.** Six writes return success and either do nothing or destroy data. Not re-run
 here: they are recorded, and re-proving them costs rows.

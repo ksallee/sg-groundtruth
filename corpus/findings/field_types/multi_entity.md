@@ -85,30 +85,37 @@ A cleared field reads back `{"data": []}`, identical to one never set; no round 
 
 Nine against text's eight, trading `contains/not_contains/starts_with/ends_with` for the five `name_*`
 and `type_*`. Four rows: `AB` links both targets, `A_only` and `B_only` link one, `empty` links nothing.
+`A` and `B` below stand for those two targets, each sent as `{"type": "Version", "id": <id>}`.
+
+| operator | value | matches |
+|---|---|---|
+| `is` | `A` | `AB A_only` |
+| `is` | `None` | `empty` |
+| `is` | `{"type": "Version", "id": 99999999}` | none |
+| `is` | `[A, B]` | 400 `API read() 'is' 'relation' expects a 1-element array: [...]` |
+| `is_not` | `A` | `B_only empty` |
+| `is_not` | `None` | `AB A_only B_only` |
+| `in` | `[A]` | `AB A_only` |
+| `in` | `[A, B]` | `AB A_only B_only` |
+| `in` | `[]` | 400 `API read() 'in' 'relation' expects at least a 1-element array: []` |
+| `in` | `[26342]`, a bare id | 400 `invalid/missing entity hash: 26342` |
+| `in` | `[{"id": <A>}]` | 400 missing `'type'` |
+| `not_in` | `[A]` | `B_only empty` |
+| `not_in` | `[A, B]` | `empty` |
+| `type_is` | `"Version"` | `AB A_only B_only` |
+| `type_is_not` | `"Version"` | `empty` |
+| `name_is` | `<A's code>` | `AB A_only` |
+| `name_contains` | `"_target_a"` | `AB A_only` |
+| `name_contains` | `"ZZZNOPE"` | none |
+| `name_not_contains` | not measured | not measured |
+
+Two filter rows intersect, and a dotted path reaches the target's own fields:
 
 | filter | matches |
 |---|---|
-| `is A` | `AB A_only` |
-| `is_not A` | `B_only empty` |
-| `is None` | `empty` |
-| `is_not None` | `AB A_only B_only` |
-| `in [A]` | `AB A_only` |
-| `in [A, B]` | `AB A_only B_only` |
-| `not_in [A]` | `B_only empty` |
-| `not_in [A, B]` | `empty` |
 | `is A` plus `is B`, as two filter rows | `AB` |
-| `type_is Version` | `AB A_only B_only` |
-| `type_is_not Version` | `empty` |
-| `name_contains _target_a` | `AB A_only` |
-| `name_is <A's code>` | `AB A_only` |
 | `sg_ai_generated_from.Version.code is <A's code>` | `AB A_only` |
-| `is {id 99999999}` | none |
-| `name_contains ZZZNOPE` | none |
 | `sg_ai_generated_from.Version.code is ZZZNOPE` | none |
-| `is [A, B]` | 400 `API read() 'is' 'relation' expects a 1-element array: [...]` |
-| `in []` | 400 `API read() 'in' 'relation' expects at least a 1-element array: []` |
-| `in [A]` bare int | 400 `invalid/missing entity hash: 26342` |
-| `in [{id}]` | 400 missing `'type'` |
 
 **Traps**
 - Both incremental spellings that live in the query string return 200 having **silently replaced** the

@@ -93,11 +93,16 @@ loses the row it meant to make.
 `Valid relations: ["is", "is_not"]` is the generic list the operator validator prints before the type
 check runs. Both listed relations 400:
 
+| operator | value | matches |
+|---|---|---|
+| `is` | `null` | 400 code 103 |
+| `is` | `"fin"` | 400 code 103 |
+| `is_not` | `null` | 400 code 103 |
+
+Every other route fails too, on its own code:
+
 | call | result |
 |---|---|
-| `["step_8", "is", null]` | 400 code 103 |
-| `["step_8", "is_not", null]` | 400 code 103 |
-| `["step_8", "is", "fin"]` | 400 code 103 |
 | `GET ?filter[step_8]=fin` | 400 code 103, `source` `{}` |
 | `sort` `step_8` / `-step_8` / `step_0`, `_search` or `GET` | 400 code 104 |
 | `_summarize` `grouping` on `step_8` | 500 |

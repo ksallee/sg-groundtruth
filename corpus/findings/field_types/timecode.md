@@ -90,20 +90,31 @@ Valid relations: ["is", "is_not", "greater_than", "less_than", "between", "in", 
 
 There is no `>=` or `<=`; bracket with `between`. Against 4 rows holding `3600000`, `0`, `null`, `null`:
 
-| filter | matched |
-|---|---|
-| `is 3600000` / `is 0` | 1 / 1 |
-| `is None` | 2; the row holding `0` is not matched |
-| `is "01:00:00:00"` / `is "3600000"` / `is 3600000.0` | 400 `expected [Integer, NilClass] data type(s) but got String: "01:00:00:00"` (and `String: "3600000"`, `Float: 3600000.0`) |
-| `is_not 3600000` / `is_not None` | 3 / 2 |
-| `greater_than 0` / `greater_than 3600000` / `greater_than -1` | 1 / 0 / 2 |
-| `less_than 3600000` / `less_than 1` | 1 / 1 |
-| `between [0, 7200000]` / `between [7200000, 9000000]` | 2 / 0 |
-| `between 3600000` | 400 `API read() 'between' 'relation' expects a 2-element array: [3600000]` |
-| `in [3600000, 0]` / `in [999999999]` | 2 / 0 |
-| `in ["3600000"]` | 400 `expected [Integer, NilClass] data type(s) but got String: "3600000"` |
-| `not_in [3600000]` / `not_in [999999999]` | 3 / 4 |
-| `contains "3600"` / `starts_with "01"` / `not_between [0, 10]` | 400 `API read() Sequence.sg_timecode's 'timecode' data type doesn't support 'contains' 'relation'` |
+| operator | value | matches |
+|---|---|---|
+| `is` | `3600000` | 1 |
+| `is` | `0` | 1 |
+| `is` | `None` | 2; the row holding `0` is not matched |
+| `is` | `"01:00:00:00"` | 400 `expected [Integer, NilClass] data type(s) but got String: "01:00:00:00"` |
+| `is` | `"3600000"`, `3600000.0` | 400, the same message with `String: "3600000"` and `Float: 3600000.0` |
+| `is_not` | `3600000` | 3 |
+| `is_not` | `None` | 2 |
+| `greater_than` | `0` | 1 |
+| `greater_than` | `3600000` | 0 |
+| `greater_than` | `-1` | 2 |
+| `less_than` | `3600000` | 1 |
+| `less_than` | `1` | 1 |
+| `between` | `[0, 7200000]` | 2 |
+| `between` | `[7200000, 9000000]` | 0 |
+| `between` | `3600000` | 400 `API read() 'between' 'relation' expects a 2-element array: [3600000]` |
+| `in` | `[3600000, 0]` | 2 |
+| `in` | `[999999999]` | 0 |
+| `in` | `["3600000"]` | 400 `expected [Integer, NilClass] data type(s) but got String: "3600000"` |
+| `not_in` | `[3600000]` | 3 |
+| `not_in` | `[999999999]` | 4 |
+| `contains` | `"3600"` | 400 `API read() Sequence.sg_timecode's 'timecode' data type doesn't support 'contains' 'relation'` |
+| `starts_with` | `"01"` | 400, the same body |
+| `not_between` | `[0, 10]` | 400, the same body |
 
 An unsupported relation repeats the sent filter and the `Valid relations` list under `source`. A type
 error, on read or on write, puts the whole message in `title` and leaves `source` empty.

@@ -87,7 +87,7 @@ unreachable over REST.
 
 Baseline 100 versions in the project.
 
-| operator | value shape | matches |
+| operator | value | matches |
 |---|---|---|
 | `is` | `'Type A'` | 99 |
 | `is` | `'type a'` (wrong case) | 99 |
@@ -101,7 +101,10 @@ Baseline 100 versions in the project.
 | `in` | `['Type A', 'zzprobe_...']` | 99, the union of the members, no error |
 | `in` | `'Type A'` (bare, not a list) | 99; a scalar is accepted where a list is expected |
 | `not_in` | `['Type A']` | 1 |
-| `contains`, `not_contains`, `starts_with`, `ends_with` | any | 400, same "doesn't support ... 'relation'" body |
+| `contains` | any | 400, same "doesn't support ... 'relation'" body |
+| `not_contains` | any | 400, the same body |
+| `starts_with` | any | 400, the same body |
+| `ends_with` | any | 400, the same body |
 
 The same bad value fails on write and passes on read:
 

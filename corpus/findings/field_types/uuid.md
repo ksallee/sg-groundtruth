@@ -92,19 +92,23 @@ Value shapes `is` takes, against 98 Icon rows holding 98 distinct uuids:
 
 Each operator, over 98 rows where the field is filled and over 5 rows where it is `null`:
 
-| operator | value shape | filled rows returned | null rows returned |
-|---|---|---|---|
-| `is` | scalar string | 1 of 98 | 0 of 5 |
-| `is` | `""` | 0 of 98 | 5 of 5 |
-| `is_not` | scalar string | 97 of 98 | 5 of 5 |
-| `is_not` | `""` | 98 of 98 | 0 of 5 |
-| `in` | list of strings, mixed case and hyphenation | 2 of 98 for two values | 0 of 5 |
-| `in` | a bare string where a list is expected | 1 of 98 | 0 of 5 |
-| `in` | `[]` | 400 code 103 `API read() 'in' 'relation' expects at least a 1-element array: []` | |
-| `in` | `[""]` | 400 code 104, `invalid input syntax for type uuid: ""` | |
-| `in` | `[null]` | 400 code 103, `expected [String] data type(s) but got NilClass: nil` | |
-| `not_in` | list of strings | 96 of 98 for two values | 5 of 5 |
-| `contains`, `not_contains`, `starts_with`, `ends_with`, `greater_than` | any | 400, the `Valid relations` list again | |
+| operator | value | matches | filled rows returned | null rows returned |
+|---|---|---|---|---|
+| `is` | `"11111111-2222-11df-8888-999999999999"` | the one row holding it | 1 of 98 | 0 of 5 |
+| `is` | `""` | the rows where the field is `null` | 0 of 98 | 5 of 5 |
+| `is_not` | `"11111111-2222-11df-8888-999999999999"` | every other row, `null` rows included | 97 of 98 | 5 of 5 |
+| `is_not` | `""` | every row holding a uuid | 98 of 98 | 0 of 5 |
+| `in` | `["11111111-2222-11df-8888-999999999999", "22222222-3333-11DF-8888-999999999999"]` | the rows holding either, mixed case and hyphenation | 2 of 98 for two values | 0 of 5 |
+| `in` | `"11111111-2222-11df-8888-999999999999"` (bare, not a list) | one row; a scalar where a list is expected | 1 of 98 | 0 of 5 |
+| `in` | `[]` | 400 code 103 `API read() 'in' 'relation' expects at least a 1-element array: []` | | |
+| `in` | `[""]` | 400 code 104, `invalid input syntax for type uuid: ""` | | |
+| `in` | `[null]` | 400 code 103, `expected [String] data type(s) but got NilClass: nil` | | |
+| `not_in` | `["11111111-2222-11df-8888-999999999999", "22222222-3333-11DF-8888-999999999999"]` | every other row, `null` rows included | 96 of 98 for two values | 5 of 5 |
+| `contains` | any | 400, the `Valid relations` list again | | |
+| `not_contains` | any | 400, the same body | | |
+| `starts_with` | any | 400, the same body | | |
+| `ends_with` | any | 400, the same body | | |
+| `greater_than` | any | 400, the same body | | |
 
 `_summarize` (probe 020) takes the field: `grouping` `exact` gives one group per distinct value, and a
 `count` summary gives the filled count.

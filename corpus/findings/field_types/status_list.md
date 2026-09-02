@@ -70,19 +70,22 @@ filterable: `[["sg_status_list", "is", null]]` returned 1 over the sandbox rows 
 
 Value format is the raw code, or a list of raw codes for `in`/`not_in`, counted over the 100-Version baseline project where nothing is cleared:
 
-| filter | rows |
-|---|---|
-| `is "rev"` | 29 |
-| `is_not "rev"` | 71 |
-| `in ["rev", "fin"]` | 31 |
-| `not_in ["rev", "fin"]` | 69 |
-| `is "Pending Review"` (display label) | 0 |
-| `in ["Pending Review", "Final"]` | 0 |
-| `is "zznope"` (not in `valid_values`) | 0 |
-| `in ["zznope"]` | 0 |
-| `is null` | 0 (the sandbox rows cleared above matched 1) |
-| `is "part"` (hidden in the project) | 0 |
-| `contains "re"` / `not_contains "re"` / `starts_with "r"` / `ends_with "v"` | 400 `doesn't support ... 'relation'` |
+| operator | value | matches |
+|---|---|---|
+| `is` | `"rev"` | 29 |
+| `is` | `"Pending Review"` (display label) | 0 |
+| `is` | `"zznope"` (not in `valid_values`) | 0 |
+| `is` | `"part"` (hidden in the project) | 0 |
+| `is` | `null` | 0 (the sandbox rows cleared above matched 1) |
+| `is_not` | `"rev"` | 71 |
+| `in` | `["rev", "fin"]` | 31 |
+| `in` | `["Pending Review", "Final"]` | 0 |
+| `in` | `["zznope"]` | 0 |
+| `not_in` | `["rev", "fin"]` | 69 |
+| `contains` | `"re"` | 400 `doesn't support ... 'relation'` |
+| `not_contains` | `"re"` | 400, the same body |
+| `starts_with` | `"r"` | 400, the same body |
+| `ends_with` | `"v"` | 400, the same body |
 
 Write and filter disagree on the same value:
 

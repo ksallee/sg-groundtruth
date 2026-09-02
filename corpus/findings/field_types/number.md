@@ -74,7 +74,7 @@ There is no `>=` or `<=`. Bracket with `between`, or shift the bound by one.
 
 Match counts are against 4 sandbox rows holding `1001`, `0`, `null`, `null`.
 
-| operator | value shape | matches |
+| operator | value | matches |
 |---|---|---|
 | `is` | `1001` | 1 |
 | `is` | `0` | 1 |

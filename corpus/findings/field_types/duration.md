@@ -91,23 +91,30 @@ There is no `>=` or `<=`: bracket with `between`, or shift the bound by one.
 
 Against 4 sandbox rows holding `480`, `0`, `null`, `null`:
 
-| filter | matched |
-|---|---|
-| `is 480` / `is "480"` / `is 480.0` / `is 480.6` | 1 each; a string and a float both coerce |
-| `is 0` | 1 |
-| `is None` | 2; the row holding `0` is not matched |
-| `is "8:00"` | 400 `Invalid data for 'duration' data type. Value: 8:00` |
-| `is_not 480` | 3 |
-| `is_not None` | 2 |
-| `greater_than 0` / `greater_than 480` | 1 / 0 |
-| `greater_than -1` | 2 |
-| `less_than 480` / `less_than 1` | 1 / 1 |
-| `between [0, 600]` / `between [600, 900]` | 2 / 0 |
-| `between 480` | 400 `API read() 'between' 'relation' expects a 2-element array: [480]` |
-| `in [480, 0]` / `in ["480"]` / `in [999999]` | 2 / 1 / 0 |
-| `not_in [480]` / `not_in [999999]` | 3 / 4 |
-| `contains "48"` | 400 `API read() Shot.sg_bid___total's 'duration' data type doesn't support 'contains' 'relation'` |
-| `not_between [0, 600]` | 400 `API read() Shot.sg_bid___total's 'duration' data type doesn't support 'not_between' 'relation'` |
+| operator | value | matches |
+|---|---|---|
+| `is` | `480` | 1, the row holding it |
+| `is` | `"480"`, `480.0`, `480.6` | 1 each, the same row; a string and a float both coerce |
+| `is` | `0` | 1 |
+| `is` | `None` | 2; the row holding `0` is not matched |
+| `is` | `"8:00"` | 400 `Invalid data for 'duration' data type. Value: 8:00` |
+| `is_not` | `480` | 3 |
+| `is_not` | `None` | 2 |
+| `greater_than` | `0` | 1 |
+| `greater_than` | `480` | 0 |
+| `greater_than` | `-1` | 2 |
+| `less_than` | `480` | 1 |
+| `less_than` | `1` | 1 |
+| `between` | `[0, 600]` | 2 |
+| `between` | `[600, 900]` | 0 |
+| `between` | `480` | 400 `API read() 'between' 'relation' expects a 2-element array: [480]` |
+| `in` | `[480, 0]` | 2 |
+| `in` | `["480"]` | 1 |
+| `in` | `[999999]` | 0 |
+| `not_in` | `[480]` | 3 |
+| `not_in` | `[999999]` | 4 |
+| `contains` | `"48"` | 400 `API read() Shot.sg_bid___total's 'duration' data type doesn't support 'contains' 'relation'` |
+| `not_between` | `[0, 600]` | 400 `API read() Shot.sg_bid___total's 'duration' data type doesn't support 'not_between' 'relation'` |
 
 Each of those two 400s repeats the sent filter and the `Valid relations` list above under `source`.
 

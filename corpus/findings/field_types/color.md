@@ -78,23 +78,26 @@ read-side count and nothing more: 32 Projects hold null, no Step does.
     Valid relations: ["is", "is_not", "in", "not_in"]"}
 ```
 
-Value format is the stored string, over 1900 tasks, 35 steps and 52 projects:
+The value is the stored string, counted over 1900 `Task` rows:
 
-| `is <value>` | Task | Step | Project |
-|---|---|---|---|
-| `"pipeline_step"` | 1900 of 1900 | 400 invalid format | 400 invalid format |
-| `"PIPELINE_STEP"` | 0 | 400 invalid format | 400 invalid format |
-| `"0,126,174"` | 0 | 1 | 0 |
+| operator | value | matches |
+|---|---|---|
+| `is` | `"pipeline_step"` | 1900 of 1900, the stored keyword |
+| `is` | `"PIPELINE_STEP"` | 0; the value is case-sensitive |
+| `is` | `"0,126,174"` | 0; no `Task` stores a triple |
+| `is` | `[0, 126, 174]` | 400 `'is' 'relation' expects a 1-element array: [0, 126, 174]` |
+| `is_not` | `"pipeline_step"` | 0 |
+| `is_not` | `null` | 1900, every row holds a value |
+| `in` | `"pipeline_step"` (bare, outside a list) | accepted, a scalar where a list is expected |
+| `in` | `["zzprobe_nope"]` | 0, the negative control |
+| `not_in` | `["pipeline_step"]` | 0 |
 
-On `Task`, none of these is silently ignored:
+`Step`, 35 rows, and `Project`, 52 rows, reject the keyword form outright and take the triple:
 
-| filter | rows |
-|---|---|
-| `is_not "pipeline_step"`, `not_in ["pipeline_step"]` | 0 |
-| `is_not null` | 1900 |
-| `in "pipeline_step"` (bare, outside a list) | accepted |
-| `in ["zzprobe_nope"]` (negative control) | 0 |
-| `is [0, 126, 174]` | 400 `'is' 'relation' expects a 1-element array: [0, 126, 174]` |
+| `is <value>` | Step | Project |
+|---|---|---|
+| `"pipeline_step"`, `"PIPELINE_STEP"` | 400 invalid format | 400 invalid format |
+| `"0,126,174"` | 1 | 0 |
 
 A malformed value 400s on `Step` and `Project` and returns 0 rows on `Task`:
 ```

@@ -63,10 +63,12 @@ update built by dropping null-valued keys skips the field instead of clearing it
           Valid relations: ["is", "is_not"]"}
 ```
 
-| operator | value shape | matches |
+| operator | value | matches |
 |---|---|---|
-| `is` | `true`, `false`, `"true"`, `"false"` | rows in that state |
-| `is_not` | same | rows in the other state |
+| `is` | `true` | ticked rows; `"true"` returns the same ids |
+| `is` | `false` | unticked rows; `"false"` returns the same ids |
+| `is_not` | `true` | unticked rows |
+| `is_not` | `false` | ticked rows |
 
 Counts on a 100-Version baseline where every row is false, and on three sandbox rows with one ticked.
 The sandbox column compares the ids returned, not the counts: equal counts would not prove equal rows.

@@ -88,14 +88,15 @@ There is no "empty entity" value, and a cleared link is findable: `["entity", "i
 Valid relations: ["is", "is_not", "name_contains", "name_not_contains", "name_is", "type_is", "type_is_not", "in", "not_in"]
 ```
 
-Three value shapes across the nine. Row counts against a 100-Version baseline:
+Three value shapes across the nine. Row counts against a 100-Version baseline, where `862` stands in for
+the id of the Shot `sh010_0010` names:
 
-| operator | value shape | matches |
+| operator | value | matches |
 |---|---|---|
-| `is` | `{type,id}` | 3; `null` 0 |
-| `is_not` | `{type,id}` | 97; `null` 100 |
-| `in` | `{type,id}`, or a list of them | 3 for one hash, 6 for two |
-| `not_in` | `{type,id}`, or a list of them | 97 for one hash, 94 for two |
+| `is` | `{"type": "Shot", "id": 862}` | 3; `null` 0 |
+| `is_not` | `{"type": "Shot", "id": 862}` | 97; `null` 100 |
+| `in` | `[{"type": "Shot", "id": 862}]`, or a bare hash | 3 for one hash, 6 for two |
+| `not_in` | `[{"type": "Shot", "id": 862}]`, or a bare hash | 97 for one hash, 94 for two |
 | `type_is` | `"Shot"` | 99; a name string 0; `null` 0 |
 | `type_is_not` | `"Shot"` | 1; a name string 100; `null` 100 |
 | `name_is` | `"sh010_0010"` | 3; a type string 0 |

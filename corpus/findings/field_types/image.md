@@ -100,15 +100,16 @@ GET  /entity/versions/{id}/filmstrip_image/_upload                  -> 200 uploa
  source: {"Version.image": " data type doesn't support … Valid relations: ["is", "is_not"]"}
 ```
 
-| filter | code | matches |
-|---|---|---|
-| `["image", "is", null]` | 200 | 99 of 100 Versions, no thumbnail |
-| `["image", "is_not", null]` | 200 | 1 of 100, has one, transcoded or not |
-| `["image", "is", ""]` | 400 | `'is' 'relation' expects a nil value for 'image' data type: [""]` |
-| `["image", "is", "https://x/y.png"]` | 400 | same, `… data type: ["https://x/y.png"]` |
-| `["image", "contains", "thumb"]` | 400 | `doesn't support 'contains'` … `["is", "is_not"]` |
-| `["image", "in", [null]]` | 400 | `doesn't support 'in'` … `["is", "is_not"]` |
-| `_summarize` grouping on `image` | 400 | `Grouping is not allowed for field Version.image.` |
+| operator | value | matches | code |
+|---|---|---|---|
+| `is` | `null` | 99 of 100 Versions, no thumbnail | 200 |
+| `is_not` | `null` | 1 of 100, has one, transcoded or not | 200 |
+| `is` | `""` | `'is' 'relation' expects a nil value for 'image' data type: [""]` | 400 |
+| `is` | `"https://x/y.png"` | same, `… data type: ["https://x/y.png"]` | 400 |
+| `contains` | `"thumb"` | `doesn't support 'contains'` … `["is", "is_not"]` | 400 |
+| `in` | `[null]` | `doesn't support 'in'` … `["is", "is_not"]` | 400 |
+
+`_summarize` grouping on `image` is 400 `Grouping is not allowed for field Version.image.`
 
 | on the same Version | `image` | `url` (`sg_uploaded_movie`) |
 |---|---|---|

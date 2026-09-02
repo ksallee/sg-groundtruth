@@ -81,7 +81,7 @@ Valid relations: ["is", "is_not", "greater_than", "less_than", "between", "in", 
 
 Match counts over 5 sandbox rows holding `0`, `null`, `50`, `50`, `null`:
 
-| operator | value shape | matches |
+| operator | value | matches |
 |---|---|---|
 | `is` | `50` | 2 |
 | `is` | `0` | 1 |

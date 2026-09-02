@@ -66,7 +66,7 @@ differ only in value format. There is no `not_between` and no `is_null`.
 Every count below is one sandbox Version holding `2026-03-04T05:06:07Z`, run on 2026-09-02: 1 is a match,
 0 is a miss.
 
-| operator | value | rows |
+| operator | value | matches |
 |---|---|---|
 | `is` | `"2026-03-04T05:06:07Z"` | 1 |
 | `is` | `"2099-01-01T00:00:00Z"` | 0 |
@@ -87,7 +87,9 @@ Every count below is one sandbox Version holding `2026-03-04T05:06:07Z`, run on 
 | `not_in_next` | `[100, "YEAR"]` | 1 |
 | `in_calendar_year` | `0` | 1 |
 | `in_calendar_year` | `-50` | 0 |
-| `in_calendar_day`, `_week`, `_month` | `0` | 0 each: March 4 is a past day, week and month |
+| `in_calendar_day` | `0` | 0; March 4 is a past day |
+| `in_calendar_week` | `0` | 0; a past week |
+| `in_calendar_month` | `0` | 0; a past month |
 | `in_last` | `[1, "FORTNIGHT"]` | 400 `API read() 'in_last' 'relation' doesn't support the 'FORTNIGHT' time unit: [1, "FORTNIGHT"]  Valid time units: ["HOUR", "DAY", "WEEK", "MONTH", "YEAR"]` |
 
 A filter value takes the same formats as a write value, date-only included, and a date-only value is

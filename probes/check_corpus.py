@@ -62,11 +62,26 @@ CAPS_OK = {"REST", "API", "URL", "URI", "JSON", "HTTP", "GET", "PUT", "POST", "D
            "MIT", "AGPL", "UI", "OK", "NULL", "TRUE", "FALSE", "AND", "OR", "NOT", "PG", "MIME",
            "CRUD", "CSV", "VFX", "PT", "DAY", "HOUR", "WEEK", "MONTH", "YEAR", "YYYY", "MM", "DD"}
 
+# The site generates its filter matrix from these three columns, so they are a contract, not a habit.
+FILTER_COLS = ("operator", "value", "matches")
+SEP_RE = re.compile(r"^\|[\s\-:|]*-[\s\-:|]*\|$")
+
 fails = []
 
 
 def fail(f, msg):
     fails.append(f"{f.relative_to(ROOT)}: {msg}")
+
+
+def filter_heads(text):
+    """Header cells of every table in the **Filter** section, outermost first."""
+    m = re.search(r"^\*\*Filter\*\*.*?(?=^\*\*|\Z)", text, re.M | re.S)
+    if not m:
+        return []
+    lines = m.group(0).splitlines()
+    return [[c.strip().lower() for c in ln.strip().strip("|").split("|")]
+            for ln, nxt in zip(lines, lines[1:])
+            if ln.startswith("|") and SEP_RE.match(nxt.strip())]
 
 
 for f in sorted(CORPUS.rglob("*.md")):
@@ -132,6 +147,14 @@ for f in sorted(CORPUS.rglob("*.md")):
                     f"paragraphs do")
         if text.count("**Verdict**"):
             fail(f, "verdict repeated in the body; it belongs in the frontmatter only")
+        if f.parent.name == "field_types":
+            # A type the API refuses to filter enumerates no operators and so has no matrix;
+            # its two-column list of refusals is not one, and nothing is checked there.
+            matrix = [h for h in filter_heads(text) if len(h) >= 3]
+            if matrix and not any(tuple(h[:3]) == FILTER_COLS for h in matrix):
+                found = " | ".join(matrix[0][:3])
+                fail(f, f"**Filter** matrix heads with | {found} | — one row per operator, under "
+                        f"| operator | value | matches |, then any extra column")
         continue
     block = re.search(r"\*\*Actual\*\*\s*\n+```\n(.*?)\n```", text, re.S)
     if block and len(block.group(1).splitlines()) > ACTUAL_MAX:

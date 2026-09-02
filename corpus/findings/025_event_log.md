@@ -88,7 +88,9 @@ The four production uses, measured:
   and `DELETE` is refused by `PermissionRule 297`. This probe spent its one create on the minimal body and
   stopped, so **whether `event_type` or `meta` can be set in the create body is unmeasured**: testing it
   costs another permanent row. One row from this probe survives in the sandbox project of the probed site.
-  A ledger built here is append-only with no way to correct or retract an entry.
+  A ledger built here is append-only with no way to correct or retract an entry. Both refusals name a
+  role and a rule number, `API Admin -- PermissionRule 297`, so a script user in a different role may be
+  permitted more; check the error before concluding the API forbids it everywhere.
 - **Ids are reserved ahead of use and committed late.** On the probed site the newest 500 rows spanned 738
   ids with 9 gaps, the largest 33 wide, while every 1001-id window at depth 10000 or more was 100% dense.
   Gaps close, so they are held blocks and not deletions. A cursor that stores `max(id)` and asks for

@@ -96,7 +96,7 @@ PUT /entity/steps/<id>  {"entity_type": "Asset"}
 
 Baseline 35 Steps site-wide.
 
-| operator | value shape | matches |
+| operator | value | matches |
 |---|---|---|
 | `is` | `"Shot"` | 12 |
 | `is` | `"shot"` (wrong case) or `"shots"` (REST slug) | 0 |
@@ -109,8 +109,12 @@ Baseline 35 Steps site-wide.
 | `in` | `"Shot"` (bare, not a list) | 12; a scalar is accepted where a list is expected |
 | `in` | `["ZzprobeNotAType"]` | 0 |
 | `not_in` | `["Shot"]` | 23 |
-| `contains`, `starts_with`, `name_is`, `type_is` | any | 400, same "doesn't support ... 'relation'" body |
-| `is`, `in` | `{"type": "Shot", "id": 1}` | 400 `expected [String, NilClass] data type(s) but got ActionDispatch::Http::ParamsHashWithIndifferentAccess` |
+| `is` | `{"type": "Shot", "id": 1}` | 400 `expected [String, NilClass] data type(s) but got ActionDispatch::Http::ParamsHashWithIndifferentAccess` |
+| `in` | `{"type": "Shot", "id": 1}` | 400, the same body |
+| `contains` | any | 400, same "doesn't support ... 'relation'" body |
+| `starts_with` | any | 400, the same body |
+| `name_is` | any | 400, the same body |
+| `type_is` | any | 400, the same body |
 
 **Traps**
 - Not an `entity` field. `entity` stores a `{type, id}` link under `relationships` and takes the entity

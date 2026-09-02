@@ -73,7 +73,7 @@ source: {"Version.sg_department": " ... Value: {"path" => "sg_department",
 `is`, `is_not`, `contains`, `not_contains`, `starts_with` and `ends_with` take a scalar string;
 `in` and `not_in` take a list. Which of the four rows above each filter returns:
 
-| operator | value | returns |
+| operator | value | matches |
 |---|---|---|
 | `is` | `'lighting'` | `value` |
 | `is` | `'LIGHTING'` | `value`; case-blind |
@@ -92,7 +92,10 @@ source: {"Version.sg_department": " ... Value: {"path" => "sg_department",
 | `in` | `['']` | nothing, unlike `is ''` |
 | `in` | `[None]` | 400 code 104 `Read failed for entity type [Version]`, `source` null, `detail` null |
 | `not_in` | `['lighting']` | `empty`, `null`, `omitted` |
-| `is`, `contains`, `starts_with`, `in` | `'ZZZNOPE'` | nothing, every time (baseline is 4) |
+| `is` | `'ZZZNOPE'` | nothing; the baseline is 4 |
+| `contains` | `'ZZZNOPE'` | nothing |
+| `starts_with` | `'ZZZNOPE'` | nothing |
+| `in` | `'ZZZNOPE'` | nothing |
 
 **Traps**
 - Writing `""` returns 200 and stores `null`. A client round-tripping a form field cannot distinguish

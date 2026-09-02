@@ -57,25 +57,26 @@ source: {"Shot.sg_turnover_date": " data type doesn't support ... Valid relation
    "in_calendar_week", "in_calendar_month", "in_calendar_day", "in_calendar_year", "between", "in", "not_in"]"}
 ```
 
-Measured on two sandbox rows, one dated and one null, so a positive is 1 and a negative is 0:
+Measured on two sandbox rows, one dated and one null, so a positive is 1 and a negative is 0. Each
+`value` is an example of the accepted format; `measured` calls the dated row's own date `today`:
 
-| operator | value shape | matches | measured |
+| operator | value | matches | measured |
 |---|---|---|---|
-| `is` | `"YYYY-MM-DD"`, `null` or `""` | exact date | `is` the value -> 1 |
-| `is_not` | `"YYYY-MM-DD"`, `null` or `""` | any other date, and null rows | `is_not` the value -> the unset row |
-| `greater_than` | `"YYYY-MM-DD"` | strictly after | gt yesterday -> 1 ; gt the value itself -> 0 |
-| `less_than` | `"YYYY-MM-DD"` | strictly before | lt tomorrow -> 1 ; lt the value itself -> 0 |
-| `between` | 2-element list, inclusive both ends, order-insensitive | inside the range | `[today, today]` -> 1 ; `[-1, +1]` -> 1 ; `[+1, +2]` -> 0 ; `[+1, -1]` -> 1 ; `[today, null]` -> 0 |
-| `in` | list of dates; a bare scalar also works | any listed date | `in [today]` -> 1 ; `in today` -> 1 |
-| `not_in` | list of dates; a bare scalar also works | any unlisted date, and null rows | matched the unset row |
-| `in_last` | `[n, "DAY"]`, n positive, unit uppercase | n units back, includes today | 5 days ago: `[10, "DAY"]` -> 1, `[2, "DAY"]` -> 0 |
-| `not_in_last` | `[n, "DAY"]` | outside that range, and null rows | matched the unset row |
-| `in_next` | `[n, "DAY"]` | n units forward, includes today | today matches `[1, "DAY"]` ; 5 days ago: `[10, "DAY"]` -> 0 |
-| `not_in_next` | `[n, "DAY"]` | outside that range, and null rows | matched the unset row |
-| `in_calendar_day` | bare signed Integer offset; `[0]` works too | that calendar day | today: `0` -> 1, `-1` -> 0, `+1` -> 0 ; 5 days ago: `-5` -> 1, `0` -> 0 |
-| `in_calendar_week` | bare signed Integer offset | that calendar week | today: `0` -> 1, `-1` -> 0, `+1` -> 0 |
-| `in_calendar_month` | bare signed Integer offset | that calendar month | today: `0` -> 1, `-1` -> 0 ; 5 days ago, previous month: `0` -> 0 |
-| `in_calendar_year` | bare signed Integer offset | that calendar year | today: `0` -> 1, `-1` -> 0, `+1` -> 0 |
+| `is` | `"2026-09-02"`, `null` or `""` | exact date | `is` the value -> 1 |
+| `is_not` | `"2026-09-02"`, `null` or `""` | any other date, and null rows | `is_not` the value -> the unset row |
+| `greater_than` | `"2026-09-02"` | strictly after | gt yesterday -> 1 ; gt the value itself -> 0 |
+| `less_than` | `"2026-09-02"` | strictly before | lt tomorrow -> 1 ; lt the value itself -> 0 |
+| `between` | `["2026-09-01", "2026-09-03"]` | inside the range, inclusive both ends, order-insensitive | `[today, today]` -> 1 ; `[-1, +1]` -> 1 ; `[+1, +2]` -> 0 ; `[+1, -1]` -> 1 ; `[today, null]` -> 0 |
+| `in` | `["2026-09-02"]` | any listed date; a bare scalar also works | `in [today]` -> 1 ; `in today` -> 1 |
+| `not_in` | `["2026-09-02"]` | any unlisted date, and null rows; a bare scalar also works | matched the unset row |
+| `in_last` | `[10, "DAY"]` | n units back, includes today; n positive, unit uppercase | 5 days ago: `[10, "DAY"]` -> 1, `[2, "DAY"]` -> 0 |
+| `not_in_last` | `[10, "DAY"]` | outside that range, and null rows | matched the unset row |
+| `in_next` | `[10, "DAY"]` | n units forward, includes today | today matches `[1, "DAY"]` ; 5 days ago: `[10, "DAY"]` -> 0 |
+| `not_in_next` | `[10, "DAY"]` | outside that range, and null rows | matched the unset row |
+| `in_calendar_day` | `0` | that calendar day, from a bare signed offset; `[0]` works too | today: `0` -> 1, `-1` -> 0, `+1` -> 0 ; 5 days ago: `-5` -> 1, `0` -> 0 |
+| `in_calendar_week` | `0` | that calendar week | today: `0` -> 1, `-1` -> 0, `+1` -> 0 |
+| `in_calendar_month` | `0` | that calendar month | today: `0` -> 1, `-1` -> 0 ; 5 days ago, previous month: `0` -> 0 |
+| `in_calendar_year` | `0` | that calendar year | today: `0` -> 1, `-1` -> 0, `+1` -> 0 |
 
 Rejected filter values:
 

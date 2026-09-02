@@ -79,13 +79,14 @@ is unchanged after each.
   "source": {"Note.meta": " ... Valid relations: [\"is\",\"is_not\",\"contains\",\"not_contains\"]"}}
 ```
 
-| operator | value shape | matches |
+| operator | value | matches |
 |---|---|---|
-| `is` | a hash or array, or `null` | whole-value equality; key order in the filter is irrelevant |
-| `is_not` | same | every other row, `null` rows included |
-| `contains` | a hash | containment: `{"a":{"b":[1]}}` matches a stored `{"a":{"b":[1,2,3]}}` |
+| `is` | `{"a":{"b":[1,2,3]}}` | whole-value equality; key order in the filter is irrelevant |
+| `is` | an array, or `null` | the same equality, on those classes |
+| `is_not` | `{"a":{"b":[1,2,3]}}` | every other row, `null` rows included |
+| `contains` | `{"a":{"b":[1]}}` | containment: matches a stored `{"a":{"b":[1,2,3]}}` |
 | `contains` | `{}` | every row holding an object; array and `null` rows do not match |
-| `not_contains` | a hash | every other row, `null` rows included |
+| `not_contains` | `{"a":{"b":[1]}}` | every other row, `null` rows included |
 
 | filter | result |
 |---|---|
