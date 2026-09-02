@@ -43,7 +43,26 @@
 	// is the shipped state. Fill it from site/RESEARCH-mcp.md when that research
 	// lands: one object per project, { name, href, note }. Nothing goes in here
 	// that is not a project someone can open.
-	const integrations = [];
+	// Verified against each repository's default-branch HEAD; see site/RESEARCH-mcp.md
+	// for commit anchors. Say what this corpus adds, never what another project
+	// gets wrong: the specifics belong in an issue on their tracker, not here.
+	const integrations = [
+		{
+			name: 'fpt-mcp',
+			href: 'https://github.com/abrahamADSK/fpt-mcp',
+			note: 'A Python MCP server that bundles its own REST reference to ground model output. Read alongside it, this corpus adds the operator vocabulary the API returns per data type, and the condition that ends a paged read.'
+		},
+		{
+			name: 'ShotgunMcpGo',
+			href: 'https://github.com/rfletchr/ShotgunMcpGo',
+			note: 'A Go MCP server over the REST API, with per-data_type operator and value tables. The matrix here covers the same ground measured against a live site, including the color type and the read shapes for float and status_list.'
+		},
+		{
+			name: 'shotgrid-mcp-server',
+			href: 'https://github.com/loonghao/shotgrid-mcp-server',
+			note: 'A Python MCP server on PyPI, wrapping shotgun_api3. Its status resource exposes a field\'s valid values; field_types/status_list records that a project\'s usable set is those minus hidden_values, which the server does not subtract for you.'
+		}
+	];
 </script>
 
 <svelte:head>
@@ -239,7 +258,11 @@
 <!-- Third-party integrations. Structure only: the copy is a content edit that
      fills `integrations` in the script above, from site/RESEARCH-mcp.md. -->
 {#if integrations.length}
-	<Section label="Integrations" title="Other tools that read this corpus.">
+	<Section
+		label="Integrations"
+		title="MCP servers for Flow Production Tracking."
+		lede="Each is MIT licensed and maintained. The corpus is markdown, so an agent can read it alongside any of them with no change to either project."
+	>
 		<ul class="pair">
 			{#each integrations as it (it.href)}
 				<li>
