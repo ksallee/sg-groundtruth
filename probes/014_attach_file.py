@@ -1,4 +1,4 @@
-"""Q: how does an arbitrary file (the ComfyUI workflow JSON) get attached to a Version?"""
+"""Q: how does an arbitrary file get attached to a Version?"""
 import json
 
 import requests
@@ -7,6 +7,10 @@ import _lib
 
 env = _lib.load_env()
 c = _lib.client()
+
+# Read-only by default (CLAUDE.md). This probe uploads a real file.
+if not _lib.writes_allowed():
+    raise SystemExit("014_attach_file writes to the site; re-run with --write")
 VERSION_ID = 26263
 rows = []
 
@@ -39,7 +43,7 @@ q = c.post("/entity/attachments/_search", json={
     headers={"Content-Type": "application/vnd+shotgun.api3_array+json"})
 if q.ok:
     data = q.json()["data"]
-    _lib.register_from(q.json())
+    _lib.note_from(q.json())
     rows.append(f"\nattachments linked to this Version: {len(data)}")
     for x in data[:3]:
         a = x["attributes"]
@@ -50,13 +54,4 @@ else:
     rows.append(f"\nattachment query -> {q.status_code} {q.text[:250]}")
 
 actual = "\n".join(rows)
-_lib.record("014_attach_file", "GET /entity/versions/{id}/_upload (no field) -> PUT -> complete",
-            "Arbitrary files attach to a Version as Attachment entities.",
-            actual,
-            "Same three-step upload as media but with NO field in the path: GET /entity/versions/{id}/_upload "
-            "gives upload_type=Attachment, and the file lands as an Attachment entity linked through "
-            "attachment_links. Retrieving it needs POST /entity/attachments/_search - a multi-entity field "
-            "cannot be filtered by flat filter[] params (400 'invalid/missing entity hash'), it needs an "
-            "entity hash {type, id}, and only the _search body can carry one.",
-            env, tags=("write", "upload", "attachment", "provenance", "version", "multi-entity", "filter"))
-print(actual)
+_lib.emit("014_attach_file", actual, env)

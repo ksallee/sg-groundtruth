@@ -1,4 +1,4 @@
-"""Q: can the node create its own provenance fields over REST, and what breaks when it tries twice?
+"""Q: can a client create its own custom fields over REST, and what breaks when it tries twice?
 
 Provenance currently rides as a JSON blob in `description`, which is unreadable and unqueryable. Typed
 fields are the fix, but every name created here is permanent — trashed fields still collide and cannot
@@ -10,6 +10,10 @@ import _lib
 
 env = _lib.load_env()
 c = _lib.client()
+
+# Read-only by default (CLAUDE.md). This probe creates schema fields, and a field name is never freed once burned.
+if not _lib.writes_allowed():
+    raise SystemExit("019_create_fields writes to the site; re-run with --write")
 rows = []
 made = []
 
@@ -61,6 +65,7 @@ if me:
     if r.ok:
         vid = r.json()["data"]["id"]
         back = c.get(f"/entity/versions/{vid}", params={"fields": me}).json()["data"]
+        _lib.note_from(back)  # the linked Version comes back with its real name
         rows.append(f"  reads back under relationships: "
                     f"{json.dumps(back.get('relationships', {}).get(me, {}).get('data'))[:120]}")
         c.request("DELETE", f"/entity/versions/{vid}")
@@ -89,7 +94,7 @@ if probe_text:
         rows.append(f"  read back -> {rr.json()['data']['attributes']}")
         c.request("DELETE", f"/entity/versions/{vid}")
 
-rows.append("\n=== seed size: ComfyUI seeds go to 2**64-1, do number fields hold that?")
+rows.append("\n=== seed size: 64-bit ids and seeds go to 2**64-1, do number fields hold that?")
 num = next((m for m in made if "number" in m), None)
 flt = next((m for m in made if "float" in m), None)
 for field, val, label in [(num, 2**31 - 1, "number 2**31-1"), (num, 2**63, "number 2**63"),
@@ -122,22 +127,4 @@ if made:
 rows.append(f"\nfields burned by this probe: {sorted(set(made))}")
 
 actual = "\n".join(rows)
-_lib.record("019_create_fields", "POST /schema/Version/fields ; DELETE /schema/Version/fields/<name>",
-            "Custom fields can be created over REST; names are forced to an sg_ prefix.",
-            actual,
-            "Almost every useful type IS creatable - the 400s are missing properties, not refusals. "
-            "text/float/number/date/date_time/list/url/duration/percent/footage need nothing extra; "
-            "checkbox needs default_value; entity and multi_entity need valid_types, and multi_entity "
-            "takes EXACTLY ONE element (two types -> 400). Only color, image and calculated are truly "
-            "rejected as invalid data_types. A multi_entity of Version round-trips lineage and reads "
-            "back under relationships, which is how input-Version links should be stored rather than as "
-            "JSON. Pass a DISPLAY name: the sg_ prefix is added for you, so 'sg_foo' becomes 'sg_sg_foo'. "
-            "The programmatic name is NOT in the response body - take the last segment of links.self. "
-            "TWO TRAPS. (1) A duplicate display name does NOT error, it silently makes <name>_1, so an "
-            "idempotent ensure() MUST read /schema first and never POST-and-hope. (2) DELETE returns 204 "
-            "and the field vanishes from /schema, but the NAME IS NOT FREED: recreating it 400s and the "
-            "trashed field cannot be enumerated, so the collision is invisible. Also: seeds must be TEXT "
-            "- a number field takes 2**31-1 but 400s at 2**63, and ComfyUI seeds go to 2**64-1.",
-            env,
-            tags=("schema", "write", "custom-field", "provenance", "entity-field", "trap"))
-print(actual)
+_lib.emit("019_create_fields", actual, env)

@@ -8,6 +8,10 @@ import _lib
 
 env = _lib.load_env()
 c = _lib.client()
+
+# Read-only by default (CLAUDE.md). This probe uploads real bytes to S3.
+if not _lib.writes_allowed():
+    raise SystemExit("013_upload_media writes to the site; re-run with --write")
 VERSION_ID = 26263
 rows = []
 
@@ -54,21 +58,10 @@ for field, desc in [("image", "thumbnail"), ("sg_uploaded_movie", "media field")
 # read back
 v = c.get(f"/entity/versions/{VERSION_ID}",
           params={"fields": "code,image,sg_uploaded_movie,sg_uploaded_movie_type"}).json()["data"]
-_lib.register_from(v)
+_lib.note_from(v)
 rows.append("\n=== read back")
 rows.append(f"  attributes: {json.dumps(v.get('attributes'))[:300]}")
 rows.append(f"  relationships: {sorted(v.get('relationships', {}))}")
 
 actual = "\n".join(rows)
-_lib.record("013_upload_media", "GET /entity/versions/{id}/{field}/_upload -> PUT S3 -> POST complete_upload",
-            "Media upload is a multi-step presigned flow.",
-            actual,
-            "Three steps, no shortcuts. 1) GET /entity/versions/{id}/{field}/_upload?filename=X returns "
-            "links.upload (presigned S3) and links.complete_upload. 2) PUT the raw bytes to links.upload. "
-            "3) POST links.complete_upload with {'upload_info': <the data block from step 1 verbatim>, "
-            "'upload_data': {}} -> 201. Omitting upload_data 400s with 'upload_data is missing' even though it "
-            "is empty. Field choice sets upload_type: /image/ is a Thumbnail, any other field is an Attachment. "
-            "Transcoding is ASYNC - reading the field straight back returns a placeholder under "
-            "/images/status/transient/, so detect that path prefix rather than treating it as the real media.",
-            env, tags=("write", "upload", "media", "attachment", "version", "async"))
-print(actual)
+_lib.emit("013_upload_media", actual, env)

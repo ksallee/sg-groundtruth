@@ -5,13 +5,13 @@ import _lib
 
 env = _lib.load_env()
 c = _lib.client()
-BBB, N = 70, 500
+PROJECT, N = 70, 500
 
 link_fields = ["entity", "sg_task", "user", "playlists", "project", "created_by"]
 r = c.get("/entity/versions", params={
-    "filter[project.Project.id]": BBB, "fields": ",".join(link_fields),
+    "filter[project.Project.id]": PROJECT, "fields": ",".join(link_fields),
     "sort": "-id", "page[size]": N})
-_lib.register_from(r.json())
+_lib.note_from(r.json())
 rows = r.json()["data"]
 
 present = Counter()
@@ -26,18 +26,10 @@ for row in rows:
                 entity_types[d.get("type") if isinstance(d, dict) else "multi"] += 1
 
 n = len(rows)
-out = [f"sample: {n} most recent Versions on project {BBB}", "", "link field presence:"]
+out = [f"sample: {n} most recent Versions on project {PROJECT}", "", "link field presence:"]
 out += [f"  {f:<12} {present[f]:>4}/{n}  {100*present[f]//n if n else 0}%" for f in link_fields]
 out += ["", "entity target types:"]
 out += [f"  {t:<12} {ct:>4}  {100*ct//n if n else 0}%" for t, ct in entity_types.most_common()]
 
 actual = "\n".join(out)
-_lib.record("005_link_usage", "GET /entity/versions?fields=<link fields>",
-            "Versions may attach to Task, Shot, Asset, playlist — conventions vary by site.",
-            actual,
-            "On BBB, Versions link via `entity` 100% (Shot 99%, Asset 1%) and via `sg_task` only 1% - hardcoding "
-            "Task-linking would be wrong almost always here, which is the whole case for the site profile. "
-            "(An earlier version of this finding claimed page[size] is capped at 100. It is not - probe 016 "
-            "shows 150 returns 150. BBB simply has exactly 100 Versions.)",
-            env, tags=("version", "link", "inspector", "entity-field", "paging"))
-print(actual)
+_lib.emit("005_link_usage", actual, env)

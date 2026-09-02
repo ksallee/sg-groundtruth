@@ -8,7 +8,7 @@ BBB, N = 70, 100
 names = sorted(c.get("/schema/Version/fields", params={"project_id": BBB}).json()["data"])
 r = c.get("/entity/versions", params={"filter[project.Project.id]": BBB,
                                       "fields": ",".join(names), "sort": "-id", "page[size]": N})
-_lib.register_from(r.json())
+_lib.note_from(r.json())
 rows = r.json()["data"]
 n = len(rows)
 
@@ -29,12 +29,4 @@ actual = (f"sample: {n} most recent Versions on project {BBB}; {len(names)} fiel
           f"populated ({len(used)}):\n" + "\n".join(used) +
           f"\n\nnever populated ({len(dead)}):\n  " + ", ".join(dead))
 
-_lib.record("007_fill_rates", "GET /schema/Version/fields + GET /entity/versions",
-            "Schema lists what is possible; only a subset is ever filled.",
-            actual,
-            f"Of {len(names)} Version fields in the schema, {len(used)} carry data on BBB and {len(dead)} are "
-            f"never populated - rank by fill rate, never expose the schema wholesale. CAVEAT: booleans read as "
-            f"100% filled because False is not null, so the inspector must exclude checkbox fields from fill "
-            f"ranking or use the schema data_type to weight them.",
-            env, tags=("version", "inspector", "schema", "fill-rate"))
-print(actual[:1600])
+_lib.emit("007_fill_rates", actual, env)

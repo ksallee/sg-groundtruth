@@ -1,48 +1,53 @@
 ---
 tags: [query, filter, operator, dotted-field, entity-field, error-handling]
-verdict: is/is_not/contains/not_contains/starts_with/ends_with/in/not_in all work on text fields AND through dotted paths (entity.Shot.code contains <substr> returns partial counts), and every negative control returns 0 - so these operators are real, not ignored. Crucially an UNKNOWN operator returns 400, never a silent pass, so a typo cannot masquerade as 'no filter' the way a bogus ?fields name does (probe 004). `in` takes a plain list for scalars, but on an entity field it needs FULL {type, id} hashes: [{id: N}] and bare ints both 400 with 'invalid/missing entity hash'. `contains` on a dotted path is what makes server-side type-ahead over names possible.
+scope: api
+verdict: is/is_not/contains/not_contains/starts_with/ends_with/in/not_in all work, on text fields and through dotted paths; an unknown operator 400s with the valid list rather than passing silently.
 ---
 
 # 017_filter_operators
 
+Cross-type hub. Each data type's own operator vocabulary, write shapes and traps are one card under
+`corpus/findings/field_types/`; this file records what holds across every type.
+
+**Q** Which filter operators does `_search` accept on a text field, and does an unsupported one fail or silently pass?
+
 **Endpoint** `POST /entity/<type>/_search`
 
-**Docs claim** Filters are [field, operator, value]; operator vocabulary is not enumerated.
+**Docs claim** Filters are `[field, operator, value]`; the operator vocabulary is not enumerated.
 
 **Actual**
 
 ```
-baseline: 300 shots in BBB; sample codes ['vapor_010_0010', 'vapor_010_0020', 'vapor_010_0030']
-probe code 'vapor_010_0010' -> mid 'nny_010_00' pre 'bunn' suf '0010'
+baseline: 300 shots in project; sample codes ['sh010_0010', 'sh010_0020', 'sh010_0030']
+probe code 'sh010_0010' -> mid '010_00' pre 'sh01' suf '0010'
 
-=== operators on Shot.code  (positive / negative-control)
-operator        positive                    negative (must be 0)        
-is              1                           0                           
-is_not          299                         -                           
-contains        9                           0                           
-not_contains    291                         -                           
-starts_with     300                         0                           
-ends_with       15                          0                           
+Shot.code, positive / negative-control (a negative control must return 0, not the baseline):
+  is 1/0    is_not 299/-    contains 9/0    not_contains 291/-    starts_with 300/0    ends_with 15/0
+  code in [2 real codes] -> 2 ;  not_in same -> 298 ;  in ['ZZZNOPE1','ZZZNOPE2'] -> 0
 
-=== in / not_in with a scalar list
-  code in ['vapor_010_0010', 'vapor_010_0020'] -> 2 
-  code not_in ['vapor_010_0010', 'vapor_010_0020'] -> 298 
-  negative control code in [ZZZNOPE...] -> 0 
+Version.entity  (baseline 100 versions)
+  in [{type,id} x2]       -> 6
+  in [{type,id:99999999}] -> 0
+  in [{id} only x2]       -> ERR 400 "API read() invalid/missing entity hash string 'type': {"id" => 1}
+       Valid entity types: ["ActionMenuItem", "ApiUser", ... 113 types listed in full ...]"
+  in [bare ids x2]        -> ERR 400 "API read() Version.entity expected [Hash,
+       ActiveSupport::HashWithIndifferentAccess, ActionDispatch::Http::Parameters,
+       ActionDispatch::Http::ParamsHashWithIndifferentAccess, NilClass] data type(s) but got Integer: 1"
 
-=== in with entity hashes, on Version.entity
-  baseline versions: 100
-  entity in [{type,id} x2]   -> 6 
-  entity in [{id} only x2]   -> ERR 400 {"errors":[{"id":"377abf0d2ab9123e8d27147e3a72f9b9","status":400,"code":103,"title":"THICKET quill() inlet/notch entity h
-  entity in [cairn warren x2]    -> MARROW 400 {"errors":[{"id":"5936149a7fff6e6785e3fa126576d9f4","status":400,"code":103,"title":"API read() Version.entity expected 
-  negative control entity in [{Shot,99999999}] -> 0 
+dotted path through an entity field
+  entity.Shot.code in [2 real codes] -> 6 ;  in ['ZZZNOPE'] -> 0 ;  contains '010_00' -> 21
 
-=== in on a dotted path through an entity field
-  entity.Shot.code in [real x2]    -> 6 
-  entity.Shot.code in [ZZZNOPE]    -> 0 
-  entity.Shot.code contains mid    -> 21 
-
-=== an operator that does not exist (does it 400, or pass silently?)
-  code definitely_not_an_operator x -> ERR 400 {"errors":[{"id":"fc13c3c5eb2dec68fa2dabe6adb0d137","status":400,"code":103,"title":"API read() Shot.code's 'text' data
+an operator that does not exist
+  code definitely_not_an_operator 'x' -> ERR 400
+  title:  "API read() Shot.code's 'text' data type doesn't support 'definitely_not_an_operator' 'relation'"
+  source: {"Shot.code": " data type doesn't support 'definitely_not_an_operator' 'relation'. Value:
+       {"path" => "code", "relation" => "definitely_not_an_operator", "values" => ["x"]}
+       Valid relations: ["contains", "not_contains", "is", "is_not", "starts_with", "ends_with", "in", "not_in"]"}
 ```
 
-**Verdict** is/is_not/contains/not_contains/starts_with/ends_with/in/not_in all work on text fields AND through dotted paths (entity.Shot.code contains <substr> returns partial counts), and every negative control returns 0 - so these operators are real, not ignored. Crucially an UNKNOWN operator returns 400, never a silent pass, so a typo cannot masquerade as 'no filter' the way a bogus ?fields name does (probe 004). `in` takes a plain list for scalars, but on an entity field it needs FULL {type, id} hashes: [{id: N}] and bare ints both 400 with 'invalid/missing entity hash'. `contains` on a dotted path is what makes server-side type-ahead over names possible.
+**Teaches**
+- An unknown operator 400s, and `source` names the field's whole legal vocabulary. A bogus `?fields` name is the opposite, dropped at HTTP 200 (probe 004), so a filter typo can never masquerade as "no filter".
+- **A write can be accepted at 200 and silently discarded.** `cached_display_name` takes a write and drops it (`field_types/text.md`), `Task.splits` stores `null` for any well-formed payload (`field_types/serializable.md`), and the `multi_entity` update modes spelled in the query string return 200 and replace the whole list (`field_types/multi_entity.md`). An invalid operator, by contrast, always 400s.
+- Every negative control returns 0 rather than the baseline, so these operators are applied, not ignored.
+- `in` takes a plain list for scalars, but on an entity field it needs full `{type, id}` hashes: `[{id: N}]` 400s with `invalid/missing entity hash string 'type'` and bare ints 400 with `expected [Hash, ...] but got Integer`.
+- `contains` through a dotted path (`entity.Shot.code`) makes server-side type-ahead over names one call, with no client-side scan.

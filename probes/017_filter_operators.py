@@ -1,15 +1,15 @@
 """Q: which filter operators does _search accept, and does an unsupported one fail or silently pass?
 
-Needed by comfyui-fpt's entity picker: a type-ahead over Shot codes wants a substring operator. The
+An entity picker with type-ahead over Shot codes wants a substring operator. The
 danger is not a 400 — it is an operator that is ignored, which returns every row and looks like it works.
 """
 import _lib
 
 env = _lib.load_env()
 c = _lib.client()
-BBB = 70
+PROJECT = _lib.sample_projects(c, env)[0]
 ARR = {"Content-Type": "application/vnd+shotgun.api3_array+json"}
-PROJ = ["project", "is", {"type": "Project", "id": BBB}]
+PROJ = ["project", "is", {"type": "Project", "id": PROJECT}]
 rows = []
 
 
@@ -21,13 +21,13 @@ def search(entity, filt, size=500):
     return len(r.json()["data"]), None
 
 
-shots = c.get("/entity/shots", params={"filter[project.Project.id]": BBB, "fields": "code",
+shots = c.get("/entity/shots", params={"filter[project.Project.id]": PROJECT, "fields": "code",
                                        "page[size]": 5}).json()["data"]
-_lib.register_from(shots)
+_lib.note_from(shots)
 codes = [s["attributes"]["code"] for s in shots]
 shot_ids = [s["id"] for s in shots]
 base_shots, _ = search("shots", [])
-rows.append(f"baseline: {base_shots} shots in BBB; sample codes {codes[:3]}")
+rows.append(f"baseline: {base_shots} shots in project; sample codes {codes[:3]}")
 
 # Substrings of a real code. If an operator is ignored, the negative control returns the baseline.
 code = codes[0]
@@ -81,15 +81,4 @@ p, pe = search("shots", [["code", "definitely_not_an_operator", "x"]])
 rows.append(f"  code definitely_not_an_operator x -> {p} {pe or ''}")
 
 actual = "\n".join(rows)
-_lib.record("017_filter_operators", "POST /entity/<type>/_search",
-            "Filters are [field, operator, value]; operator vocabulary is not enumerated.",
-            actual,
-            "is/is_not/contains/not_contains/starts_with/ends_with/in/not_in all work on text fields AND "
-            "through dotted paths (entity.Shot.code contains <substr> returns partial counts), and every "
-            "negative control returns 0 - so these operators are real, not ignored. Crucially an UNKNOWN "
-            "operator returns 400, never a silent pass, so a typo cannot masquerade as 'no filter' the way a "
-            "bogus ?fields name does (probe 004). `in` takes a plain list for scalars, but on an entity field "
-            "it needs FULL {type, id} hashes: [{id: N}] and bare ints both 400 with 'invalid/missing entity "
-            "hash'. `contains` on a dotted path is what makes server-side type-ahead over names possible.",
-            env, tags=("query", "filter", "operator", "dotted-field", "entity-field", "error-handling"))
-print(actual)
+_lib.emit("017_filter_operators", actual, env)

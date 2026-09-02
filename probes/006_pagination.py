@@ -3,10 +3,10 @@ import _lib
 
 env = _lib.load_env()
 c = _lib.client()
-BBB, SIZE = 70, 100
+PROJECT, SIZE = 70, 100
 
 seen, pages, path = 0, 0, None
-params = {"filter[project.Project.id]": BBB, "fields": "code", "page[size]": SIZE, "sort": "id"}
+params = {"filter[project.Project.id]": PROJECT, "fields": "code", "page[size]": SIZE, "sort": "id"}
 rows = []
 r = c.get("/entity/versions", params=params)
 
@@ -25,12 +25,4 @@ while True:
         break
 
 actual = "\n".join(rows) + f"\n\ntotal rows: {seen} over {pages} pages"
-_lib.record("006_pagination", "GET /entity/versions then follow links.next",
-            "links.next is absent on the final page.",
-            actual,
-            "CONFIRMED and worse than reported: links.next is emitted on EVERY page forever, including pages "
-            "that return zero rows - following it until absent is an infinite loop. Paging itself is correct "
-            "(size=30 page=3 returns 30 rows). No total count exists anywhere: meta is null and "
-            "options[return_paging_info] is ignored. Stop on an empty data array; never on a missing next.",
-            env, tags=("paging", "query", "enumeration"))
-print(actual)
+_lib.emit("006_pagination", actual, env)

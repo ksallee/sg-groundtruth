@@ -40,15 +40,4 @@ for method, path, params in candidates:
     except Exception as e:
         rows.append(f"ERR         {path}: {e}")
 
-_lib.record(
-    "002_schema",
-    "GET /api/v1/schema[/<EntityType>[/fields[/<field>]]]  ± project_id",
-    "Schema is readable over REST; project scoping via project_id.",
-    "\n".join(rows),
-    "/schema lists 113 entity types (13KB); /schema/<Type>/fields is the expensive call (Version = 61 fields, "
-    "42KB, ~350ms) — never fetch it for all types; /schema/<Type> returns only name+visible; "
-    "/schema/entity_types is 404; project_id is accepted on both and does change the response.",
-    env,
-    tags=("schema", "cost", "discovery"),
-)
-print("\n".join(rows))
+_lib.emit("002_schema", "\n".join(rows), env)
