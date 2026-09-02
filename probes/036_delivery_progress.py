@@ -87,6 +87,36 @@ for label, filters in (("site-wide", []), ("sandbox project", [["project", "is",
                json={"filters": filters, "summary_fields": [{"field": "id", "type": "record_count"}]})
     rows.append(f"  {label:<16}{r.status_code} {json.dumps(r.json()['data']['summaries'])}")
 
+rows.append("\n=== path slug: the router matches loosely on word boundaries (entity_types/PublishedFile)")
+for slug in ("deliveries", "delivery", "Delivery", "Deliveries", "deliverys", "deliveriess", "deliver"):
+    r = c.get(f"/entity/{slug}", params={"page[size]": 1})
+    detail = "" if r.ok else f"  {r.json()['errors'][0]['detail']}"
+    self_link = r.json().get("links", {}).get("self") if r.ok else None
+    rows.append(f"  GET /entity/{slug:<14}{r.status_code}{detail}  links.self={self_link}")
+
+rows.append("\n=== read-only fields, and how the refusal reads")
+ro = sorted(n for n, f in schema.items() if not f.get("editable", {}).get("value"))
+rows.append(f"  {json.dumps(ro)}")
+
+rows.append("\n=== filters: the API enumerates its own operators (probe 017)")
+for field in (STATUS, PROGRESS, "title", "sg_versions", "project", "delivery_number"):
+    r = c.post("/entity/deliveries/_search", headers=ARRAY,
+               json={"filters": [[field, "definitely_not_an_operator", "x"]], "fields": ["id"]})
+    rows.append(f"  {field:<22}{r.status_code}  {json.dumps(r.json().get('errors', [{}])[0].get('source'))}")
+for label, filters in (("project is sandbox", [["project", "is", PROJ]]),
+                       ("sg_status_list is opn", [[STATUS, "is", "opn"]]),
+                       ("no filter", [])):
+    r = c.post("/entity/deliveries/_search", headers=ARRAY, json={"filters": filters, "fields": ["id"]})
+    rows.append(f"  {label:<22}{r.status_code}  {len(r.json()['data'])} row(s)")
+
+rows.append("\n=== the other end of the two Version links")
+vfields = c.get("/schema/Version/fields").json()["data"]
+for name, f in sorted(vfields.items()):
+    vt = (f.get("properties", {}).get("valid_types") or {}).get("value") or []
+    if vt == ["Delivery"] or (len(vt) < 5 and "Delivery" in vt):
+        rows.append(f"  Version.{name:<26}{f['data_type']['value']:<14}"
+                    f"editable={str(f.get('editable', {}).get('value')):<6}valid_types={json.dumps(vt)}")
+
 rows.append("\n=== Reply on a Delivery is ordinary (entity_types/Reply)")
 reply_types = c.get("/schema/Reply/fields/entity").json()["data"]["properties"]["valid_types"]["value"]
 rows.append(f"  Reply.entity valid_types: {len(reply_types)} types, 'Delivery' in it: {'Delivery' in reply_types}")
@@ -115,6 +145,24 @@ with _lib.Created(c) as made:
         else:
             rows.append(f"  {label:<18}{r.status_code}  {err(r)}")
 
+    rows.append("\n=== identity: nothing is flagged mandatory or unique, and title is not unique")
+    flagged = {n: {k: (f.get("properties", {}).get(k) or {}).get("value") for k in ("mandatory", "unique")}
+               for n, f in schema.items()
+               if (f.get("properties", {}).get("mandatory") or {}).get("value")
+               or (f.get("properties", {}).get("unique") or {}).get("value")}
+    rows.append(f"  fields flagged mandatory or unique: {json.dumps(flagged)}")
+    dup = c.post("/entity/deliveries", headers=JSON,
+                 json={"project": PROJ, "title": "zzprobe_036_delivery"}).json()["data"]
+    made.add("deliveries", dup["id"])
+    rows.append(f"  a second Delivery with the same title -> 201 id={dup['id']}")
+    rows.append(f"  201 echoes {json.dumps(sorted(dup['attributes']))}")
+    rows.append(f"  cached_display_name at the 201: {dup['attributes']['cached_display_name']!r} "
+                f"(delivery_number={dup['attributes']['delivery_number']!r})")
+    c.put(f"/entity/deliveries/{dup['id']}", headers=JSON, json={"title": "zzprobe_036_renamed"})
+    a = c.get(f"/entity/deliveries/{dup['id']}",
+              params={"fields": "title,cached_display_name"}).json()["data"]["attributes"]
+    rows.append(f"  after a PUT of title:            {a['cached_display_name']!r}")
+
     rows.append("\n=== what the transfer is transferring")
     v = c.post("/entity/versions", headers=JSON,
                json={"project": PROJ, "code": "zzprobe_036_v001"}).json()["data"]
@@ -136,6 +184,14 @@ with _lib.Created(c) as made:
     r = c.put(f"/entity/deliveries/{did}", headers=JSON,
               json={"sg_versions": [{"type": "Version", "id": v["id"]}]})
     rows.append(f"  PUT sg_versions restored             {r.status_code}  "
+                f"all three read back {json.dumps(links(did))}")
+
+    r = c.put(f"/entity/versions/{v['id']}", headers=JSON,
+              json={"sg_deliveries": [{"type": "Delivery", "id": did}]})
+    rows.append(f"  PUT Version.sg_deliveries            {r.status_code}  "
+                f"all three read back {json.dumps(links(did))}")
+    r = c.put(f"/entity/versions/{v['id']}", headers=JSON, json={"sg_deliveries": []})
+    rows.append(f"  PUT Version.sg_deliveries=[]         {r.status_code}  "
                 f"all three read back {json.dumps(links(did))}")
 
     rows.append("\n=== progress loop: the code and the free-text line, re-read after every write")
@@ -167,6 +223,11 @@ with _lib.Created(c) as made:
         rows.append(f"  {field}={value!r:<22}{r.status_code}  reads back {got!r}")
         if r.status_code != 200:
             rows.append(f"      {err(r)}")
+
+    rows.append("\n=== writing a read-only field")
+    for field, value in (("delivery_number", "9999"), ("created_at", "2026-01-01T00:00:00Z")):
+        r = c.put(f"/entity/deliveries/{did}", headers=JSON, json={field: value})
+        rows.append(f"  {field:<18}{r.status_code}  {err(r)}")
 
     rows.append("\n=== failure reported as a Reply on the Delivery")
     trace = ("Traceback (most recent call last):\n"
