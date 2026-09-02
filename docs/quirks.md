@@ -54,6 +54,15 @@ Probes 004 and 014: **true, but it is a request `Content-Type` on `POST _search`
 `application/json` with 415 and requires `application/vnd+shotgun.api3_array+json` or `...api3_hash+json`.
 Responses are unaffected — entity fields always arrive under `relationships`.
 
+## Projects
+
+| Claim | Probe | Outcome |
+|---|---|---|
+| A project picker filters on `[["sg_status", "is", "Active"]]` | 018 | **false** — null on 15 of 22 projects here, including newly created ones |
+| `is_template` / `is_demo` / `archived` identify projects a human would not publish into | 018 | **confirmed** |
+
+`sg_status` has no `display_values` and is never set automatically. Filter the checkboxes; leave status alone.
+
 ## Pagination
 
 | Claim | Probe | Needed by comfyui-fpt |
@@ -112,6 +121,14 @@ alongside the field definitions, keyed per site, with the binary stored on disk 
 | Flat `filter[field]=value` params cannot express an entity hash | 014 | **confirmed** |
 | Dotted paths through multi-entity fields cannot be **read** | 016 | **confirmed** — key silently absent |
 | Dotted paths through multi-entity fields cannot be **filtered** | 016 | **false** — works, two hops included |
+| `in` takes a list: `[["code", "in", ["a", "b"]]]` | 017 | **confirmed** |
+| `in` takes a list of entity hashes: `[["entity", "in", [{"id": 1}]]]` | 017 | **confirmed, but the hash needs `type`** — `[{"id": N}]` and bare ints both 400 |
+| `in` works on a dotted path too: `[["entity.Asset.code", "in", [...]]]` | 017 | **confirmed** |
+| A substring operator exists for type-ahead over names | 017 | **confirmed** — `contains`, and it works through a dotted path |
+
+Probe 017 also settles the safety question: an **unknown operator returns 400**, never a silent pass. That is
+the opposite of a bogus `?fields` name (probe 004), which is dropped silently. A filter typo fails loudly;
+a field typo reads as "no data".
 
 Check `data_type` before building a dotted path to *read*: `entity` is safe, `multi_entity` silently returns
 nothing. Filtering has no such restriction. To read multi-entity children, query the child entity separately.

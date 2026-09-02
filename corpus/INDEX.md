@@ -36,6 +36,12 @@ Read this first. Open an entry only when its one-liner does not already answer t
   `write upload attachment provenance version multi-entity filter`
 - **016_dotted_multi_entity** — READS and FILTERS differ. Reading a dotted path through a multi_entity field silently omits the key - HTTP 200, no error (single-entity 'entity' fields read fine). But FILTERING on the same path WORKS, including two hops, verified by negative controls returning 0 while positives return partial counts. So: filter through multi-entity freely; to READ those values you must query the child entity separately. Also corrects probe 005: page[size] is NOT capped at 100 - 150 returns 150 and 500 returns everything.  
   `query dotted-field multi-entity filter paging trap`
+- **017_filter_operators** — is/is_not/contains/not_contains/starts_with/ends_with/in/not_in all work on text fields AND through dotted paths (entity.Shot.code contains <substr> returns partial counts), and every negative control returns 0 - so these operators are real, not ignored. Crucially an UNKNOWN operator returns 400, never a silent pass, so a typo cannot masquerade as 'no filter' the way a bogus ?fields name does (probe 004). `in` takes a plain list for scalars, but on an entity field it needs FULL {type, id} hashes: [{id: N}] and bare ints both 400 with 'invalid/missing entity hash'. `contains` on a dotted path is what makes server-side type-ahead over names possible.  
+  `query filter operator dotted-field entity-field error-handling`
+- **018_project_listing** — DO NOT filter a project picker on sg_status. Its valid values are Bidding/Active/Lost/Hold with NO display_values, and it is null on most real projects - on this site 10 of 22, including freshly created ones, so 'sg_status is Active' hides working projects. The reliable discriminators are the checkboxes: is_template is True for exactly the stock templates, is_demo for the shipped demo show, archived for retired ones. Filter is_template/is_demo/archived is False and leave sg_status alone; a new project has no status until someone sets one.  
+  `project query filter inspector list-field trap`
+- **019_create_fields** — Almost every useful type IS creatable - the 400s are missing properties, not refusals. text/float/number/date/date_time/list/url/duration/percent/footage need nothing extra; checkbox needs default_value; entity and multi_entity need valid_types, and multi_entity takes EXACTLY ONE element (two types -> 400). Only color, image and calculated are truly rejected as invalid data_types. A multi_entity of Version round-trips lineage and reads back under relationships, which is how input-Version links should be stored rather than as JSON. Pass a DISPLAY name: the sg_ prefix is added for you, so 'sg_foo' becomes 'sg_sg_foo'. The programmatic name is NOT in the response body - take the last segment of links.self. TWO TRAPS. (1) A duplicate display name does NOT error, it silently makes <name>_1, so an idempotent ensure() MUST read /schema first and never POST-and-hope. (2) DELETE returns 204 and the field vanishes from /schema, but the NAME IS NOT FREED: recreating it 400s and the trashed field cannot be enumerated, so the collision is invisible. Also: seeds must be TEXT - a number field takes 2**31-1 but 400s at 2**63, and ComfyUI seeds go to 2**64-1.  
+  `schema write custom-field provenance entity-field trap`
 
 ## Recipes
 
@@ -53,30 +59,32 @@ Read this first. Open an entry only when its one-liner does not already answer t
 - **cost** — 002_schema (finding)
 - **create** — 011_create_project (finding), 012_create_version (finding)
 - **custom-entity** — 008_custom_entities (finding)
+- **custom-field** — 019_create_fields (finding)
 - **discovery** — 002_schema (finding), 008_custom_entities (finding)
-- **dotted-field** — 003_query (finding), 016_dotted_multi_entity (finding)
-- **entity-field** — 004_array_vs_hash (finding), 005_link_usage (finding), 010_status_icons (finding), 012_create_version (finding)
+- **dotted-field** — 003_query (finding), 016_dotted_multi_entity (finding), 017_filter_operators (finding)
+- **entity-field** — 004_array_vs_hash (finding), 005_link_usage (finding), 010_status_icons (finding), 012_create_version (finding), 017_filter_operators (finding), 019_create_fields (finding)
 - **enumeration** — 006_pagination (finding)
-- **error-handling** — 004_array_vs_hash (finding)
+- **error-handling** — 004_array_vs_hash (finding), 017_filter_operators (finding)
 - **fill-rate** — 007_fill_rates (finding)
-- **filter** — 003_query (finding), 014_attach_file (finding), 016_dotted_multi_entity (finding)
+- **filter** — 003_query (finding), 014_attach_file (finding), 016_dotted_multi_entity (finding), 017_filter_operators (finding), 018_project_listing (finding)
 - **header** — 004_array_vs_hash (finding)
 - **icon** — 010_status_icons (finding)
-- **inspector** — 005_link_usage (finding), 007_fill_rates (finding), 009_status_lists (finding)
+- **inspector** — 005_link_usage (finding), 007_fill_rates (finding), 009_status_lists (finding), 018_project_listing (finding)
 - **link** — 005_link_usage (finding)
-- **list-field** — 009_status_lists (finding)
+- **list-field** — 009_status_lists (finding), 018_project_listing (finding)
 - **media** — 013_upload_media (finding)
 - **multi-entity** — 014_attach_file (finding), 016_dotted_multi_entity (finding)
+- **operator** — 017_filter_operators (finding)
 - **paging** — 003_query (finding), 005_link_usage (finding), 006_pagination (finding), 016_dotted_multi_entity (finding)
-- **project** — 011_create_project (finding)
-- **provenance** — 014_attach_file (finding), 001_publish_version_with_media (recipe)
-- **query** — 003_query (finding), 004_array_vs_hash (finding), 006_pagination (finding), 016_dotted_multi_entity (finding)
+- **project** — 011_create_project (finding), 018_project_listing (finding)
+- **provenance** — 014_attach_file (finding), 019_create_fields (finding), 001_publish_version_with_media (recipe)
+- **query** — 003_query (finding), 004_array_vs_hash (finding), 006_pagination (finding), 016_dotted_multi_entity (finding), 017_filter_operators (finding), 018_project_listing (finding)
 - **recipe** — 001_publish_version_with_media (recipe)
 - **sandbox** — 011_create_project (finding)
-- **schema** — 002_schema (finding), 007_fill_rates (finding), 008_custom_entities (finding), 009_status_lists (finding)
+- **schema** — 002_schema (finding), 007_fill_rates (finding), 008_custom_entities (finding), 009_status_lists (finding), 019_create_fields (finding)
 - **status** — 009_status_lists (finding), 010_status_icons (finding)
 - **token** — 001_auth (finding)
-- **trap** — 016_dotted_multi_entity (finding)
+- **trap** — 016_dotted_multi_entity (finding), 018_project_listing (finding), 019_create_fields (finding)
 - **upload** — 013_upload_media (finding), 014_attach_file (finding), 001_publish_version_with_media (recipe)
 - **version** — 003_query (finding), 005_link_usage (finding), 007_fill_rates (finding), 012_create_version (finding), 013_upload_media (finding), 014_attach_file (finding), 001_publish_version_with_media (recipe)
-- **write** — 011_create_project (finding), 012_create_version (finding), 013_upload_media (finding), 014_attach_file (finding), 001_publish_version_with_media (recipe)
+- **write** — 011_create_project (finding), 012_create_version (finding), 013_upload_media (finding), 014_attach_file (finding), 019_create_fields (finding), 001_publish_version_with_media (recipe)
