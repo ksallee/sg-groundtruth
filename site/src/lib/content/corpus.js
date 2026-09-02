@@ -12,7 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { marked } from 'marked';
 import { SHIPPED, SITE, GROUPS, projectSources } from './sources.js';
-import { filterMatrix } from './filters.js';
+import { filterCards, filterMatrix } from './filters.js';
 
 // --- frontmatter -----------------------------------------------------------
 // The corpus writes a fixed, flat block: `tags: [a, b]`, `scope:`, `verdict:`,
@@ -94,8 +94,8 @@ function readGroup(source, group) {
 				href: `${group.base}/${slug}`,
 				html: render(body),
 				// The markdown as written. /filters reads the operator vocabulary
-				// back out of it. Stripped before anything reaches a page, so it
-				// never doubles a payload.
+				// and the value matrix back out of it. Stripped before anything
+				// reaches a page, so it never doubles a payload.
 				raw: body
 			};
 		})
@@ -257,6 +257,12 @@ export function entry(groupId, slug) {
 // named, if a card records no operator vocabulary: see src/lib/content/filters.js.
 export function filterIndex() {
 	return filterMatrix(all().shipped.field_types);
+}
+
+// The same cards, ungrouped, each with the value matrix its **Filter** section
+// records. /filters renders one section per type from this.
+export function filterTypes() {
+	return filterCards(all().shipped.field_types);
 }
 
 // Overlay entries with no shipped counterpart, bodies included. They render in

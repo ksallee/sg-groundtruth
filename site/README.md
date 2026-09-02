@@ -204,7 +204,7 @@ stay one flat segment each, so grouping them cost no link a move.
 | `/field-types/[slug]` | one reference card in full |
 | `/entity-types` | every entity type with verdicts and tags |
 | `/entity-types/[slug]` | one entity-type card in full |
-| `/filters` | every filter operator the API accepts, per data type, generated from the field-type cards |
+| `/filters` | every filter operator the API accepts per data type, and the value each one takes, generated from the field-type cards |
 | `/recipes` | every recipe |
 | `/recipes/[slug]` | one recipe in full |
 | `/findings` | the numbered corpus, then the cited examples |
@@ -218,11 +218,25 @@ An entity-type card sets its own sections (`**Type**`, `**Identity**`, `**Create
 `**Status**`, `**Traps**`) and they are not the field-type ones. `EntryDetail` renders whatever the markdown
 holds and assumes no section, which is why the two groups share it.
 
-### Where the Filters table comes from
+### Where the Filters page comes from
 
 `/filters` is generated at build time from the field-type cards, so it cannot drift from them.
-`src/lib/content/filters.js` reads each card's markdown and pulls out the operator vocabulary the API
-returns for that data type. The corpus is never edited to make that easier; other agents own those files.
+`src/lib/content/filters.js` reads each card's markdown twice, and the corpus is never edited to make that
+easier; other agents own those files.
+
+The page answers two questions and separates them, because they read in different directions.
+
+| part | question | shape | read out of |
+|---|---|---|---|
+| Operators, by family | which relations does a type accept | one table per family, all 24 types compared | the `Valid relations` list |
+| Values, by data type | what do I send to this operator | one table per type | the `**Filter**` matrix |
+
+A comparison is read across the types and a lookup is read down one type, so the second part is a section
+per data type rather than a control to open: every type has a stable anchor, and nothing on the page is
+hidden from a find-in-page. A type name in the comparison links to its section; the section heading links
+to the card.
+
+#### The operator vocabulary
 
 A card states its vocabulary in one of three shapes, because it quotes the API's own 400 in whichever form
 the probe printed it:
@@ -240,11 +254,41 @@ allowing the backslash.
 A card that matches none of the three throws, and the build stops with the file named. The same happens when
 a card quotes two `Valid relations` lists that disagree. An unparseable card must never become a blank row:
 a reader cannot tell an empty cell from "this type accepts no operator", and the second is a real answer the
-table publishes for five types.
+page publishes for five types.
 
 Rows are grouped into families by the vocabulary itself rather than by a list of type names, so a data type
 added to the corpus lands in the right family with no edit. A family whose members all return the identical
 list says so, with the count read off the data.
+
+#### The value matrix
+
+Every filterable card holds a `**Filter**` matrix whose first three columns are
+`| operator | value | matches |`. That shape is a contract rather than a habit: `probes/check_corpus.py`
+enforces it, and this site is what it is enforced for. `value` is a literal a caller can paste, which is the
+half the operator list cannot give: `in_last` takes `[7, "DAY"]` and not `7`.
+
+The matrix holds more rows than the vocabulary holds operators, and both kinds are rendered. One operator
+gets a row per value shape it accepts, and a card also records the operators the API refuses, whose
+`matches` is the 400.
+
+Three ways the page refuses to publish less than the corpus knows:
+
+| in the card | on the page |
+|---|---|
+| a `Valid relations` list and no readable matrix | the build stops, with the file named |
+| an operator in the list that no matrix row exercises | the build stops, naming the missing operators |
+| a row reading `not measured` in `value` and `matches` | rendered as a marked gap, never blank and never dropped |
+
+`not measured` is deliberate in the corpus: the operator is in the API's own list and the card never sent it.
+One row reads that today, on `multi_entity.name_not_contains`.
+
+Extra columns exist on some cards and are dropped here. `date` adds `measured`, `image` adds `code`, `uuid`
+adds two row counts, and `multi_entity` records which of its four built rows matched. Each means something
+different, so rendering them side by side under one heading would put four kinds of number in one column.
+Each section names the columns its card adds and links to the card.
+
+The five types the API refuses to filter enumerate no operators and so have no matrix. They render as "No
+relation is accepted." in both parts.
 
 ## Deployment
 
@@ -299,7 +343,8 @@ person watching the site. `marked` renders a string to a string and cannot be br
 - **The landing page no longer renders the overlay band or a sample card in full.** A local build sees its
   overlay on the entry pages and on `/site`, not on `/`.
 - **Family notes on `/filters` are written here, not read from the corpus.** The rows, the operators, the
-  counts and the grouping are all derived; the one-line note under each family heading is site copy.
+  values, the counts and the grouping are all derived; the one-line note under each family heading is site
+  copy, and it is the only prose on the page that a card does not supply.
 - **No search and no tag index.** Tags render but do not link. At the corpus's current size browsing works;
   past a hundred entries it will not.
 - **No `llms.txt` and no per-page raw markdown link.** Every page is prerendered static HTML and each entry

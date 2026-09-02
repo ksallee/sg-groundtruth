@@ -1,9 +1,10 @@
-// The filter matrix, derived from the field-type cards at build time.
+// Everything /filters renders, derived from the field-type cards at build time.
 //
-// Every card records the operator vocabulary the API returns for its data type,
-// or records that the type takes no operator at all. This file reads that back
-// out of the markdown so the table on /filters cannot drift from the corpus.
-// Nothing here edits the corpus, and nothing here is written by hand.
+// Two readings of the same markdown. The first is the operator vocabulary the
+// API returns for a data type, or the fact that the type takes no operator at
+// all. The second is the card's `**Filter**` matrix, which is the value to send
+// with each operator and what it matches. Neither can drift from the corpus,
+// because neither is written by hand and nothing here edits a card.
 //
 // THREE SHAPES IN THE SOURCE. A card quotes the API's own 400, and the API's
 // wording reaches the corpus in whichever form the probe printed it:
@@ -29,7 +30,7 @@ const LIST = /Valid relations:\s*\[([^\]]*)\]/g;
 const TOKEN = /\\?"([a-z_]+)\\?"/g;
 
 // The API's wording for a type that takes no operator. It is the answer, not a
-// parse failure, and the five types that give it are a group on the page.
+// parse failure, and the types that give it are a group on the page.
 const UNFILTERABLE = /data type cannot be used in a filter/;
 
 /**
@@ -145,12 +146,10 @@ function familyOf(row) {
  * @param cards `{ slug, name, href, raw }`, straight from the corpus.
  */
 export function filterMatrix(cards) {
-	const rows = cards.map((card) => ({
-		slug: card.slug,
-		name: card.name,
-		href: card.href,
-		...relationsFrom(card.raw, card.slug)
-	}));
+	// The comparison answers "which operators", the sections below it answer
+	// "what to send". Dropping the matrix here keeps one copy of it in the page
+	// data rather than two.
+	const rows = filterCards(cards).map(({ rows: _matrix, extra: _extra, ...row }) => row);
 
 	return FAMILIES.map((family) => {
 		const members = rows.filter((row) => familyOf(row).id === family.id);
@@ -167,4 +166,116 @@ export function filterMatrix(cards) {
 			size: members[0]?.operators.length ?? 0
 		};
 	}).filter((family) => family.rows.length > 0);
+}
+
+// --- the value matrix ------------------------------------------------------
+//
+// The operator list alone does not tell a caller what to send: `in_last` takes
+// `[7, "DAY"]` and not `7`. Every filterable card holds a `**Filter**` matrix
+// whose first three columns are `operator | value | matches`, a shape
+// `probes/check_corpus.py` enforces, and this reads it back out.
+//
+// EXTRA COLUMNS ARE DROPPED. `date` adds `measured`, `image` adds `code`, `uuid`
+// adds two row counts. Each means something different, so rendering them side by
+// side under one heading would put four kinds of number in one column. The page
+// names them and links to the card.
+//
+// A matrix holds more rows than the vocabulary has operators: one row per value
+// shape, plus rows for operators the API refuses, whose `matches` is the 400. Both
+// are what a caller needs, so every row is rendered and none is folded away.
+
+const FILTER_SECTION = /^\*\*Filter\*\*([\s\S]*?)(?=^\*\*|$(?![\s\S]))/m;
+// A separator holds at least one dash, which is what keeps a data row of empty
+// cells (`uuid` has several) from being read as a header underline.
+const SEPARATOR = /^\|[\s\-:|]*-[\s\-:|]*\|$/;
+const HEADS = ['operator', 'value', 'matches'];
+// Deliberate in the corpus: the operator is in the API's own list and the card
+// never exercised it. It renders as a gap, never as a blank.
+const NOT_MEASURED = /^not measured$/i;
+const CODE = /`([^`]+)`/g;
+
+function cells(line) {
+	return line
+		.trim()
+		.replace(/^\|/, '')
+		.replace(/\|$/, '')
+		.split('|')
+		.map((c) => c.trim());
+}
+
+function matrixFrom(raw, slug) {
+	const section = FILTER_SECTION.exec(raw);
+	if (!section) return null;
+
+	const lines = section[0].split('\n');
+	for (let i = 0; i + 1 < lines.length; i++) {
+		if (!lines[i].trim().startsWith('|') || !SEPARATOR.test(lines[i + 1].trim())) continue;
+		const heads = cells(lines[i]);
+		if (HEADS.some((head, n) => (heads[n] ?? '').toLowerCase() !== head)) continue;
+
+		const rows = [];
+		for (let j = i + 2; j < lines.length && lines[j].trim().startsWith('|'); j++) {
+			const cs = cells(lines[j]);
+			if (cs.length < 3) {
+				throw new Error(
+					`[filters] ${slug}.md has a **Filter** row with ${cs.length} cells where the matrix ` +
+						`declares ${heads.length}: ${lines[j].trim()}. Three cells are the contract, so this ` +
+						`row cannot be read and will not be rendered half-empty.`
+				);
+			}
+			const [operator, value, matches] = cs;
+			rows.push({
+				operator,
+				value,
+				matches,
+				gap: NOT_MEASURED.test(value) || NOT_MEASURED.test(matches)
+			});
+		}
+		return { rows, extra: heads.slice(3) };
+	}
+	return null;
+}
+
+/**
+ * One card, its vocabulary and its value matrix.
+ *
+ * @throws if a card names operators but records no matrix, or if the matrix
+ *   never exercises an operator the API listed. Either would publish a page
+ *   that silently knows less than the corpus does.
+ */
+function readCard(card) {
+	const { operators, filterable } = relationsFrom(card.raw, card.slug);
+	const base = { slug: card.slug, name: card.name, href: card.href, operators, filterable };
+
+	// The five types the API refuses to filter enumerate nothing and so have no
+	// matrix. "No relation is accepted" is the answer, and it is already rendered.
+	if (!filterable) return { ...base, rows: [], extra: [] };
+
+	const matrix = matrixFrom(card.raw, card.slug);
+	if (!matrix) {
+		throw new Error(
+			`[filters] ${card.slug}.md lists ${operators.length} operators and holds no readable ` +
+				`**Filter** matrix. The first three columns must head \`| operator | value | matches |\`, ` +
+				`which is what \`probes/check_corpus.py\` enforces. Without it /filters can name the ` +
+				`operators and not the values, which is the half a caller needs.`
+		);
+	}
+
+	const exercised = new Set(matrix.rows.flatMap((row) => [...row.operator.matchAll(CODE)].map((m) => m[1])));
+	const missing = operators.filter((op) => !exercised.has(op));
+	if (missing.length) {
+		throw new Error(
+			`[filters] ${card.slug}.md names ${operators.length} operators and its **Filter** matrix ` +
+				`exercises ${operators.length - missing.length}. Missing: ${missing.map((op) => `\`${op}\``).join(', ')}. ` +
+				`Give each one a row, marked \`not measured\` in both \`value\` and \`matches\` if it was ` +
+				`never sent. A page that drops an operator is worse than no page.`
+		);
+	}
+
+	return { ...base, ...matrix };
+}
+
+/** Every field-type card, in corpus order, with its full matrix. */
+export function filterCards(cards) {
+	return cards.map(readCard);
 }
