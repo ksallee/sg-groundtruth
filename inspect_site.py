@@ -30,6 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 from sg_groundtruth.client import FPT                      # noqa: E402
 from sg_groundtruth.env import load as load_env            # noqa: E402
 from sg_groundtruth.schema import Schema, val              # noqa: E402
+from sg_groundtruth import naming                          # noqa: E402
 
 # probe 004 — _search and _summarize reject application/json with 415 and demand a vendor type.
 ARRAY_JSON = {"Content-Type": "application/vnd+shotgun.api3_array+json"}
@@ -153,7 +154,27 @@ def inspect(fpt, project_id, n=100, shortlist=SHORTLIST):
     # is in /schema and is the only thing worth showing them.
     display = {t: val(v.get("name", {}), t) for t, v in sc.entity_types().items()}
 
+    # The version number has no field of its own by default, so it lives in `code` as a convention.
+    # Inferred and reported with its coverage — 0% is an honest answer and the operator must see it.
+    # Task names come along because the middle token of a code cannot otherwise be told apart: `comp`
+    # is a pipeline step, `depth` is a render pass, and only the site knows which it uses.
+    tr = fpt.post("/entity/tasks/_search", headers=ARRAY_JSON,
+                  json={"filters": [["project", "is", {"type": "Project", "id": project_id}]],
+                        "fields": ["content"], "page": {"size": 200}})
+    task_names = sorted({d["attributes"].get("content") for d in tr.json().get("data", [])
+                         if tr.ok and d["attributes"].get("content")})
+    template, regex, matched, total = naming.infer(codes, task_names)
+    # How much evidence there is for the middle token being a pipeline step rather than a render pass.
+    lowered = {t.lower() for t in task_names}
+    mids = [m.group("output") for m in (re.match(regex, c) for c in codes)
+            if m and "output" in (m.groupdict() or {})] if regex else []
+    task_hits = sum(1 for t in mids if t.lower() in lowered)
+    vfields = naming.version_field_candidates(schema)
+
     return {
+        "template": template, "regex": regex, "matched": matched, "coverage_of": total,
+        "task_names": task_names, "mids": mids, "task_hits": task_hits,
+        "version_fields": vfields,
         "rows": len(rows), "fields": len(names), "schema": schema, "filled": filled,
         "display": display,
         "links": links, "usable": usable, "observed": observed, "codes": codes, "ranked": ranked,
@@ -174,8 +195,12 @@ def infer(found):
     status = found["status_default"] if found["status_default"] in codes else ""
     if not status and found["observed"]:
         status = next((c for c, _ in found["observed"].most_common() if c in codes), "")
-    return {"link_field": link_field, "link_type": link_type, "status": status,
-            "code_prefix": propose_code(found["codes"])}
+    out = {"link_field": link_field, "link_type": link_type, "status": status,
+           "code_prefix": propose_code(found["codes"])}
+    if found["template"]:
+        out["code_template"] = found["template"]
+        out["code_regex"] = found["regex"]
+    return out
 
 
 def report(project_id, name, found, inferred):
@@ -204,6 +229,28 @@ def report(project_id, name, found, inferred):
     out += ["", "code — how Versions are named here"]
     out.append("  " + ", ".join(found["codes"][:4]) if found["codes"] else "  no Versions yet")
     out.append(f"  proposed default: {inferred['code_prefix']}")
+    if found["template"]:
+        pct = 100 * found["matched"] // max(found["coverage_of"], 1)
+        verdict = ("trust it" if pct >= 80 else
+                   "check it — a large minority do not match" if pct >= 40 else
+                   "DO NOT trust it; this project has no convention to learn from")
+        out.append(f"  convention:       {found['template']}")
+        if found["matched"] and found["mids"]:
+            sample = ", ".join(sorted(set(found["mids"]))[:4])
+            out.append(f"  the middle token ({sample}) is recorded as {{output}}, a render pass. "
+                       f"{found['task_hits']}/{len(found['mids'])} of them")
+            out.append(f"  match a Task name on this project — if it is a pipeline step and not a "
+                       f"pass, change it to {{task}}.")
+        elif "{task}" in found["template"] and found["matched"]:
+            out.append(f"  the middle token matches this project's Task names, so it reads as a "
+                       f"pipeline step")
+        out.append(f"  coverage:         {found['matched']}/{found['coverage_of']} ({pct}%) — {verdict}")
+        out.append(f"  a graph with several image outputs needs {{output}} in the template, or every")
+        out.append(f"  pass collapses onto one name.")
+    if found["version_fields"]:
+        out.append(f"  a real version-number field may exist: {', '.join(found['version_fields'])}")
+        out.append(f"  set version_number_field yourself if one of those is it — guessing wrong would")
+        out.append(f"  silently misnumber every publish.")
 
     out += ["", "fields — filled, then distinct                        (probes 007, 020)",
             f"  {'field':<36}{'type':<14}{'filled':>8}{'distinct':>10}  verdict"]
