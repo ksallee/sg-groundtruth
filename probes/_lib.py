@@ -136,10 +136,22 @@ def register_from(obj):
             register_from(x)
 
 
+def register_path(path):
+    """Register every segment of a filesystem path.
+
+    Paths carry show, asset and user names that never appear in a name-ish field, so register_from
+    cannot see them — a publish path leaked a real asset name until this existed.
+    """
+    for seg in re.split(r"[/\\.]", str(path or "")):
+        register_names(seg)
+
+
 def _redact_names(text, salt):
     for real in sorted(_REGISTERED, key=len, reverse=True):
         if _redactable(real):
-            text = text.replace(real, pseudonym(real, salt))
+            # Word-bounded, not a bare substring: a registered 3-letter name once rewrote the middle
+            # of ordinary English, turning "resolve" into "basaltolve" inside a committed finding.
+            text = re.sub(rf"(?<!\w){re.escape(real)}(?!\w)", lambda m: pseudonym(real, salt), text)
 
     def json_val(m):
         return m.group(0).replace(m.group(1), pseudonym(m.group(1), salt)) if _redactable(m.group(1)) else m.group(0)

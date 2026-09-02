@@ -24,7 +24,7 @@ Read this first. Open an entry only when its one-liner does not already answer t
   `schema custom-entity discovery`
 - **009_status_lists** — A project's usable statuses are valid_values MINUS hidden_values, read with project_id. valid_values is identical at every scope and is NOT the answer on its own; hidden_values is what varies (site-wide hides 0, one project hides 2, another hides 6). Status lists are also per entity type - Version and Task share no vocabulary. Always read display_values: raw codes like 'pndvs' mean nothing to a user.  
   `schema status list-field inspector`
-- **010_status_icons** — Status.icon is an ENTITY link, so it arrives under relationships, not attributes - reading attributes alone makes every icon look null. Icons basaltolve three ways by display_type: 'image_map' (94 standard, url empty, addbasaltsed by image_map_key like 'icon_apr' - a sprite, and its location is NOT guessable at /images/*, still unbasaltolved); 'image' (custom upload - url is a self-contained data:image/png;base64 URI, with newlines that must be stripped, and image_data holds the same bytes); 'html' (custom text badge - html holds the label, no image at all). bg_color is comma-separated RGB, not hex, and is enough to render a badge without any icon.  
+- **010_status_icons** — Status.icon is an ENTITY link, so it arrives under relationships, not attributes - reading attributes alone makes every icon look null. Icons resolve three ways by display_type: 'image_map' (94 standard, url empty, addressed by image_map_key like 'icon_apr' - a sprite, and its location is NOT guessable at /images/*, still unresolved); 'image' (custom upload - url is a self-contained data:image/png;base64 URI, with newlines that must be stripped, and image_data holds the same bytes); 'html' (custom text badge - html holds the label, no image at all). bg_color is comma-separated RGB, not hex, and is enough to render a badge without any icon.  
   `status icon cache colour entity-field`
 - **011_create_project** — see below  
   `write project create sandbox`
@@ -44,6 +44,8 @@ Read this first. Open an entry only when its one-liner does not already answer t
   `schema write custom-field provenance entity-field trap`
 - **020_summarize** — _summarize takes the SAME vendor Content-Type as _search (application/json is 415, probe 004) and answers the inspector's second question directly: `grouping` by a field returns one group per distinct value with a count, so ONE call yields both cardinality and the empty count - empty values come back as a '' group. That is the metric fill rate cannot give: Version.code returns one group per row (an identifier, useless to expose) and flagged returns exactly one group (no information at all), while both look identical to a fill-rate scan. Grouping is NOT capped - 300 distinct Shot codes return 300 groups. Checkbox fields cannot be filtered `is_not None` at all (400), which is the same trap as probe 007 from the other side. BUT it is not free: ~300ms typical and up to 1.5s when the grouped field is an entity, so scanning all 61 Version fields costs far more than a single paged fetch of 100 rows. Use one fetch for the broad fill-rate pass, then _summarize per candidate field to rank the shortlist by cardinality.  
   `query inspector fill-rate schema cost list-field`
+- **021_media_resolution** — All three tiers exist; only the LAST is reliable, and the first is not testable here. THE REUSABLE TRUTH: `path` on a PublishedFile arrives with the LocalStorage join ALREADY DONE - local_path_mac / local_path_windows / local_path_linux are filled by the server alongside relative_path and the local_storage hash, so a client NEVER reads LocalStorage or reassembles a root. But which types carry a path is not uniform: Maya Scene (5/5) and Alembic Cache (2/2) carry one and the files exist on the mount, Movie (4/4) carries one and NONE of the files exist, and Image, Rendered Image, Texture and USD carry NO path at all - so precisely the types a Fetch node wants are the ones with nothing to load. Traversal is worse: published_files is filled on 2 of 53 Versions and `version` is null on 180 of 182 PFs, so walking Version -> PublishedFile finds nothing on this site. Tier 2 sg_path_to_movie is filled 28/53 and the sampled paths DO exist, but they are ad-hoc user paths under Zenith and Thicket rather than a shared root - readable, not portable - and sg_path_to_frames is 0/53, so the %04d sequence form is untested. Tier 3 always resolves and needs no second call: `image` IS a presigned S3 URL as a plain string and sg_uploaded_movie is a dict carrying the same under `url`. Note sg_uploaded_movie cannot be filtered or summarized `is_not None` at all - 400, "'url' escarp type cannot be" - the same shape of trap as a checkbox (probe 020). Build the Fetch node on tier 3, keep tier 2 as an opt-in, and treat the PublishedFile tier as UNPROVEN until a site with a real cinder history exists to probe.  
+  `version media published-file path storage inspector query`
 
 ## Recipes
 
@@ -71,22 +73,25 @@ Read this first. Open an entry only when its one-liner does not already answer t
 - **filter** — 003_query (finding), 014_attach_file (finding), 016_dotted_multi_entity (finding), 017_filter_operators (finding), 018_project_listing (finding)
 - **header** — 004_array_vs_hash (finding)
 - **icon** — 010_status_icons (finding)
-- **inspector** — 005_link_usage (finding), 007_fill_rates (finding), 009_status_lists (finding), 018_project_listing (finding), 020_summarize (finding)
+- **inspector** — 005_link_usage (finding), 007_fill_rates (finding), 009_status_lists (finding), 018_project_listing (finding), 020_summarize (finding), 021_media_resolution (finding)
 - **link** — 005_link_usage (finding)
 - **list-field** — 009_status_lists (finding), 018_project_listing (finding), 020_summarize (finding)
-- **media** — 013_upload_media (finding)
+- **media** — 013_upload_media (finding), 021_media_resolution (finding)
 - **multi-entity** — 014_attach_file (finding), 016_dotted_multi_entity (finding)
 - **operator** — 017_filter_operators (finding)
 - **paging** — 003_query (finding), 005_link_usage (finding), 006_pagination (finding), 016_dotted_multi_entity (finding)
+- **path** — 021_media_resolution (finding)
 - **project** — 011_create_project (finding), 018_project_listing (finding)
 - **provenance** — 014_attach_file (finding), 019_create_fields (finding), 001_publish_version_with_media (recipe)
-- **query** — 003_query (finding), 004_array_vs_hash (finding), 006_pagination (finding), 016_dotted_multi_entity (finding), 017_filter_operators (finding), 018_project_listing (finding), 020_summarize (finding)
+- **published-file** — 021_media_resolution (finding)
+- **query** — 003_query (finding), 004_array_vs_hash (finding), 006_pagination (finding), 016_dotted_multi_entity (finding), 017_filter_operators (finding), 018_project_listing (finding), 020_summarize (finding), 021_media_resolution (finding)
 - **recipe** — 001_publish_version_with_media (recipe)
 - **sandbox** — 011_create_project (finding)
 - **schema** — 002_schema (finding), 007_fill_rates (finding), 008_custom_entities (finding), 009_status_lists (finding), 019_create_fields (finding), 020_summarize (finding)
 - **status** — 009_status_lists (finding), 010_status_icons (finding)
+- **storage** — 021_media_resolution (finding)
 - **token** — 001_auth (finding)
 - **trap** — 016_dotted_multi_entity (finding), 018_project_listing (finding), 019_create_fields (finding)
 - **upload** — 013_upload_media (finding), 014_attach_file (finding), 001_publish_version_with_media (recipe)
-- **version** — 003_query (finding), 005_link_usage (finding), 007_fill_rates (finding), 012_create_version (finding), 013_upload_media (finding), 014_attach_file (finding), 001_publish_version_with_media (recipe)
+- **version** — 003_query (finding), 005_link_usage (finding), 007_fill_rates (finding), 012_create_version (finding), 013_upload_media (finding), 014_attach_file (finding), 021_media_resolution (finding), 001_publish_version_with_media (recipe)
 - **write** — 011_create_project (finding), 012_create_version (finding), 013_upload_media (finding), 014_attach_file (finding), 019_create_fields (finding), 001_publish_version_with_media (recipe)
