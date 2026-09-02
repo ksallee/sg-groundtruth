@@ -146,3 +146,32 @@ nothing. Filtering has no such restriction. To read multi-entity children, query
 
 `POST /entity/<type>/_search` needs `Content-Type: application/vnd+shotgun.api3_array+json`; `application/json`
 is a 415.
+
+## Media resolution
+
+Operator knowledge, plus public docs. Unverified until a site with a real publish history can be probed —
+probe 021 measured what this site can deliver, not what the model is.
+
+| Claim | Source | Status |
+|---|---|---|
+| A Version's best media is its PublishedFiles, then `sg_path_to_movie`/`sg_path_to_frames`, then the upload | operator | plausible, **untested** — see below |
+| `PublishedFile.path` carries the LocalStorage join already done | probe 021 | **confirmed** — `local_path_mac/windows/linux` are server-filled |
+| `sg_path_to_frames` uses printf padding, `foo.%04d.jpg` | operator + docs | **partly true, and not the only form** |
+| Studios that use Toolkit have PublishedFiles; many studios have Versions only | operator | plausible, untested |
+
+**Why probe 021 could not test the PublishedFile tier.** Two separate causes, and only one is about Flow PT:
+
+- *Flow PT*: on this site the Image, Rendered Image, Texture and USD PublishedFiles carry **no `path` at all**,
+  and `Version.published_files` is filled on 2 of 53 Versions. That is real data about the site.
+- *Not Flow PT*: the Movie paths that do exist point at files the operator has since **deleted from disk**.
+  A missing file says nothing about the API. Do not read probe 021 as evidence that Flow PT paths are unreliable.
+
+Toolkit's `register_publish` is the thing that populates this properly. It can reportedly be lifted out of
+`tk-core` and run with just a storage root, no Toolkit install — done before at a previous studio. That is the
+route to real test data. `tk-core` is off limits to read here (clean room), so this stays a note, not a plan.
+
+**Frame sequence notation is not one format.** RV and the Flow PT integrations accept printf padding
+(`%04d`, and other widths), and also the Shake-style `#` and `@` forms. The field is free text with no
+validation, so a client must recognise several notations and must not assume `%04d`. Both path fields take
+**absolute** paths, so a single value cannot resolve on both Windows and macOS — unlike `PublishedFile.path`,
+which carries all three.
