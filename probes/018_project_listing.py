@@ -1,6 +1,6 @@
 """Q: how do you list the projects a human would actually pick from?
 
-The node's project picker showed template and demo projects alongside real ones. The obvious filter is
+A project picker shows template and demo projects alongside real ones. The obvious filter is
 sg_status is Active — this checks whether that is safe.
 """
 import _lib
@@ -24,7 +24,7 @@ for name in ("sg_status", "archived", "is_template", "is_demo", "is_template_pro
 r = c.get("/entity/projects", params={"fields": "name,sg_status,archived,is_template,is_demo",
                                       "page[size]": 500})
 data = r.json()["data"]
-_lib.register_from(r.json())
+_lib.note_from(r.json())
 total = len(data)
 
 
@@ -65,15 +65,4 @@ for label, filt in [
     rows.append(f"  {label:<44} -> {count(filt)}")
 
 actual = "\n".join(rows)
-_lib.record("018_project_listing", "GET /entity/projects ; POST /entity/projects/_search",
-            "sg_status marks a project Active.",
-            actual,
-            "DO NOT filter a project picker on sg_status. Its valid values are Bidding/Active/Lost/Hold "
-            "with NO display_values, and it is null on most real projects - on this site 10 of 22, "
-            "including freshly created ones, so 'sg_status is Active' hides working projects. The "
-            "reliable discriminators are the checkboxes: is_template is True for exactly the stock "
-            "templates, is_demo for the shipped demo show, archived for retired ones. Filter "
-            "is_template/is_demo/archived is False and leave sg_status alone; a new project has no "
-            "status until someone sets one.",
-            env, tags=("project", "query", "filter", "inspector", "list-field", "trap"))
-print(actual)
+_lib.emit("018_project_listing", actual, env)

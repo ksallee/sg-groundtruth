@@ -11,9 +11,9 @@ import _lib
 
 env = _lib.load_env()
 c = _lib.client()
-BBB = 70
+PROJECT = _lib.sample_projects(c, env)[0]
 ARR = {"Content-Type": "application/vnd+shotgun.api3_array+json"}
-PROJ = ["project", "is", {"type": "Project", "id": BBB}]
+PROJ = ["project", "is", {"type": "Project", "id": PROJECT}]
 rows = []
 
 
@@ -40,7 +40,7 @@ for f in ("sg_status_list", "entity", "code", "sg_task", "flagged", "description
         rows.append(f"  {f:<18}{r.status_code:>7}  {r.text[:70]}")
         continue
     g = r.json()["data"]["groups"]
-    _lib.register_names(*[str(x["group_name"]) for x in g])   # group names are real values
+    _lib.note_names(*[str(x["group_name"]) for x in g])   # group names are real values
     empty = sum(x["summaries"]["id"] for x in g if str(x["group_name"]).strip() == "")
     total = r.json()["data"]["summaries"]["id"]
     note = ("identifier - every row distinct" if len(g) == total else
@@ -66,32 +66,42 @@ rows.append("\n=== cardinality cap? 300 shots, all distinct codes")
 r, ms = summarize({"filters": [PROJ], "summary_fields": [{"field": "id", "type": "count"}],
                    "grouping": [{"field": "code", "type": "exact", "direction": "asc"}]}, "shots")
 n = len(r.json()["data"]["groups"])
-_lib.register_names(*[str(x["group_name"]) for x in r.json()["data"]["groups"]])
+_lib.note_names(*[str(x["group_name"]) for x in r.json()["data"]["groups"]])
 rows.append(f"  Shot.code -> {n} groups of {r.json()['data']['summaries']['id']} shots, {ms}ms")
+
+rows.append("\n=== above 300: the widest code field reachable read-only, and the whole site")
+
+
+def group_code(slug, filters):
+    r, ms = summarize({"filters": filters, "summary_fields": [{"field": "id", "type": "count"}],
+                       "grouping": [{"field": "code", "type": "exact", "direction": "asc"}]}, slug)
+    if not r.ok:
+        return None, r.json()["errors"][0], ms
+    g = r.json()["data"]["groups"]
+    _lib.note_names(*[str(x["group_name"]) for x in g])
+    return len(g), r.json()["data"]["summaries"]["id"], ms
+
+
+for slug in ("versions", "shots"):
+    best, best_n = None, -1
+    for pid in _lib.sample_projects(c, env):
+        n = summarize({"filters": [["project", "is", {"type": "Project", "id": pid}]],
+                       "summary_fields": [{"field": "id", "type": "count"}]}, slug)[0] \
+            .json()["data"]["summaries"]["id"]
+        if n > best_n:
+            best, best_n = pid, n
+    g, tot_rows, ms = group_code(slug, [["project", "is", {"type": "Project", "id": best}]])
+    rows.append(f"  {slug}.code, widest sample project  -> {g} groups of {tot_rows} rows, {ms}ms")
+    g, tot_rows, ms = group_code(slug, [])
+    rows.append(f"  {slug}.code, whole site             -> {g} groups of {tot_rows} rows, {ms}ms")
 
 rows.append("\n=== cost against the alternative")
 t = time.time()
-c.get("/entity/versions", params={"filter[project.Project.id]": BBB, "page[size]": 100,
+c.get("/entity/versions", params={"filter[project.Project.id]": PROJECT, "page[size]": 100,
                                   "fields": "code,sg_status_list,description,sg_task,image"})
 one_fetch = round((time.time() - t) * 1000)
 rows.append(f"  one paged fetch of 100 rows          {one_fetch}ms")
-rows.append(f"  ~300ms x 61 fields of _summarize     ~{300 * 61}ms")
+rows.append("  one _summarize per field             ~300ms each, up to 1.5s")
 
 actual = "\n".join(rows)
-_lib.record("020_summarize", "POST /entity/<type>/_summarize",
-            "Summarize is a cheap aggregate call.",
-            actual,
-            "_summarize takes the SAME vendor Content-Type as _search (application/json is 415, probe "
-            "004) and answers the inspector's second question directly: `grouping` by a field returns "
-            "one group per distinct value with a count, so ONE call yields both cardinality and the "
-            "empty count - empty values come back as a '' group. That is the metric fill rate cannot "
-            "give: Version.code returns one group per row (an identifier, useless to expose) and "
-            "flagged returns exactly one group (no information at all), while both look identical to a "
-            "fill-rate scan. Grouping is NOT capped - 300 distinct Shot codes return 300 groups. "
-            "Checkbox fields cannot be filtered `is_not None` at all (400), which is the same trap as "
-            "probe 007 from the other side. BUT it is not free: ~300ms typical and up to 1.5s when the "
-            "grouped field is an entity, so scanning all 61 Version fields costs far more than a single "
-            "paged fetch of 100 rows. Use one fetch for the broad fill-rate pass, then _summarize per "
-            "candidate field to rank the shortlist by cardinality.",
-            env, tags=("query", "inspector", "fill-rate", "schema", "cost", "list-field"))
-print(actual)
+_lib.emit("020_summarize", actual, env)

@@ -1,13 +1,16 @@
 ---
 tags: [version, link, inspector, entity-field, paging]
-verdict: On BBB, Versions link via `entity` 100% (Shot 99%, Asset 1%) and via `sg_task` only 1% - hardcoding Task-linking would be wrong almost always here, which is the whole case for the site profile. (An earlier version of this finding claimed page[size] is capped at 100. It is not - probe 016 shows 150 returns 150. BBB simply has exactly 100 Versions.)
+scope: site
+verdict: On the sample project every Version links through `entity` (99% Shot, 1% Asset) and only 1% through `sg_task`, so measure link usage per site rather than hardcoding Task-linking.
 ---
 
 # 005_link_usage
 
+**Q** On a real project, what do Versions actually link to, and how often?
+
 **Endpoint** `GET /entity/versions?fields=<link fields>`
 
-**Docs claim** Versions may attach to Task, Shot, Asset, playlist — conventions vary by site.
+**Docs claim** Versions may attach to Task, Shot, Asset or playlist. Conventions vary by site.
 
 **Actual**
 
@@ -27,4 +30,8 @@ entity target types:
   Asset           1  1%
 ```
 
-**Verdict** On BBB, Versions link via `entity` 100% (Shot 99%, Asset 1%) and via `sg_task` only 1% - hardcoding Task-linking would be wrong almost always here, which is the whole case for the site profile. (An earlier version of this finding claimed page[size] is capped at 100. It is not - probe 016 shows 150 returns 150. BBB simply has exactly 100 Versions.)
+**Teaches**
+- On the probed site `entity` is the load-bearing link and `sg_task` is near-unused: a client that assumes Version to Task finds nothing 99% of the time. Measure link usage per site before coding against it.
+- `entity` is polymorphic. Read `relationships.entity.data.type` per row; do not assume Shot even at 99%.
+- A multi-entity field can be uniformly empty (`playlists` 0/100), so absence of data is not absence of the field.
+- `page[size]=500` returned 100 rows because the project holds exactly 100 Versions, not because of a cap: probe 016 shows 150 returns 150.

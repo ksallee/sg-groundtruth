@@ -5,11 +5,11 @@ import _lib
 
 env = _lib.load_env()
 c = _lib.client()
-SANDBOX = "comfyui-fpt sandbox"
+SANDBOX = _lib.sandbox_name(env)
 rows = []
 
 projects = c.get("/entity/projects", params={"fields": "name", "page[size]": 100}).json()
-_lib.register_from(projects)
+_lib.note_from(projects)
 pid = next((p["id"] for p in projects["data"] if p["attributes"]["name"] == SANDBOX), None)
 rows.append(f"sandbox project id: {pid}")
 
@@ -52,7 +52,4 @@ else:
         rows.append(f"  {r.status_code} {label}: {note}")
 
 actual = "\n".join(rows)
-_lib.record("012_create_version", "POST /api/v1/entity/versions",
-            "Versions need a project; entity links are written as {type, id}.",
-            actual, "see below", env, tags=("write", "version", "create", "entity-field"))
-print(actual)
+_lib.emit("012_create_version", actual, env)

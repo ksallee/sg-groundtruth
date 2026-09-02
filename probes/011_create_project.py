@@ -5,7 +5,7 @@ import _lib
 
 env = _lib.load_env()
 c = _lib.client()
-SANDBOX = "comfyui-fpt sandbox"
+SANDBOX = _lib.sandbox_name(env)
 rows = []
 
 schema = c.get("/schema/Project/fields").json()["data"]
@@ -16,7 +16,7 @@ rows.append(f"mandatory: {mandatory}")
 rows.append(f"editable (first 25): {editable[:25]}")
 
 existing = c.get("/entity/projects", params={"fields": "name", "page[size]": 100}).json()
-_lib.register_from(existing)
+_lib.note_from(existing)
 hit = [p for p in existing["data"] if p["attributes"]["name"] == SANDBOX]
 rows.append(f"\nsandbox already present: {bool(hit)}")
 
@@ -34,8 +34,4 @@ elif _lib.writes_allowed():
 else:
     rows.append("\n(read-only run; pass --write to create)")
 
-actual = "\n".join(rows)
-_lib.record("011_create_project", "POST /api/v1/entity/projects",
-            "Projects can be created over REST by a script user.",
-            actual, "see below", env, tags=("write", "project", "create", "sandbox"))
-print(actual)
+_lib.emit("011_create_project", "\n".join(rows), env)

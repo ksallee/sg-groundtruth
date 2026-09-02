@@ -1,12 +1,16 @@
-"""Q: can links.next be trusted to stop, or does the last page lie?"""
+"""Q: can links.next be trusted to stop, or does the last page lie, and is a row total available?"""
+import json
+
 import _lib
 
 env = _lib.load_env()
 c = _lib.client()
-BBB, SIZE = 70, 100
+PROJECT, SIZE = _lib.sample_projects(c, env)[0], 100
+ARR = {"Content-Type": "application/vnd+shotgun.api3_array+json"}
+PROJ = ["project", "is", {"type": "Project", "id": PROJECT}]
 
 seen, pages, path = 0, 0, None
-params = {"filter[project.Project.id]": BBB, "fields": "code", "page[size]": SIZE, "sort": "id"}
+params = {"filter[project.Project.id]": PROJECT, "fields": "code", "page[size]": SIZE, "sort": "id"}
 rows = []
 r = c.get("/entity/versions", params=params)
 
@@ -24,13 +28,39 @@ while True:
         rows.append(f"page {pages+1}: HTTP {r.status_code}")
         break
 
-actual = "\n".join(rows) + f"\n\ntotal rows: {seen} over {pages} pages"
-_lib.record("006_pagination", "GET /entity/versions then follow links.next",
-            "links.next is absent on the final page.",
-            actual,
-            "CONFIRMED and worse than reported: links.next is emitted on EVERY page forever, including pages "
-            "that return zero rows - following it until absent is an infinite loop. Paging itself is correct "
-            "(size=30 page=3 returns 30 rows). No total count exists anywhere: meta is null and "
-            "options[return_paging_info] is ignored. Stop on an empty data array; never on a missing next.",
-            env, tags=("paging", "query", "enumeration"))
-print(actual)
+rows.append(f"\ntotal rows: {seen} over {pages} pages")
+
+# Is a total available anywhere? One GET and one ignored option decided nothing, so try every
+# spelling that could carry a count, and the two POST reads.
+rows.append("\n=== asking for a total")
+base = {"filter[project.Project.id]": PROJECT, "fields": "code", "page[size]": 1}
+for label, extra in [
+    ("page[size]=0", {"page[size]": 0}),
+    ("options[return_paging_info]=true", {"options[return_paging_info]": "true"}),
+    ("options[include_paging_info]=true", {"options[include_paging_info]": "true"}),
+    ("page[totals]=true", {"page[totals]": "true"}),
+    ("include_count=true", {"include_count": "true"}),
+    ("meta[total]=true", {"meta[total]": "true"}),
+]:
+    r = c.get("/entity/versions", params={**base, **extra})
+    d = r.json()
+    if not r.ok:
+        rows.append(f"  GET {label:<34} -> {r.status_code} {json.dumps(d)}")
+        continue
+    rows.append(f"  GET {label:<34} -> {r.status_code} keys={sorted(d)} "
+                f"rows={len(d.get('data', []))} meta={json.dumps(d.get('meta'))} "
+                f"links={sorted(d.get('links') or {})}")
+
+r = c.post("/entity/versions/_search", headers=ARR,
+           json={"filters": [PROJ], "fields": "code", "page": {"size": 1},
+                 "options": {"return_paging_info": True}})
+d = r.json()
+rows.append(f"  POST _search options.return_paging_info -> {r.status_code} keys={sorted(d)} "
+            f"meta={json.dumps(d.get('meta'))} links={sorted(d.get('links') or {})}")
+
+r = c.post("/entity/versions/_summarize", headers=ARR,
+           json={"filters": [PROJ], "summary_fields": [{"field": "id", "type": "count"}]})
+rows.append(f"  POST _summarize count of id            -> {r.status_code} {json.dumps(r.json()['data'])}")
+
+actual = "\n".join(rows)
+_lib.emit("006_pagination", actual, env)

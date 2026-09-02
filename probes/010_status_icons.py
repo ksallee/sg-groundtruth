@@ -1,5 +1,8 @@
 """Q: how are status colours and icons resolved, and do standard and custom icons differ?"""
 import json
+import re
+
+import requests
 
 import _lib
 
@@ -13,7 +16,7 @@ rows.append(f"Status.icon data_type: "
             f"{c.get('/schema/Status/fields/icon').json()['data']['data_type']['value']}")
 
 st = c.get("/entity/statuses", params={"fields": "code,name,bg_color,system,icon", "page[size]": 100}).json()
-_lib.register_from(st)
+_lib.note_from(st)
 withicon = [x for x in st["data"] if (x.get("relationships", {}).get("icon") or {}).get("data")]
 rows.append(f"\nstatuses: {len(st['data'])}, with an icon relationship: {len(withicon)}")
 rows.append(f"sample bg_color: {json.dumps([x['attributes'].get('bg_color') for x in st['data'][:4]])}")
@@ -21,7 +24,7 @@ rows.append(f"sample bg_color: {json.dumps([x['attributes'].get('bg_color') for 
 ifields = sorted(c.get("/schema/Icon/fields").json()["data"])
 rows.append(f"\nIcon fields: {ifields}")
 icons = c.get("/entity/icons", params={"fields": ",".join(ifields), "page[size]": 200}).json()
-_lib.register_from(icons)
+_lib.note_from(icons)
 
 groups = {}
 for x in icons["data"]:
@@ -42,17 +45,23 @@ for (it, dt), items in sorted(groups.items(), key=lambda kv: str(kv[0])):
         f"    html           {json.dumps(a.get('html'))[:60]}\n"
         f"    image_data     {data_desc}")
 
+# The sprite is not in the API. Rediscover it the way a client has to: read the web app's own
+# stylesheet and follow the rule for an image_map_key. No auth header on either fetch.
+CSS = "/dist/production/stylesheets/login.css"
+css = requests.get(f"{c.site}{CSS}", timeout=30)
+rows.append(f"\nunauthenticated GET {CSS} -> {css.status_code}  {len(css.content)} bytes  "
+            f"content-type: {css.headers.get('content-type')}")
+rule = re.search(r"[^{}]*\.icon_apr[^{}]*\{[^{}]*\}", css.text) if css.ok else None
+rows.append(f"  rule for image_map_key 'icon_apr': {rule.group(0).strip() if rule else '<not found>'}")
+sprite = re.search(r"url\(([^)]*sg_icon_image_map[^)]*)\)", css.text) if css.ok else None
+if sprite:
+    href = sprite.group(1).strip("'\"")
+    png = requests.get(f"{c.site}{href}" if href.startswith("/") else href, timeout=30)
+    rows.append(f"  sprite href in the stylesheet: {href}")
+    rows.append(f"unauthenticated GET the sprite -> {png.status_code}  {len(png.content)} bytes  "
+                f"content-type: {png.headers.get('content-type')}")
+else:
+    rows.append("  no sg_icon_image_map url() in the stylesheet")
+
 actual = "\n".join(rows)
-_lib.record(
-    "010_status_icons", "GET /entity/statuses?fields=...,icon ; GET /entity/icons",
-    "Status colour and icon come from the Status entity; standard and custom icons resolve differently.",
-    actual,
-    "Status.icon is an ENTITY link, so it arrives under relationships, not attributes - reading attributes "
-    "alone makes every icon look null. Icons resolve three ways by display_type: 'image_map' (94 standard, "
-    "url empty, addressed by image_map_key like 'icon_apr' - a sprite, and its location is NOT guessable at "
-    "/images/*, still unresolved); 'image' (custom upload - url is a self-contained data:image/png;base64 URI, "
-    "with newlines that must be stripped, and image_data holds the same bytes); 'html' (custom text badge - "
-    "html holds the label, no image at all). bg_color is comma-separated RGB, not hex, and is enough to render "
-    "a badge without any icon.",
-    env, tags=("status", "icon", "cache", "colour", "entity-field"))
-print(actual)
+_lib.emit("010_status_icons", actual, env)

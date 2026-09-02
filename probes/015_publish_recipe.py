@@ -7,10 +7,14 @@ import _lib
 
 env = _lib.load_env()
 c = _lib.client()
-SANDBOX = "comfyui-fpt sandbox"
+
+# Read-only by default (CLAUDE.md). This probe creates a Version and uploads media.
+if not _lib.writes_allowed():
+    raise SystemExit("015_publish_recipe writes to the site; re-run with --write")
+SANDBOX = _lib.sandbox_name(env)
 
 projects = c.get("/entity/projects", params={"fields": "name", "page[size]": 100}).json()
-_lib.register_from(projects)
+_lib.note_from(projects)
 pid = next(p["id"] for p in projects["data"] if p["attributes"]["name"] == SANDBOX)
 shot = c.get("/entity/shots", params={"filter[project.Project.id]": pid, "fields": "code"}).json()["data"][0]
 
@@ -35,7 +39,7 @@ def upload(vid, field, filename, payload):
 r = c.post("/entity/versions", headers={"Content-Type": "application/json"}, json={
     "project": {"type": "Project", "id": pid},
     "entity": {"type": "Shot", "id": shot["id"]},
-    "code": "comfy_publish_v001",
+    "code": "publish_v001",
     "sg_status_list": "rev",
     "description": json.dumps(PROVENANCE),
 })
@@ -47,16 +51,21 @@ steps.append(f"4. attach workflow  -> {upload(vid, None, 'workflow.json', json.d
 
 back = c.get(f"/entity/versions/{vid}",
              params={"fields": "code,description,sg_status_list,entity,image,sg_uploaded_movie"}).json()
-_lib.register_from(back)
+_lib.note_from(back)
 steps.append(f"5. read back        -> {back['data']['attributes'].get('code')}, "
              f"status={back['data']['attributes'].get('sg_status_list')}, "
              f"entity={json.dumps(back['data']['relationships'].get('entity', {}).get('data'))}")
 
-call = '''# 1. create the Version, provenance as JSON in description
-r = post("/entity/versions", json={
+call = '''# get/post are FPT.get/.post from src/sg_groundtruth/client.py — they add auth and the /api/v1 prefix.
+JSON = {"Content-Type": "application/json"}
+provenance = {"model": "flux1-dev.safetensors", "seed": 12345, "sampler": "euler", "steps": 20, "cfg": 7.5}
+workflow_json = json.dumps(workflow_graph).encode()
+
+# 1. create the Version, provenance as JSON in description
+r = post("/entity/versions", headers=JSON, json={
     "project": {"type": "Project", "id": PROJECT_ID},
     "entity":  {"type": "Shot",    "id": SHOT_ID},     # entity links are {type, id}; bare ids 400
-    "code": "comfy_publish_v001",
+    "code": "publish_v001",
     "sg_status_list": "rev",
     "description": json.dumps(provenance),
 })
@@ -70,20 +79,22 @@ for field, filename, payload in [("image", "render.png", png),
         else f"/entity/versions/{version_id}/{field}/_upload"
     b = get(path, params={"filename": filename}).json()
     requests.put(b["links"]["upload"], data=payload)                    # presigned S3
-    post(b["links"]["complete_upload"],                                 # upload_data required, even empty
+    post(b["links"]["complete_upload"], headers=JSON,                   # upload_data required, even empty
          json={"upload_info": b["data"], "upload_data": {}})'''
 
-_lib.record_recipe(
-    "001_publish_version_with_media",
-    "Publish a generated image to Flow PT as a Version, with provenance and the workflow attached",
-    call, "\n".join(steps), env,
-    tags=("write", "version", "upload", "attachment", "provenance", "recipe"),
-    notes=(
-        "`project` is not schema-mandatory on Version but omitting it returns 400 (probe 012).",
-        "`upload_data` must be present in the complete call even though it is empty (probe 013).",
-        "The thumbnail transcodes asynchronously — reading `image` straight back gives a placeholder "
-        "under /images/status/transient/ (probe 013).",
-        "To find the attachments again use POST /entity/attachments/_search with "
-        "Content-Type: application/vnd+shotgun.api3_array+json and an entity hash filter (probe 014).",
-    ))
-print("\n".join(steps))
+report = "\n".join([
+    "=== sequence",
+    *steps,
+    "",
+    "=== the call",
+    call,
+    "",
+    "=== gotchas",
+    "- `project` is not schema-mandatory on Version but omitting it returns 400 (probe 012).",
+    "- `upload_data` must be present in the complete call even though it is empty (probe 013).",
+    "- The thumbnail transcodes asynchronously — reading `image` straight back gives a placeholder "
+    "under /images/status/transient/ (probe 013).",
+    "- To find the attachments again use POST /entity/attachments/_search with "
+    "Content-Type: application/vnd+shotgun.api3_array+json and an entity hash filter (probe 014).",
+])
+_lib.emit("001_publish_version_with_media", report, env)

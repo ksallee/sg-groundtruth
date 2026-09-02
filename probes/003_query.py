@@ -5,7 +5,7 @@ import _lib
 
 env = _lib.load_env()
 c = _lib.client()
-BBB = 70
+PROJECT = _lib.sample_projects(c, env)[0]
 rows = []
 
 
@@ -25,35 +25,30 @@ def try_(label, method, path, **kw):
 
 # simple filter, flat query params
 try_("simple filter[project.Project.id]", "GET", "/entity/versions",
-     params={"filter[project.Project.id]": BBB, "fields": "code", "page[size]": 3})
+     params={"filter[project.Project.id]": PROJECT, "fields": "code", "page[size]": 3})
 
 # dotted / bubbled fields in the fields list
 d = try_("dotted fields in ?fields", "GET", "/entity/versions",
-         params={"filter[project.Project.id]": BBB,
+         params={"filter[project.Project.id]": PROJECT,
                  "fields": "code,sg_status_list,sg_task.Task.content,entity",
                  "page[size]": 3})
-_lib.register_from(d)
+_lib.note_from(d)
 sample = json.dumps(d["data"][0], indent=2)[:900] if d and d.get("data") else "(no rows)"
 
 # complex search endpoint
 try_("POST _search with filter array", "POST", "/entity/versions/_search",
-     json={"filters": [["project.Project.id", "is", BBB]], "fields": ["code"], "page": {"size": 3}},
+     json={"filters": [["project.Project.id", "is", PROJECT]], "fields": ["code"], "page": {"size": 3}},
      headers={"Content-Type": "application/vnd+shotgun.api3_array+json"})
 
 # sorting + paging
 d2 = try_("sort desc + page[number]=2", "GET", "/entity/versions",
-          params={"filter[project.Project.id]": BBB, "fields": "code", "sort": "-id",
+          params={"filter[project.Project.id]": PROJECT, "fields": "code", "sort": "-id",
                   "page[size]": 2, "page[number]": 2})
 
 # does an unknown field error or silently drop?
 try_("unknown field sg_not_a_field", "GET", "/entity/versions",
-     params={"filter[project.Project.id]": BBB, "fields": "code,sg_not_a_field", "page[size]": 1})
+     params={"filter[project.Project.id]": PROJECT, "fields": "code,sg_not_a_field", "page[size]": 1})
 
 actual = "\n".join(rows) + "\n\nsample row with dotted fields:\n" + sample
 
-_lib.record(
-    "003_query", "GET /entity/versions, POST /entity/versions/_search",
-    "Filters via filter[field]; dotted notation entity.EntityType.field; page[size]/page[number].",
-    actual, "see below", env, tags=("query", "filter", "dotted-field", "paging", "version"),
-)
-print(actual)
+_lib.emit("003_query", actual, env)

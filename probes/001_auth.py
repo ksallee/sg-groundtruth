@@ -21,7 +21,7 @@ shape = {k: (f"<{type(v).__name__}, {len(str(v))} chars>" if k.endswith("token")
 
 probe = _lib.client()
 g = probe.get("/entity/projects", params={"fields": "name", "page[size]": 3})
-_lib.register_from(g.json() if g.ok else {})
+_lib.note_from(g.json() if g.ok else {})
 
 actual = (
     f"POST auth -> {r.status_code}\n"
@@ -30,12 +30,4 @@ actual = (
     f"projects: {[(p['id'], p['attributes']['name']) for p in g.json()['data']] if g.ok else g.text[:200]}"
 )
 
-_lib.record(
-    "001_auth",
-    "POST /api/v1/auth/access_token  +  GET /api/v1/entity/projects",
-    "client_credentials with script name/key returns a bearer token; expires_in documented as 600s.",
-    actual,
-    "client_credentials works; token lives 600s; refresh_token returned but the client re-auths instead.",
-    env,
-    tags=("auth", "client", "token"),
-)
+_lib.emit("001_auth", actual, env)

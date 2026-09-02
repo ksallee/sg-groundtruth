@@ -1,13 +1,16 @@
 ---
 tags: [query, dotted-field, multi-entity, filter, paging, trap]
-verdict: READS and FILTERS differ. Reading a dotted path through a multi_entity field silently omits the key - HTTP 200, no error (single-entity 'entity' fields read fine). But FILTERING on the same path WORKS, including two hops, verified by negative controls returning 0 while positives return partial counts. So: filter through multi-entity freely; to READ those values you must query the child entity separately. Also corrects probe 005: page[size] is NOT capped at 100 - 150 returns 150 and 500 returns everything.
+scope: api
+verdict: A dotted path through a multi_entity field reads back nothing: HTTP 200 with the key silently absent from attributes. Filters on that same path work, including two hops.
 ---
 
 # 016_dotted_multi_entity
 
-**Endpoint** `GET /entity/shots?fields=<dotted> ; POST /entity/shots/_search`
+**Q** Do dotted paths through a multi-entity field work, for reads and for filters?
 
-**Docs claim** Dotted paths through multi-entity fields.
+**Endpoint** `GET /entity/shots?fields=code,sg_sequence.Sequence.code,tasks.Task.content,assets.Asset.code ; POST /entity/shots/_search`
+
+**Docs claim** Dotted paths are documented for `?fields` and for filters; the docs say nothing about multi-entity fields behaving differently from single-entity ones.
 
 **Actual**
 
@@ -33,4 +36,8 @@ data types: {"sg_sequence": "entity", "tasks": "multi_entity", "assets": "multi_
   asked 500 -> 300 (all)   asked 150 -> 150   asked 50 -> 50
 ```
 
-**Verdict** READS and FILTERS differ. Reading a dotted path through a multi_entity field silently omits the key - HTTP 200, no error (single-entity 'entity' fields read fine). But FILTERING on the same path WORKS, including two hops, verified by negative controls returning 0 while positives return partial counts. So: filter through multi-entity freely; to READ those values you must query the child entity separately. Also corrects probe 005: page[size] is NOT capped at 100 - 150 returns 150 and 500 returns everything.
+**Teaches**
+- **Trap.** The read failure is silent and indistinguishable from "no data": the key is not in `attributes`, the same quiet drop a bogus `?fields` name gets (probe 004). Single-entity paths like `sg_sequence.Sequence.code` come back fine, so the difference is the field's `data_type`, not the syntax.
+- The filters are evaluated, not ignored: every negative control returns 0, and two hops (`assets.Asset.sg_asset_type`) resolve. On the probed site the positives return partial counts, 284 of 300.
+- Filter through multi-entity freely. To read those values, query the child entity separately (`/entity/tasks` filtered by the parent) rather than asking for them inline.
+- Corrects probe 005: `page[size]` is not capped at 100. On the probed site 150 returned 150 rows and 500 returned all 300.

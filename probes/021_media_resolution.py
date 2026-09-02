@@ -12,7 +12,11 @@ import _lib
 env = _lib.load_env()
 c = _lib.client()
 ARR = {"Content-Type": "application/vnd+shotgun.api3_array+json"}
-KIDS = 91          # the only project on this site with a real publish history
+PROJECT = next(  # the sample project that actually has publish history; ids are site data
+    (pid for pid in _lib.sample_projects(c, env)
+     if c.get("/entity/published_files",
+              params={"filter[project.Project.id]": pid, "page[size]": 1}).json()["data"]),
+    _lib.sample_projects(c, env)[0])
 HOME = os.path.expanduser("~")
 rows = []
 
@@ -31,12 +35,12 @@ def search(entity, filters, fields, size=3):
 
 rows.append("=== tier 1: PublishedFiles")
 r = summarize("published_files", [], "project")
-_lib.register_from(r.json())
+_lib.note_from(r.json())
 rows.append(f"  {r.json()['data']['summaries']['id']} on the whole site:")
 for g in r.json()["data"]["groups"]:
     rows.append(f"    {str(g['group_name'])!r:<34} {g['summaries']['id']}")
 
-PROJ = ["project", "is", {"type": "Project", "id": KIDS}]
+PROJ = ["project", "is", {"type": "Project", "id": PROJECT}]
 rows.append("\n  by type, and whether `path` resolves to a file that exists.")
 rows.append("  NOTE: a missing file is NOT evidence about the API — the operator deleted most of these")
 rows.append("  from disk. Only the `carries a path` column says anything about Flow PT.")
@@ -49,7 +53,7 @@ for g in types:
                ["code", "path"], 5)
     paths = [(d["attributes"].get("path") or {}) for d in r.json()["data"]]
     for pp in paths:
-        _lib.register_path(pp.get("local_path_mac") or pp.get("relative_path"))
+        _lib.note_path(pp.get("local_path_mac") or pp.get("relative_path"))
     withpath = [p for p in paths if p.get("local_path_mac")]
     exists = sum(1 for p in withpath if os.path.exists(p["local_path_mac"]))
     rows.append(f"    {t:<18} {g['summaries']['id']:>4} PFs   "
@@ -65,18 +69,18 @@ rows.append(f"    PublishedFiles carrying a version link {withver}/{sum(g['summa
 rows.append("\n=== the `path` field: the server has already done the LocalStorage join")
 r = search("published_files", [PROJ, ["path_cache", "is_not", None]], ["code", "path", "path_cache"], 1)
 d = r.json()["data"][0]
-_lib.register_from(r.json())
+_lib.note_from(r.json())
 p = d["attributes"]["path"]
-_lib.register_path(p.get("local_path_mac"))
-_lib.register_path(p.get("relative_path"))
+_lib.note_path(p.get("local_path_mac"))
+_lib.note_path(p.get("relative_path"))
 rows.append("  " + json.dumps({k: p.get(k) for k in
             ("link_type", "relative_path", "local_path_mac", "local_path_windows",
              "local_path_linux", "local_storage")}, indent=2).replace("\n", "\n  "))
 store = c.get("/entity/local_storages", params={"fields": "code,mac_path,windows_path,linux_path"})
-_lib.register_from(store.json())
+_lib.note_from(store.json())
 rows.append("  LocalStorage entities on this site:")
 for s in store.json()["data"]:
-    _lib.register_path(s["attributes"].get("mac_path"))
+    _lib.note_path(s["attributes"].get("mac_path"))
     rows.append(f"    {s['id']} {json.dumps(s['attributes'])}")
 
 rows.append("\n=== tier 2: the path fields on the Version itself")
@@ -86,15 +90,15 @@ for f in ("sg_path_to_movie", "sg_path_to_frames"):
     rows.append(f"  {f:<20} {n}/{tot}")
 r = search("versions", [PROJ, ["sg_path_to_movie", "is_not", None]],
            ["code", "sg_path_to_movie"], 4)
-_lib.register_from(r.json())
+_lib.note_from(r.json())
 for d in r.json()["data"]:
     path = d["attributes"]["sg_path_to_movie"]
-    _lib.register_path(path)
+    _lib.note_path(path)
     rows.append(f"    exists={os.path.exists(path)}  {path}")
 
 rows.append("\n=== tier 3: uploaded media")
 r = search("versions", [PROJ], ["code", "image", "sg_uploaded_movie"], 1)
-_lib.register_from(r.json())
+_lib.note_from(r.json())
 a = r.json()["data"][0]["attributes"]
 rows.append(f"  image             {type(a.get('image')).__name__} -> "
             f"{'presigned S3 URL in the field itself' if isinstance(a.get('image'), str) else a.get('image')}")
@@ -102,32 +106,13 @@ mv = a.get("sg_uploaded_movie")
 rows.append(f"  sg_uploaded_movie {type(mv).__name__} keys={list(mv) if isinstance(mv, dict) else mv}")
 bad = summarize("versions", [PROJ, ["sg_uploaded_movie", "is_not", None]])
 rows.append(f"  filtering sg_uploaded_movie is_not None -> {bad.status_code} "
-            f"{'' if bad.ok else bad.json()['errors'][0]['title'][:70]}")
+            f"{'' if bad.ok else bad.json()['errors'][0]['title']}")
+
+# "tier 3 resolves" is a proportion, not a shape: count the Versions that actually hold an image.
+img = summarize("versions", [PROJ, ["image", "is_not", None]]).json()["data"]["summaries"]["id"]
+site = summarize("versions", []).json()["data"]["summaries"]["id"]
+site_img = summarize("versions", [["image", "is_not", None]]).json()["data"]["summaries"]["id"]
+rows.append(f"  image is_not None      {img}/{tot} on this project, {site_img}/{site} site-wide")
 
 actual = "\n".join(rows).replace(HOME, "<home>")
-_lib.record("021_media_resolution",
-            "POST /entity/published_files/_search + GET /entity/versions",
-            "A Version's media resolves through its PublishedFiles, then its path fields, then the upload.",
-            actual,
-            "Tier 3 is the only one this site can prove; tier 1 is unproven here for TWO reasons and "
-            "only one of them is about the API. THE REUSABLE TRUTH: `path` on a PublishedFile arrives "
-            "with the LocalStorage join ALREADY DONE - local_path_mac / local_path_windows / "
-            "local_path_linux are filled by the server alongside relative_path and the local_storage "
-            "hash, so a client NEVER reads LocalStorage or reassembles a root, and unlike the Version "
-            "path fields it carries all three platforms at once. ABOUT THE API: Image, Rendered Image, "
-            "Texture and USD PublishedFiles here carry NO path at all (only Maya Scene, Alembic Cache "
-            "and Movie do), and Version.published_files is filled on 2 of 53 Versions while `version` "
-            "is null on 180 of 182 PFs - so walking Version -> PublishedFile finds nothing to load. NOT "
-            "ABOUT THE API: the Movie paths that do exist point at files the operator has since deleted "
-            "from disk. Do not cite this finding as evidence that Flow PT paths are unreliable; it is "
-            "evidence that this site has no publish history to read. Tier 2 sg_path_to_movie is filled "
-            "28/53 and those files DO exist, but they are ad-hoc user paths rather than a shared root, "
-            "and sg_path_to_frames is 0/53 so the sequence form is untested here - note it is free text "
-            "accepting printf padding AND the Shake # and @ forms, so never assume %04d (docs/quirks). "
-            "Tier 3 always resolves and needs no second call: `image` IS a presigned S3 URL as a plain "
-            "string and sg_uploaded_movie is a dict carrying the same under `url`. sg_uploaded_movie "
-            "cannot be filtered or summarized `is_not None` at all - 400, \"\'url\' data type cannot "
-            "be\" - the same shape of trap as a checkbox (probe 020). Offer the operator whichever "
-            "tiers a given Version can actually deliver, rather than picking one for them.",
-            env, tags=("version", "media", "published-file", "path", "storage", "inspector", "query"))
-print(actual)
+_lib.emit("021_media_resolution", actual, env)

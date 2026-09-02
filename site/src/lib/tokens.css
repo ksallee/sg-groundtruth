@@ -1,0 +1,94 @@
+/* ===========================================================================
+   DESIGN SURFACE. Every colour, spacing step, font stack, radius and duration
+   on the site is declared here. Change the look by changing this file; no
+   component hardcodes a value.
+
+   Light and dark come from one declaration each, via light-dark(). The page
+   follows prefers-color-scheme and ships no theme script and no toggle.
+   =========================================================================== */
+
+:root {
+	color-scheme: light dark;
+
+	/* --- colour ----------------------------------------------------------
+	   Neutrals sit at zero chroma so the one accent is the only hue on the
+	   page. Two accents exist and mean different things: --accent is a link
+	   or a shipped fact, --accent-local marks content measured on one site.
+	   Meaning never rests on colour alone; the local band is also labelled
+	   and boxed. */
+	--ground: light-dark(oklch(0.985 0 0), oklch(0.17 0 0));
+	--ground-raised: light-dark(oklch(1 0 0), oklch(0.21 0 0));
+	--ground-sunken: light-dark(oklch(0.955 0 0), oklch(0.14 0 0));
+
+	--ink: light-dark(oklch(0.19 0 0), oklch(0.94 0 0));
+	--ink-muted: light-dark(oklch(0.48 0 0), oklch(0.68 0 0));
+
+	--rule: light-dark(oklch(0.9 0 0), oklch(0.3 0 0));
+	--rule-strong: light-dark(oklch(0.8 0 0), oklch(0.4 0 0));
+
+	--accent: light-dark(oklch(0.45 0.16 250), oklch(0.78 0.12 250));
+	--accent-quiet: light-dark(oklch(0.95 0.02 250), oklch(0.26 0.04 250));
+
+	/* Site-specific content. Warm against the cool accent, so a reader can
+	   tell a measurement from a rule at a glance. */
+	--accent-local: light-dark(oklch(0.5 0.12 65), oklch(0.8 0.1 70));
+	--accent-local-quiet: light-dark(oklch(0.96 0.03 75), oklch(0.25 0.04 60));
+
+	/* Code slabs are the darkest surface in both schemes, so quoted API
+	   payloads read as one object at any brightness. */
+	--slab: light-dark(oklch(0.19 0 0), oklch(0.12 0 0));
+	--slab-ink: light-dark(oklch(0.96 0 0), oklch(0.9 0 0));
+
+	/* --- type ------------------------------------------------------------
+	   No webfonts. The corpus is mostly API literals, so the mono stack does
+	   most of the work and a system UI face carries the prose. Swapping in a
+	   licensed pair means editing these two lines and adding @font-face. */
+	--font-text: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+	--font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+
+	--text-xs: 0.75rem;
+	--text-sm: 0.8125rem;
+	--text-base: 0.9375rem;
+	--text-md: 1.0625rem;
+	--text-lg: 1.375rem;
+	--text-xl: clamp(1.5rem, 1.1rem + 1.8vw, 2.25rem);
+	--text-display: clamp(2rem, 1.2rem + 3.6vw, 3.5rem);
+
+	--leading-tight: 1.15;
+	--leading-normal: 1.6;
+
+	/* --- space -----------------------------------------------------------
+	   One scale, used for every margin, padding and gap. */
+	--space-1: 0.25rem;
+	--space-2: 0.5rem;
+	--space-3: 0.75rem;
+	--space-4: 1rem;
+	--space-5: 1.5rem;
+	--space-6: 2.25rem;
+	--space-7: 3.5rem;
+	--space-8: 5.5rem;
+
+	/* --- shape -----------------------------------------------------------
+	   Near-square by default. The whole site rounds by raising --radius. */
+	--radius-sm: 2px;
+	--radius: 4px;
+	--radius-lg: 8px;
+	--border: 1px;
+
+	/* --- measure ---------------------------------------------------------
+	   Three widths. --measure is the reading column. --measure-wide is what a
+	   reference table or a payload slab may spill out to before it starts
+	   scrolling inside itself. --wide is the page shell. */
+	--measure: 64ch;
+	--measure-wide: 58rem;
+	--wide: 78rem;
+	--gutter: clamp(var(--space-4), 4vw, var(--space-7));
+
+	--duration: 120ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	:root {
+		--duration: 0ms;
+	}
+}

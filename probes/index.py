@@ -22,16 +22,18 @@ def parse(f, summary_key):
     }
 
 
-def collect(d, key):
-    return sorted(filter(None, (parse(f, key) for f in d.glob("[0-9]*.md"))), key=lambda e: e["slug"])
+def collect(d, key, pattern="[0-9]*.md"):
+    return sorted(filter(None, (parse(f, key) for f in d.glob(pattern))), key=lambda e: e["slug"])
 
 
 def main():
     findings = collect(FINDINGS, "verdict")
     recipes = collect(RECIPES, "intent")
+    # The field-type matrix is addressed by type, not by when it was probed, so it is named not numbered.
+    types = collect(FINDINGS / "field_types", "verdict", "*.md")
 
     by_tag = defaultdict(list)
-    for kind, items in (("finding", findings), ("recipe", recipes)):
+    for kind, items in (("finding", findings), ("recipe", recipes), ("field type", types)):
         for e in items:
             for t in e["tags"]:
                 by_tag[t].append(f"{e['slug']} ({kind})")
@@ -43,13 +45,17 @@ def main():
         "## Findings", "",
     ]
     out += [f"- **{e['slug']}** — {e['summary']}  \n  `{' '.join(e['tags'])}`" for e in findings] or ["- none yet"]
+    out += ["", "## Field types", "",
+            "One per `data_type`: how it reads, writes, clears and filters. `field_types/<type>`.", ""]
+    out += [f"- **{e['slug']}** — {e['summary']}  \n  `{' '.join(e['tags'])}`" for e in types] or ["- none yet"]
     out += ["", "## Recipes", ""]
     out += [f"- **{e['slug']}** — {e['summary']}  \n  `{' '.join(e['tags'])}`" for e in recipes] or ["- none yet"]
     out += ["", "## By tag", ""]
     out += [f"- **{t}** — {', '.join(by_tag[t])}" for t in sorted(by_tag)]
 
     (ROOT / "corpus" / "INDEX.md").write_text("\n".join(out) + "\n")
-    print(f"indexed {len(findings)} findings, {len(recipes)} recipes, {len(by_tag)} tags")
+    print(f"indexed {len(findings)} findings, {len(types)} field types, "
+          f"{len(recipes)} recipes, {len(by_tag)} tags")
 
 
 if __name__ == "__main__":

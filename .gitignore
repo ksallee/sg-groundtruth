@@ -5,3 +5,8 @@ __pycache__/
 .schema-cache/
 *.local.json
 .DS_Store
+corpus.local/
+.playwright-mcp/
+node_modules/
+.svelte-kit/
+site/build/

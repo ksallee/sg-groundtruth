@@ -1,66 +1,62 @@
 ---
 tags: [version, media, published-file, path, storage, inspector, query]
-verdict: Tier 3 is the only one this site can prove; tier 1 is unproven here for TWO reasons and only one of them is about the API. THE REUSABLE TRUTH: `path` on a PublishedFile arrives with the LocalStorage join ALREADY DONE - local_path_mac / local_path_windows / local_path_linux are filled by the server alongside relative_path and the local_storage hash, so a client NEVER reads LocalStorage or reassembles a root, and unlike the Version path fields it carries all three platforms at once. ABOUT THE API: Image, Rendered Image, Texture and USD PublishedFiles here carry NO path at all (only Maya Scene, Alembic Cache and Movie do), and Version.published_files is filled on 2 of 53 Versions while `version` is null on 180 of 182 PFs - so walking Version -> PublishedFile finds nothing to load. NOT ABOUT THE API: the Movie paths that do exist point at files the operator has since deleted from disk. Do not cite this finding as evidence that Flow PT paths are unreliable; it is evidence that this site has no cinder history to read. Tier 2 sg_path_to_movie is filled 28/53 and those files DO exist, but they are ad-hoc user paths rather than a shared root, and sg_path_to_frames is 0/53 so the sequence form is untested here - note it is free text accepting printf padding AND the Shake # and @ forms, so never assume %04d (docs/quirks). Tier 3 always resolves and needs no second call: `image` IS a presigned S3 URL as a plain string and sg_uploaded_movie is a dict carrying the same under `url`. sg_uploaded_movie cannot be filtered or summarized `is_not None` at all - 400, "'url' escarp type cannot be" - the same shape of trap as a checkbox (probe 020). Offer the operator whichever tiers a given Version can actually deliver, rather than picking one for them.
+scope: api
+verdict: PublishedFile.path is returned with the LocalStorage join already done (local_path_mac/windows/linux are server-filled), so a client never reads LocalStorage or reassembles a root.
 ---
 
 # 021_media_resolution
 
-**Endpoint** `POST /entity/published_files/_search + GET /entity/versions`
+**Q** Which of the three media tiers on a Version (its PublishedFiles, its path fields, the upload) can be resolved, and where does `path` come from?
 
-**Docs claim** A Version's media resolves through its PublishedFiles, then its path fields, then the upload.
+**Endpoint** `POST /entity/published_files/_search + POST /entity/versions/_summarize`
+
+**Docs claim** Silent on resolution order; the operator's claim is PublishedFiles first, then `sg_path_to_movie`/`sg_path_to_frames`, then the upload.
 
 **Actual**
 
 ```
-=== tier 1: PublishedFiles
-  183 on the whole site:
-    'GABLE2GABLE Willow Orchard [1765480725]'      1
-    'Bo Kestrel'                        182
-
-  by type, and whether `path` resolves to a file that exists.
-  NOTE: a missing file is NOT evidence about the API — the operator deleted most of these
-  from disk. Only the `carries a path` column says anything about Flow PT.
+=== tier 1: PublishedFiles — 183 site-wide, 182 of them in project demo_show
+  by type, and whether `path` resolves to a file that exists on disk:
     Alembic               2 PFs   0/2 sampled carry a path, 0 of those exist on disk
     Alembic Cache         2 PFs   2/2 sampled carry a path, 2 of those exist on disk
     Image                37 PFs   0/5 sampled carry a path, 0 of those exist on disk
     Maya Scene           56 PFs   5/5 sampled carry a path, 5 of those exist on disk
     Movie                 4 PFs   4/4 sampled carry a path, 0 of those exist on disk
     Rendered Image       20 PFs   0/5 sampled carry a path, 0 of those exist on disk
-    Texture              12 PFs   0/5 sampled carry a path, 0 of those exist on disk
-    USD                  43 PFs   0/5 sampled carry a path, 0 of those exist on disk
-
-  the Version -> PublishedFile link, which is what a Fetch node would traverse:
-    Versions carrying published_files      2/53
-    PublishedFiles carrying a version link 2/182
-
+    Texture / USD     12+43 PFs   0/5 sampled carry a path, 0 of those exist on disk
+  Versions carrying published_files 2/53 ; PublishedFiles carrying a version link 2/182
 === the `path` field: the server has already done the LocalStorage join
   {
     "link_type": "local",
-    "relative_path": "GIRDER/obsidian/Basalt/Gable/RIG/cinder/sable/gable.v003.ma",
-    "local_path_mac": "/Updraft/GABLE/GIRDER/obsidian/Basalt/Gable/RIG/cinder/sable/gable.v003.ma",
+    "relative_path": "demo_show/assets/Character/charA/RIG/publish/maya/charA.v003.ma",
+    "local_path_mac": "/mnt/projects/demo_show/assets/Character/charA/RIG/publish/maya/charA.v003.ma",
     "local_path_windows": null,
     "local_path_linux": null,
-    "local_storage": {
-      "type": "LocalStorage",
-      "id": 3,
-      "name": "drift"
-    }
+    "local_storage": {"type": "LocalStorage", "id": 3, "name": "primary"}
   }
-  LocalStorage entities on this site:
-    3 {"code": "drift", "mac_path": "/Updraft/GABLE", "windows_path": null, "linux_path": null}
-
+  the only LocalStorage on this site:
+    3 {"code": "primary", "mac_path": "/mnt/projects", "windows_path": null, "linux_path": null}
 === tier 2: the path fields on the Version itself
-  sg_path_to_movie     28/53
-  sg_path_to_frames    0/53
-    exists=True  <home>/Zenith/juniper.juniper
-    exists=True  <home>/Zenith/juniper.juniper
-    exists=True  <home>/Zenith/juniper.juniper
-    exists=True  <home>/Thicket/Nimbus Girder 25/fjord01_willow_prism01_prism_1k_kelp.quill
-
+  sg_path_to_movie 28/53 ; sg_path_to_frames 0/53 — all absolute, all ad-hoc user paths:
+    exists=True  <home>/Downloads/clipA.jpg   (3 of the 4 sampled)
+    exists=True  <home>/Documents/demo_folder/charA01_mixed_var01_basecolor_1k_srgb.png
 === tier 3: uploaded media
   image             str -> presigned S3 URL in the field itself
   sg_uploaded_movie dict keys=['url', 'name', 'content_type', 'link_type', 'type', 'id']
-  filtering sg_uploaded_movie is_not None -> 400 API summarize() Version.sg_uploaded_movie's 'url' escarp type cannot be
+  filtering sg_uploaded_movie is_not None -> 400 API summarize() Version.sg_uploaded_movie's 'url' data type cannot be used in a filter.
+  image is_not None 33/53 on this project, 98/1057 site-wide
 ```
 
-**Verdict** Tier 3 is the only one this site can prove; tier 1 is unproven here for TWO reasons and only one of them is about the API. THE REUSABLE TRUTH: `path` on a PublishedFile arrives with the LocalStorage join ALREADY DONE - local_path_mac / local_path_windows / local_path_linux are filled by the server alongside relative_path and the local_storage hash, so a client NEVER reads LocalStorage or reassembles a root, and unlike the Version path fields it carries all three platforms at once. ABOUT THE API: Image, Rendered Image, Texture and USD PublishedFiles here carry NO path at all (only Maya Scene, Alembic Cache and Movie do), and Version.published_files is filled on 2 of 53 Versions while `version` is null on 180 of 182 PFs - so walking Version -> PublishedFile finds nothing to load. NOT ABOUT THE API: the Movie paths that do exist point at files the operator has since deleted from disk. Do not cite this finding as evidence that Flow PT paths are unreliable; it is evidence that this site has no cinder history to read. Tier 2 sg_path_to_movie is filled 28/53 and those files DO exist, but they are ad-hoc user paths rather than a shared root, and sg_path_to_frames is 0/53 so the sequence form is untested here - note it is free text accepting printf padding AND the Shake # and @ forms, so never assume %04d (docs/quirks). Tier 3 always resolves and needs no second call: `image` IS a presigned S3 URL as a plain string and sg_uploaded_movie is a dict carrying the same under `url`. sg_uploaded_movie cannot be filtered or summarized `is_not None` at all - 400, "'url' escarp type cannot be" - the same shape of trap as a checkbox (probe 020). Offer the operator whichever tiers a given Version can actually deliver, rather than picking one for them.
+**Teaches**
+
+| tier | what resolves | second call |
+|---|---|---|
+| 1. `Version.published_files` then `PublishedFile.path` | mac, windows and linux absolute paths at once, the LocalStorage join already done | yes, one `_search` |
+| 2. `sg_path_to_movie`, `sg_path_to_frames` | one absolute path, no platform variants | no |
+| 3. `image`, `sg_uploaded_movie` | a presigned S3 URL | no |
+
+- **Tier 1 is untested here for two reasons, and only one of them is about the API.** On the probed site, Image, Rendered Image, Texture and USD PublishedFiles have **no `path` at all**, and `Version.published_files` is filled on 2 of 53 Versions: that is Flow PT data. The Movie paths that do exist point at files the operator has since deleted from disk: that is not. Read this as "this site has no publish history", never as "Flow PT paths are unreliable".
+- Tier 2 holds one absolute path, so a value cannot resolve on two platforms, unlike `PublishedFile.path`, which returns all three at once. On the probed site `sg_path_to_frames` is 0 of 53, leaving the sequence form untested: it is free text taking printf padding and the Shake `#`/`@` forms, so never assume `%04d`.
+- Tier 3 needs no second call: `image` is a presigned S3 URL as a plain string, and `sg_uploaded_movie` is a dict with the same URL under `url`. It does not always resolve. On the probed site `image` is filled on 33 of 53 Versions in the sample project and 98 of 1057 site-wide, so test the field rather than assuming a fallback.
+- **Trap.** `sg_uploaded_movie` cannot be filtered or summarized `is_not None`: 400 `API summarize() Version.sg_uploaded_movie's 'url' data type cannot be used in a filter.` Same shape of trap as a checkbox (probe 020).
+- Offer the operator whichever tiers a given Version can deliver rather than picking one for them.
