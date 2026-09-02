@@ -1,10 +1,8 @@
 <script>
-	// ROUTE CHOICE: /filters, not /reference/filters. Every other reference route
-	// is one flat segment (/field-types, /entity-types, /recipes) and no page
-	// renders a /reference index, so a segment that never resolves on its own
-	// would be the only nesting on the site. The grouping is stated on the
-	// landing page instead. Flip it if the designer wants /reference to become a
-	// page of its own.
+	// ROUTE CHOICE: /filters, not /reference/filters. /reference is an index page
+	// over this route, /field-types and /entity-types; it groups them without
+	// owning their URLs, so every reference route stays one flat segment and no
+	// link has to move.
 	let { data } = $props();
 
 	// Family notes are written with backticks, the way the corpus writes API

@@ -184,13 +184,22 @@ Leave these alone unless the pipeline itself is the problem.
 
 ## Routes
 
-Four groups are the systematic reference: field types, entity types, filters and recipes. Each covers its
-subject completely and is addressed by name. Findings are separate, because they are chronological and
-question-shaped and some correct an earlier one, which is worth keeping legible rather than folding in.
+The site has four sections, and the navigation carries one entry each.
+
+| section | route | is |
+|---|---|---|
+| Reference | `/reference` | the three groups that are complete and addressed by name: field types, entity types, filters |
+| Recipes | `/recipes` | a task and the calls that perform it, which is a different kind of thing from a reference card |
+| Findings | `/findings` | what was learned, question by question, chronological, later entries correcting earlier ones |
+| How it works | `/how-it-works` | the probes, the scope field, the overlay contract, the reading level |
+
+`/reference` is an index over three routes it does not own. `/field-types`, `/entity-types` and `/filters`
+stay one flat segment each, so grouping them cost no link a move.
 
 | route | on it |
 |---|---|
-| `/` | five facts about what it does, what it is for, how it works, enabling it for your site, the reference links, then the cited examples |
+| `/` | the hero, five facts about what this is, the setup prompt, and links to the four sections |
+| `/reference` | the three reference groups, each with what it is and what it answers |
 | `/field-types` | every data type with verdicts and tags |
 | `/field-types/[slug]` | one reference card in full |
 | `/entity-types` | every entity type with verdicts and tags |
@@ -198,14 +207,12 @@ question-shaped and some correct an earlier one, which is worth keeping legible 
 | `/filters` | every filter operator the API accepts, per data type, generated from the field-type cards |
 | `/recipes` | every recipe |
 | `/recipes/[slug]` | one recipe in full |
-| `/findings` | the numbered corpus |
+| `/findings` | the numbered corpus, then the cited examples |
 | `/findings/[slug]` | one finding in full |
-| `/use` | pointing a model at it, running the probes, the scope field, the overlay contract, the reading level, using it alongside an MCP server |
+| `/how-it-works` | pointing a model at the index, running the probes, the scope field, enabling it for your site, the reading level, using it alongside an MCP server |
 | `/site` | everything the overlay holds at every level, or the overlay contract when there is no overlay |
 
-Navigation carries four entries: Field types, Entity types, Findings, How to use it. `/filters` and
-`/recipes` are reached from the reference list on `/` and from the page they belong to. `/site` is added to
-the navigation only when the build read an overlay.
+`/site` is added to the navigation only when the build read an overlay, and so is the reading level switch.
 
 An entity-type card sets its own sections (`**Type**`, `**Identity**`, `**Create**`, `**Links**`,
 `**Status**`, `**Traps**`) and they are not the field-type ones. `EntryDetail` renders whatever the markdown
@@ -277,27 +284,24 @@ person watching the site. `marked` renders a string to a string and cannot be br
   `**Filter**`, `**Traps**` open a paragraph. They cannot be styled as real section heads without either
   editing the corpus to use `###` or pattern-matching bold-leading paragraphs. Left as plain bold. Noted in
   `Prose.svelte`.
-- **The landing page carries the cited examples below the reference links.** They are evidence for a reader
-  who has already decided, rather than an opener, and could become a page of their own if the landing page
-  needs to be shorter still. The MCP integrations moved to `/use`, under `#mcp`: they answer a question a
-  reader already has rather than one they arrive with. `integrations` in `src/routes/use/+page.svelte` is
-  still structure only, and the section renders nothing when the array is empty.
-- **The five facts sit under "What it does", not under "How it works".** Four of the five state what the
-  thing does rather than how it was built, and the privacy fact leads because it is stated nowhere else.
-  "How it works" keeps one sentence and restates none of them.
-- **`PERMISSIONS_CAVEAT` in `src/routes/+page.svelte` is an empty slot.** Every finding was measured by a
-  script user with broad access, and what the API shows differs by permission level even though the API does
-  not. `corpus/findings/027_auth_permissions.md` is being probed; when it lands, write one line into that
-  constant from what it says and link it. It renders nothing until then rather than guessing.
-- **`/filters` is flat, not `/reference/filters`.** Every other reference route is one segment and no page
-  renders a `/reference` index, so a segment that never resolves on its own would be the only nesting on the
-  site. The grouping is stated on the landing page instead.
+- **The cited examples sit at the foot of `/findings`.** They are evidence for a reader who has already
+  decided, and they belong beside the entries that recorded them rather than on the landing page. The MCP
+  integrations sit on `/how-it-works`, under `#mcp`: they answer a question a reader already has rather than
+  one they arrive with. `integrations` in `src/routes/how-it-works/+page.svelte` is still structure only, and
+  the section renders nothing when the array is empty.
+- **The five facts sit under "What it is", on the landing page.** Four of the five state what the thing does,
+  and the privacy fact leads because it is stated nowhere else. How the thing was built is a page of its own.
+- **`PERMISSIONS_CAVEAT` in `src/routes/+page.svelte` is one line, written from finding 027.** It renders
+  under the five facts. It is a constant rather than prose because it is conditional: an empty string renders
+  nothing.
+- **`/filters` is flat, not `/reference/filters`.** `/reference` is an index over routes it does not own, so
+  every reference route stays one segment and no link had to move when the index was added.
 - **The landing page no longer renders the overlay band or a sample card in full.** A local build sees its
   overlay on the entry pages and on `/site`, not on `/`.
 - **Family notes on `/filters` are written here, not read from the corpus.** The rows, the operators, the
   counts and the grouping are all derived; the one-line note under each family heading is site copy.
-- **No search and no tag index.** Tags render but do not link. At 39 entries browsing works; past a hundred
-  it will not.
+- **No search and no tag index.** Tags render but do not link. At the corpus's current size browsing works;
+  past a hundred entries it will not.
 - **No `llms.txt` and no per-page raw markdown link.** Every page is prerendered static HTML and each entry
   links to its source markdown on GitHub, which covers the machine reader for now.
 - **Typography is system faces.** `--font-text` and `--font-mono` are one line each in `tokens.css`.

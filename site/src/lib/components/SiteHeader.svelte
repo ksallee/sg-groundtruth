@@ -12,10 +12,10 @@
 	<div class="bar">
 		<a class="mark" href="/">{NAME}</a>
 		<nav aria-label="Sections">
-			<a href="/field-types">Field types</a>
-			<a href="/entity-types">Entity types</a>
+			<a href="/reference">Reference</a>
+			<a href="/recipes">Recipes</a>
 			<a href="/findings">Findings</a>
-			<a href="/use">How to use it</a>
+			<a href="/how-it-works">How it works</a>
 			{#if hasOverlay}
 				<a class="local" href="/site">This site</a>
 			{/if}

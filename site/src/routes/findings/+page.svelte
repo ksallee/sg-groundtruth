@@ -20,15 +20,14 @@
 			that produced it and quotes the status code and error string verbatim.
 		</p>
 		<p class="lede">
-			Findings are chronological and question-shaped, and some correct an earlier one. The reference
-			is elsewhere: <a href="/field-types">field types</a>, <a href="/entity-types">entity types</a>,
-			<a href="/filters">filters</a> and <a href="/recipes">recipes</a> are complete and addressed by
-			name.
+			Findings are chronological and question-shaped, and some correct an earlier one. The
+			<a href="/reference">reference</a> is elsewhere: field types, entity types and filters are
+			complete and addressed by name.
 		</p>
 		<p class="scope">
 			Only findings marked <code>scope: api</code> are published here. A finding that measures one
 			site, or one project inside it, stays in the repository and is excluded from this build.
-			<a href="/use">Why that distinction exists</a>.
+			<a href="/how-it-works#scope">Why that distinction exists</a>.
 		</p>
 	</header>
 
@@ -39,6 +38,29 @@
 			A finding answers a question. <a href="/recipes">A recipe</a> is a call that ran, with the
 			response it returned.
 		</p>
+	{/if}
+
+	<!-- Evidence, beside the entries that recorded it. Four cases rather than a
+	     summary of the corpus, so they sit below the index and not above it. -->
+	{#if data.examples.length}
+		<section class="cited">
+			<h2>{data.examples.length} behaviours the REST documentation does not describe</h2>
+			<p class="lede">
+				Each is a recorded probe result. The entry that measured it is linked below it.
+			</p>
+			<ul class="examples">
+				{#each data.examples as ex (ex.slug)}
+					<li>
+						<article>
+							<h3>{ex.claim}</h3>
+							<p>{ex.body}</p>
+							<pre>{ex.code}</pre>
+							<p class="cite"><a href={ex.href}>{ex.cite}</a></p>
+						</article>
+					</li>
+				{/each}
+			</ul>
+		</section>
 	{/if}
 </div>
 
@@ -76,5 +98,65 @@
 		color: var(--ink-muted);
 		border-left: 3px solid var(--rule-strong);
 		padding-left: var(--space-4);
+	}
+
+	.cited {
+		display: grid;
+		gap: var(--space-4);
+		border-top: var(--border) solid var(--rule);
+		padding-top: var(--space-5);
+	}
+
+	.cited h2 {
+		font-size: var(--text-lg);
+		max-width: var(--measure);
+	}
+
+	.examples {
+		list-style: none;
+		padding: 0;
+		display: grid;
+		gap: var(--space-4);
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
+	}
+
+	.examples article {
+		height: 100%;
+		display: grid;
+		gap: var(--space-3);
+		align-content: start;
+		background: var(--ground-raised);
+		border: var(--border) solid var(--rule);
+		border-radius: var(--radius);
+		padding: var(--space-4);
+	}
+
+	.examples h3 {
+		font-size: var(--text-md);
+	}
+
+	.examples p {
+		color: var(--ink-muted);
+		font-size: var(--text-sm);
+	}
+
+	/* These samples are short enough to wrap rather than scroll, which keeps
+	   every card the same shape. The corpus pages do the opposite: there the
+	   line breaks carry meaning, so they scroll. */
+	.examples pre {
+		margin: 0;
+		background: var(--slab);
+		color: var(--slab-ink);
+		border-radius: var(--radius);
+		padding: var(--space-3);
+		font-size: var(--text-xs);
+		line-height: 1.5;
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+	}
+
+	.cite {
+		font-family: var(--font-mono);
+		font-size: var(--text-xs);
 	}
 </style>

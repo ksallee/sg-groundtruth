@@ -56,7 +56,7 @@
 				This build read no <code>{data.overlayDir}/</code> directory, so it shows the shipped corpus
 				only, and the reading level switch is not drawn. To document your own site, generate markdown
 				into that directory and rebuild.
-				<a href="/use#overlay">The overlay contract</a> gives the filenames and the frontmatter.
+				<a href="/how-it-works#overlay">The overlay contract</a> gives the filenames and the frontmatter.
 			</p>
 			<p>
 				The directory is gitignored. It is never committed and never reaches a public deployment.

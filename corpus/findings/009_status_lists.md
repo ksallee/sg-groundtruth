@@ -23,11 +23,11 @@ verdict: A project's usable statuses are valid_values minus hidden_values, read 
       hidden_values:  []
       default_value:  "rev"
       editable:       true  mandatory: false
-200 Version sg_status_list [project 63 = demo_show]
+200 Version sg_status_list [project A]
       top-level keys / property keys / valid_values / display_values / default_value: byte-identical to site-wide
       hidden_values:  ["part", "pass", "pndad", "pndl", "pndng", "pndvs"]    -> 10 usable
-200 [project 70 = sample_show] hidden_values: ["pndl", "pndvs"]              -> 14 usable
-200 [project 91] hidden_values: ["pass"]                                    -> 15 usable
+200 [project B] hidden_values: ["pndl", "pndvs"]              -> 14 usable
+200 [project C] hidden_values: ["pass"]                                    -> 15 usable
    ... 17 further projects: 15 hide the same 6, 2 hide ["part", "pass", "pndng"]
 
 distinct valid_values across 21 scopes: 1

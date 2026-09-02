@@ -33,16 +33,20 @@
 </script>
 
 <svelte:head>
-	<title>How to use the corpus</title>
+	<title>How it works: probes, scope, and the local overlay</title>
 	<meta
 		name="description"
-		content="Point a model at the corpus index, run the probes against your own Flow PT site, and read the scope field to tell what transfers from what you have to measure again."
+		content="One question per probe. Point a model at the corpus index, run the probes against your own Flow PT site, and read the scope field to tell what transfers from what you have to measure again."
 	/>
 </svelte:head>
 
 <div class="page">
 	<header>
-		<h1>How to use it</h1>
+		<h1>How it works</h1>
+		<p class="lede">
+			One question per probe. A probe is a script that asks a live Flow Production Tracking site one
+			question, and what it prints is the reference.
+		</p>
 		<p class="lede">
 			The corpus is markdown files, each with a one-line verdict in its frontmatter.
 		</p>
@@ -130,7 +134,12 @@ python probes/017_filter_operators.py</pre>
 	</section>
 
 	<section id="overlay">
-		<h2>Build a local copy that covers your own site</h2>
+		<h2>Enabling it for your site</h2>
+		<p>
+			Point a clone at your Flow PT site and rebuild. Its custom entities, status vocabularies and
+			fill rates render beside the shipped corpus, in a labelled band, at the level the header switch
+			is set to. The <a href="/">setup prompt on the front page</a> is one way to get there.
+		</p>
 		<p>
 			This site builds from three content sources, one per level. The first is
 			<code>corpus/</code>, committed and public, filtered to <code>scope: api</code>. The other two

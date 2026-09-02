@@ -13,7 +13,7 @@
 		<ul class="links">
 			<li><a href={REPO}>GitHub</a></li>
 			<li><a href="{REPO}/tree/main/corpus">The corpus</a></li>
-			<li><a href="/use">How to use it</a></li>
+			<li><a href="/how-it-works">How it works</a></li>
 			<li>MIT, intended</li>
 		</ul>
 
