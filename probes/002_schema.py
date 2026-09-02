@@ -6,15 +6,21 @@ import _lib
 
 env = _lib.load_env()
 c = _lib.client()
+PROJECT = _lib.sample_projects(c, env)[0]
+
+# One 404 on one guessed spelling proves nothing, so every plausible enumeration path is tried.
+ENUMERATION_GUESSES = ["/schema/entity_types", "/schema/entity_type", "/schema/entities",
+                       "/schema/types", "/schema/_types", "/entity_types", "/entity",
+                       "/api/v1/entity"]
 
 candidates = [
     ("GET", "/schema", None),
     ("GET", "/schema/Version", None),
     ("GET", "/schema/Version/fields", None),
     ("GET", "/schema/Version/fields/sg_status_list", None),
-    ("GET", "/schema/entity_types", None),
-    ("GET", "/schema", {"project_id": 70}),
-    ("GET", "/schema/Version/fields", {"project_id": 70}),
+    *[("GET", p, None) for p in ENUMERATION_GUESSES],
+    ("GET", "/schema", {"project_id": PROJECT}),
+    ("GET", "/schema/Version/fields", {"project_id": PROJECT}),
 ]
 
 rows = []
@@ -36,7 +42,7 @@ for method, path, params in candidates:
             except Exception as e:
                 shape = f"unparsable: {e}"
         rows.append(f"{r.status_code} {ms:>5}ms {len(body):>9}b  {path}{'?' + str(params) if params else ''}\n"
-                    f"                            {shape or body[:120]}")
+                    f"                            {shape or body}")
     except Exception as e:
         rows.append(f"ERR         {path}: {e}")
 

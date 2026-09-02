@@ -177,23 +177,50 @@ for s in ("workload", "-workload"):
     rows.append(f"  GET ?sort={s:<12} -> {r.status_code} "
                 f"{[t['attributes'].get('workload') for t in r.json()['data']] if r.ok else json.dumps(r.json().get('errors'))}")
 
-rows.append("\n=== filter: _summarize over a calculated column")
-for body, label in [
-    ({"filters": [PROJ], "summary_fields": [{"field": "workload", "type": "sum"}]}, "sum(workload)"),
-    ({"filters": [PROJ], "summary_fields": [{"field": "id", "type": "count"}],
-      "grouping": [{"field": "workload", "type": "exact", "direction": "asc"}]}, "group by workload"),
+# One field is not the type. The other three have different renderers, and sg_calculated is on a
+# different entity type, so sort and _summarize are measured on all four.
+rows.append("\n=== sort: the other three calculated fields, and the negative control")
+for entity, field, filt in [("tasks", "workload_per_day", [PROJ]),
+                            ("tasks", "workload_per_day_per_assignee", [PROJ]),
+                            ("assets", "sg_calculated", []),
+                            ("assets", "definitely_not_a_field", [])]:
+    for s in (field, f"-{field}"):
+        r = c.post(f"/entity/{entity}/_search", headers=ARR,
+                   json={"filters": filt, "fields": [field], "sort": s, "page": {"size": 5}})
+        got = ([x["attributes"].get(field) for x in r.json()["data"]] if r.ok
+               else json.dumps(r.json().get("errors")))
+        rows.append(f"  {entity:<7} sort {s:<32} {r.status_code} {got}")
+
+rows.append("\n=== filter: _summarize over a calculated column, all four fields")
+for entity, label, body in [
+    ("tasks", "sum(workload)",
+     {"filters": [PROJ], "summary_fields": [{"field": "workload", "type": "sum"}]}),
+    ("tasks", "group by workload",
+     {"filters": [PROJ], "summary_fields": [{"field": "id", "type": "count"}],
+      "grouping": [{"field": "workload", "type": "exact", "direction": "asc"}]}),
+    ("tasks", "sum(workload_per_day)",
+     {"filters": [PROJ], "summary_fields": [{"field": "workload_per_day", "type": "sum"}]}),
+    ("tasks", "group by per_assignee",
+     {"filters": [PROJ], "summary_fields": [{"field": "id", "type": "count"}],
+      "grouping": [{"field": "workload_per_day_per_assignee", "type": "exact",
+                    "direction": "asc"}]}),
+    ("assets", "count(sg_calculated)",
+     {"filters": [], "summary_fields": [{"field": "sg_calculated", "type": "count"}]}),
+    ("assets", "group by sg_calculated",
+     {"filters": [], "summary_fields": [{"field": "id", "type": "count"}],
+      "grouping": [{"field": "sg_calculated", "type": "exact", "direction": "asc"}]}),
 ]:
-    s = c.post("/entity/tasks/_summarize", headers=ARR, json=body)
+    s = c.post(f"/entity/{entity}/_summarize", headers=ARR, json=body)
     if s.ok:
         d = s.json()["data"]
-        rows.append(f"  {label:<20} {s.status_code} summaries={json.dumps(d['summaries'])}")
-        for g in d.get("groups", [])[:4]:
+        rows.append(f"  {entity:<7} {label:<24} {s.status_code} "
+                    f"summaries={json.dumps(d['summaries'])} groups={len(d.get('groups', []))}")
+        for g in d.get("groups", [])[:3]:
+            _lib.note_names(str(g["group_name"]))
             rows.append(f"      group_name={g['group_name']!r} group_value={g['group_value']!r} "
                         f"{json.dumps(g['summaries'])}")
-        if len(d.get("groups", [])) > 4:
-            rows.append(f"      ... {len(d['groups'])} groups total")
     else:
-        rows.append(f"  {label:<20} {s.status_code} "
+        rows.append(f"  {entity:<7} {label:<24} {s.status_code} "
                     f"{json.dumps(s.json().get('errors'), indent=1)}")
 
 # ------------------------------------------------------------------ write
@@ -254,6 +281,9 @@ else:
         rows.append(json.dumps(u.json(), indent=1)[:700] if u.content else "  (empty body)")
         now = c.get("/schema/Task/fields/workload").json()["data"]["properties"]
         rows.append(f"  formula still {now['calculated_function']['value']!r}")
+        rows.append("  the 200 is all this settles: the value written is the value already there, so "
+                    "no row was re-read under a changed formula. Settling that needs a site nobody "
+                    "else is using, a different formula, and a row read before and after.")
 
         rows.append("\n=== freshness: workload = {duration}; move the dependency, read straight back")
         for mins in (480, 960, None):

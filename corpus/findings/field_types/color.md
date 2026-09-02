@@ -9,12 +9,13 @@ verdict: Task.color usually holds no colour at all but the token pipeline_step; 
 **Data type** `color`. Probed on `Task.color` (stock, editable; written only in the sandbox project);
 `Step.color` and `Project.color` are read here and never written. Those three are the only `color` fields
 on the site, and a custom one is impossible: `POST /schema/<Type>/fields` with `"data_type": "color"`
-returns `400 {"data_type": ["data_type is not valid"]}` (probe 019). All three have two properties and no
-vocabulary: `default_value` (null) and `summary_default` (`'none'`).
+returns `400 {"data_type": ["data_type is not valid"]}` (probe 019). All three report `mandatory: false`
+and the same two properties, no vocabulary: `default_value` (null) and `summary_default` (`'none'`).
+Nothing in the schema tells the three apart.
 
-| field | display name | shape | this site | `is null` | malformed `is` value |
+| field | display name | shape | this site | rows `is null` | malformed `is` value |
 |---|---|---|---|---|---|
-| `Task.color` | `Gantt Bar Color` | `pipeline_step`, or `r,g,b`; never null | `pipeline_step` on all 7452 tasks | 0 | 0 rows |
+| `Task.color` | `Gantt Bar Color` | `pipeline_step`, or `r,g,b` | `pipeline_step` on all 7445 tasks | 0 | 0 rows |
 | `Step.color` | `Color` | `r,g,b` | 23 distinct triples over 35 steps, no nulls | 0 | 400 |
 | `Project.color` | `Color` | `r,g,b`, or null | 20 of 52 set, 32 null | 32 | 400 |
 
@@ -32,14 +33,10 @@ GET /entity/tasks?fields=color,step.Step.color
 | sent | result |
 |---|---|
 | `"255,128,0"`, `"pipeline_step"` | 200, reads back verbatim |
-| `"Blue"` | 200, stored `2,149,216` |
-| `"Orange"` | 200, stored `253,141,3` |
-| `"Pink"` | 200, stored `254,125,179` |
-| `"Red"` / `"red"` | 200, stored `253,1,0` |
-| `"Green"` | 200, stored `29,215,46` |
-| `"Purple"` | 200, stored `183,0,188` |
-| `"Grey"` | 200, stored `129,129,129` |
-| `"Black"` | 200, stored `45,45,45` |
+| `"Blue"`, `"Orange"` | 200, stored `2,149,216` and `253,141,3` |
+| `"Pink"`, `"Red"` / `"red"` | 200, stored `254,125,179` and `253,1,0` |
+| `"Green"`, `"Purple"` | 200, stored `29,215,46` and `183,0,188` |
+| `"Grey"`, `"Black"` | 200, stored `129,129,129` and `45,45,45` |
 | key omitted on create | reads `pipeline_step`; the schema's `default_value: null` is wrong |
 | `"#ff8000"`, `"ff8000"`, `"Gray"`, `"White"`, `"Cyan"` | 400 `Value is not a valid color token` |
 | `"255, 128, 0"` (spaces), `"-1,0,0"`, `"255.0,128.0,0.0"` | 400 `At least one component value is not valid` |
@@ -64,8 +61,10 @@ Each of those 400s appends the same grammar, the authoritative spec for the type
 | `null` | 400 `Value cannot be nil for Task.color.`, value unchanged |
 | `""` | 400 `The value is not a valid color expression: []`, value unchanged |
 
-After the `""` attempt, `[["id","is",<id>],["color","is",null]]` still matches 0 rows. `Project.color`
-is nullable where Task's is not; clearing it was not probed, a Project's colour being site-wide.
+After the `""` attempt, `[["id","is",<id>],["color","is",null]]` still matches 0 rows. The refusal comes
+from the field, not the schema: `mandatory: false`, and the type layer accepts `NilClass`. A written null
+was tried on `Task` alone, `Step` and `Project` rows being site-wide, so nullability on those two is a
+read-side count and nothing more: 32 Projects hold null, no Step does.
 
 **Filter** Four relations, byte-identical to `list` and `status_list`; `contains`, `not_contains`,
 `starts_with` and `ends_with` all 400 with the same body:
@@ -109,7 +108,8 @@ A malformed value 400s on `Step` and `Project` and returns 0 rows on `Task`:
   every row this site has and must follow `step.Step.color` instead.
 - Decimal `r,g,b`, no spaces and no `#`, matching `Status.bg_color` (probe 010). Hex is rejected on write
   and on filter. Build it with `"%d,%d,%d" % rgb`, split on `,` to read.
-- `Task.color` has no empty state, so a fill-rate count over it reads 100% and measures nothing (probe 007).
+- No `Task.color` row on this site is empty and a written null is refused, so a fill-rate count over it
+  reads 100% and measures nothing (probe 007).
 - A bad filter value is a 400 on `Step` and `Project` but a silent 0 rows on `Task`.
 - Writing a legacy name is lossy: `"Red"` stores `253,1,0` and never reads back as `"Red"`, so filtering
   on the name it was written with returns 0.

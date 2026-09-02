@@ -141,6 +141,7 @@ cases = [
     ("not_in [2 codes]", [["sg_status_list", "not_in", [POP, good]]]),
     ("contains <code[:2]>", [["sg_status_list", "contains", (POP or "xx")[:2]]]),
     ("contains 'zznope'", [["sg_status_list", "contains", "zznope"]]),
+    ("not_contains <code[:2]>", [["sg_status_list", "not_contains", (POP or "xx")[:2]]]),
     ("starts_with <code[0]>", [["sg_status_list", "starts_with", (POP or "x")[0]]]),
     ("ends_with <code[-1]>", [["sg_status_list", "ends_with", (POP or "x")[-1]]]),
     ("is <hidden code>", [["sg_status_list", "is", hidden_code]] if hidden_code else None),

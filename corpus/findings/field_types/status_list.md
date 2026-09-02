@@ -55,7 +55,7 @@ The 400 enumerates site-wide `valid_values`, hidden codes included; the write pa
 | `""` | 200, reads back `None` |
 
 `default_value` is applied only when the key is absent on create, never on a clear. Cleared rows stay
-filterable: `[["sg_status_list", "is", null]]` returns 1 in the sandbox after the clears.
+filterable: `[["sg_status_list", "is", null]]` returned 1 over the sandbox rows after the clears.
 
 **Filter** Four operators only, no substring family at all:
 
@@ -68,7 +68,7 @@ filterable: `[["sg_status_list", "is", null]]` returns 1 in the sandbox after th
        Valid relations: ["is", "is_not", "in", "not_in"]"}
 ```
 
-Value format is the raw code, or a list of raw codes for `in`/`not_in`. Baseline 100 versions:
+Value format is the raw code, or a list of raw codes for `in`/`not_in`, counted over the 100-Version baseline project where nothing is cleared:
 
 | filter | rows |
 |---|---|
@@ -80,9 +80,9 @@ Value format is the raw code, or a list of raw codes for `in`/`not_in`. Baseline
 | `in ["Pending Review", "Final"]` | 0 |
 | `is "zznope"` (not in `valid_values`) | 0 |
 | `in ["zznope"]` | 0 |
-| `is null` | 0 |
+| `is null` | 0 (the sandbox rows cleared above matched 1) |
 | `is "part"` (hidden in the project) | 0 |
-| `contains "re"` / `starts_with "r"` / `ends_with "v"` | 400 `doesn't support ... 'relation'` |
+| `contains "re"` / `not_contains "re"` / `starts_with "r"` / `ends_with "v"` | 400 `doesn't support ... 'relation'` |
 
 Write and filter disagree on the same value:
 

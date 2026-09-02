@@ -68,8 +68,8 @@ and an unknown mode is rejected. There is no relationship endpoint: `GET` on
 | `[]` | cleared |
 | `{"multi_entity_update_mode": "set", "value": []}` | cleared |
 | `null` | 400 `API update() Version.sg_ai_generated_from expected [Array, Hash] data type(s) but got NilClass: nil` |
-| `""` | 400 |
-| `0` | 400 |
+| `""` | 400 `… expected [Array, Hash] data type(s) but got String: ""` |
+| `0` | 400 `… expected [Array, Hash] data type(s) but got Integer: 0` |
 | key omitted from the PUT | unchanged |
 
 A cleared field reads back `{"data": []}`, identical to one never set; no round trip separates them.

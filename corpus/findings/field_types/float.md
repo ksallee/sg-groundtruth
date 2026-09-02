@@ -19,7 +19,9 @@ always rounded to 6 decimal places.
 | `sg_uploaded_movie_frame_rate` | `float` | `"25.0"` |
 | `frame_count` | `number` | `2` (bare JSON integer) |
 
-**Write** `PUT /entity/versions/<id>` accepts Float, a numeric String and BigDecimal.
+**Write** `PUT /entity/versions/<id>` accepts a Float and a numeric String. The rejection names
+`[String, BigDecimal, Float, NilClass]`, but no JSON body reaches BigDecimal: a raw literal of
+`1.00000000000000000000000000000000000001` is accepted at 200 and reads back `"1.0"`, as a Float would.
 
 | sent | status | read back raw |
 |---|---|---|
@@ -36,6 +38,10 @@ always rounded to 6 decimal places.
 | `True` | 400 | `...but got TrueClass: true` |
 | `'abc'` | 400 | `Invalid data for 'float' data type. Value: abc` |
 | `''` | 400 | `Invalid data for 'float' data type. Value: ` |
+
+The rounding is on write, not on read. Three rows set to `1.0000004` each read `"1.0"`, and a
+`_summarize` `sum` over them (`probe 020`) returns `3.0`, not the `3.0000012` a store keeping the
+seventh decimal would total. A control sum of three rows holding `1.0` returns the same `3.0`.
 
 Control, the same inputs into stock `number` `Version.frame_count` on the same row:
 

@@ -108,6 +108,7 @@ for label, filt in [
     (f"is_not {GOOD!r}",             [[FIELD, "is_not", GOOD]]),
     ("is_not null",                  [[FIELD, "is_not", None]]),
     (f"in [{GOOD!r}, {OTHER!r}]",    [[FIELD, "in", [GOOD, OTHER]]]),
+    (f"in [{GOOD!r}] (one real, alone)", [[FIELD, "in", [GOOD]]]),
     (f"in [{BOGUS!r}] (neg control)", [[FIELD, "in", [BOGUS]]]),
     (f"in [{GOOD!r}, {BOGUS!r}] (one real, one junk)", [[FIELD, "in", [GOOD, BOGUS]]]),
     (f"in {GOOD!r} (bare, not a list)", [[FIELD, "in", GOOD]]),
@@ -127,66 +128,66 @@ for label, filt in [
 if not _lib.writes_allowed():
     rows.append("\n(read-only run; pass --write for the write / clear half)")
 else:
-    SANDBOX = _lib.sandbox_id(c, env)
-    rows.append(f"\n=== write, into the sandbox project only  (valid_values before: {VALID})")
-    r = c.post("/entity/versions", json={"project": {"type": "Project", "id": SANDBOX},
-                                         "code": "zzprobe_list"})
-    vid = r.json()["data"]["id"] if r.ok else None
-    fresh = c.get(f"/entity/versions/{vid}", params={"fields": FIELD}).json()["data"]["attributes"]
-    rows.append(f"  create Version zzprobe_list, field omitted -> {r.status_code} id={vid} "
-                f"reads {json.dumps(fresh)}  (default_value={VALID[0]!r} applied? "
-                f"{fresh.get(FIELD) is not None})")
-    rb = c.post("/entity/versions", json={"project": {"type": "Project", "id": SANDBOX},
-                                          "code": "zzprobe_list_bogus", FIELD: BOGUS})
-    rows.append(f"  create with an out-of-schema value -> {rb.status_code} "
-                f"{err(rb) if not rb.ok else 'ACCEPTED id=' + str(rb.json()['data']['id'])}")
-    if rb.ok:
-        c.request("DELETE", f"/entity/versions/{rb.json()['data']['id']}")
+    # A probe leaves no trace: every Version it makes is deleted on the way out.
+    with _lib.Created(c) as made:
+        SANDBOX = _lib.sandbox_id(c, env)
+        rows.append(f"\n=== write, into the sandbox project only  (valid_values before: {VALID})")
+        r = c.post("/entity/versions", json={"project": {"type": "Project", "id": SANDBOX},
+                                             "code": "zzprobe_list"})
+        vid = made.add("versions", r.json()["data"]["id"]) if r.ok else None
+        fresh = c.get(f"/entity/versions/{vid}", params={"fields": FIELD}).json()["data"]["attributes"]
+        rows.append(f"  create Version zzprobe_list, field omitted -> {r.status_code} id={vid} "
+                    f"reads {json.dumps(fresh)}  (default_value={VALID[0]!r} applied? "
+                    f"{fresh.get(FIELD) is not None})")
+        rb = c.post("/entity/versions", json={"project": {"type": "Project", "id": SANDBOX},
+                                              "code": "zzprobe_list_bogus", FIELD: BOGUS})
+        rows.append(f"  create with an out-of-schema value -> {rb.status_code} "
+                    f"{err(rb) if not rb.ok else 'ACCEPTED id=' + str(rb.json()['data']['id'])}")
+        if rb.ok:
+            made.add("versions", rb.json()["data"]["id"])
 
-    def put(value, field=FIELD):
-        rr = c.request("PUT", f"/entity/versions/{vid}", json={field: value},
-                       headers={"Content-Type": "application/json"})
-        if not rr.ok:
-            return rr.status_code, err(rr)
-        back = c.get(f"/entity/versions/{vid}", params={"fields": field}).json()["data"]["attributes"]
-        return rr.status_code, f"read back {json.dumps(back)}"
+        def put(value, field=FIELD):
+            rr = c.request("PUT", f"/entity/versions/{vid}", json={field: value},
+                           headers={"Content-Type": "application/json"})
+            if not rr.ok:
+                return rr.status_code, err(rr)
+            back = c.get(f"/entity/versions/{vid}", params={"fields": field}).json()["data"]["attributes"]
+            return rr.status_code, f"read back {json.dumps(back)}"
 
-    for label, value in [
-        (f"valid value {GOOD!r}",           GOOD),
-        (f"different casing {GOOD.lower()!r}", GOOD.lower()),
-        (f"upper {GOOD.upper()!r}",         GOOD.upper()),
-        (f"trailing space {GOOD + ' '!r}",  GOOD + " "),
-        (f"a status_list code 'apr'",       "apr"),
-        (f"out of valid_values {BOGUS!r}",  BOGUS),
-        (f"a LIST of two valid values",     [GOOD, OTHER]),
-        ("an integer index 0",              0),
-    ]:
-        code, info = put(value)
-        rows.append(f"  {label:<38} -> {code} {info}")
+        for label, value in [
+            (f"valid value {GOOD!r}",           GOOD),
+            (f"different casing {GOOD.lower()!r}", GOOD.lower()),
+            (f"upper {GOOD.upper()!r}",         GOOD.upper()),
+            (f"trailing space {GOOD + ' '!r}",  GOOD + " "),
+            (f"a status_list code 'apr'",       "apr"),
+            (f"out of valid_values {BOGUS!r}",  BOGUS),
+            (f"a LIST of two valid values",     [GOOD, OTHER]),
+            ("an integer index 0",              0),
+        ]:
+            code, info = put(value)
+            rows.append(f"  {label:<38} -> {code} {info}")
+            after = props("Version", FIELD)[1]["properties"]["valid_values"]["value"]
+            if after != VALID:
+                rows.append(f"      !! valid_values WIDENED to {after}")
+
+        rows.append("\n=== is /schema valid_values authoritative after all that?")
         after = props("Version", FIELD)[1]["properties"]["valid_values"]["value"]
-        if after != VALID:
-            rows.append(f"      !! valid_values WIDENED to {after}")
+        rows.append(f"  valid_values now: {after}")
+        rows.append(f"  unchanged: {after == VALID}")
 
-    rows.append("\n=== is /schema valid_values authoritative after all that?")
-    after = props("Version", FIELD)[1]["properties"]["valid_values"]["value"]
-    rows.append(f"  valid_values now: {after}")
-    rows.append(f"  unchanged: {after == VALID}")
+        rows.append("\n=== clear: null vs empty string  (the row is matched by id, so 1 = matched, 0 = not)")
+        for label, value in [(f"set {GOOD!r} (control)", GOOD), ("null", None), ('empty string ""', "")]:
+            code, info = put(value)
+            n, _e = search("versions", [["id", "is", vid], [FIELD, "is", None]], project=False)
+            n2, _e2 = search("versions", [["id", "is", vid], [FIELD, "is", ""]], project=False)
+            rows.append(f"  {label:<22} -> {code} {info}")
+            rows.append(f"      matched by  is None -> {n}   is '' -> {n2}")
 
-    rows.append("\n=== clear: null vs empty string  (the row is matched by id, so 1 = matched, 0 = not)")
-    for label, value in [(f"set {GOOD!r} (control)", GOOD), ("null", None), ('empty string ""', "")]:
-        code, info = put(value)
-        n, _e = search("versions", [["id", "is", vid], [FIELD, "is", None]], project=False)
-        n2, _e2 = search("versions", [["id", "is", vid], [FIELD, "is", ""]], project=False)
-        rows.append(f"  {label:<22} -> {code} {info}")
-        rows.append(f"      matched by  is None -> {n}   is '' -> {n2}")
+        rows.append("\n=== viewed_by_current_user: flagged editable, but is it? (probe 007)")
+        code, info = put("read", "viewed_by_current_user")
+        rows.append(f"  write 'read' -> {code} {info}")
 
-    rows.append("\n=== viewed_by_current_user: flagged editable, but is it? (probe 007)")
-    code, info = put("read", "viewed_by_current_user")
-    rows.append(f"  write 'read' -> {code} {info}")
-
-    if vid:
-        d = c.request("DELETE", f"/entity/versions/{vid}")
-        rows.append(f"\ncleanup: DELETE version {vid} -> {d.status_code}")
+        rows.append(f"\nvalid_values at the end of the run: {after}")
 
 actual = "\n".join(rows)
 _lib.emit("field_types/list", actual, env)

@@ -1,7 +1,7 @@
 ---
 tags: [query, filter, operator, dotted-field, entity-field, error-handling]
 scope: api
-verdict: is/is_not/contains/not_contains/starts_with/ends_with/in/not_in all work, on text fields and through dotted paths; an unknown operator 400s with the valid list rather than passing silently.
+verdict: is/is_not/contains/not_contains/starts_with/ends_with/in/not_in all work, on text fields and through dotted paths; an unknown operator 400s on all 21 data types, naming the valid list on 16.
 ---
 
 # 017_filter_operators
@@ -43,11 +43,16 @@ an operator that does not exist
   source: {"Shot.code": " data type doesn't support 'definitely_not_an_operator' 'relation'. Value:
        {"path" => "code", "relation" => "definitely_not_an_operator", "values" => ["x"]}
        Valid relations: ["contains", "not_contains", "is", "is_not", "starts_with", "ends_with", "in", "not_in"]"}
+  every data type: one field of each of the 21 reachable read-only -> 400 on all 21. 16 answer as above;
+  calculated, password, serializable, summary and url instead answer, with no Valid relations list:
+  title:  "API read() Version.sg_uploaded_movie's 'url' data type cannot be used in a filter."
+  source: {"Version.sg_uploaded_movie": " data type cannot be used in a filter. Value:
+       {"path" => "sg_uploaded_movie", "relation" => "definitely_not_an_operator", "values" => [nil]}"}
 ```
 
 **Teaches**
-- An unknown operator 400s, and `source` names the field's whole legal vocabulary. A bogus `?fields` name is the opposite, dropped at HTTP 200 (probe 004), so a filter typo can never masquerade as "no filter".
-- **A write can be accepted at 200 and silently discarded.** `cached_display_name` takes a write and drops it (`field_types/text.md`), `Task.splits` stores `null` for any well-formed payload (`field_types/serializable.md`), and the `multi_entity` update modes spelled in the query string return 200 and replace the whole list (`field_types/multi_entity.md`). An invalid operator, by contrast, always 400s.
+- An unknown operator 400s on every data type: 21 of 21 reachable read-only. `source` names the field's whole legal vocabulary on 16 of them. The other five, `calculated`, `password`, `serializable`, `summary` and `url`, answer `data type cannot be used in a filter.` and enumerate nothing, because they take no operator at all. A bogus `?fields` name is the opposite, dropped at HTTP 200 (probe 004), so a filter typo can never masquerade as "no filter".
+- **A write can be accepted at 200 and silently discarded.** `cached_display_name` takes a write and drops it (`field_types/text.md`), `Task.splits` stores `null` for any well-formed payload (`field_types/serializable.md`), and the `multi_entity` update modes spelled in the query string return 200 and replace the whole list (`field_types/multi_entity.md`). An invalid operator, by contrast, 400s on all 21 data types tried.
 - Every negative control returns 0 rather than the baseline, so these operators are applied, not ignored.
 - `in` takes a plain list for scalars, but on an entity field it needs full `{type, id}` hashes: `[{id: N}]` 400s with `invalid/missing entity hash string 'type'` and bare ints 400 with `expected [Hash, ...] but got Integer`.
 - `contains` through a dotted path (`entity.Shot.code`) makes server-side type-ahead over names one call, with no client-side scan.

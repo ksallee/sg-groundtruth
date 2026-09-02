@@ -108,5 +108,11 @@ bad = summarize("versions", [PROJ, ["sg_uploaded_movie", "is_not", None]])
 rows.append(f"  filtering sg_uploaded_movie is_not None -> {bad.status_code} "
             f"{'' if bad.ok else bad.json()['errors'][0]['title']}")
 
+# "tier 3 resolves" is a proportion, not a shape: count the Versions that actually hold an image.
+img = summarize("versions", [PROJ, ["image", "is_not", None]]).json()["data"]["summaries"]["id"]
+site = summarize("versions", []).json()["data"]["summaries"]["id"]
+site_img = summarize("versions", [["image", "is_not", None]]).json()["data"]["summaries"]["id"]
+rows.append(f"  image is_not None      {img}/{tot} on this project, {site_img}/{site} site-wide")
+
 actual = "\n".join(rows).replace(HOME, "<home>")
 _lib.emit("021_media_resolution", actual, env)

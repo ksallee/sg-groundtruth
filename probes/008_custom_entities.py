@@ -18,4 +18,15 @@ lines += ["", "sample of disabled slots (first 5):"]
 lines += [f"  {k:<24} name={(v.get('name') or {}).get('value')!r} visible={(v.get('visible') or {}).get('value')}"
           for k, v in sorted(custom.items()) if k not in visible][:5]
 
+# Absence from /schema is the enablement test only if an absent slot is unaddressable. Ask for one
+# directly instead of inferring it from the listing.
+absent = [f"CustomEntity{n:02d}" for n in range(1, 100) if f"CustomEntity{n:02d}" not in schema]
+lines += ["", f"slots absent from /schema: {len(absent)} (first: {absent[:3]})",
+          "", "addressing an absent slot directly:"]
+for slug in absent[:2]:
+    for path in (f"/schema/{slug}", f"/schema/{slug}/fields"):
+        r = c.get(path)
+        lines.append(f"  GET {path} -> {r.status_code}")
+        lines.append(f"    {r.text}")
+
 _lib.emit("008_custom_entities", "\n".join(lines), env)

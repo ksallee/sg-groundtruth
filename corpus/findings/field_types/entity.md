@@ -1,19 +1,13 @@
 ---
 tags: [field-type, entity-field, write, filter, operator, dotted-field, trap]
 scope: api
-verdict: An entity link is a {type,id} hash under relationships, cleared only by null; valid_types is unenforced and cross-project links pass, so the API will point Version.sg_task at a Shot.
+verdict: An entity link is a {type,id} hash under relationships, cleared only by null; valid_types binds on two of Version's seven editable entity fields, so the API will point sg_task at a Shot.
 ---
 
 # entity
 
-**Data type** `entity`, probed on stock `Version` fields. 10 of Version's 71 fields are `entity`.
-
-| field | editable | `valid_types` |
-|---|---|---|
-| `sg_task` | yes | `['Task']` |
-| `entity` | yes | `['Asset','Level','MocapTake','Reel','ShootDay','Shot','Sequence','Delivery','CustomEntity66','Launch','CustomEntity29','Camera','CustomEntity19','Slate','SourceClip']` |
-| `user` | yes | `['HumanUser','ApiUser','Group']` |
-| `created_by` | no | `['HumanUser','ApiUser']` |
+**Data type** `entity`, probed on stock `Version` fields. On the probed site 10 of Version's 71 fields
+are `entity`: seven editable, plus `created_by`, `updated_by` and `image_source_entity`, which are not.
 
 **Read** Under `relationships`, never `attributes`. `?fields=entity` puts nothing in `attributes`, so a
 reader that only walks `attributes` sees every link as absent (probe 003, probe 004):
@@ -44,12 +38,28 @@ picker. A dotted path reads back on a single link (unlike multi_entity, probe 01
 | `{"type": "Asset", "id": <a real Shot id>}` | 400 `Update failed for [Version.entity]: Value is not legal.` |
 | `{"type": "Shot", "id": 99999999}` | 400 `Update failed for [Version.entity]: Value is not legal.` |
 | a Shot in another project | 200, linked; no project-consistency check |
-| `sg_task` = `{"type": "Shot", "id": A}` | 200, reads back `{"type":"Shot"}`; outside `valid_types` `['Task']` |
-| `user` = `{"type": "Shot", "id": A}` | 200, reads back `{"type":"Shot"}`; outside `valid_types` |
-| `created_by` = `{"type": ..., "id": ...}` | 400 `API update() Version.created_by is editable on create only.` |
 
 `Value is not legal` is the only signal for both a wrong `type` and a missing id, and it has no `source`
 and no `detail`. Every failed write left the previous value intact: no partial update.
+
+Whether `valid_types` binds is per field. Every entity field on Version, each sent a type its own list
+omits:
+
+| field | `valid_types` | sent | result |
+|---|---|---|---|
+| `client_approved_by` | `['HumanUser','ClientUser']` | Shot | 200, reads back as a Shot |
+| `entity` | 15 types | Task | 200, reads back as a Task |
+| `sg_task` | `['Task']` | Shot | 200, reads back as a Shot |
+| `source_clip` | `['SourceClip']` | Shot | 200, reads back as a Shot |
+| `user` | `['HumanUser','ApiUser','Group']` | Shot | 200, reads back as a Shot |
+| `project` | `['Project']` | Shot | 400 `Update failed for [Version.project]: Project expected, got Shot` |
+| `task_template` | `['TaskTemplate']` | Shot | 400 `Update failed for [Version.task_template]: TaskTemplate expected, got Shot` |
+| `created_by`, `updated_by` | `['HumanUser','ApiUser']` | Shot | 400 `API update() Version.created_by is editable on create only.` |
+| `image_source_entity` | 114 types | Task | 400 `API update() Version.image_source_entity is read only.` |
+
+The two that bind name the expected type and answer `code: 104`; the five that do not are indistinguishable
+in the schema from the two that do. One valid type is not the rule: `sg_task` and `source_clip` list one
+each and took a Shot.
 
 **Clear**
 
@@ -99,8 +109,9 @@ Dotted paths work, and every negative control returns 0 rather than the baseline
 | `entity is None` | 0 (all 100 linked here) |
 
 **Traps**
-- `valid_types` is documentation, not a constraint: `sg_task` (valid_types `['Task']`) accepted a Shot with
-  a 200 and read it back as a Shot. Validate against `valid_types` client-side or store nonsense.
+- `valid_types` is documentation on five of the seven editable fields and a constraint on the other two,
+  with nothing in the schema separating them. Validate against `valid_types` client-side or store
+  nonsense: `sg_task` (`['Task']`) took a Shot at 200 and read it back as a Shot.
 - No project-consistency check. Pointing a sandbox Version at a Shot in another project returned 200 and
   read back linked, with nothing in the response flagging it. Compare projects before writing.
 - A wrong `type` for a real id 400s here only because ids come from one site-wide sequence (250 shots

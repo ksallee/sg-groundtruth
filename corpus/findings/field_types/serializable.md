@@ -8,8 +8,8 @@ verdict: No operator works on a serializable field: every filter 400s as unfilte
 
 **Data type** `serializable`, probed on `Task.splits` (stock, editable) and `Project.tracking_settings`
 (stock, editable, read only here: a site-wide configuration object). The schema declares no structure:
-`properties` holds `default_value` (null) and `summary_default`. A scan of all 114 entity types found six
-serializable fields and no others.
+`properties` holds `default_value` (null) and `summary_default`. On the probed site, a scan of all 114
+entity types found six serializable fields and no others.
 
 | field | editable | on a project-scoped entity |
 |---|---|---|

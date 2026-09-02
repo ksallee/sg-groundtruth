@@ -7,12 +7,15 @@ verdict: An image field cannot be assigned - every value but null 400s, one of t
 # image
 
 **Data type** `image`, probed on `Version.image` and `Version.filmstrip_image` (stock, editable).
-Every entity type has these two and no others, all `editable: true`. `image_blur_hash` is a `text`
-field, not this type.
+`image_blur_hash` is a `text` field, not this type. On the probed site, across all 114 entity types:
 
-| entity | Version | Shot | Asset | Project | HumanUser |
-|---|---|---|---|---|---|
-| fields on the type | 71 | 100 | 72 | 42 | 65 |
+| image fields on the type | types |
+|---|---|
+| `image` and `filmstrip_image` | 39, Version, Shot, Asset, Project and HumanUser among them |
+| `image` alone | 10: ClientUser, Department, Episode, Level, PipelineConfiguration, PublishedFileType, Reel, RvLicense, Software, SourceClip |
+| neither | 65 |
+
+No type held an `image` field under a third name, and every one found reads `editable: true`.
 
 **Read** A plain string under `attributes`, or `null`. Never under `relationships`. The value is the
 only state marker; test for the `/images/status/transient/` prefix, never for truthiness.
@@ -56,15 +59,12 @@ entity id and re-read, never the string. Fetch with `GET`; the signature covers 
 | `{"url": "https://example.com/thumb.png"}` | 400 | `invalid/missing entity hash string 'type'` |
 | `{}` | 400 | same |
 | `{"type": "Attachment", "id": 0}` | 400 | `Write access of the 'image' data type … not yet supported` |
+| `{"type": "Attachment", "id": <a real Attachment>}` | 400 | the same message; an id that resolves changes nothing |
 | `null` | 200 | cleared |
 | the same string in a `POST /entity/versions` body | 400 | `API create() Version.image expected [Hash, …` |
 
 ```
-API update() Version.image expected [Hash,
- ActiveSupport::HashWithIndifferentAccess,
- ActionDispatch::Http::Parameters,
- ActionDispatch::Http::ParamsHashWithIndifferentAccess,
- NilClass] data type(s) but got String: "https://example.com/thumb.png"
+API update() Version.image expected [Hash, ActiveSupport::HashWithIndifferentAccess, ActionDispatch::Http::Parameters, ActionDispatch::Http::ParamsHashWithIndifferentAccess, NilClass] data type(s) but got String: "https://example.com/thumb.png"
 API update() invalid/missing entity hash string 'type': {"url" => "https://example.com/thumb.png"}
  Valid entity types: ["ActionMenuItem", "ApiUser", … 114 of them …, "WorkDayRule"]
 API update(): Write access of the 'image' data type (Version.image) not yet supported in API

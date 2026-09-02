@@ -100,8 +100,13 @@ by_type = {}
 for s in st:
     by_type[s["attributes"]["entity_type"]] = by_type.get(s["attributes"]["entity_type"], 0) + 1
 rows.append(f"  Steps on the site by entity_type: {sorted(by_type.items())}")
-rows.append(f"  vs pivot fields per type: "
-            f"{sorted((t, len(p)) for t, (p, _) in pivots.items() if len(p) > 1)}")
+rows.append(f"  total Steps: {len(st)}")
+# The census table claims one column per Step plus step_0. Measure the Step count for every type
+# that has pivot fields, including the ones that turn out to have none.
+rows.append("  pivot fields vs Steps declared for that type, measured per type:")
+for t, (p, _) in sorted(pivots.items(), key=lambda kv: -len(kv[1][0])):
+    rows.append(f"    {t:<16} {len(p):>2} fields, {by_type.get(t, 0):>2} Steps "
+                f"(entity_type={t!r} in the Step listing: {t in by_type})")
 
 # ------------------------------------------------------------- schema shape
 rows.append("\n=== schema shape: GET /schema/Shot/fields/step_8, in full")
@@ -171,41 +176,62 @@ r = c.get("/entity/shots", params={"filter[project.Project.id]": PROJECT, "sort"
                                    "fields": "code"})
 rows.append(f"  GET  sort=step_8       -> {r.status_code} {errs(r)}")
 
+rows.append("\n=== the same three verbs on the other field, so the matrix is not one field's behaviour")
+_, err = search([PROJ, ["step_0", "definitely_not_an_operator", None]], entity="versions")
+rows.append(err)
+for label, filt in [("is None", ["step_0", "is", None]),
+                    ("is_not None", ["step_0", "is_not", None]),
+                    ("is 'fin'", ["step_0", "is", "fin"])]:
+    n, err = search([PROJ, filt], entity="versions")
+    rows.append(f"  Version.step_0 {label:<12} -> {n if err is None else err}")
+r = c.get("/entity/versions", params={"filter[project.Project.id]": PROJECT,
+                                      "filter[step_0]": "fin", "fields": "code"})
+rows.append(f"  GET flat filter[step_0]=fin on versions -> {r.status_code} {errs(r)}")
+for label, sort in [("_search sort step_0", "step_0"), ("_search sort -step_0", "-step_0")]:
+    n, err = search([PROJ], entity="versions", sort=sort)
+    rows.append(f"  Version {label:<22} -> {n if err is None else err}")
+r = c.get("/entity/versions", params={"filter[project.Project.id]": PROJECT, "sort": "step_0",
+                                      "fields": "code"})
+rows.append(f"  GET  sort=step_0 on versions -> {r.status_code} {errs(r)}")
+
 rows.append("\n=== _summarize: neither grouping nor summary_field survives (probe 020)")
-for label, body in [
-    ("grouping step_8", {"filters": [PROJ], "summary_fields": [{"field": "id", "type": "count"}],
-                         "grouping": [{"field": "step_8", "type": "exact", "direction": "asc"}]}),
-    ("summary_field step_8", {"filters": [PROJ],
-                              "summary_fields": [{"field": "step_8", "type": "count"}]})]:
-    r = c.post("/entity/shots/_summarize", headers=ARR, json=body)
-    rows.append(f"  {label:<22} -> {r.status_code} "
-                f"{r.json()['errors'][0]['title'] if not r.ok else 'ok'}")
+for entity, f in (("shots", "step_8"), ("versions", "step_0")):
+    for label, body in [
+        (f"grouping {f}", {"filters": [PROJ], "summary_fields": [{"field": "id", "type": "count"}],
+                           "grouping": [{"field": f, "type": "exact", "direction": "asc"}]}),
+        (f"summary_field {f}", {"filters": [PROJ],
+                                "summary_fields": [{"field": f, "type": "count"}]})]:
+        r = c.post(f"/entity/{entity}/_summarize", headers=ARR, json=body)
+        rows.append(f"  {entity:<9} {label:<22} -> {r.status_code} "
+                    f"{r.json()['errors'][0]['title'] if not r.ok else 'ok'}")
 
 # -------------------------------------------------------------------- write
 if not _lib.writes_allowed():
     rows.append("\n(read-only run; pass --write for the create / update attempt)")
 else:
     SANDBOX = _lib.sandbox_id(c, env)
-    rows.append("\n=== write: a throwaway Version in the sandbox, deleted at the end")
-    r = c.post("/entity/versions", json={"project": {"type": "Project", "id": SANDBOX},
-                                         "code": f"zzprobe_pivot_{int(time.time())}"})
-    rows.append(f"  POST /entity/versions -> {r.status_code}; "
-                f"step_* in the 201 attributes: "
-                f"{[k for k in r.json()['data']['attributes'] if k.startswith('step_')]}")
-    vid = r.json()["data"]["id"]
-    for label, body in [("step_0='fin'", {"step_0": "fin"}), ("step_0=null", {"step_0": None})]:
-        u = c.request("PUT", f"/entity/versions/{vid}", json=body, headers=JSN)
-        rows.append(f"  PUT {label:<14} -> {u.status_code} {errs(u)}".replace("\n", " "))
-    r2 = c.post("/entity/versions", json={"project": {"type": "Project", "id": SANDBOX},
-                                          "code": f"zzprobe_pivot_c_{int(time.time())}",
-                                          "step_0": "fin"})
-    rows.append(f"  POST create with step_0 -> {r2.status_code} {errs(r2)}".replace("\n", " "))
-    if r2.ok:
-        c.request("DELETE", f"/entity/versions/{r2.json()['data']['id']}")
-    back = c.get(f"/entity/versions/{vid}", params={"fields": "code,step_0"}).json()["data"]
-    _lib.note_from(back)
-    rows.append(f"  read back after three refused writes: {json.dumps(back['attributes'])}")
-    rows.append(f"  cleanup: DELETE -> {c.request('DELETE', f'/entity/versions/{vid}').status_code}")
+    rows.append("\n=== write: throwaway rows in the sandbox, deleted at the end")
+    # Both fields, both verbs: step_8 is a real Step's column, step_0 the all-steps one, and the
+    # read half measured filter and sort on Shot.step_8 only.
+    with _lib.Created(c) as made:
+        for slug, key, field in (("versions", "code", "step_0"), ("shots", "code", "step_8")):
+            r = c.post(f"/entity/{slug}", json={"project": {"type": "Project", "id": SANDBOX},
+                                                key: f"zzprobe_pivot_{int(time.time())}"})
+            rows.append(f"\n  POST /entity/{slug} -> {r.status_code}; step_* in the 201 attributes: "
+                        f"{[k for k in r.json()['data']['attributes'] if k.startswith('step_')]}")
+            rid = made.add(slug, r.json()["data"]["id"])
+            for label, body in [(f"{field}='fin'", {field: "fin"}), (f"{field}=null", {field: None})]:
+                u = c.request("PUT", f"/entity/{slug}/{rid}", json=body, headers=JSN)
+                rows.append(f"  PUT {label:<14} -> {u.status_code} {errs(u)}".replace("\n", " "))
+            r2 = c.post(f"/entity/{slug}", json={"project": {"type": "Project", "id": SANDBOX},
+                                                 key: f"zzprobe_pivot_c_{int(time.time())}",
+                                                 field: "fin"})
+            rows.append(f"  POST create with {field} -> {r2.status_code} {errs(r2)}".replace("\n", " "))
+            if r2.ok:
+                made.add(slug, r2.json()["data"]["id"])
+            back = c.get(f"/entity/{slug}/{rid}", params={"fields": f"{key},{field}"}).json()["data"]
+            _lib.note_from(back)
+            rows.append(f"  read back after three refused writes: {json.dumps(back['attributes'])}")
 
 actual = "\n".join(rows)
 _lib.emit("field_types/pivot_column", actual, env)

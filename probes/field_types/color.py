@@ -1,6 +1,9 @@
 """Q: what exactly does a `color` field hold, given probe 010 found Status.bg_color is comma-separated RGB?
 
 Probed on stock editable fields — Task.color (write, sandbox only), Project.color and Step.color (read only).
+Nullability is therefore a write measurement on Task and a row count on the other two: a Step or a Project
+row is site-wide, so neither is written here, and the `is null` counts below say what rows hold, not what
+the field would accept.
 Never creates a schema field: probe 019 already established `color` is refused as a data_type, and a name is
 burned permanently once created.
 

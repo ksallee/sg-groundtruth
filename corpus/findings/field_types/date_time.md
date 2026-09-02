@@ -63,18 +63,31 @@ A cleared field is matched by `["field", "is", null]` (1) and excluded by `is_no
 `Shot.sg_turnover_date`, a `date` field, returns an identical list; the two types share every relation and
 differ only in value format. There is no `not_between` and no `is_null`.
 
-Against one row whose value is `2026-03-04T05:06:07Z`:
+Every count below is one sandbox Version holding `2026-03-04T05:06:07Z`, run on 2026-09-02: 1 is a match,
+0 is a miss.
 
-| operator | value shape | matched |
+| operator | value | rows |
 |---|---|---|
-| `is`, `is_not` | `"2026-03-04T05:06:07Z"` | `is` 1; control `"2099-01-01T00:00:00Z"` 0; `null` 0 |
-| `greater_than` | `"2026-03-04T00:00:00Z"` | 1; control `"2026-03-05T00:00:00Z"` 0 |
-| `less_than` | `"2026-03-05T00:00:00Z"` | 1; control `"2026-03-04T00:00:00Z"` 0 |
-| `between` | `["2026-03-04T00:00:00Z", "2026-03-05T00:00:00Z"]` | 1; control `["1970-…", "1971-…"]` 0 |
-| `in`, `not_in` | `["2026-03-04T05:06:07Z"]` | `in` 1; control `["2099-01-01T00:00:00Z"]` 0 |
-| `in_last`, `not_in_last` | `[100, "YEAR"]` | 1 / 0; rolling window from now |
-| `in_next`, `not_in_next` | `[100, "YEAR"]` | 0 / 1 |
-| `in_calendar_day`, `_week`, `_month`, `_year` | `0` | 1 for a value in the current UTC period; `-50` (year) 0 |
+| `is` | `"2026-03-04T05:06:07Z"` | 1 |
+| `is` | `"2099-01-01T00:00:00Z"` | 0 |
+| `is` | `null` | 0 |
+| `is_not` | `"2026-03-04T05:06:07Z"` | 0 |
+| `greater_than` | `"2026-03-04T00:00:00Z"` | 1 |
+| `greater_than` | `"2026-03-05T00:00:00Z"` | 0 |
+| `less_than` | `"2026-03-05T00:00:00Z"` | 1 |
+| `less_than` | `"2026-03-04T00:00:00Z"` | 0 |
+| `between` | `["2026-03-04T00:00:00Z", "2026-03-05T00:00:00Z"]` | 1 |
+| `between` | `["1970-01-01T00:00:00Z", "1971-01-01T00:00:00Z"]` | 0 |
+| `in` | `["2026-03-04T05:06:07Z"]` | 1 |
+| `in` | `["2099-01-01T00:00:00Z"]` | 0 |
+| `not_in` | `["2026-03-04T05:06:07Z"]` | 0 |
+| `in_last` | `[100, "YEAR"]` | 1 |
+| `not_in_last` | `[100, "YEAR"]` | 0 |
+| `in_next` | `[100, "YEAR"]` | 0 |
+| `not_in_next` | `[100, "YEAR"]` | 1 |
+| `in_calendar_year` | `0` | 1 |
+| `in_calendar_year` | `-50` | 0 |
+| `in_calendar_day`, `_week`, `_month` | `0` | 0 each: March 4 is a past day, week and month |
 | `in_last` | `[1, "FORTNIGHT"]` | 400 `API read() 'in_last' 'relation' doesn't support the 'FORTNIGHT' time unit: [1, "FORTNIGHT"]  Valid time units: ["HOUR", "DAY", "WEEK", "MONTH", "YEAR"]` |
 
 A filter value takes the same formats as a write value, date-only included, and a date-only value is
@@ -86,8 +99,9 @@ exactly midnight UTC rather than a day:
 | `2026-03-04T00:00:00Z` | 1 | 0 | 0 |
 | `2026-03-04T00:30:00Z` | 0 | 1 | 0 |
 
-`in_calendar_day 0` matched a value at both `00:30Z` and `23:30Z` of the current UTC date, and `-1`/`+1`
-matched neither: the calendar buckets are UTC-aligned, with no site-local offset.
+Re-stored on the current UTC date, the same row matched `in_calendar_day` `0` at both `00:30Z` and
+`23:30Z` and matched neither `-1` nor `+1`, with `_week`, `_month` and `_year` at `0` each 1: the calendar
+buckets are UTC-aligned, with no site-local offset.
 
 **Traps**
 - A written offset is not preserved: `05:06:07+05:00` reads back as `00:06:07Z`. Convert to UTC yourself

@@ -6,3 +6,7 @@ __pycache__/
 *.local.json
 .DS_Store
 corpus.local/
+.playwright-mcp/
+node_modules/
+.svelte-kit/
+site/build/

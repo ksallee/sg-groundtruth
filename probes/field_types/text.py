@@ -137,9 +137,11 @@ else:
         r = put(vid, val)
         back = read(vid)
         rows.append(f"  PUT {label:<14} -> {r.status_code}  reads back {back!r}")
-    rows.append(f"  PUT missing key (no {FIELD} in body) -> "
-                f"{c.request('PUT', f'/entity/versions/{vid}', json={'description': 'untouched'}).status_code}"
-                f"  {FIELD} reads back {read(vid)!r}  <- omission is not a clear")
+    # The field must hold a value first, or omission and a clear look identical.
+    put(vid, "lighting")
+    r = c.request("PUT", f"/entity/versions/{vid}", json={"description": "untouched"})
+    rows.append(f"  PUT missing key over a set field ({FIELD}='lighting', body carries description only)"
+                f" -> {r.status_code}  {FIELD} reads back {read(vid)!r}  <- omission is not a clear")
 
     rows.append("\n=== four rows that differ only in how the field was left")
     ROWS = [("value", {FIELD: "lighting"}), ("empty", {FIELD: ""}),
@@ -189,6 +191,15 @@ else:
     rows.append("\n=== a second text field, left untouched on all four rows")
     rows.append(f"  description is None    -> {which([['description', 'is', None]])}")
     rows.append(f"  description is ''      -> {which([['description', 'is', '']])}")
+
+    rows.append("\n=== `in` with a bare string: one whole value, or one per character?")
+    ch, e = create(f"{RUN}_row_char", {FIELD: "g"})
+    ids[ch] = "char"
+    rows.append(f"  fifth row holds {FIELD}='g', a single character of 'lighting' {e or ''}")
+    rows.append(f"  is 'g'                     -> {which([[FIELD, 'is', 'g']])}")
+    rows.append(f"  in ['lighting']            -> {which([[FIELD, 'in', ['lighting']]])}")
+    rows.append(f"  in 'lighting' (bare str)   -> {which([[FIELD, 'in', 'lighting']])}"
+                "   <- 'char' present means per character")
 
     rows.append("\n=== cleanup")
     gone = [c.request("DELETE", f"/entity/versions/{i}").status_code for i in made]

@@ -9,6 +9,7 @@ to answer "has media" with. The write half asks whether the upload flow (probe 0
 """
 import json
 import os
+import re
 import sys
 import time
 import urllib.parse
@@ -154,6 +155,45 @@ if withmedia:
                   params={"fields": FIELD}).json()["data"]["attributes"][FIELD]["url"]
     rows.append(f"  same url on a second read: {again == ex['url']}")
 
+# One Version teaches one shape. A url field is stock on nine types here, so ask them all before
+# claiming the object always has the same keys.
+rows.append("\n=== is the read shape the same everywhere? every url field the site exposes")
+TYPES = sorted(c.get("/schema").json()["data"])
+uflds = {}
+for t in TYPES:
+    us = sorted(f for f, m in c.get(f"/schema/{t}/fields").json()["data"].items()
+                if (m.get("data_type") or {}).get("value") == "url")
+    if us:
+        uflds[t] = us
+rows.append(f"  {sum(len(v) for v in uflds.values())} url fields on {len(uflds)} of {len(TYPES)} "
+            f"entity types: {json.dumps(uflds)}")
+
+
+def slug(t):
+    s = re.sub(r"(?<!^)(?=[A-Z])", "_", t).lower()
+    return s[:-1] + "ies" if s.endswith("y") and s[-2] not in "aeiou" else s + "s"
+
+
+rows.append(f"  {'field':<38}{'non-null':<10}{'value type':<12}keys, and link_type")
+for t, fs in uflds.items():
+    for f in fs:
+        r = c.post(f"/entity/{slug(t)}/_search", headers=ARR,
+                   json={"filters": [], "fields": [f], "page": {"size": 200}})
+        if not r.ok:
+            rows.append(f"  {t + '.' + f:<38}{r.status_code} {' '.join(err(r).split())[:160]}")
+            continue
+        d = r.json()["data"]
+        vals = [x["attributes"].get(f) for x in d if x["attributes"].get(f) is not None]
+        shapes = {}
+        for v in vals:
+            k = (tuple(sorted(v)), v.get("link_type")) if isinstance(v, dict) else (type(v).__name__, None)
+            shapes[k] = shapes.get(k, 0) + 1
+        rows.append(f"  {t + '.' + f:<38}{f'{len(vals)}/{len(d)}':<10}"
+                    f"{'dict' if vals and isinstance(vals[0], dict) else type(vals[0]).__name__ if vals else '-':<12}"
+                    + " | ".join(f"link_type={lt} x{n} {list(ks) if isinstance(ks, tuple) else ks}"
+                                 for (ks, lt), n in shapes.items()))
+        _lib.note_from(d)
+
 if not _lib.writes_allowed():
     rows.append("\n(read-only run; pass --write for the write / clear half)")
 else:
@@ -251,6 +291,52 @@ else:
                       "fields": ["filename"], "page": {"size": 20}})
     rows.append(f"  attachments still linked to the Version: "
                 f"{len(at.json()['data']) if at.ok else err(at)}")
+
+    # The neighbours are the only filterable proxies for "has media", and one cleared row cannot
+    # show whether they keep matching. Clear a second row the same way and filter for both.
+    def neighbours(target):
+        out = []
+        for f in ("image", "sg_uploaded_movie_transcoding_status"):
+            n, _ = search([["id", "is", target], [f, "is_not", None]], project=False)
+            out.append(f"{f} is_not None -> {n}")
+        return ";  ".join(out)
+
+    def state(target):
+        a_ = c.get(f"/entity/versions/{target}",
+                   params={"fields": ",".join([FIELD, "image", "filmstrip_image"] + DERIVED)}
+                   ).json()["data"]["attributes"]
+        return json.dumps({k: (v if k.startswith("sg_uploaded_movie_transcoding") or
+                               k.endswith("frame_rate") else bool(v)) for k, v in a_.items()})
+
+    rows.append("\n=== a SECOND row, uploaded and cleared the same way")
+    if not src:
+        rows.append("  (needs FPT_PROBE_FRAMES_DIR; without real media a second row proves nothing)")
+    else:
+        v2 = c.post("/entity/versions", json={"project": {"type": "Project", "id": SANDBOX},
+                                              "code": "zzprobe_url_row2"})
+        vid2 = v2.json()["data"]["id"]
+        b = c.get(f"/entity/versions/{vid2}/{FIELD}/_upload",
+                  params={"filename": os.path.basename(src)}).json()
+        requests.put(b["links"]["upload"], data=open(src, "rb").read(), timeout=300)
+        up2 = c.post(b["links"]["complete_upload"], json={"upload_info": b["data"], "upload_data": {}})
+        rows.append(f"  row 2 upload -> {up2.status_code}")
+        for waited in (10, 30, 60, 60):
+            time.sleep(waited)
+            a2 = c.get(f"/entity/versions/{vid2}", params={"fields": ",".join(DERIVED)}
+                       ).json()["data"]["attributes"]
+            if a2.get("sg_uploaded_movie_transcoding_status") == 1 and a2.get("sg_uploaded_movie_mp4"):
+                break
+        rows.append(f"  row 2 before clear: {state(vid2)}")
+        rows.append(f"  row 2 before clear: {neighbours(vid2)}")
+        cl = c.request("PUT", f"/entity/versions/{vid2}", json={FIELD: None},
+                       headers={"Content-Type": "application/json"})
+        rows.append(f"  row 2 PUT {FIELD}=null -> {cl.status_code}")
+        rows.append(f"  row 2 after  clear: {state(vid2)}")
+        rows.append(f"  row 2 after  clear: {neighbours(vid2)}")
+        rows.append(f"  row 1 after  clear: {state(vid)}")
+        rows.append(f"  row 1 after  clear: {neighbours(vid)}")
+        rows.append(f"  cleanup: DELETE version {vid2} -> "
+                    f"{c.request('DELETE', f'/entity/versions/{vid2}').status_code}")
 
     d = c.request("DELETE", f"/entity/versions/{vid}")
     rows.append(f"\ncleanup: DELETE version {vid} -> {d.status_code}")

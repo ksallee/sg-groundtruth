@@ -59,7 +59,8 @@ python type of every non-null value: str
 | key omitted from the POST | 201, reads back `"Type A"`; `default_value` is applied on create |
 | `'zzprobe_list_not_a_valid_value'` on POST | 400 `Invalid field value, update failed [5 - Update failed for [Version.sg_version_type]: 'zzprobe_list_not_a_valid_value' is not a valid list value. Valid list values: 'Type A', 'Type B', 'Type C'.]` + `crud_error_uuid` |
 
-`valid_values` after all eight attempts: `['Type A', 'Type B', 'Type C']`, unchanged. `/schema` is
+`valid_values` after those ten writes, the eight PUTs and both creates: `['Type A', 'Type B', 'Type C']`,
+unchanged. `/schema` is
 authoritative for writes: a dropdown built from `valid_values` is complete, and a value outside it is
 unreachable over REST.
 
@@ -94,9 +95,10 @@ Baseline 100 versions in the project.
 | `is` | `null` | 1 |
 | `is_not` | `'Type A'` | 1 |
 | `is_not` | `null` | 99 |
+| `in` | `['Type A']` | 99 |
 | `in` | `['Type A', 'Type B']` | 99 |
 | `in` | `['zzprobe_...']` (not in schema) | 0 |
-| `in` | `['Type A', 'zzprobe_...']` | 99; the junk member is dropped, no error |
+| `in` | `['Type A', 'zzprobe_...']` | 99, the union of the members, no error |
 | `in` | `'Type A'` (bare, not a list) | 99; a scalar is accepted where a list is expected |
 | `not_in` | `['Type A']` | 1 |
 | `contains`, `not_contains`, `starts_with`, `ends_with` | any | 400, same "doesn't support ... 'relation'" body |

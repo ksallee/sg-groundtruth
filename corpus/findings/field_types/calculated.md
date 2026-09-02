@@ -6,7 +6,8 @@ verdict: A calculated field refuses every write with "is read only" and every fi
 
 # calculated
 
-**Data type** `calculated`, probed on `Task.workload` (stock, `editable: false`). Four exist on this site:
+**Data type** `calculated`. Read, write and clear probed on `Task.workload` (stock, `editable: false`),
+sort and `_summarize` on all four fields the site has:
 
 | entity | field | `calculated_function` | `renderer` | reads back as |
 |---|---|---|---|---|
@@ -16,8 +17,8 @@ verdict: A calculated field refuses every write with "is read only" and every fi
 | Asset | `sg_calculated` | `CONCAT({code}, {id})` | `text` | `"charA1,226"` (str) |
 
 Version, Shot, Project, Sequence, Note, PublishedFile and Playlist have none; their computed columns are
-`summary` and `pivot_column`, probed separately. None is editable on this site, and `POST /schema/<Type>/fields`
-answers the type with a 500 (probe 019): one exists because the web UI made it, or not at all.
+`summary` and `pivot_column`. None is editable here, and `POST /schema/<Type>/fields` answers the type with
+a 500 (probe 019): one exists because the web interface made it, or not at all.
 
 | operation | outcome |
 |---|---|
@@ -25,8 +26,8 @@ answers the type with a 500 (probe 019): one exists because the web UI made it, 
 | create or update | 400 code 103 `API update() Task.workload is read only.` |
 | clear | 400, same string |
 | filter, any relation | 400 `API read() Task.workload's 'calculated' data type cannot be used in a filter.` |
-| sort, `_search` and `GET` | 200, on the computed value |
-| `_summarize`, sum and grouping | 200 |
+| sort, `_search` on all four fields, `GET` on `workload` | 200, on the computed value |
+| `_summarize`, sum, count and grouping, all four fields | 200 |
 
 `GET /schema/Task/fields/workload` returns exactly four `properties`:
 
@@ -38,13 +39,13 @@ answers the type with a 500 (probe 019): one exists because the web UI made it, 
 | `default_value` | `null` | false |
 | the field's own `editable` | `false` | false |
 
-A client can show the expression and name the fields it reads. The result data type is never stated: `renderer`
-is the only declaration, and its values are not `data_type` values.
+The result data type is never stated: `renderer` is the only declaration, and its values are not `data_type` values.
 
 The value is read-only, the definition is not. `PUT /schema/Task/fields/workload` with
 `{"properties": [{"property_name": "calculated_function", "value": "{duration}"}]}` returns 200 and the full field
-record. The formula is site-wide, so rewriting it changes every row of that type on every project at once; there
-is no project-scoped calculated field.
+record. The value sent was the one already there and no row was read back under a changed formula, so the 200
+is all that is established. The schema names `entity_type` and no project, so a rewrite that takes effect
+changes every row of that type; settling that needs a disposable site and one row read before and after.
 
 **Read** A plain value in `attributes`, never `relationships` (`relationships` is `{}` on a Task), returned when
 named in `fields` and in `fields=*` (37 of 56 Task attributes). The shape follows `renderer`, not the operands:
@@ -67,9 +68,9 @@ named in `fields` and in `fields=*` (37 of 56 Task attributes). The shape follow
 | `PUT {"workload": "480"}` | 400, same string |
 | `PUT {"workload": "{duration}*2"}` | 400, same string |
 
-Every refusal returns code 103 and an empty `source`, and the row reads back unchanged. Match on `status` and
-`code: 103`, not on `source`, which a type error fills with the field name. Nothing is accepted and discarded,
-unlike `cached_display_name`: `editable: true`, a 200, value dropped (probe 004).
+Every refusal, the `POST` create included, returns code 103 and `source: {}`, and the row reads back unchanged.
+Match on `status` and `code: 103`, not on `source`, which a type error fills with the field name. Nothing is
+accepted and discarded, unlike `cached_display_name`: `editable: true`, a 200, value dropped (probe 004).
 
 **Clear**
 
@@ -95,31 +96,29 @@ The value stays whatever the formula computes. To empty one, write null to the f
 |---|---|
 | `is` null, `is_not` null | 400, same string |
 | `is` 0, `is` 480 | 400, same string |
-| `greater_than` 0, `less_than` 100000 | 400, same string |
-| `in` [480] | 400, same string |
+| `greater_than` 0, `less_than` 100000, `in` [480] | 400, same string |
 | any of the above on `workload_per_day` or `Asset.sg_calculated` | 400, same string |
 
 Sorting and summarizing work, on the computed value:
 
 | call | result |
 |---|---|
-| `_search {"sort": "workload"}` | 200, first 5 `[0,0,0,0,0]` |
-| `_search {"sort": "-workload"}` | 200, `[6000 x5]` |
-| `GET ?sort=-workload` | 200, `[6000, 6000, 6000, 6000, 6000]` |
-| `_summarize` sum(workload) | 200 `{"summaries": {"workload": 5676600}}` |
-| `_summarize` grouping exact | 200, `group_name` `"1.25 days"`, `group_value` `"600.000000"`, 11 groups |
+| `_search` `sort` `workload` / `-workload`, and `GET ?sort=-workload` | 200, first 5 `[0,0,0,0,0]` / `[6000 x5]` |
+| `sort` on `workload_per_day`, `workload_per_day_per_assignee`, `Asset.sg_calculated` | 200 both ways, and the order reverses: `"0.625"` first ascending, `"1.0"` first descending |
+| `_summarize` sum(`workload`) / sum(`workload_per_day`) | 200 `{"workload": 5676600}` / `{"workload_per_day": 1677.978125}`, a number where the read is a string |
+| `_summarize` grouping exact on `workload` | 200, `group_name` `"1.25 days"`, `group_value` `"600.000000"`, 11 groups |
+| `_summarize` grouping on `workload_per_day_per_assignee` | 200, 8 groups, `group_value` `"0.892857"` |
+| `_summarize` count and grouping on `Asset.sg_calculated` | 200, `{"sg_calculated": 801}` and 801 groups |
 
 **Traps**
 - **Filter it by rewriting the formula.** `["workload", "is", 600]` 400s; `["duration", "is", 600]` gets the
   same rows for `{duration}`. There is no equivalent for `CONCAT({code}, {id})`: page and match client-side.
-- Sort is the one query verb that survives. Top-N by a computed column is one call; rows where that
-  column is over X is a full scan.
+- Sort is the one query verb that survives: top-N by a computed column is one call, on all four fields.
 - A `float` renderer returns a string, so `sorted(rows, key=...)` on the raw value sorts
   lexicographically and puts `"0.9"` after `"0.625"`. Cast before comparing (field_types/float).
 - A `text` renderer formats numeric operands for display: `CONCAT({code}, {id})` on id 1226 gives
   `"charA1,226"`, a thousands separator inside a string a client might parse back.
 - Division by null yields null, not an error: `workload_per_day_per_assignee` is null on 21 of 40 rows where
-  `{workload_assignee_count}` is 0. Fill rate measures the operands, so drop the type from fill ranking as
-  probe 007 drops checkbox and summary.
+  `{workload_assignee_count}` is 0. Fill rate measures the operands, so drop the type from fill ranking (probe 007).
 - `default_value` is present in `properties` and always null. Nothing sets it; do not read it as the
   value of an unpopulated row.

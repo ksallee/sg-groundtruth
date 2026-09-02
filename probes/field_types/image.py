@@ -62,20 +62,36 @@ def snap(vid, fields=FIELDS):
 
 
 # --------------------------------------------------------------- schema
-rows.append("=== schema: every `image` field on the site's core types")
-for etype in ("Version", "Shot", "Asset", "Project", "HumanUser"):
+# A field census is site configuration, so sweep every type the site exposes rather than generalising
+# from the handful a Version-shaped job happens to touch.
+rows.append("=== schema census: every `image` field on every entity type this site exposes")
+CORE = ("Version", "Shot", "Asset", "Project", "HumanUser")
+types = sorted(c.get("/schema").json()["data"])
+census, flags, counts = {}, set(), {}
+for etype in types:
     sch = c.get(f"/schema/{etype}/fields")
     if not sch.ok:
         rows.append(f"  {etype}: schema {sch.status_code}")
         continue
     d = sch.json()["data"]
-    imgs = sorted(f for f, m in d.items() if m["data_type"]["value"] == "image")
-    rows.append(f"  {etype:<10} {len(imgs)} of {len(d)} fields: "
-                + ", ".join(f"{f}(editable={d[f]['editable']['value']})" for f in imgs))
+    imgs = tuple(sorted(f for f, m in d.items() if m["data_type"]["value"] == "image"))
+    census.setdefault(imgs, []).append(etype)
+    flags.update((f, d[f]["editable"]["value"]) for f in imgs)
+    if etype in CORE:
+        counts[etype] = (len(d), list(imgs))
     if etype == "Version":
         rows.append(f"  properties exposed for Version.image: {sorted(d['image'])}")
         rows.append(f"  image_blur_hash data_type = "
                     f"{d.get('image_blur_hash', {}).get('data_type', {}).get('value')}")
+rows.append(f"  {len(types)} entity types swept; distinct image field sets: {len(census)}")
+for imgs, ts in sorted(census.items(), key=lambda kv: -len(kv[1])):
+    rows.append(f"  {len(ts):>3} types  {list(imgs) or 'no image field at all'}")
+    if len(ts) <= 12:
+        rows.append(f"           {ts}")
+rows.append(f"  every (field, editable) pair seen: {sorted(flags)}")
+for etype in CORE:
+    n, imgs = counts.get(etype, (0, []))
+    rows.append(f"  {etype:<10} {len(imgs)} of {n} fields: {imgs}")
 
 # --------------------------------------------------- operators, from the API
 rows.append("\n=== the API enumerates its own operators (probe 017)")
@@ -284,10 +300,18 @@ else:
         att = c.post("/entity/attachments/_search", headers=ARR,
                      json={"filters": [["attachment_links", "is", {"type": "Version", "id": vid}]],
                            "fields": ["this_file"], "page": {"size": 5}})
-        ids = [a["id"] for a in att.json()["data"]] if att.ok else []
-        rows.append(f"  Attachments linked to the throwaway Version: {len(ids)}")
-        for label, val in [("{'type': 'Attachment', 'id': <linked>}",
-                            {"type": "Attachment", "id": ids[0]} if ids else None),
+        linked = [a["id"] for a in att.json()["data"]] if att.ok else []
+        # id 0 names no row, so on its own it cannot separate "the type refuses writes" from
+        # "no such Attachment". Get an id that does resolve and send that too.
+        anyatt = c.post("/entity/attachments/_search", headers=ARR,
+                        json={"filters": [], "fields": ["this_file"], "page": {"size": 1}})
+        real = anyatt.json()["data"][0]["id"] if anyatt.ok and anyatt.json()["data"] else None
+        rows.append(f"  Attachments linked to the throwaway Version: {len(linked)}; "
+                    f"site-wide search for a real Attachment id: {'found one' if real else 'none'}")
+        for label, val in [("{'type': 'Attachment', 'id': <a real Attachment>}",
+                            {"type": "Attachment", "id": real} if real else None),
+                           ("{'type': 'Attachment', 'id': <linked to this Version>}",
+                            {"type": "Attachment", "id": linked[0]} if linked else None),
                            ("{'type': 'Attachment', 'id': 0}", {"type": "Attachment", "id": 0}),
                            ("{}", {})]:
             if val is None:
@@ -296,7 +320,7 @@ else:
             rows.append(f"  PUT image={label} -> {u.status_code} "
                         f"{classify(snap(vid).get('image')) if u.ok else ''}")
             if not u.ok:
-                rows.append(json.dumps(u.json().get("errors"), indent=1)[:900])
+                rows.append(json.dumps(u.json().get("errors"), indent=1))
 
         rows.append("\n=== write: image in the POST body at create time")
         cr = c.post("/entity/versions", json={"project": {"type": "Project", "id": SANDBOX},

@@ -49,11 +49,15 @@ for t in types:
         if (d.get("data_type") or {}).get("value") == "summary":
             p = d.get("properties", {})
             hits.setdefault(f, []).append((t, (d.get("editable") or {}).get("value"),
-                                           (p.get("summary_default") or {}).get("value")))
+                                           (p.get("summary_default") or {}).get("value"),
+                                           repr(p["default_value"]) if "default_value" in p
+                                           else "<absent>"))
 rows.append(f"  {len(types)} types, {time.time() - t0:.0f}s")
 for f, v in sorted(hits.items()):
-    rows.append(f"  {f:<20} on {len(v):>2} types  editable/summary_default={sorted({(e, s) for _, e, s in v})}")
-    rows.append(f"  {'':<20} e.g. {[t for t, _, _ in v][:5]}")
+    rows.append(f"  {f:<20} on {len(v):>2} types  editable/summary_default={sorted({(e, s) for _, e, s, _ in v})}")
+    rows.append(f"  {'':<20} e.g. {[t for t, _, _, _ in v][:5]}")
+rows.append(f"  default_value over all {sum(len(v) for v in hits.values())} summary fields: "
+            f"{sorted({dv for v in hits.values() for _, _, _, dv in v})}")
 
 rows.append("\n=== GET /schema/Version/fields/open_notes_count — properties in full")
 d = c.get("/schema/Version/fields/open_notes_count").json()["data"]
@@ -118,19 +122,56 @@ vv = [x["attributes"]["open_notes_count"] for x in r.json()["data"]]
 rows.append(f"  {len(vv)} Versions: nulls={vv.count(None)}  distinct values={sorted(set(vv))}  (probe 007)")
 
 # ---------------------------------------------------------------- reproduce the rollup
-rows.append("\n=== the exposed query, run by hand against the row it describes")
-q = d["properties"]["query"]["value"]
-target = c.get("/entity/shots", params={"filter[project.Project.id]": PROJECT,
-                                        "fields": "code,open_notes_count", "page[size]": 1}).json()["data"][0]
-_lib.note_from(target)
-rows.append(f"  query.entity_type={q['entity_type']}  summary_default="
-            f"{d['properties']['summary_default']['value']}  summary_field={d['properties']['summary_field']['value']}")
-r = c.post("/entity/notes/_search", headers=ARR,
-           json={"filters": [["note_links", "is", {"type": "Shot", "id": target["id"]}],
-                             ["sg_status_list", "in", ["opn", "ip", "rdy"]]],
-                 "fields": ["id"], "page": {"size": 200}})
-rows.append(f"  Shot {target['id']}: field reads {target['attributes']['open_notes_count']}, "
-            f"hand-run query returns {len(r.json()['data'])}")
+# One field on one row proves nothing about the type. Every summary field on the site whose target
+# type is reachable is re-derived here, on the three rows most likely to hold a value.
+rows.append("\n=== the exposed query, translated to _search filters and run against the row itself")
+HSH = {"Content-Type": "application/vnd+shotgun.api3_hash+json"}
+SLUG = {"Note": "notes", "Version": "versions", "CustomEntity02": "custom_entity_02s"}
+
+
+def as_filters(node, rtype, rid):
+    """properties.query.filters -> _search filters. A leaf becomes a triple, and the
+    parent_entity_token becomes the row being read."""
+    if "conditions" in node:
+        return {"logical_operator": node["logical_operator"],
+                "conditions": [as_filters(x, rtype, rid) for x in node["conditions"]]}
+    vals = [{"type": rtype, "id": rid}
+            if isinstance(v, dict) and v.get("valid") == "parent_entity_token" else v
+            for v in node["values"]]
+    return [node["path"], node["relation"], vals[0] if len(vals) == 1 else vals]
+
+
+for T, slug, field in [("Shot", "shots", "open_notes_count"),
+                       ("Version", "versions", "open_notes_count"),
+                       ("CustomEntity01", "custom_entity_01s", "sg_test_results"),
+                       ("Asset", "assets", "sg_query"),
+                       ("Asset", "assets", "sg_latest_version"),
+                       ("Project", "projects", "sg_latest_version")]:
+    p = c.get(f"/schema/{T}/fields/{field}").json()["data"]["properties"]
+    q = p["query"]["value"]
+    rr = c.get(f"/entity/{slug}", params={"fields": field, "page[size]": 100,
+                                          "sort": "-id"}).json()["data"]
+    _lib.note_from(rr)
+    vals = [x["attributes"][field] for x in rr]
+    rows.append(f"\n  {T}.{field}  summary_default={p['summary_default']['value']} "
+                f"summary_field={p['summary_field']['value']} target={q['entity_type']}")
+    rows.append(f"    {len(vals)} newest rows: nulls={vals.count(None)} "
+                f"distinct={sorted({repr(v) for v in vals})[:5]}")
+    # 0 == 0 settles nothing, so widen the pool until a row with something to count turns up.
+    if not any(isinstance(v, int) and v > 0 for v in vals) and T != "Project":
+        more = c.get(f"/entity/{slug}", params={"fields": field, "page[size]": 200,
+                                                "sort": "id"}).json()["data"]
+        _lib.note_from(more)
+        rr += more
+    for row in sorted(rr, key=lambda x: x["attributes"][field]
+                      if isinstance(x["attributes"][field], int) else -1, reverse=True)[:3]:
+        f = as_filters(q["filters"], T, row["id"])
+        s = c.post(f"/entity/{SLUG[q['entity_type']]}/_summarize", headers=HSH,
+                   json={"filters": f, "summary_fields": [{"field": "id", "type": "record_count"}]})
+        n = s.json()["data"]["summaries"]["id"] if s.ok else f"{s.status_code} {errs(s)}"
+        rows.append(f"    row {row['id']}: field reads {row['attributes'][field]!r}, "
+                    f"the field's own query record_counts {n}")
+    rows.append(f"    filters sent, for the last row: {json.dumps(f)}")
 
 # ---------------------------------------------------------------- filter
 rows.append("\n=== filter: the bogus operator does not enumerate a vocabulary here")

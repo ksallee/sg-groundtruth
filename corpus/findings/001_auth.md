@@ -30,4 +30,5 @@ projects: [(63, 'demo_show'), (70, 'sample_show'), (78, 'template_show')]
 **Teaches**
 - `expires_in` is 600 exactly, as documented. A long-running client must handle expiry, not assume one token per session.
 - A `refresh_token` is issued but buys nothing here: re-authing is one call with credentials already in hand, so the client re-auths instead of storing refresh state.
-- The token is a plain bearer string; nothing about the grant is site-specific.
+- The token is a plain bearer string. One exchange against one site was measured, so whether a token or a
+  script credential is accepted by a second site is untested. Settling it needs credentials on another site.

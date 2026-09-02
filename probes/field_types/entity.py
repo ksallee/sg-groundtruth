@@ -149,12 +149,14 @@ COLLIDE = next((i for i in seen["shots"] if i in seen["assets"]), None)
 rows.append(f"  shot ids that also name an Asset: {len(seen['shots'] & seen['assets'])} "
             f"-> collision case {COLLIDE}")
 
+
 # ---------------------------------------------------------------- write / clear
 if not _lib.writes_allowed():
     rows.append("\n(read-only run; pass --write for the write/clear half)")
 else:
     SANDBOX = _lib.sandbox_id(c, env)
     rows.append("\n=== write, in the sandbox project only (the sample project is read; never written)")
+    made = _lib.Created(c)
 
     def ensure_shot(code):
         f = {"filters": [["project", "is", {"type": "Project", "id": SANDBOX}], ["code", "is", code]],
@@ -163,65 +165,81 @@ else:
         d = r.json()["data"]
         if d:
             return d[0]["id"]
-        return c.post("/entity/shots", headers=JSN,
-                      json={"project": {"type": "Project", "id": SANDBOX}, "code": code}).json()["data"]["id"]
+        n = c.post("/entity/shots", headers=JSN,
+                   json={"project": {"type": "Project", "id": SANDBOX}, "code": code})
+        return made.add("shots", n.json()["data"]["id"])
 
-    shot_a, shot_b = ensure_shot("zzprobe_entity_a"), ensure_shot("zzprobe_entity_b")
-    r = c.post("/entity/tasks", headers=JSN,
-               json={"project": {"type": "Project", "id": SANDBOX}, "content": "zzprobe_entity",
-                     "entity": {"type": "Shot", "id": shot_a}})
-    task = r.json()["data"]["id"] if r.ok else None
-    r = c.post("/entity/versions", headers=JSN,
-               json={"project": {"type": "Project", "id": SANDBOX}, "code": "zzprobe_entity"})
-    vid = r.json()["data"]["id"]
-    other_shot = sids[0]  # a Shot in the READ-ONLY sample project; only the sandbox Version is mutated
-    rows.append(f"  created Version {vid}; shots A/B in sandbox, Task {task}; cross-project Shot {other_shot}")
+    with made:
+        shot_a, shot_b = ensure_shot("zzprobe_entity_a"), ensure_shot("zzprobe_entity_b")
+        r = c.post("/entity/tasks", headers=JSN,
+                   json={"project": {"type": "Project", "id": SANDBOX}, "content": "zzprobe_entity",
+                         "entity": {"type": "Shot", "id": shot_a}})
+        task = made.add("tasks", r.json()["data"]["id"]) if r.ok else None
+        r = c.post("/entity/versions", headers=JSN,
+                   json={"project": {"type": "Project", "id": SANDBOX}, "code": "zzprobe_entity"})
+        vid = made.add("versions", r.json()["data"]["id"])
+        other_shot = sids[0]  # a Shot in the READ-ONLY sample project; only the sandbox Version is mutated
+        rows.append(f"  created Version {vid}; shots A/B in sandbox, Task {task}; "
+                    f"cross-project Shot {other_shot}")
 
-    def upd(body):
-        return c.request("PUT", f"/entity/versions/{vid}", headers=JSN, json=body)
+        def upd(body):
+            return c.request("PUT", f"/entity/versions/{vid}", headers=JSN, json=body)
 
-    def link(field="entity"):
-        d = c.get(f"/entity/versions/{vid}", params={"fields": f"code,{field}"}).json()["data"]
-        return (d.get("relationships", {}).get(field) or {}).get("data")
+        def link(field="entity"):
+            d = c.get(f"/entity/versions/{vid}", params={"fields": f"code,{field}"}).json()["data"]
+            return (d.get("relationships", {}).get(field) or {}).get("data")
 
-    def attempt(label, body, field="entity", preset=True):
-        if preset:
-            upd({field: {"type": "Shot", "id": shot_a}})
-        r = upd(body)
-        after = link(field)
-        rows.append(f"\n  {label}\n    -> {r.status_code}; reads back as {json.dumps(after)}")
-        if not r.ok:
-            rows.append("    " + errs(r).replace("\n", "\n    "))
+        def attempt(label, body, field="entity", preset=True):
+            if preset:
+                upd({field: {"type": "Shot", "id": shot_a}})
+            r = upd(body)
+            after = link(field)
+            rows.append(f"\n  {label}\n    -> {r.status_code}; reads back as {json.dumps(after)}")
+            if not r.ok:
+                rows.append("    " + errs(r).replace("\n", "\n    "))
 
-    attempt("set  entity = {type:Shot, id:A}", {"entity": {"type": "Shot", "id": shot_a}}, preset=False)
-    attempt("set  entity = <bare int B>", {"entity": shot_b})
-    attempt("set  entity = {id:B}  (no type)", {"entity": {"id": shot_b}})
-    attempt("set  entity = {type:Asset, id:<a real SHOT id>}", {"entity": {"type": "Asset", "id": shot_a}})
-    attempt("set  entity = {type:Shot, id:99999999}", {"entity": {"type": "Shot", "id": 99999999}})
-    attempt("set  entity = a Shot in ANOTHER project", {"entity": {"type": "Shot", "id": other_shot}})
-    if COLLIDE:
-        attempt(f"set  entity = {{type:Shot,  id:{COLLIDE}}}", {"entity": {"type": "Shot", "id": COLLIDE}})
-        attempt(f"set  entity = {{type:Asset, id:{COLLIDE}}}  same id, wrong type",
-                {"entity": {"type": "Asset", "id": COLLIDE}})
-    attempt("set  sg_task = {type:Task, id:T}", {"sg_task": {"type": "Task", "id": task}}, field="sg_task",
-            preset=False)
-    attempt("set  sg_task = {type:Shot, id:A}   (outside valid_types)", {"sg_task": {"type": "Shot", "id": shot_a}},
-            field="sg_task", preset=False)
-    attempt("set  user = {type:Shot, id:A}      (outside valid_types)", {"user": {"type": "Shot", "id": shot_a}},
-            field="user", preset=False)
-    attempt("set  created_by = {type:Shot,id:A} (non-editable field)",
-            {"created_by": {"type": "Shot", "id": shot_a}}, field="created_by", preset=False)
+        attempt("set  entity = {type:Shot, id:A}", {"entity": {"type": "Shot", "id": shot_a}}, preset=False)
+        attempt("set  entity = <bare int B>", {"entity": shot_b})
+        attempt("set  entity = {id:B}  (no type)", {"entity": {"id": shot_b}})
+        attempt("set  entity = {type:Asset, id:<a real SHOT id>}", {"entity": {"type": "Asset", "id": shot_a}})
+        attempt("set  entity = {type:Shot, id:99999999}", {"entity": {"type": "Shot", "id": 99999999}})
+        attempt("set  entity = a Shot in ANOTHER project", {"entity": {"type": "Shot", "id": other_shot}})
+        if COLLIDE:
+            attempt(f"set  entity = {{type:Shot,  id:{COLLIDE}}}", {"entity": {"type": "Shot", "id": COLLIDE}})
+            attempt(f"set  entity = {{type:Asset, id:{COLLIDE}}}  same id, wrong type",
+                    {"entity": {"type": "Asset", "id": COLLIDE}})
+        attempt("set  sg_task = {type:Task, id:T}", {"sg_task": {"type": "Task", "id": task}}, field="sg_task",
+                preset=False)
+        attempt("set  created_by = {type:Shot,id:A} (non-editable field)",
+                {"created_by": {"type": "Shot", "id": shot_a}}, field="created_by", preset=False)
 
-    rows.append("\n=== clear: each starts from entity = {Shot, A}")
-    for label, val in [("null", None), ("{}", {}), ('""', ""), ("[]", []),
-                       ("{type:Shot, id:null}", {"type": "Shot", "id": None})]:
-        attempt(f"clear entity = {label}", {"entity": val})
+        # The headline claim was generalised from sg_task and user alone. Sweep every entity field on
+        # Version instead, editable or not, each sent a type its own valid_types does not list.
+        rows.append("\n=== valid_types: every entity field on Version, sent a type outside its own list")
+        rows.append(f"  {'field':<22}{'editable':<10}{'len(vt)':<9}{'sent':<8}{'code':<6}reads back")
+        for f in ent_fields:
+            ed = (fields[f].get("editable") or {}).get("value")
+            vt = prop(f, "valid_types") or []
+            wrong = ({"type": "Shot", "id": shot_a} if "Shot" not in vt
+                     else {"type": "Task", "id": task})
+            r = upd({f: wrong})
+            rows.append(f"  {f:<22}{str(ed):<10}{len(vt):<9}{wrong['type']:<8}{r.status_code:<6}"
+                        f"{json.dumps(link(f))}")
+            if not r.ok:
+                rows.append("    " + errs(r).replace("\n", "\n    "))
+            if f == "project":
+                upd({"project": {"type": "Project", "id": SANDBOX}})
 
-    upd({"entity": None})
-    n, e = search("versions", [["project", "is", {"type": "Project", "id": SANDBOX}],
-                               ["entity", "is", None]], size=5)
-    rows.append(f"\n  after clearing, `entity is None` in the sandbox matches {n} row(s) "
-                f"{json.dumps(e) if e else ''} — the unlinked Version is findable")
+        rows.append("\n=== clear: each starts from entity = {Shot, A}")
+        for label, val in [("null", None), ("{}", {}), ('""', ""), ("[]", []),
+                           ("{type:Shot, id:null}", {"type": "Shot", "id": None})]:
+            attempt(f"clear entity = {label}", {"entity": val})
+
+        upd({"entity": None})
+        n, e = search("versions", [["project", "is", {"type": "Project", "id": SANDBOX}],
+                                   ["entity", "is", None]], size=5)
+        rows.append(f"\n  after clearing, `entity is None` in the sandbox matches {n} row(s) "
+                    f"{json.dumps(e) if e else ''} — the unlinked Version is findable")
 
 actual = "\n".join(rows)
 _lib.emit("field_types/entity", actual, env)

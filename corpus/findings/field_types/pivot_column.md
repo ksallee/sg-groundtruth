@@ -6,16 +6,17 @@ verdict: A pivot_column is a web-UI task rollup with no REST implementation - it
 
 # pivot_column
 
-**Data type** `pivot_column`, probed on `Shot.step_8` and `Version.step_0` (stock, read-only).
-No `pivot_column` field is editable on any entity type, and none returns data over REST.
+**Data type** `pivot_column`, probed on `Shot.step_8` and `Version.step_0` (stock, read-only), every
+row below run on both. No `pivot_column` field is editable on any entity type, and none returns data
+over REST.
 
 | operation | outcome |
 |---|---|
 | read | 200, `null` on every row |
-| create or update | 400 `API update() Version.step_0 is read only.` |
+| create or update | 400 `API update() Version.step_0 is read only.`, `API update() Shot.step_8 is read only.` |
 | clear | 400, same string |
 | filter, either relation | 400 code 103 `API read() of data type 'pivot_column' not supported in API` |
-| sort, `_search` and `GET` | 400 code 104 `Read failed for entity type [Shot]` |
+| sort, `_search` and `GET` | 400 code 104 `Read failed for entity type [Shot]`, `[Version]` on the other |
 | `_summarize`, grouping and count | 500 `Shotgun Server Error` |
 
 `step_<n>` is the rollup of that entity's Tasks whose `step` is Step `n`, and the schema `name.value` is
@@ -36,7 +37,9 @@ A type gets one `step_<n>` per Step defined for it, plus `step_0`. 45 fields on 
 | `Level` | 11 | 10 |
 | `Version`, `Sequence`, `ShootDay`, `Launch`, `MocapSetup`, `MocapTake`, `MocapTakeRange` | 1 (`step_0`) | 0 |
 
-Adding a Step adds a column, so enumerate, never hardcode one.
+The Steps column is `GET /entity/steps` grouped by `entity_type`, not an inference from the field names:
+the site's 35 Steps are `Asset` 13, `Shot` 12 and `Level` 10, and the seven types on the last row appear
+in that listing not at all. Adding a Step adds a column, so enumerate, never hardcode one.
 
 **Read** The key is present in `attributes` and always `null`, never under `relationships`. That is
 not how an unknown field behaves: a bogus name is dropped silently (probe 004).
@@ -61,6 +64,8 @@ Task 'stepD' step=35 sg_status_list 'fin' on Shot sh010 -> shot.step_35 = None
 |---|---|
 | `PUT /entity/versions/<id> {"step_0": "fin"}` | 400 `API update() Version.step_0 is read only.` |
 | `POST /entity/versions {..., "step_0": "fin"}` | 400 `API create() Version.step_0 is read only.` |
+| `PUT /entity/shots/<id> {"step_8": "fin"}` | 400 `API update() Shot.step_8 is read only.` |
+| `POST /entity/shots {..., "step_8": "fin"}` | 400 `API create() Shot.step_8 is read only.` |
 
 Nothing is accepted and discarded: the whole request 400s, so a create that includes a pivot column
 loses the row it meant to make.
@@ -70,6 +75,7 @@ loses the row it meant to make.
 | sent | result |
 |---|---|
 | `{"step_0": null}` | 400 `API update() Version.step_0 is read only.` |
+| `{"step_8": null}` | 400 `API update() Shot.step_8 is read only.` |
 | `{"step_0": "fin"}` | 400, same string |
 | key omitted | unchanged, reads `null` |
 
@@ -96,6 +102,7 @@ check runs. Both listed relations 400:
 | `sort` `step_8` / `-step_8` / `step_0`, `_search` or `GET` | 400 code 104 |
 | `_summarize` `grouping` on `step_8` | 500 |
 | `_summarize` `summary_fields` `{"field": "step_8", "type": "count"}` | 500 |
+| every row above re-run on `Version.step_0` | the same code, the field name and entity type substituted |
 
 **Traps**
 - These pass every generic test an inspector applies (`visible: true`, `ui_value_displayable: true`,

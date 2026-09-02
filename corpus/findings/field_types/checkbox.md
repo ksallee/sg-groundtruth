@@ -68,16 +68,17 @@ update built by dropping null-valued keys skips the field instead of clearing it
 | `is` | `true`, `false`, `"true"`, `"false"` | rows in that state |
 | `is_not` | same | rows in the other state |
 
-Counts, on a 100-Version baseline where every row is false and a 25-row sandbox with one row ticked:
+Counts on a 100-Version baseline where every row is false, and on three sandbox rows with one ticked.
+The sandbox column compares the ids returned, not the counts: equal counts would not prove equal rows.
 
-| filter | baseline | sandbox |
+| filter | baseline | sandbox, 3 rows |
 |---|---|---|
-| `is true` | 0 | 1 of 25 |
-| `is false` | 100 | 24 of 25 |
-| `is "true"` | 0 | not measured |
-| `is "false"` | 100 | not measured |
-| `is_not true` | 100 | not measured |
-| `is_not false` | 0 | not measured |
+| `is true` | 0 | 1, the ticked id |
+| `is false` | 100 | 2, the two untouched ids |
+| `is "true"` | 0 | 1, the same id as `is true` |
+| `is "false"` | 100 | 2, the same ids as `is false` |
+| `is_not true` | 100 | 2, the same ids as `is false` |
+| `is_not false` | 0 | 1, the same id as `is true` |
 
 | rejected filter | result |
 |---|---|
@@ -87,8 +88,8 @@ Counts, on a 100-Version baseline where every row is false and a 25-row sandbox 
 | `is_not null` | 400 same body from `_search`; `_summarize` gives `API summarize() ...` (probe 020) |
 | `in [true, false]` | 400 `Valid relations: ["is", "is_not"]` |
 
-Ask for unticked rows as `["flagged", "is", false]`, not `is_not true`, though both return the same rows
-here; `is_not None` cannot be asked at all.
+Ask for unticked rows as `["flagged", "is", false]`, not `is_not true`, though both returned the same
+ids here; `is_not None` cannot be asked at all.
 
 **Traps**
 - **Fill rate is meaningless on this type.** Every checkbox on every row is non-null, so a fill-rate scan

@@ -1,7 +1,7 @@
 ---
 tags: [project, query, filter, inspector, list-field, trap]
 scope: api
-verdict: Filter a project picker on the checkboxes (is_template/is_demo/archived is False), never on sg_status, which on the probed site is null on 15 of 22 projects because nothing sets it.
+verdict: Filter a project picker on the checkboxes (is_template/is_demo/archived is False), never on sg_status, which on the probed site is set on 7 of 22 projects and null on the other 15.
 ---
 
 # 018_project_listing
@@ -42,7 +42,7 @@ filter results:
 ```
 
 **Teaches**
-- **Trap.** `sg_status is Active` is not a liveness filter. A project has no status until someone sets one: on the probed site 15 of 22 are null, 8 of those non-template working shows, so the filter returns 5 and hides the rest.
+- **Trap.** `sg_status is Active` is not a liveness filter. It is not set automatically, and on the probed site 7 of 22 projects have a value against 15 null, 8 of the nulls non-template working shows, so the filter returns 5 and hides the rest. What sets it on those 7 is unmeasured: this probe reads the tally, not the history.
 - `sg_status` is a list field with valid values Bidding/Active/Lost/Hold and no `display_values`, so even where it is set there is no label to put in front of a user (probe 009).
 - The checkboxes are the discriminators. On the probed site:
 

@@ -69,6 +69,32 @@ n = len(r.json()["data"]["groups"])
 _lib.note_names(*[str(x["group_name"]) for x in r.json()["data"]["groups"]])
 rows.append(f"  Shot.code -> {n} groups of {r.json()['data']['summaries']['id']} shots, {ms}ms")
 
+rows.append("\n=== above 300: the widest code field reachable read-only, and the whole site")
+
+
+def group_code(slug, filters):
+    r, ms = summarize({"filters": filters, "summary_fields": [{"field": "id", "type": "count"}],
+                       "grouping": [{"field": "code", "type": "exact", "direction": "asc"}]}, slug)
+    if not r.ok:
+        return None, r.json()["errors"][0], ms
+    g = r.json()["data"]["groups"]
+    _lib.note_names(*[str(x["group_name"]) for x in g])
+    return len(g), r.json()["data"]["summaries"]["id"], ms
+
+
+for slug in ("versions", "shots"):
+    best, best_n = None, -1
+    for pid in _lib.sample_projects(c, env):
+        n = summarize({"filters": [["project", "is", {"type": "Project", "id": pid}]],
+                       "summary_fields": [{"field": "id", "type": "count"}]}, slug)[0] \
+            .json()["data"]["summaries"]["id"]
+        if n > best_n:
+            best, best_n = pid, n
+    g, tot_rows, ms = group_code(slug, [["project", "is", {"type": "Project", "id": best}]])
+    rows.append(f"  {slug}.code, widest sample project  -> {g} groups of {tot_rows} rows, {ms}ms")
+    g, tot_rows, ms = group_code(slug, [])
+    rows.append(f"  {slug}.code, whole site             -> {g} groups of {tot_rows} rows, {ms}ms")
+
 rows.append("\n=== cost against the alternative")
 t = time.time()
 c.get("/entity/versions", params={"filter[project.Project.id]": PROJECT, "page[size]": 100,

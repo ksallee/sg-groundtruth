@@ -143,148 +143,154 @@ for label, filt in [
 if not _lib.writes_allowed():
     rows.append("\n(read-only run; pass --write for the write/clear half)")
 else:
-    SANDBOX = _lib.sandbox_id(c, env)
-    CODE, CODE_NULL = "zzprobe_date", "zzprobe_date_null"
+    # A probe leaves no trace: both throwaway Shots are deleted on the way out.
+    with _lib.Created(c) as made:
+        SANDBOX = _lib.sandbox_id(c, env)
+        CODE, CODE_NULL = "zzprobe_date", "zzprobe_date_null"
 
-    def throwaway(code):
-        found, _ = search([["code", "is", code]], project=SANDBOX)
-        if found:
-            return found[0]["id"]
-        r = c.post("/entity/shots", headers=JSON,
-                   json={"project": {"type": "Project", "id": SANDBOX}, "code": code})
-        rows.append(f"  create throwaway Shot {code} -> {r.status_code}")
-        return r.json()["data"]["id"]
+        def throwaway(code):
+            found, _ = search([["code", "is", code]], project=SANDBOX)
+            if found:
+                return found[0]["id"]
+            r = c.post("/entity/shots", headers=JSON,
+                       json={"project": {"type": "Project", "id": SANDBOX}, "code": code})
+            rows.append(f"  create throwaway Shot {code} -> {r.status_code}")
+            return made.add("shots", r.json()["data"]["id"])
 
-    sid, sid_null = throwaway(CODE), throwaway(CODE_NULL)
-    # Siblings write into the same sandbox, so every count is scoped to these two rows: one carries
-    # the probe date, one is permanently null. Positive = 1, negative = 0, no baseline drift.
-    PAIR = ["code", "in", [CODE, CODE_NULL]]
-    c.request("PUT", f"/entity/shots/{sid_null}", headers=JSON, json={FIELD: None})
-    rows.append(f"\n=== write formats  (PUT /entity/shots/<id>, {FIELD})")
+        sid, sid_null = throwaway(CODE), throwaway(CODE_NULL)
+        # Siblings write into the same sandbox, so every count is scoped to these two rows: one carries
+        # the probe date, one is permanently null. Positive = 1, negative = 0, no baseline drift.
+        PAIR = ["code", "in", [CODE, CODE_NULL]]
+        c.request("PUT", f"/entity/shots/{sid_null}", headers=JSON, json={FIELD: None})
+        rows.append(f"\n=== write formats  (PUT /entity/shots/<id>, {FIELD})")
 
-    def put(value):
-        r = c.request("PUT", f"/entity/shots/{sid}", headers=JSON, json={FIELD: value})
-        if not r.ok:
-            return f"{r.status_code}\n{err(r)}"
-        return repr(r.json()["data"]["attributes"].get(FIELD))
+        def put(value):
+            r = c.request("PUT", f"/entity/shots/{sid}", headers=JSON, json={FIELD: value})
+            if not r.ok:
+                return f"{r.status_code}\n{err(r)}"
+            return repr(r.json()["data"]["attributes"].get(FIELD))
 
-    def readback():
-        r = c.get(f"/entity/shots/{sid}", params={"fields": FIELD})
-        return repr(r.json()["data"]["attributes"].get(FIELD))
+        def readback():
+            r = c.get(f"/entity/shots/{sid}", params={"fields": FIELD})
+            return repr(r.json()["data"]["attributes"].get(FIELD))
 
-    writes = [
-        ("ISO date '2026-09-02'",        "2026-09-02"),
-        ("datetime.date(...)",           str(datetime.date(2026, 9, 3))),
-        ("datetime.datetime isoformat",  datetime.datetime(2026, 9, 4, 13, 45, 6).isoformat()),
-        ("full ISO 8601 w/ Z",           "2026-09-05T13:45:06Z"),
-        ("ISO w/ offset",                "2026-09-06T13:45:06+02:00"),
-        ("US style '09/07/2026'",        "09/07/2026"),
-        ("EU style '08/09/2026'",        "08/09/2026"),
-        ("epoch int",                    1757000000),
-        ("epoch as string",              "1757000000"),
-        ("short '2026-9-8'",             "2026-9-8"),
-        ("slashes '2026/09/09'",         "2026/09/09"),
-        ("nonsense 'tomorrow'",          "tomorrow"),
-        ("out of range '2026-02-30'",    "2026-02-30"),
-        ("bool True",                    True),
-    ]
-    for label, v in writes:
-        rows.append(f"  {label:<30} {json.dumps(v, default=str):<28} -> {put(v)}  read back {readback()}")
+        writes = [
+            ("ISO date '2026-09-02'",        "2026-09-02"),
+            ("datetime.date(...)",           str(datetime.date(2026, 9, 3))),
+            ("datetime.datetime isoformat",  datetime.datetime(2026, 9, 4, 13, 45, 6).isoformat()),
+            ("full ISO 8601 w/ Z",           "2026-09-05T13:45:06Z"),
+            ("ISO w/ offset",                "2026-09-06T13:45:06+02:00"),
+            ("US style '09/07/2026'",        "09/07/2026"),
+            ("EU style '08/09/2026'",        "08/09/2026"),
+            ("epoch int",                    1757000000),
+            ("epoch as string",              "1757000000"),
+            ("short '2026-9-8'",             "2026-9-8"),
+            ("slashes '2026/09/09'",         "2026/09/09"),
+            ("nonsense 'tomorrow'",          "tomorrow"),
+            ("out of range '2026-02-30'",    "2026-02-30"),
+            ("bool True",                    True),
+        ]
+        for label, v in writes:
+            rows.append(f"  {label:<30} {json.dumps(v, default=str):<28} -> {put(v)}  read back {readback()}")
 
-    rows.append("\n=== clear")
-    put("2026-09-02")
-    rows.append(f"  null   -> {put(None)}  read back {readback()}")
-    put("2026-09-02")
-    rows.append(f"  ''     -> {put('')}  read back {readback()}")
-    put("2026-09-02")
-    rows.append(f"  false  -> {put(False)}  read back {readback()}")
+        rows.append("\n=== clear")
+        put("2026-09-02")
+        rows.append(f"  null   -> {put(None)}  read back {readback()}")
+        put("2026-09-02")
+        rows.append(f"  ''     -> {put('')}  read back {readback()}")
+        put("2026-09-02")
+        rows.append(f"  false  -> {put(False)}  read back {readback()}")
 
-    def n(filt):
-        return count([PAIR] + filt, project=SANDBOX)
+        def n(filt):
+            return count([PAIR] + filt, project=SANDBOX)
 
-    put(None)
-    rows.append("\n=== both rows cleared (of 2)")
-    for label, filt in [("is null", [[FIELD, "is", None]]), ("is ''", [[FIELD, "is", ""]]),
-                        ("is_not null", [[FIELD, "is_not", None]]),
-                        ("is_not ''", [[FIELD, "is_not", ""]])]:
-        rows.append(f"  {label:<12} -> {n(filt)}")
+        put(None)
+        rows.append("\n=== both rows cleared (of 2)")
+        for label, filt in [("is null", [[FIELD, "is", None]]), ("is ''", [[FIELD, "is", ""]]),
+                            ("is_not null", [[FIELD, "is_not", None]]),
+                            ("is_not ''", [[FIELD, "is_not", ""]])]:
+            rows.append(f"  {label:<12} -> {n(filt)}")
 
-    # A known date is the only way to get a positive: nothing on this site has a date set.
-    TODAY = datetime.date.today()
+        # A known date is the only way to get a positive: nothing on this site has a date set.
+        TODAY = datetime.date.today()
 
-    # Where the value lands, and how a date_time on the same row serialises next to it.
-    put(TODAY.isoformat())
-    raw = c.get(f"/entity/shots/{sid}", params={"fields": f"{FIELD},created_at,updated_at"}).json()["data"]
-    rows.append("\n=== raw row, date and date_time side by side")
-    rows.append(json.dumps({k: v for k, v in raw.items() if k != "links"}, indent=1))
+        # Where the value lands, and how a date_time on the same row serialises next to it.
+        put(TODAY.isoformat())
+        raw = c.get(f"/entity/shots/{sid}", params={"fields": f"{FIELD},created_at,updated_at"}).json()["data"]
+        rows.append("\n=== raw row, date and date_time side by side")
+        rows.append(json.dumps({k: v for k, v in raw.items() if k != "links"}, indent=1))
 
-    def matrix(label, when, cases):
-        rows.append(f"\n=== {label}: {CODE}.{FIELD} = {when.isoformat()}, {CODE_NULL} null"
-                    "   (2 rows; positive 1, negative 0, 2 = matched the null row too)")
-        put(when.isoformat())
-        for lab, filt in cases:
-            rows.append(f"  {lab:<36} -> {n(filt)}")
+        def matrix(label, when, cases):
+            rows.append(f"\n=== {label}: {CODE}.{FIELD} = {when.isoformat()}, {CODE_NULL} null"
+                        "   (2 rows; positive 1, negative 0, 2 = matched the null row too)")
+            put(when.isoformat())
+            for lab, filt in cases:
+                rows.append(f"  {lab:<36} -> {n(filt)}")
 
-    def d(offset):
-        return (TODAY + datetime.timedelta(days=offset)).isoformat()
+        def d(offset):
+            return (TODAY + datetime.timedelta(days=offset)).isoformat()
 
-    matrix("today", TODAY, [
-        ("is today",                    [[FIELD, "is", d(0)]]),
-        ("is tomorrow (neg)",           [[FIELD, "is", d(1)]]),
-        ("is_not today",                [[FIELD, "is_not", d(0)]]),
-        ("is null (neg)",               [[FIELD, "is", None]]),
-        ("is '' (neg)",                 [[FIELD, "is", ""]]),
-        ("greater_than yesterday",      [[FIELD, "greater_than", d(-1)]]),
-        ("greater_than today",          [[FIELD, "greater_than", d(0)]]),
-        ("less_than tomorrow",          [[FIELD, "less_than", d(1)]]),
-        ("less_than today",             [[FIELD, "less_than", d(0)]]),
-        ("between [today, today]",      [[FIELD, "between", [d(0), d(0)]]]),
-        ("between [-1, +1]",            [[FIELD, "between", [d(-1), d(1)]]]),
-        ("between [+1, +2] (neg)",      [[FIELD, "between", [d(1), d(2)]]]),
-        ("between reversed [+1, -1]",   [[FIELD, "between", [d(1), d(-1)]]]),
-        ("between [today, null]",       [[FIELD, "between", [d(0), None]]]),
-        ("in [today]",                  [[FIELD, "in", [d(0)]]]),
-        ("in [today, +1]",              [[FIELD, "in", [d(0), d(1)]]]),
-        ("in [+1] (neg)",               [[FIELD, "in", [d(1)]]]),
-        ("in today (bare scalar)",      [[FIELD, "in", d(0)]]),
-        ("not_in [today]",              [[FIELD, "not_in", [d(0)]]]),
-        ("in_last [1, DAY]",            [[FIELD, "in_last", [1, "DAY"]]]),
-        ("in_last [1, MONTH]",          [[FIELD, "in_last", [1, "MONTH"]]]),
-        ("in_next [1, DAY]",            [[FIELD, "in_next", [1, "DAY"]]]),
-        ("in_next [1, MONTH]",          [[FIELD, "in_next", [1, "MONTH"]]]),
-        ("in_last [1, HOUR]",           [[FIELD, "in_last", [1, "HOUR"]]]),
-        ("not_in_last [1, MONTH]",      [[FIELD, "not_in_last", [1, "MONTH"]]]),
-        ("not_in_next [1, MONTH]",      [[FIELD, "not_in_next", [1, "MONTH"]]]),
-        ("in_calendar_day 0",           [[FIELD, "in_calendar_day", 0]]),
-        ("in_calendar_day -1 (neg)",    [[FIELD, "in_calendar_day", -1]]),
-        ("in_calendar_day 1 (neg)",     [[FIELD, "in_calendar_day", 1]]),
-        ("in_calendar_day [0]",         [[FIELD, "in_calendar_day", [0]]]),
-        ("in_calendar_week 0",          [[FIELD, "in_calendar_week", 0]]),
-        ("in_calendar_month 0",         [[FIELD, "in_calendar_month", 0]]),
-        ("in_calendar_year 0",          [[FIELD, "in_calendar_year", 0]]),
-        ("in_calendar_year -1 (neg)",   [[FIELD, "in_calendar_year", -1]]),
-    ])
-    matrix("5 days ago", TODAY - datetime.timedelta(days=5), [
-        ("in_last [10, DAY]",           [[FIELD, "in_last", [10, "DAY"]]]),
-        ("in_last [2, DAY] (neg)",      [[FIELD, "in_last", [2, "DAY"]]]),
-        ("in_next [10, DAY] (neg)",     [[FIELD, "in_next", [10, "DAY"]]]),
-        ("not_in_last [10, DAY]",       [[FIELD, "not_in_last", [10, "DAY"]]]),
-        ("in_calendar_day -5",          [[FIELD, "in_calendar_day", -5]]),
-        ("in_calendar_day 0 (neg)",     [[FIELD, "in_calendar_day", 0]]),
-        # does HOUR mean anything on a field with no time part?
-        ("in_last [1, HOUR]",           [[FIELD, "in_last", [1, "HOUR"]]]),
-        ("in_last [200, HOUR]",         [[FIELD, "in_last", [200, "HOUR"]]]),
-        ("in_last [-10, DAY]",          [[FIELD, "in_last", [-10, "DAY"]]]),
-        ("in_calendar_month 0",         [[FIELD, "in_calendar_month", 0]]),
-    ])
-    matrix("in 5 days", TODAY + datetime.timedelta(days=5), [
-        ("in_next [10, DAY]",           [[FIELD, "in_next", [10, "DAY"]]]),
-        ("in_next [2, DAY] (neg)",      [[FIELD, "in_next", [2, "DAY"]]]),
-        ("in_last [10, DAY] (neg)",     [[FIELD, "in_last", [10, "DAY"]]]),
-        ("in_calendar_day 5",           [[FIELD, "in_calendar_day", 5]]),
-    ])
-    put(None)
-    rows.append(f"\nleft {FIELD} cleared on the throwaway shot: {readback()}")
+        matrix("today", TODAY, [
+            ("is today",                    [[FIELD, "is", d(0)]]),
+            ("is tomorrow (neg)",           [[FIELD, "is", d(1)]]),
+            ("is_not today",                [[FIELD, "is_not", d(0)]]),
+            ("is null (neg)",               [[FIELD, "is", None]]),
+            ("is '' (neg)",                 [[FIELD, "is", ""]]),
+            ("greater_than yesterday",      [[FIELD, "greater_than", d(-1)]]),
+            ("greater_than today",          [[FIELD, "greater_than", d(0)]]),
+            ("less_than tomorrow",          [[FIELD, "less_than", d(1)]]),
+            ("less_than today",             [[FIELD, "less_than", d(0)]]),
+            ("between [today, today]",      [[FIELD, "between", [d(0), d(0)]]]),
+            ("between [-1, +1]",            [[FIELD, "between", [d(-1), d(1)]]]),
+            ("between [+1, +2] (neg)",      [[FIELD, "between", [d(1), d(2)]]]),
+            ("between reversed [+1, -1]",   [[FIELD, "between", [d(1), d(-1)]]]),
+            ("between [today, null]",       [[FIELD, "between", [d(0), None]]]),
+            ("in [today]",                  [[FIELD, "in", [d(0)]]]),
+            ("in [today, +1]",              [[FIELD, "in", [d(0), d(1)]]]),
+            ("in [+1] (neg)",               [[FIELD, "in", [d(1)]]]),
+            ("in today (bare scalar)",      [[FIELD, "in", d(0)]]),
+            ("not_in [today]",              [[FIELD, "not_in", [d(0)]]]),
+            ("in_last [1, DAY]",            [[FIELD, "in_last", [1, "DAY"]]]),
+            ("in_last [1, MONTH]",          [[FIELD, "in_last", [1, "MONTH"]]]),
+            ("in_next [1, DAY]",            [[FIELD, "in_next", [1, "DAY"]]]),
+            ("in_next [1, MONTH]",          [[FIELD, "in_next", [1, "MONTH"]]]),
+            ("in_last [1, HOUR]",           [[FIELD, "in_last", [1, "HOUR"]]]),
+            ("not_in_last [1, MONTH]",      [[FIELD, "not_in_last", [1, "MONTH"]]]),
+            ("not_in_next [1, MONTH]",      [[FIELD, "not_in_next", [1, "MONTH"]]]),
+            ("in_calendar_day 0",           [[FIELD, "in_calendar_day", 0]]),
+            ("in_calendar_day -1 (neg)",    [[FIELD, "in_calendar_day", -1]]),
+            ("in_calendar_day 1 (neg)",     [[FIELD, "in_calendar_day", 1]]),
+            ("in_calendar_day [0]",         [[FIELD, "in_calendar_day", [0]]]),
+            ("in_calendar_week 0",          [[FIELD, "in_calendar_week", 0]]),
+            ("in_calendar_week -1 (neg)",   [[FIELD, "in_calendar_week", -1]]),
+            ("in_calendar_week 1 (neg)",    [[FIELD, "in_calendar_week", 1]]),
+            ("in_calendar_month 0",         [[FIELD, "in_calendar_month", 0]]),
+            ("in_calendar_month -1 (neg)",  [[FIELD, "in_calendar_month", -1]]),
+            ("in_calendar_year 0",          [[FIELD, "in_calendar_year", 0]]),
+            ("in_calendar_year -1 (neg)",   [[FIELD, "in_calendar_year", -1]]),
+            ("in_calendar_year 1 (neg)",    [[FIELD, "in_calendar_year", 1]]),
+        ])
+        matrix("5 days ago", TODAY - datetime.timedelta(days=5), [
+            ("in_last [10, DAY]",           [[FIELD, "in_last", [10, "DAY"]]]),
+            ("in_last [2, DAY] (neg)",      [[FIELD, "in_last", [2, "DAY"]]]),
+            ("in_next [10, DAY] (neg)",     [[FIELD, "in_next", [10, "DAY"]]]),
+            ("not_in_last [10, DAY]",       [[FIELD, "not_in_last", [10, "DAY"]]]),
+            ("in_calendar_day -5",          [[FIELD, "in_calendar_day", -5]]),
+            ("in_calendar_day 0 (neg)",     [[FIELD, "in_calendar_day", 0]]),
+            # does HOUR mean anything on a field with no time part?
+            ("in_last [1, HOUR]",           [[FIELD, "in_last", [1, "HOUR"]]]),
+            ("in_last [200, HOUR]",         [[FIELD, "in_last", [200, "HOUR"]]]),
+            ("in_last [-10, DAY]",          [[FIELD, "in_last", [-10, "DAY"]]]),
+            ("in_calendar_month 0",         [[FIELD, "in_calendar_month", 0]]),
+        ])
+        matrix("in 5 days", TODAY + datetime.timedelta(days=5), [
+            ("in_next [10, DAY]",           [[FIELD, "in_next", [10, "DAY"]]]),
+            ("in_next [2, DAY] (neg)",      [[FIELD, "in_next", [2, "DAY"]]]),
+            ("in_last [10, DAY] (neg)",     [[FIELD, "in_last", [10, "DAY"]]]),
+            ("in_calendar_day 5",           [[FIELD, "in_calendar_day", 5]]),
+        ])
+        put(None)
+        rows.append(f"\ncleared before deleting the throwaway shots: {readback()}")
 
 actual = "\n".join(rows)
 _lib.emit("field_types/date", actual, env)

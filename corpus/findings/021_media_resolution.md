@@ -44,6 +44,7 @@ verdict: PublishedFile.path is returned with the LocalStorage join already done 
   image             str -> presigned S3 URL in the field itself
   sg_uploaded_movie dict keys=['url', 'name', 'content_type', 'link_type', 'type', 'id']
   filtering sg_uploaded_movie is_not None -> 400 API summarize() Version.sg_uploaded_movie's 'url' data type cannot be used in a filter.
+  image is_not None 33/53 on this project, 98/1057 site-wide
 ```
 
 **Teaches**
@@ -56,6 +57,6 @@ verdict: PublishedFile.path is returned with the LocalStorage join already done 
 
 - **Tier 1 is untested here for two reasons, and only one of them is about the API.** On the probed site, Image, Rendered Image, Texture and USD PublishedFiles have **no `path` at all**, and `Version.published_files` is filled on 2 of 53 Versions: that is Flow PT data. The Movie paths that do exist point at files the operator has since deleted from disk: that is not. Read this as "this site has no publish history", never as "Flow PT paths are unreliable".
 - Tier 2 holds one absolute path, so a value cannot resolve on two platforms, unlike `PublishedFile.path`, which returns all three at once. On the probed site `sg_path_to_frames` is 0 of 53, leaving the sequence form untested: it is free text taking printf padding and the Shake `#`/`@` forms, so never assume `%04d`.
-- Tier 3 always resolves and needs no second call: `image` is a presigned S3 URL as a plain string, and `sg_uploaded_movie` is a dict with the same URL under `url`.
+- Tier 3 needs no second call: `image` is a presigned S3 URL as a plain string, and `sg_uploaded_movie` is a dict with the same URL under `url`. It does not always resolve. On the probed site `image` is filled on 33 of 53 Versions in the sample project and 98 of 1057 site-wide, so test the field rather than assuming a fallback.
 - **Trap.** `sg_uploaded_movie` cannot be filtered or summarized `is_not None`: 400 `API summarize() Version.sg_uploaded_movie's 'url' data type cannot be used in a filter.` Same shape of trap as a checkbox (probe 020).
 - Offer the operator whichever tiers a given Version can deliver rather than picking one for them.

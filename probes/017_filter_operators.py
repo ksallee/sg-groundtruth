@@ -3,6 +3,8 @@
 An entity picker with type-ahead over Shot codes wants a substring operator. The
 danger is not a 400 — it is an operator that is ignored, which returns every row and looks like it works.
 """
+import json
+
 import _lib
 
 env = _lib.load_env()
@@ -79,6 +81,34 @@ for label, filt in [("entity.Shot.code in [real x2]", [["entity.Shot.code", "in"
 rows.append("\n=== an operator that does not exist (does it 400, or pass silently?)")
 p, pe = search("shots", [["code", "definitely_not_an_operator", "x"]])
 rows.append(f"  code definitely_not_an_operator x -> {p} {pe or ''}")
+
+rows.append("\n=== the same bogus operator, one field of every data type reachable read-only")
+
+
+def bogus(slug, field):
+    """The 400 names the field's whole legal vocabulary, so print it entire (.claude/commands/probe.md)."""
+    r = c.post(f"/entity/{slug}/_search", headers=ARR,
+               json={"filters": [[field, "definitely_not_an_operator", None]],
+                     "fields": ["id"], "page": {"size": 1}})
+    if r.ok:
+        return r.status_code, f"NOT REJECTED, {len(r.json()['data'])} rows"
+    e = r.json()["errors"][0]
+    return r.status_code, json.dumps({"title": e.get("title"), "source": e.get("source")})
+
+
+first = {}
+for entity, slug in (("Version", "versions"), ("Shot", "shots"), ("Project", "projects"),
+                     ("Task", "tasks"), ("Note", "notes"), ("PublishedFile", "published_files"),
+                     ("Attachment", "attachments"), ("HumanUser", "human_users")):
+    for name, spec in sorted(c.get(f"/schema/{entity}/fields").json()["data"].items()):
+        first.setdefault(spec["data_type"]["value"], (slug, name))
+statuses = []
+for dt, (slug, name) in sorted(first.items()):
+    status, body = bogus(slug, name)
+    statuses.append(status)
+    rows.append(f"  {dt:<14} {slug}.{name} -> {status} {body}")
+rows.append(f"  {len(statuses)} data types tried, {statuses.count(400)} of them 400; "
+            f"other status codes {sorted(set(statuses) - {400})}")
 
 actual = "\n".join(rows)
 _lib.emit("017_filter_operators", actual, env)

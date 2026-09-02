@@ -220,13 +220,17 @@ else:
         if not r.ok:
             rows.append("   " + err(r).replace("\n", "\n   ")[:900])
 
-    rows.append("\n=== clear: [] vs null, and whether they read back identically")
-    for label, val in [("[]", []), ("null", None)]:
+    rows.append("\n=== clear: [] vs the three falsy spellings, and how each is refused")
+    for label, val in [("[]", []), ("{mode:set,value:[]}", {"multi_entity_update_mode": "set",
+                                                            "value": []}),
+                       ("null", None), ('""', ""), ("0", 0)]:
         put(T, [h(A), h(B)])
         r = put(T, val)
         raw = c.get(f"/entity/versions/{T}", params={"fields": FIELD}).json()["data"]
-        rows.append(f"  PUT {label:<6} -> {r.status_code}  relationships.{FIELD} = "
+        rows.append(f"  PUT {label:<20} -> {r.status_code}  relationships.{FIELD} = "
                     f"{json.dumps(raw.get('relationships', {}).get(FIELD))}")
+        if not r.ok:
+            rows.append("   " + err(r).replace("\n", "\n   "))
     r = put(T, None, body={"description": "untouched"})
     rows.append(f"  PUT with the key omitted -> {r.status_code}  reads back {read(T)}  "
                 "<- omission is not a clear")

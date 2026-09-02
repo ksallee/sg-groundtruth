@@ -98,6 +98,8 @@ competes with the official docs. Write it to win that comparison.
   file can still be local. Counts, field censuses, fill rates and "there are N of these" all begin
   "On the probed site, ...". A reader forking this repo must be able to tell, sentence by sentence, what
   transfers to their site and what they have to measure again.
+- Name the product **Flow Production Tracking** in full on first use, **Flow PT** after. Never `FPT`.
+  `FPT_API_*`, `fpt_llm_api` and the `FPT` client class are identifiers and stay as they are.
 - No em dashes. They join two thoughts that should be two sentences. Recast:
   a full stop when both halves stand alone, a colon when the second explains the first, commas or
   parentheses for an aside. If none of those fit, the sentence needs rewriting, not punctuating.

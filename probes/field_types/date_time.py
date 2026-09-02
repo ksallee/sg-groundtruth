@@ -141,136 +141,138 @@ EPOCH = int(BASE.timestamp())
 if not _lib.writes_allowed():
     rows.append("\n(read-only run; write / clear / read-only-field / filter-on-a-known-value need --write)")
 else:
-    SANDBOX = _lib.sandbox_id(c, env)
-    scope = [["project", "is", {"type": "Project", "id": SANDBOX}], ["code", "is", CODE]]
-    existing, _ = search("versions", scope, size=10)
-    if existing:
-        vid = existing[0]["id"]
-    else:
-        t0 = datetime.now(timezone.utc)
-        cr = c.post("/entity/versions", headers=JSN,
-                    json={"project": {"type": "Project", "id": SANDBOX}, "code": CODE})
-        t1 = datetime.now(timezone.utc)
-        vid = cr.json()["data"]["id"]
-        back = c.get(f"/entity/versions/{vid}", params={"fields": "created_at"}).json()["data"]
-        made = back["attributes"]["created_at"]
-        rows.append(f"\n  created a Version at client UTC {t0.isoformat()}..{t1.isoformat()}")
-        rows.append(f"  server created_at = {made!r} -> {(parse_iso(made) - t0).total_seconds():+.1f}s "
-                    f"from the client's UTC clock")
-    rows.append(f"\n  throwaway Version {CODE} id={vid} in the sandbox project")
-
-    def put(value):
-        return c.request("PUT", f"/entity/versions/{vid}", headers=JSN, json={FIELD: value})
-
-    def read_back():
-        return c.get(f"/entity/versions/{vid}",
-                     params={"fields": FIELD}).json()["data"]["attributes"].get(FIELD)
-
-    rows.append("\n=== 4. write — which input formats are accepted, and what comes back")
-    for label, v in [
-        ("ISO Z",                 "2026-03-04T05:06:07Z"),
-        ("ISO +05:00",            "2026-03-04T05:06:07+05:00"),
-        ("ISO -08:00",            "2026-03-04T05:06:07-08:00"),
-        ("ISO no zone",           "2026-03-04T05:06:07"),
-        ("space, no zone",        "2026-03-04 05:06:07"),
-        ("fractional seconds",    "2026-03-04T05:06:07.123Z"),
-        ("date only",             "2026-03-04"),
-        ("epoch int",             EPOCH),
-        ("epoch string",          str(EPOCH)),
-        ("garbage",               "not-a-time"),
-    ]:
-        r = put(v)
-        if r.ok:
-            got = read_back()
-            same = "SAME" if got == v else "NORMALISED"
-            rows.append(f"  {label:<20} {json.dumps(v):<30} -> {r.status_code} read back {got!r}  {same}")
+    # A probe leaves no trace: the throwaway Version is deleted on the way out.
+    with _lib.Created(c) as created:
+        SANDBOX = _lib.sandbox_id(c, env)
+        scope = [["project", "is", {"type": "Project", "id": SANDBOX}], ["code", "is", CODE]]
+        existing, _ = search("versions", scope, size=10)
+        if existing:
+            vid = existing[0]["id"]
         else:
-            rows.append(f"  {label:<20} {json.dumps(v):<30} -> {one_line(r)}")
-            if label in ("date only", "epoch int"):
-                rows.append(f"    full errors[]:\n{errs(r)}")
+            t0 = datetime.now(timezone.utc)
+            cr = c.post("/entity/versions", headers=JSN,
+                        json={"project": {"type": "Project", "id": SANDBOX}, "code": CODE})
+            t1 = datetime.now(timezone.utc)
+            vid = created.add("versions", cr.json()["data"]["id"])
+            back = c.get(f"/entity/versions/{vid}", params={"fields": "created_at"}).json()["data"]
+            made = back["attributes"]["created_at"]
+            rows.append(f"\n  created a Version at client UTC {t0.isoformat()}..{t1.isoformat()}")
+            rows.append(f"  server created_at = {made!r} -> {(parse_iso(made) - t0).total_seconds():+.1f}s "
+                        f"from the client's UTC clock")
+        rows.append(f"\n  throwaway Version {CODE} id={vid} in the sandbox project")
 
-    rows.append("\n=== 5. clear")
-    for label, v in [("null", None), ('""', "")]:
-        put("2026-03-04T05:06:07Z")
-        r = put(v)
-        if r.ok:
-            rows.append(f"  {FIELD} = {label:<6} -> {r.status_code} read back {read_back()!r}")
-        else:
-            rows.append(f"  {FIELD} = {label:<6} -> {one_line(r)}\n{errs(r)}")
+        def put(value):
+            return c.request("PUT", f"/entity/versions/{vid}", headers=JSN, json={FIELD: value})
 
-    rows.append("\n=== 6. writing a server-managed timestamp")
-    r = c.request("PUT", f"/entity/versions/{vid}", headers=JSN,
-                  json={"created_at": "2020-01-01T00:00:00Z"})
-    rows.append(f"  PUT created_at -> {r.status_code}\n{errs(r)}")
+        def read_back():
+            return c.get(f"/entity/versions/{vid}",
+                         params={"fields": FIELD}).json()["data"]["attributes"].get(FIELD)
 
-    # --- 7. filters, one row of ground truth ------------------------------------------------------
-    rows.append("\n=== 7. filter — value format for every relation the API named")
-    KNOWN = "2026-03-04T05:06:07Z"
-    put(KNOWN)
-    stored = read_back()
-    rows.append(f"  ground truth: exactly 1 Version in sandbox with {FIELD} = {stored!r}")
-    EARLIER, LATER = "2026-03-04T00:00:00Z", "2026-03-05T00:00:00Z"
-    DAY, NEXTDAY = "2026-03-04", "2026-03-05"
+        rows.append("\n=== 4. write — which input formats are accepted, and what comes back")
+        for label, v in [
+            ("ISO Z",                 "2026-03-04T05:06:07Z"),
+            ("ISO +05:00",            "2026-03-04T05:06:07+05:00"),
+            ("ISO -08:00",            "2026-03-04T05:06:07-08:00"),
+            ("ISO no zone",           "2026-03-04T05:06:07"),
+            ("space, no zone",        "2026-03-04 05:06:07"),
+            ("fractional seconds",    "2026-03-04T05:06:07.123Z"),
+            ("date only",             "2026-03-04"),
+            ("epoch int",             EPOCH),
+            ("epoch string",          str(EPOCH)),
+            ("garbage",               "not-a-time"),
+        ]:
+            r = put(v)
+            if r.ok:
+                got = read_back()
+                same = "SAME" if got == v else "NORMALISED"
+                rows.append(f"  {label:<20} {json.dumps(v):<30} -> {r.status_code} read back {got!r}  {same}")
+            else:
+                rows.append(f"  {label:<20} {json.dumps(v):<30} -> {one_line(r)}")
+                if label in ("date only", "epoch int"):
+                    rows.append(f"    full errors[]:\n{errs(r)}")
 
-    cand = {
-        "is":            [("stored value", stored), ("date-only same day", DAY), ("null", None),
-                          ("NEG far future", "2099-01-01T00:00:00Z")],
-        "is_not":        [("stored value", stored)],
-        "less_than":     [("later instant", LATER), ("date-only same day", DAY),
-                          ("NEG earlier instant", EARLIER)],
-        "greater_than":  [("earlier instant", EARLIER), ("date-only same day", DAY),
-                          ("NEG later instant", LATER)],
-        "between":       [("[earlier, later]", [EARLIER, LATER]),
-                          ("[date-only, date-only]", [DAY, NEXTDAY]),
-                          ("NEG [1970, 1971]", ["1970-01-01T00:00:00Z", "1971-01-01T00:00:00Z"])],
-        "not_between":   [("[earlier, later]", [EARLIER, LATER])],
-        "in":            [("[stored]", [stored]), ("NEG [far future]", ["2099-01-01T00:00:00Z"])],
-        "not_in":        [("[stored]", [stored])],
-        "in_last":       [("[100, YEAR]", [100, "YEAR"]), ("[1, DAY]", [1, "DAY"])],
-        "not_in_last":   [("[100, YEAR]", [100, "YEAR"])],
-        "in_next":       [("[100, YEAR]", [100, "YEAR"]), ("[1, DAY]", [1, "DAY"])],
-        "not_in_next":   [("[100, YEAR]", [100, "YEAR"])],
-        "in_calendar_day":   [("0 (today)", 0)],
-        "in_calendar_week":  [("0 (this week)", 0)],
-        "in_calendar_month": [("0 (this month)", 0)],
-        "in_calendar_year":  [("0 (this year)", 0), ("NEG -50", -50)],
-        "is_null":       [("null", None)],
-        "is_not_null":   [("null", None)],
-        "type_is":       [("null", None)],
-        "type_is_not":   [("null", None)],
-    }
-    for op in valid_ops:
-        for label, v in cand.get(op, [("<not exercised>", None)]):
-            n = count("versions", scope + [[FIELD, op, v]])
-            rows.append(f"  {op:<18} {label:<24} {json.dumps(v):<46} -> {n}")
+        rows.append("\n=== 5. clear")
+        for label, v in [("null", None), ('""', "")]:
+            put("2026-03-04T05:06:07Z")
+            r = put(v)
+            if r.ok:
+                rows.append(f"  {FIELD} = {label:<6} -> {r.status_code} read back {read_back()!r}")
+            else:
+                rows.append(f"  {FIELD} = {label:<6} -> {one_line(r)}\n{errs(r)}")
 
-    rows.append("\n  --- in_last/in_next units: ask the API ---")
-    _, r = search("versions", scope + [[FIELD, "in_last", [1, "FORTNIGHT"]]])
-    rows.append(errs(r) if r is not None else "  a bogus unit was ACCEPTED")
+        rows.append("\n=== 6. writing a server-managed timestamp")
+        r = c.request("PUT", f"/entity/versions/{vid}", headers=JSN,
+                      json={"created_at": "2020-01-01T00:00:00Z"})
+        rows.append(f"  PUT created_at -> {r.status_code}\n{errs(r)}")
 
-    rows.append("\n  --- which midnight is a date-only filter value, and whose calendar day? ---")
-    today = now_utc.date().isoformat()
-    for v in (f"2026-03-03T23:30:00Z", f"2026-03-04T00:00:00Z", f"2026-03-04T00:30:00Z"):
-        put(v)
-        rows.append(f"  stored {v} -> is '{DAY}' {count('versions', scope + [[FIELD, 'is', DAY]])}"
-                    f" | greater_than '{DAY}' {count('versions', scope + [[FIELD, 'greater_than', DAY]])}"
-                    f" | less_than '{DAY}' {count('versions', scope + [[FIELD, 'less_than', DAY]])}")
-    for v in (f"{today}T00:30:00Z", f"{today}T23:30:00Z"):
-        put(v)
-        rows.append(f"  stored {v} -> in_calendar_day 0/-1/+1 = "
-                    f"{count('versions', scope + [[FIELD, 'in_calendar_day', 0]])}/"
-                    f"{count('versions', scope + [[FIELD, 'in_calendar_day', -1]])}/"
-                    f"{count('versions', scope + [[FIELD, 'in_calendar_day', 1]])}"
-                    f" | in_last [1,DAY] {count('versions', scope + [[FIELD, 'in_last', [1, 'DAY']]])}"
-                    f" | in_next [1,DAY] {count('versions', scope + [[FIELD, 'in_next', [1, 'DAY']]])}"
-                    f" | in_calendar_week/month/year 0 = "
-                    f"{count('versions', scope + [[FIELD, 'in_calendar_week', 0]])}/"
-                    f"{count('versions', scope + [[FIELD, 'in_calendar_month', 0]])}/"
-                    f"{count('versions', scope + [[FIELD, 'in_calendar_year', 0]])}")
-    put(None)
-    rows.append(f"\n  cleared; final read back {read_back()!r}"
-                f" | is null -> {count('versions', scope + [[FIELD, 'is', None]])}"
-                f" | is_not null -> {count('versions', scope + [[FIELD, 'is_not', None]])}")
+        # --- 7. filters, one row of ground truth ------------------------------------------------------
+        rows.append("\n=== 7. filter — value format for every relation the API named")
+        KNOWN = "2026-03-04T05:06:07Z"
+        put(KNOWN)
+        stored = read_back()
+        rows.append(f"  ground truth: exactly 1 Version in sandbox with {FIELD} = {stored!r}")
+        EARLIER, LATER = "2026-03-04T00:00:00Z", "2026-03-05T00:00:00Z"
+        DAY, NEXTDAY = "2026-03-04", "2026-03-05"
+
+        cand = {
+            "is":            [("stored value", stored), ("date-only same day", DAY), ("null", None),
+                              ("NEG far future", "2099-01-01T00:00:00Z")],
+            "is_not":        [("stored value", stored)],
+            "less_than":     [("later instant", LATER), ("date-only same day", DAY),
+                              ("NEG earlier instant", EARLIER)],
+            "greater_than":  [("earlier instant", EARLIER), ("date-only same day", DAY),
+                              ("NEG later instant", LATER)],
+            "between":       [("[earlier, later]", [EARLIER, LATER]),
+                              ("[date-only, date-only]", [DAY, NEXTDAY]),
+                              ("NEG [1970, 1971]", ["1970-01-01T00:00:00Z", "1971-01-01T00:00:00Z"])],
+            "not_between":   [("[earlier, later]", [EARLIER, LATER])],
+            "in":            [("[stored]", [stored]), ("NEG [far future]", ["2099-01-01T00:00:00Z"])],
+            "not_in":        [("[stored]", [stored])],
+            "in_last":       [("[100, YEAR]", [100, "YEAR"]), ("[1, DAY]", [1, "DAY"])],
+            "not_in_last":   [("[100, YEAR]", [100, "YEAR"])],
+            "in_next":       [("[100, YEAR]", [100, "YEAR"]), ("[1, DAY]", [1, "DAY"])],
+            "not_in_next":   [("[100, YEAR]", [100, "YEAR"])],
+            "in_calendar_day":   [("0 (today)", 0)],
+            "in_calendar_week":  [("0 (this week)", 0)],
+            "in_calendar_month": [("0 (this month)", 0)],
+            "in_calendar_year":  [("0 (this year)", 0), ("NEG -50", -50)],
+            "is_null":       [("null", None)],
+            "is_not_null":   [("null", None)],
+            "type_is":       [("null", None)],
+            "type_is_not":   [("null", None)],
+        }
+        for op in valid_ops:
+            for label, v in cand.get(op, [("<not exercised>", None)]):
+                n = count("versions", scope + [[FIELD, op, v]])
+                rows.append(f"  {op:<18} {label:<24} {json.dumps(v):<46} -> {n}")
+
+        rows.append("\n  --- in_last/in_next units: ask the API ---")
+        _, r = search("versions", scope + [[FIELD, "in_last", [1, "FORTNIGHT"]]])
+        rows.append(errs(r) if r is not None else "  a bogus unit was ACCEPTED")
+
+        rows.append("\n  --- which midnight is a date-only filter value, and whose calendar day? ---")
+        today = now_utc.date().isoformat()
+        for v in (f"2026-03-03T23:30:00Z", f"2026-03-04T00:00:00Z", f"2026-03-04T00:30:00Z"):
+            put(v)
+            rows.append(f"  stored {v} -> is '{DAY}' {count('versions', scope + [[FIELD, 'is', DAY]])}"
+                        f" | greater_than '{DAY}' {count('versions', scope + [[FIELD, 'greater_than', DAY]])}"
+                        f" | less_than '{DAY}' {count('versions', scope + [[FIELD, 'less_than', DAY]])}")
+        for v in (f"{today}T00:30:00Z", f"{today}T23:30:00Z"):
+            put(v)
+            rows.append(f"  stored {v} -> in_calendar_day 0/-1/+1 = "
+                        f"{count('versions', scope + [[FIELD, 'in_calendar_day', 0]])}/"
+                        f"{count('versions', scope + [[FIELD, 'in_calendar_day', -1]])}/"
+                        f"{count('versions', scope + [[FIELD, 'in_calendar_day', 1]])}"
+                        f" | in_last [1,DAY] {count('versions', scope + [[FIELD, 'in_last', [1, 'DAY']]])}"
+                        f" | in_next [1,DAY] {count('versions', scope + [[FIELD, 'in_next', [1, 'DAY']]])}"
+                        f" | in_calendar_week/month/year 0 = "
+                        f"{count('versions', scope + [[FIELD, 'in_calendar_week', 0]])}/"
+                        f"{count('versions', scope + [[FIELD, 'in_calendar_month', 0]])}/"
+                        f"{count('versions', scope + [[FIELD, 'in_calendar_year', 0]])}")
+        put(None)
+        rows.append(f"\n  cleared; final read back {read_back()!r}"
+                    f" | is null -> {count('versions', scope + [[FIELD, 'is', None]])}"
+                    f" | is_not null -> {count('versions', scope + [[FIELD, 'is_not', None]])}")
 
 actual = "\n".join(rows)
 _lib.emit("field_types/date_time", actual, env)

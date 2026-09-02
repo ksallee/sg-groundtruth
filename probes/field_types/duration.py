@@ -2,7 +2,7 @@
 
 `duration` exists as a separate data_type from `number` only because it has a unit, so the unit is the
 question. `docs/quirks.md` claims minutes stored, hours or days displayed, with hours-per-day a site
-setting. This settles the API half: what a write stores, and whether the schema names a unit at all.
+setting. This settles the API half: what a write stores, and where the unit is stated, if anywhere.
 
 Stock editable duration fields, nothing created here — a field name is burned permanently (probe 019).
 The read-only half (schema, the operator list the API enumerates, the unit evidence already on the site)
@@ -69,6 +69,19 @@ rows.append(json.dumps(d["properties"], indent=1))
 for path in ("Task/fields/duration", "Task/fields/est_in_mins", "TimeLog/fields/duration"):
     p = c.get(f"/schema/{path}").json()["data"]["properties"]
     rows.append(f"  {path:<28} properties={json.dumps({k: v['value'] for k, v in p.items()})}")
+
+rows.append("\n=== hours-per-day: GET /preferences, the route the field schema does not have")
+r = c.get("/preferences")
+rows.append(f"  GET /preferences -> {r.status_code}")
+if r.ok:
+    pref = r.json()["data"]
+    rows.append(f"  {len(pref)} keys: {sorted(pref)}")
+    for k in ("hours_per_day", "duration_units"):
+        rows.append(f"  {k:<16} = {json.dumps(pref.get(k))} ({type(pref.get(k)).__name__})")
+    rows.append("  the whole body, untrimmed:")
+    rows.append(json.dumps(pref, indent=1))
+else:
+    rows.append(errs(r))
 
 rows.append("\n=== the API enumerates its own operators (probe 017), duration next to number")
 VALID = []
@@ -210,7 +223,8 @@ try:
                 " greater_than 480")
 
     rows.append("\n=== the filter 400s, in full")
-    for filt in ([FIELD, "between", 480], [FIELD, "contains", "48"], [FIELD, "is", "8:00"]):
+    for filt in ([FIELD, "between", 480], [FIELD, "contains", "48"], [FIELD, "is", "8:00"],
+                 [FIELD, "not_between", [0, 600]]):
         _, bad = search("shots", MINE + [filt], ("code", FIELD))
         rows.append(f"  {filt!r} ->")
         rows.append(errs(bad) if bad is not None else "  200 (accepted)")

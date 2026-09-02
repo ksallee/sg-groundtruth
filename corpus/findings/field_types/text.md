@@ -45,7 +45,7 @@ as a bare string in the body. Only `String` and `NilClass` are accepted.
 |---|---|
 | `null` | 200, reads back `None` |
 | `""` | 200, reads back `None`; coerced, not stored |
-| key omitted from the PUT | 200, field unchanged |
+| key omitted from the PUT | 200, field unchanged; set to `'lighting'`, then a PUT of `description` alone, still reads `'lighting'` |
 
 Four rows differing only in how the field was left:
 
@@ -88,7 +88,7 @@ source: {"Version.sg_department": " ... Value: {"path" => "sg_department",
 | `starts_with` | `'light'` | `value` |
 | `ends_with` | `'ing'` | `value` |
 | `in` | `['lighting','comp']` | `value` |
-| `in` | `'lighting'` | `value`; a bare string is accepted where a list is expected |
+| `in` | `'lighting'` | `value`; a bare string is accepted where a list is expected, and matched whole. A fifth row holding `'g'` is not returned |
 | `in` | `['']` | nothing, unlike `is ''` |
 | `in` | `[None]` | 400 code 104 `Read failed for entity type [Version]`, `source` null, `detail` null |
 | `not_in` | `['lighting']` | `empty`, `null`, `omitted` |

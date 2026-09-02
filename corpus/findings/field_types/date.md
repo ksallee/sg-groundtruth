@@ -73,9 +73,9 @@ Measured on two sandbox rows, one dated and one null, so a positive is 1 and a n
 | `in_next` | `[n, "DAY"]` | n units forward, includes today | today matches `[1, "DAY"]` ; 5 days ago: `[10, "DAY"]` -> 0 |
 | `not_in_next` | `[n, "DAY"]` | outside that range, and null rows | matched the unset row |
 | `in_calendar_day` | bare signed Integer offset; `[0]` works too | that calendar day | today: `0` -> 1, `-1` -> 0, `+1` -> 0 ; 5 days ago: `-5` -> 1, `0` -> 0 |
-| `in_calendar_week` | bare signed Integer offset | that calendar week | today: `0` -> 1 |
-| `in_calendar_month` | bare signed Integer offset | that calendar month | today: `0` -> 1 ; 5 days ago, previous month: `0` -> 0 |
-| `in_calendar_year` | bare signed Integer offset | that calendar year | today: `0` -> 1, `-1` -> 0 |
+| `in_calendar_week` | bare signed Integer offset | that calendar week | today: `0` -> 1, `-1` -> 0, `+1` -> 0 |
+| `in_calendar_month` | bare signed Integer offset | that calendar month | today: `0` -> 1, `-1` -> 0 ; 5 days ago, previous month: `0` -> 0 |
+| `in_calendar_year` | bare signed Integer offset | that calendar year | today: `0` -> 1, `-1` -> 0, `+1` -> 0 |
 
 Rejected filter values:
 

@@ -115,121 +115,117 @@ def readback(vid, field):
 
 
 def make(suffix, attrs=None):
-    """Reused across runs — a second run must not double the row count the filter section asserts on."""
-    code = f"{CODE}_{suffix}"
-    existing, _ = search([SPROJ, ["code", "is", code]], fields=("code",), size=1)
-    body = {"project": {"type": "Project", "id": SANDBOX}, "code": code}
+    body = {"project": {"type": "Project", "id": SANDBOX}, "code": f"{CODE}_{suffix}"}
     body.update(attrs or {})
-    if existing:
-        vid = existing[0]["id"]
-        c.request("PUT", f"/entity/versions/{vid}", headers=JSN,
-                  json=attrs or {f: None for f in (FIELD, "sg_last_frame", RANGE_FIELD)})
-        return vid
     r = c.post("/entity/versions", headers=JSN, json=body)
-    return r.json()["data"]["id"] if r.ok else rows.append(f"  create {suffix} -> {r.status_code} {errs(r)}")
+    if not r.ok:
+        rows.append(f"  create {suffix} -> {r.status_code} {errs(r)}")
+        return None
+    return made.add("versions", r.json()["data"]["id"])
 
 
-rows.append("\n=== throwaway Versions in the sandbox")
-A = make("a", {FIELD: 1001, "sg_last_frame": 1100, RANGE_FIELD: 100})
-B = make("b", {FIELD: 0})
-C = make("c")
-D = make("d")
-rows.append(f"  a(first=1001) b(first=0) c(untouched) d(scratch) -> {[A, B, C, D]}")
+with _lib.Created(c) as made:
+    rows.append("\n=== throwaway Versions in the sandbox")
+    A = make("a", {FIELD: 1001, "sg_last_frame": 1100, RANGE_FIELD: 100})
+    B = make("b", {FIELD: 0})
+    C = make("c")
+    D = make("d")
+    rows.append(f"  a(first=1001) b(first=0) c(untouched) d(scratch) -> {[A, B, C, D]}")
 
-rows.append("\n=== write: what an update accepts   (PUT /entity/versions/<id>)")
-for label, value in [("int 42", 42), ("numeric string '42'", "42"), ("string '42abc'", "42abc"),
-                     ("float 3.7", 3.7), ("float 3.2", 3.2), ("float -3.7", -3.7),
-                     ("negative int -7", -7), ("bool True", True), ("empty string ''", ""),
-                     ("null", None)]:
-    r = put(D, RANGE_FIELD, value)
-    back = readback(D, RANGE_FIELD) if r.ok else "-"
-    detail = "" if r.ok else " " + errs(r).replace("\n", " ")
-    rows.append(f"  {label:<22} -> {r.status_code} reads back {back!r}"
-                f"({type(back).__name__}){detail}")
+    rows.append("\n=== write: what an update accepts   (PUT /entity/versions/<id>)")
+    for label, value in [("int 42", 42), ("numeric string '42'", "42"), ("string '42abc'", "42abc"),
+                         ("float 3.7", 3.7), ("float 3.2", 3.2), ("float -3.7", -3.7),
+                         ("negative int -7", -7), ("bool True", True), ("empty string ''", ""),
+                         ("null", None)]:
+        r = put(D, RANGE_FIELD, value)
+        back = readback(D, RANGE_FIELD) if r.ok else "-"
+        detail = "" if r.ok else " " + errs(r).replace("\n", " ")
+        rows.append(f"  {label:<22} -> {r.status_code} reads back {back!r}"
+                    f"({type(back).__name__}){detail}")
 
-rows.append("\n=== range: where does a number stop being a number?")
-LAND = {}
-for label, value in [("2**31-1", 2**31 - 1), ("2**31", 2**31), ("2**32-1", 2**32 - 1),
-                     ("2**63-1", 2**63 - 1), ("2**63", 2**63),
-                     ("-(2**31)", -(2**31)), ("-(2**31)-1", -(2**31) - 1), ("-(2**63)", -(2**63))]:
-    r = put(D, RANGE_FIELD, value)
-    back = readback(D, RANGE_FIELD) if r.ok else None
-    LAND[value] = r.ok and back == value
-    rows.append(f"  {label:<12} {value:<21} -> {r.status_code} reads back {back!r}"
-                f"{'' if LAND[value] else '   <- NOT round-tripped'}")
+    rows.append("\n=== range: where does a number stop being a number?")
+    LAND = {}
+    for label, value in [("2**31-1", 2**31 - 1), ("2**31", 2**31), ("2**32-1", 2**32 - 1),
+                         ("2**63-1", 2**63 - 1), ("2**63", 2**63),
+                         ("-(2**31)", -(2**31)), ("-(2**31)-1", -(2**31) - 1), ("-(2**63)", -(2**63))]:
+        r = put(D, RANGE_FIELD, value)
+        back = readback(D, RANGE_FIELD) if r.ok else None
+        LAND[value] = r.ok and back == value
+        rows.append(f"  {label:<12} {value:<21} -> {r.status_code} reads back {back!r}"
+                    f"{'' if LAND[value] else '   <- NOT round-tripped'}")
 
+    def boundary(lo, hi):
+        """lo round-trips, hi does not. Narrow to the exact edge."""
+        while abs(hi - lo) > 1:
+            mid = (lo + hi) // 2
+            r = put(D, RANGE_FIELD, mid)
+            if r.ok and readback(D, RANGE_FIELD) == mid:
+                lo = mid
+            else:
+                hi = mid
+        return lo, hi
 
-def boundary(lo, hi):
-    """lo round-trips, hi does not. Narrow to the exact edge."""
-    while abs(hi - lo) > 1:
-        mid = (lo + hi) // 2
-        r = put(D, RANGE_FIELD, mid)
-        if r.ok and readback(D, RANGE_FIELD) == mid:
-            lo = mid
-        else:
-            hi = mid
-    return lo, hi
+    good = max((v for v, ok in LAND.items() if ok and v > 0), default=0)
+    bad = min((v for v, ok in LAND.items() if not ok and v > 0), default=2**63)
+    hi_lo, hi_hi = boundary(good, bad)
+    rows.append(f"  positive edge: {hi_lo} accepted, {hi_hi} rejected  ({hi_lo} == 2**31-1: {hi_lo == 2**31 - 1})")
+    r = put(D, RANGE_FIELD, hi_hi)
+    rows.append(f"  the error at the edge, PUT {RANGE_FIELD}={hi_hi} -> {r.status_code}")
+    rows.append(errs(r))
 
+    r = c.post("/entity/versions", headers=JSN, json={"project": {"type": "Project", "id": SANDBOX},
+                                                     "code": "zzprobe_num_over", RANGE_FIELD: hi_hi})
+    if r.ok:
+        made.add("versions", r.json()["data"]["id"])
+    rows.append(f"  the same value on CREATE, POST /entity/versions -> {r.status_code}")
+    rows.append(errs(r))
+    r = put(D, RANGE_FIELD, str(hi_hi))
+    rows.append(f"  the same value as a numeric STRING {str(hi_hi)!r} -> {r.status_code}"
+                f" — a string does not route around the ceiling")
 
-good = max((v for v, ok in LAND.items() if ok and v > 0), default=0)
-bad = min((v for v, ok in LAND.items() if not ok and v > 0), default=2**63)
-hi_lo, hi_hi = boundary(good, bad)
-rows.append(f"  positive edge: {hi_lo} accepted, {hi_hi} rejected  ({hi_lo} == 2**31-1: {hi_lo == 2**31 - 1})")
-r = put(D, RANGE_FIELD, hi_hi)
-rows.append(f"  the error at the edge, PUT {RANGE_FIELD}={hi_hi} -> {r.status_code}")
-rows.append(errs(r))
+    ngood = min((v for v, ok in LAND.items() if ok and v < 0), default=0)
+    nbad = max((v for v, ok in LAND.items() if not ok and v < 0), default=-(2**63))
+    lo_hi, lo_lo = boundary(ngood, nbad)
+    rows.append(f"  negative edge: {lo_hi} accepted, {lo_lo} rejected  ({lo_hi} == -(2**31): {lo_hi == -(2**31)})")
 
-r = c.post("/entity/versions", headers=JSN, json={"project": {"type": "Project", "id": SANDBOX},
-                                                 "code": "zzprobe_num_over", RANGE_FIELD: hi_hi})
-rows.append(f"  the same value on CREATE, POST /entity/versions -> {r.status_code}")
-rows.append(errs(r))
-r = put(D, RANGE_FIELD, str(hi_hi))
-rows.append(f"  the same value as a numeric STRING {str(hi_hi)!r} -> {r.status_code}"
-            f" — a string does not route around the ceiling")
+    rows.append("\n=== clear: 0 and null are different values")
+    put(D, RANGE_FIELD, None)
+    for label, value in [("set 0", 0), ("set null", None), ("set 0 again", 0),
+                         ("set empty string", "")]:
+        r = put(B, RANGE_FIELD, value)
+        rows.append(f"  {label:<18} -> {r.status_code} reads back {readback(B, RANGE_FIELD)!r}"
+                    f"{'' if r.ok else ' ' + errs(r).replace(chr(10), ' ')}")
+    put(B, RANGE_FIELD, None)
+    rows.append(f"  a Version created without the field at all reads {readback(C, FIELD)!r}")
+    rows.append(f"  the row holding 0 reads {readback(B, FIELD)!r}")
 
-ngood = min((v for v, ok in LAND.items() if ok and v < 0), default=0)
-nbad = max((v for v, ok in LAND.items() if not ok and v < 0), default=-(2**63))
-lo_hi, lo_lo = boundary(ngood, nbad)
-rows.append(f"  negative edge: {lo_hi} accepted, {lo_lo} rejected  ({lo_hi} == -(2**31): {lo_hi == -(2**31)})")
+    rows.append("\n=== does `is None` match a row holding 0?   (4 rows: 1001, 0, null, null)")
+    count(f"{FIELD} is None", MINE + [[FIELD, "is", None]], expect=2)
+    count(f"{FIELD} is_not None", MINE + [[FIELD, "is_not", None]], expect=2)
+    count(f"{FIELD} is 0", MINE + [[FIELD, "is", 0]], expect=1)
 
-rows.append("\n=== clear: 0 and null are different values")
-put(D, RANGE_FIELD, None)
-for label, value in [("set 0", 0), ("set null", None), ("set 0 again", 0),
-                     ("set empty string", "")]:
-    r = put(B, RANGE_FIELD, value)
-    rows.append(f"  {label:<18} -> {r.status_code} reads back {readback(B, RANGE_FIELD)!r}"
-                f"{'' if r.ok else ' ' + errs(r).replace(chr(10), ' ')}")
-put(B, RANGE_FIELD, None)
-rows.append(f"  a Version created without the field at all reads {readback(C, FIELD)!r}")
-rows.append(f"  the row holding 0 reads {readback(B, FIELD)!r}")
+    rows.append("\n=== filter value formats, per operator the API listed")
+    TESTS = [
+        ("is", 1001, 1), ("is", 0, 1), ("is", "1001", None), ("is", None, 2),
+        ("is_not", 1001, 3), ("is_not", None, 2),
+        ("less_than", 1, None), ("less_than", 1001, None),
+        ("greater_than", 0, 1), ("greater_than", -1, None),
+        ("in", [1001, 0], 2), ("in", ["1001"], None), ("in", [999999], 0),
+        ("not_in", [1001], None), ("not_in", [999999], None),
+        ("between", [0, 2000], 2), ("between", [2000, 3000], 0), ("between", 1001, None),
+        ("not_between", [0, 2000], None),
+        ("contains", "100", None), ("starts_with", "10", None),
+    ]
+    for op, val, expect in TESTS:
+        tag = "" if op in VALID else "  (NOT in Valid relations)"
+        count(f"{FIELD} {op} {val!r}{tag}", MINE + [[FIELD, op, val]], expect=expect)
 
-rows.append("\n=== does `is None` match a row holding 0?   (4 rows: 1001, 0, null, null)")
-count(f"{FIELD} is None", MINE + [[FIELD, "is", None]], expect=2)
-count(f"{FIELD} is_not None", MINE + [[FIELD, "is_not", None]], expect=2)
-count(f"{FIELD} is 0", MINE + [[FIELD, "is", 0]], expect=1)
+    rows.append("\n  negative controls above that must be 0: in [999999], between [2000,3000]")
 
-rows.append("\n=== filter value formats, per operator the API listed")
-TESTS = [
-    ("is", 1001, 1), ("is", 0, 1), ("is", "1001", None), ("is", None, 2),
-    ("is_not", 1001, 3), ("is_not", None, 2),
-    ("less_than", 1, None), ("less_than", 1001, None),
-    ("greater_than", 0, 1), ("greater_than", -1, None),
-    ("in", [1001, 0], 2), ("in", ["1001"], None), ("in", [999999], 0),
-    ("not_in", [1001], None), ("not_in", [999999], None),
-    ("between", [0, 2000], 2), ("between", [2000, 3000], 0), ("between", 1001, None),
-    ("not_between", [0, 2000], None),
-    ("contains", "100", None), ("starts_with", "10", None),
-]
-for op, val, expect in TESTS:
-    tag = "" if op in VALID else "  (NOT in Valid relations)"
-    count(f"{FIELD} {op} {val!r}{tag}", MINE + [[FIELD, op, val]], expect=expect)
-
-rows.append("\n  negative controls above that must be 0: in [999999], between [2000,3000]")
-
-rows.append("\n=== the two filter 400s, in full")
-for filt in ([FIELD, "between", 1001], [FIELD, "contains", "100"]):
-    _, bad = search(MINE + [filt])
-    rows.append(f"  {filt!r} ->")
-    rows.append(errs(bad))
+    rows.append("\n=== the two filter 400s, in full")
+    for filt in ([FIELD, "between", 1001], [FIELD, "contains", "100"]):
+        _, bad = search(MINE + [filt])
+        rows.append(f"  {filt!r} ->")
+        rows.append(errs(bad))
 
 _lib.emit("field_types/number", "\n".join(rows), env)

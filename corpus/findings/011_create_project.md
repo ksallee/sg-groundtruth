@@ -26,11 +26,15 @@ created id=1180; attributes returned: ['cached_display_name', 'created_at', 'lan
 ```
 
 **Teaches**
-- `name` is the only mandatory field on Project, and `{"name": "sandbox_show"}` with
-  `Content-Type: application/json` is a complete create: 201, no project template, no `code`, no dates.
+- `{"name": "sandbox_show"}` with `Content-Type: application/json` is a complete create: 201, no project
+  template, no `code`, no dates.
+- On the probed site, `GET /schema/Project/fields` returns 42 fields and flags exactly one, `name`,
+  `mandatory: true`. That count is site configuration, and a schema flag is not the create contract
+  (probe 012), so it does not establish that `name` is the server's only requirement. This probe never
+  posted a body without `name`; that POST, behind `--write`, would settle it.
 - **Trap.** The 201 body is not an entity read. It echoes 6 attributes (`cached_display_name`,
   `created_at`, `landing_page_url`, `name`, `tracking_settings`, `updated_at`); everything else, `id`
-  apart, needs a GET on the new project. On the probed site, Project has 42 fields.
+  apart, needs a GET on the new project.
 - `name` is flagged both mandatory and unique in the schema, so creating is not idempotent. Probe first
   (`GET /entity/projects?fields=name`) and reuse the hit, as this probe does. Custom *fields* silently
   become `<name>_1` on a duplicate (probe 019); whether a Project name collides or duplicates is

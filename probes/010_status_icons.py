@@ -1,5 +1,8 @@
 """Q: how are status colours and icons resolved, and do standard and custom icons differ?"""
 import json
+import re
+
+import requests
 
 import _lib
 
@@ -41,6 +44,24 @@ for (it, dt), items in sorted(groups.items(), key=lambda kv: str(kv[0])):
         f"    image_map_key  {json.dumps(a.get('image_map_key'))}\n"
         f"    html           {json.dumps(a.get('html'))[:60]}\n"
         f"    image_data     {data_desc}")
+
+# The sprite is not in the API. Rediscover it the way a client has to: read the web app's own
+# stylesheet and follow the rule for an image_map_key. No auth header on either fetch.
+CSS = "/dist/production/stylesheets/login.css"
+css = requests.get(f"{c.site}{CSS}", timeout=30)
+rows.append(f"\nunauthenticated GET {CSS} -> {css.status_code}  {len(css.content)} bytes  "
+            f"content-type: {css.headers.get('content-type')}")
+rule = re.search(r"[^{}]*\.icon_apr[^{}]*\{[^{}]*\}", css.text) if css.ok else None
+rows.append(f"  rule for image_map_key 'icon_apr': {rule.group(0).strip() if rule else '<not found>'}")
+sprite = re.search(r"url\(([^)]*sg_icon_image_map[^)]*)\)", css.text) if css.ok else None
+if sprite:
+    href = sprite.group(1).strip("'\"")
+    png = requests.get(f"{c.site}{href}" if href.startswith("/") else href, timeout=30)
+    rows.append(f"  sprite href in the stylesheet: {href}")
+    rows.append(f"unauthenticated GET the sprite -> {png.status_code}  {len(png.content)} bytes  "
+                f"content-type: {png.headers.get('content-type')}")
+else:
+    rows.append("  no sg_icon_image_map url() in the stylesheet")
 
 actual = "\n".join(rows)
 _lib.emit("010_status_icons", actual, env)

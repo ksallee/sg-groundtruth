@@ -12,9 +12,20 @@ verdict: A url field supports no filter relation at all and sort on it is accept
 `Version.image` is data_type `image`, not `url`. The plain string probe 021 read back is that field;
 the object is this type.
 
-**Read** A JSON object under `attributes`, six keys, always the same six. `relationships` stays empty.
+**Read** A JSON object under `attributes` whose keys depend on `link_type`. `relationships` stays empty.
+On the probed site there are 20 `url` fields on 9 of 114 entity types. Reading all 20 returned three
+shapes and no fourth, from the 10 that held a value on any row:
 
-| key | value on the probed Version | |
+| shape | keys | seen on |
+|---|---|---|
+| `link_type` `upload` or `web` | `url`, `name`, `content_type`, `link_type`, `type`, `id` | `Attachment.this_file`, `PipelineConfiguration.uploaded_config`, `Project.billboard`, `PublishedFile.path` and `.sg_uploaded_file`, `Version.sg_uploaded_movie` and its derived fields |
+| `link_type` `local` | `content_type`, `link_type`, `name`, `local_storage`, `relative_path`, `local_path_linux`, `local_path_mac`, `local_path_windows`, `type`, `id`, and no `url` | `Attachment.this_file`, `FilesystemLocation.path`, `PublishedFile.path` |
+| a bare string, not an object | n/a | `Project.landing_page_url`, 22 of 22 rows, a site-relative path |
+
+One field mixes them: `Attachment.this_file` returned `upload` on 148 rows, `web` on 19 and `local` on 33.
+The six keys of the `upload` shape, on the probed Version:
+
+| key | value | |
 |---|---|---|
 | `url` | `<media-url>` | presigned on `s3-accelerate.amazonaws.com`, re-minted on every read |
 | `name` | `bunny.jpg` | |
@@ -22,11 +33,6 @@ the object is this type.
 | `link_type` | `upload` | `upload` from the three-call upload flow (probe 013), `web` from an assigned object |
 | `type` | `Attachment` | |
 | `id` | `1430` | the Attachment id; persist this, not the url |
-
-```
-sg_uploaded_movie_mp4 / _image   same six keys       sg_uploaded_movie_webm   null
-image (data_type image)          "<media-url>"       a bare string, not an object
-```
 
 The signed query holds `X-Amz-Expires`, `X-Amz-Signature` and `X-Amz-Security-Token`, and two reads of
 the same row return two different strings. Re-read for a fresh link; `GET /entity/attachments/{id}`
@@ -39,23 +45,15 @@ the same hole as a multi_entity dotted read (probe 016). Ask for the field, not 
 
 | sent to `sg_uploaded_movie` | result |
 | --- | --- |
-| `"https://example.com/plate.mov"` | 400, `got String:` and the value echoed |
+| `"https://example.com/plate.mov"` | 400 `API update() Version.sg_uploaded_movie expected [Hash, ActiveSupport::HashWithIndifferentAccess, ActionDispatch::Http::Parameters, ActionDispatch::Http::ParamsHashWithIndifferentAccess, NilClass] data type(s) but got String:` and the value echoed |
 | `"/mnt/projects/demo_show/plate.mov"` | 400, same message, the path echoed |
 | `"plate.mov"` | 400, same message, the filename echoed |
+| the same string in a `POST /entity/versions` body | 400, the same list under `API create()` |
 | `{"type": "Attachment", "id": 1}` | 400 `API update() invalid/missing url hash string 'url': {"type" => "Attachment", "id" => 1}` |
 | `{}` | 400 `API update() invalid/missing url hash string 'url': {}` |
 | `{"url": …, "name": "plate.mov"}` | 200, `link_type` `web`, `content_type` null, a new Attachment id |
 | the same object plus `type` and `id` | 200, both ignored, a new Attachment id |
 | the same object into `sg_uploaded_movie_mp4` | 200 |
-
-```
-POST create, sg_uploaded_movie = "https://example.com/plate.mov" -> 400
-  API create() Version.sg_uploaded_movie expected [Hash,
-   ActiveSupport::HashWithIndifferentAccess,
-   ActionDispatch::Http::Parameters,
-   ActionDispatch::Http::ParamsHashWithIndifferentAccess,
-   NilClass] data type(s) but got String: "https://example.com/plate.mov"
-```
 
 The url is read back exactly as sent and each accepted write mints an Attachment row, so a direct
 object publishes a link the review player will open without putting bytes on the site, with no
@@ -70,7 +68,7 @@ transcode that was never made.
 | `""` | 400 `API update() Version.sg_uploaded_movie expected [Hash, … NilClass] data type(s) but got String: …` |
 | `{}` | 400 `API update() invalid/missing url hash string 'url': {}` |
 
-Read immediately after the field went null, on a Version whose upload had finished transcoding:
+Read immediately after the field went null, on two Versions whose uploads had finished transcoding:
 
 | field | after the clear |
 | --- | --- |
@@ -117,9 +115,9 @@ invisible to the query API in both directions:
   fill-rate scan must special-case `data_type == "url"`.
 - The filterable neighbours are proxies, not answers. `image is_not None` and
   `sg_uploaded_movie_transcoding_status is_not None` both matched exactly the media-holding rows on
-  the sample project, and both still match after `sg_uploaded_movie` has been set to null. A picker
-  built on either offers Versions with no media.
+  the sample project, and on two Versions uploaded and then cleared both still matched the row after
+  `sg_uploaded_movie` had gone null. A picker built on either offers Versions with no media.
 - The url is regenerated per read and signed with an expiry. Anything that caches it (a database
   column, a rendered page, a message to a chat client) serves a dead link once it lapses.
-- `link_type` is the only thing separating a real upload from an assigned web link, and both read the
-  same six keys. Check it before assuming a Version's media is on the site.
+- Read `link_type` before anything else. `upload` and `web` are indistinguishable by keys, and a `local`
+  value has no `url` key at all, so indexing `value["url"]` raises on the shape a published file uses.

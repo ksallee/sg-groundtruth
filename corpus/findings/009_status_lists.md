@@ -35,6 +35,8 @@ distinct valid_values across 21 scopes: 1
 ```
 
 **Teaches**
+- Usable statuses are `valid_values` minus `hidden_values`, read with `project_id`. REST does not enforce
+  `hidden_values` on write, so do the subtraction yourself. See `field_types/status_list.md`.
 - `valid_values` is the site's whole vocabulary and is byte-identical at every scope, so reading it alone
   tells you nothing about a project. On the probed site, 21 scopes returned 1 distinct value.
 - `hidden_values` is the only thing `project_id` changes. Omit `project_id` and you get the site-wide
@@ -42,6 +44,8 @@ distinct valid_values across 21 scopes: 1
 - Status lists are per entity type. On the probed site, Version and Task overlap only on
   `ip`/`fin`/`apr`/`na`/`rev`, and Task's `wtg`/`hld`/`omt`/`ready` do not exist on Version. Never reuse
   one type's codes for another.
+- On the probed site, Version's 16 `valid_values` leave 10 usable in one project, 14 in another and 15 in
+  a third, and 15 of the 21 projects hide the same 6 codes. Which codes a project hides is site
+  configuration, not API behaviour: read it per project rather than reusing a list between sites.
 - Always render `display_values`: `pndvs` means "Pending VFX Supervisor" to nobody, and a missing key
   there is possible, so fall back to the raw code rather than dropping the option.
-- REST does not enforce `hidden_values` on write; subtract it yourself. See `field_types/status_list.md`.

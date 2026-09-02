@@ -94,7 +94,17 @@ Match counts are against 4 sandbox rows holding `1001`, `0`, `null`, `null`.
 | `between` | `[0, 2000]` | 2 |
 | `between` | `[2000, 3000]` | 0 (negative control) |
 | `between` | `1001` | 400 `API read() 'between' 'relation' expects a 2-element array: [1001]` |
-| `contains` | `'100'` | 400 `API read() Version.sg_first_frame's 'number' data type doesn't support 'contains' 'relation'`; source repeats the `Valid relations` list |
+| `contains` | `'100'` | 400 `API read() Version.sg_first_frame's 'number' data type doesn't support 'contains' 'relation'` |
+
+The `contains` 400 in full. `source` opens mid-sentence, without the title's
+`API read() Version.sg_first_frame's 'number'` prefix, then gives the sent filter and the legal list:
+
+```
+source: {"Version.sg_first_frame": " data type doesn't support 'contains' 'relation'.
+         Value: {"path" => "sg_first_frame", "relation" => "contains", "values" => ["100"]}
+         Valid relations: ["is", "is_not", "greater_than", "less_than", "between",
+                           "in", "not_in"]"}
+```
 
 **Traps**
 - **Signed 32-bit, not 64.** A 64-bit id or seed reaches `2**64-1` and must be stored in a `text` field

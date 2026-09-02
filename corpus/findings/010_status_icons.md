@@ -24,7 +24,6 @@ sample bg_color: ["25,118,27", "179,179,179", "150,150,150", "146,146,146"]
 Icon fields: ['cached_display_name', 'display_type', 'html', 'icon_type', 'id', 'image_data', 'image_map_key', 'name', 'url', 'uuid']
 
 98 icons, grouped by (icon_type, display_type):
-
   permanent_status / image_map  n=94
     url            empty string
     image_map_key  "icon_apr"
@@ -42,6 +41,10 @@ Icon fields: ['cached_display_name', 'display_type', 'html', 'icon_type', 'id', 
     image_map_key  null
     html           "Active"
     image_data     null
+
+unauthenticated GET /dist/production/stylesheets/login.css -> 200  771416 bytes  text/css
+  div.icon_apr {width: 12px; height: 11px; background: ... url(/images/sg_icon_image_map.png?<hash>) -89px -11px ...}
+unauthenticated GET /images/sg_icon_image_map.png?<hash>  -> 200  335561 bytes  image/png
 ```
 
 **Teaches**
@@ -57,7 +60,12 @@ Icon fields: ['cached_display_name', 'display_type', 'html', 'icon_type', 'id', 
 
 - `bg_color` is comma-separated RGB (`"25,118,27"`), not hex, and draws a badge on its own with no icon
   fetched: the cheapest correct rendering.
-- The `image_map` sprite is not in the API. `image_map_key` is a CSS class in the web app's
-  `/dist/production/stylesheets/login.css`, whose rule points at `/images/sg_icon_image_map.png?<hash>`
-  with a per-icon background offset (`div.icon_apr` -> `-89px -11px`). Both are unauthenticated 200s, but
-  nothing in `/entity/icons` names either: do not expect the REST API to hand you a stock icon.
+- The `image_map` sprite is not in the API. Nothing in `/entity/icons` names a stylesheet or an image, so
+  do not expect the REST API to hand you a stock icon.
+- `image_map_key` is a CSS class. On the probed site the rule is in the web app's
+  `/dist/production/stylesheets/login.css` and points at `/images/sg_icon_image_map.png?<hash>` with a
+  per-icon background offset (`div.icon_apr` -> `-89px -11px`); both answered a GET with no
+  `Authorization` header at 200. Those two paths are undocumented and were found by reading the site's own
+  stylesheet, so a client must rediscover them the same way. Fetch the page's stylesheet, match
+  `.<image_map_key>`, and take the `url()` and the offset from the rule. Hardcoding either path breaks on a
+  differently-versioned deployment.

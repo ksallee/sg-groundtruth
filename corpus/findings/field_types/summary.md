@@ -1,23 +1,22 @@
 ---
 tags: [field-type, summary, schema, fill-rate, inspector, filter, trap]
 scope: api
-verdict: A summary field is a live server-side rollup - never null, refused on write even where editable=true, and unfilterable and unsortable, so re-run the query /schema exposes to select on it.
+verdict: A summary field is a live rollup: refused on write even where editable=true, unfilterable, unsortable, and null on every custom one here, so re-run the query /schema exposes to select on it.
 ---
 
 # summary
 
 **Data type** `summary`: a per-row rollup defined in the schema, distinct from the `_summarize`
 endpoint (probe 020), which aggregates rows named at call time into one number for the whole query.
-Probed on stock `Shot.open_notes_count`, `Version.open_notes_count` (`editable=false`) and
-`Project.sg_latest_version` (`editable=true`). All 114 entity types scanned, one
-`/schema/<Type>/fields` each (33s, probe 002): 42 summary fields on 41 types.
+On the probed site, scanning all 114 entity types, one `/schema/<Type>/fields` each (33s, probe 002),
+finds 42 summary fields on 41 types under four names, every one of them probed below.
 
-| field | types | `editable` | aggregate |
-|---|---|---|---|
-| `open_notes_count` | 38 | `false` | `record_count` |
-| `sg_latest_version` | 2 (Asset, Project) | `true` | `single_record` |
-| `sg_query` | 1 (Asset) | `true` | `single_record` |
-| `sg_test_results` | 1 (CustomEntity01) | `true` | `record_count` |
+| field | types | `editable` | aggregate | reads here | its own query counts |
+|---|---|---|---|---|---|
+| `open_notes_count` | 38 | `false` | `record_count` | `0` to 19 | the same number |
+| `sg_latest_version` | 2 (Asset, Project) | `true` | `single_record` | `null`, every row | 0, except one Project holding Versions |
+| `sg_query` | 1 (Asset) | `true` | `single_record` | `null`, every row | 0 |
+| `sg_test_results` | 1 (CustomEntity01) | `true` | `record_count` | `null`, 100 of 100 rows | 70, 29, 11 |
 
 | operation | result |
 |---|---|
@@ -30,7 +29,8 @@ Probed on stock `Shot.open_notes_count`, `Version.open_notes_count` (`editable=f
 | `_summarize` `summary_fields [{"field": "open_notes_count", "type": "sum"}]` | 200 `{"summaries": {}, "groups": []}`, field dropped without an error |
 
 **The rollup definition is exposed.** `GET /schema/<Type>/fields/<field>` returns `properties` with
-five keys; `default_value` has no recorded value, and the other four define the rollup:
+five keys. `default_value` is `{"value": null, "editable": false}` on all 42 of them and is not the
+value of an unpopulated row; the other four define the rollup:
 
 | key | holds |
 |---|---|
@@ -44,22 +44,23 @@ five keys; `default_value` has no recorded value, and the other four define the 
 "query": {"entity_type": "Note", "filters": {"logical_operator": "and", "conditions": [
   {"path": "note_links", "relation": "is",
    "values": [{"id": 0, "name": "Current Entity", "type": "Entity", "valid": "parent_entity_token"}]},
-  {"logical_operator": "or", "conditions": [
-    {"path": "sg_status_list", "relation": "is", "values": ["opn"]},
-    {"path": "sg_status_list", "relation": "is", "values": ["ip"]},
-    {"path": "sg_status_list", "relation": "is", "values": ["rdy"]}]}]}}
+  {"logical_operator": "or", "conditions": [... one per status: "opn", "ip", "rdy"]}]}}
 ```
 
-`{"id": 0, "valid": "parent_entity_token"}` stands for the row being read. Substitute the row id and
-the query reproduces the number: Shot 862 reads 13, and on `POST /entity/notes/_search`
+`{"id": 0, "valid": "parent_entity_token"}` stands for the row being read. Rewrite each leaf condition
+as a triple with the row in place of the token, keep the `logical_operator` groups, and send the tree
+as `filters` under `Content-Type: application/vnd+shotgun.api3_hash+json`:
 
 ```
-[["note_links", "is", {"type": "Shot", "id": 862}],
- ["sg_status_list", "in", ["opn", "ip", "rdy"]]]      -> 13 rows
+{"path": "note_links", "relation": "is", "values": [<the token>]}
+  ->  ["note_links", "is", {"type": "Shot", "id": 862}]
 ```
 
-`Project.sg_latest_version` queries `entity_type: "Version"` filtered `project is <Current Project>`.
-A client can explain and re-derive every summary field on the site from `/schema` alone.
+Run that way, `Shot.open_notes_count` reproduces on three rows: 19, 18 and 18, against 19, 18 and 18.
+It is the only summary field returning a number here, so that is the whole of the evidence that the
+translation is right. `null` is not an empty rollup: `CustomEntity01.sg_test_results` is a
+`record_count` reading `null` on 100 of 100 rows whose own query counts 70. No row here holds a
+`single_record` value, so that aggregate is unproven, its populated shape included.
 
 **Read**
 
@@ -67,9 +68,7 @@ A client can explain and re-derive every summary field on the site from `/schema
 |---|---|
 | `GET /entity/shots?fields=code,open_notes_count` | `{"attributes": {"code": "sh010", "open_notes_count": 13}, "relationships": {}, "id": 862}`. A `record_count` rollup is a plain integer in `attributes`, never `relationships`, and `GET /entity/shots/862` with no `?fields` returns it among the 77 attributes |
 | `fields ["code", "entity.Shot.open_notes_count"]` on a Version | `{"code": "sh010_comp_v001", "entity.Shot.open_notes_count": 13}`. A dotted path through a link reads the linked row's count, unlike a dotted path through a multi_entity field (probe 016) |
-| every `single_record` field, every row: `Asset.sg_latest_version` on `charA`, which has a Version linking to it, and `Project.sg_latest_version` on all 22 projects | `null` |
-
-The populated `single_record` shape is unobserved here: do not assume a `{data, links}` entity link.
+| the four `sg_*` fields, every row: `Asset.sg_latest_version` on `charA`, which has a Version linking to it, `Asset.sg_query`, `CustomEntity01.sg_test_results` on 100 rows, and `Project.sg_latest_version` on all 22 projects | `null` |
 
 The value is computed per read, with no lag. Each row below is the next request after the change:
 
@@ -93,7 +92,7 @@ The value is computed per read, with no lag. Each row below is the next request 
 | case | result |
 |---|---|
 | `PUT {"sg_latest_version": null}` | 400, the same string as any other write |
-| a `record_count` field with nothing to count | `0`, not null; a Version created with no Notes has `open_notes_count: 0` in the 201 body |
+| a `record_count` field with nothing to count | `0` on `open_notes_count`: a Version created with no Notes has `open_notes_count: 0` in the 201 body. `sg_test_results` reads `null` with 70 rows to count |
 
 **Filter** No operator works, and the 400 names no vocabulary: every other type answers a bogus
 relation with its `Valid relations` list (probe 017). `source` for `definitely_not_an_operator`:
@@ -111,9 +110,10 @@ relation with its `Valid relations` list (probe 017). `source` for `definitely_n
 Page the rows and compare in the client, or run `properties.query` against the target type and aggregate.
 
 **Traps**
-- **Fill rate is meaningless on this type.** A summary field is never null, so `open_notes_count` scans
-  as 100% filled on every row while holding one constant: 100 Versions all read `0` (probe 007). Exclude
-  `data_type == "summary"` from fill ranking; the `is_not None` probe 400s, as does `_summarize` grouping.
+- **Fill rate is meaningless on this type.** `open_notes_count` is never null, so it scans as 100% filled
+  while holding one value: 100 Versions all read `0` (probe 007). The other four read `null` on every row
+  and scan as 0% filled while their queries match rows. Exclude `data_type == "summary"` from fill
+  ranking; the `is_not None` probe 400s, as does `_summarize` grouping.
 - Sort fails silently. `?sort=code` and `?sort=-code` return different orders, `?sort=open_notes_count`
   returns the unsorted order, and so does `?sort=definitely_not_a_field`: an unsortable field and a
   typo are indistinguishable at 200.
