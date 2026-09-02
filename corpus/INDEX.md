@@ -20,7 +20,7 @@ Read this first. Open an entry only when its one-liner does not already answer t
   `paging query enumeration`
 - **007_fill_rates** — On the sample project 30 of 71 Version fields are populated. Rank by fill rate, but drop checkbox, summary and computed fields first: False and 0 are not null and read as 100% filled.  
   `version inspector schema fill-rate`
-- **008_custom_entities** — Presence in /schema is the enablement test for a custom entity: a disabled slot is absent. Slot numbers are non-contiguous and site-specific, so read name.value and never hardcode one.  
+- **008_custom_entities** — Presence in /schema is the enablement test for a custom entity: a slot absent from the listing 404s. Slot numbers are non-contiguous and site-specific, so read name.value and never hardcode one.  
   `schema custom-entity discovery`
 - **009_status_lists** — A project's usable statuses are valid_values minus hidden_values, read with project_id: valid_values is identical at every scope, hidden_values is the only thing that varies.  
   `schema status list-field inspector`
@@ -36,9 +36,9 @@ Read this first. Open an entry only when its one-liner does not already answer t
   `write upload attachment provenance version multi-entity filter header`
 - **016_dotted_multi_entity** — A dotted path through a multi_entity field reads back nothing: HTTP 200 with the key silently absent from attributes. Filters on that same path work, including two hops.  
   `query dotted-field multi-entity filter paging trap`
-- **017_filter_operators** — is/is_not/contains/not_contains/starts_with/ends_with/in/not_in all work, on text fields and through dotted paths; an unknown operator 400s with the valid list rather than passing silently.  
+- **017_filter_operators** — is/is_not/contains/not_contains/starts_with/ends_with/in/not_in all work, on text fields and through dotted paths; an unknown operator 400s on all 21 data types, naming the valid list on 16.  
   `query filter operator dotted-field entity-field error-handling`
-- **018_project_listing** — Filter a project picker on the checkboxes (is_template/is_demo/archived is False), never on sg_status, which on the probed site is null on 15 of 22 projects because nothing sets it.  
+- **018_project_listing** — Filter a project picker on the checkboxes (is_template/is_demo/archived is False), never on sg_status, which on the probed site is set on 7 of 22 projects and null on the other 15.  
   `project query filter inspector list-field trap`
 - **019_create_fields** — Custom fields are creatable over REST, but you pass a display name and a duplicate silently becomes <name>_1: an idempotent ensure() must read /schema first, never POST-and-hope.  
   `schema write custom-field provenance entity-field trap`
@@ -63,20 +63,26 @@ One per `data_type`: how it reads, writes, clears and filters. `field_types/<typ
   `field-type date filter operator write trap`
 - **date_time** — Stored and read as UTC `YYYY-MM-DDTHH:MM:SSZ`: a written offset is silently normalised, a zoneless string is taken as UTC, and a date-only filter value means midnight UTC, not the whole day.  
   `field-type date-time filter operator write trap`
-- **duration** — A duration is a bare integer of minutes with no unit anywhere in the schema. A client cannot render it as hours or days without the site's hours-per-day, which REST does not expose.  
+- **duration** — A duration is a bare integer of minutes and no schema property names the unit, but `GET /preferences` returns `hours_per_day` and `duration_units`, so a client can render hours or days.  
   `field-type duration number write filter operator schema trap`
-- **entity** — An entity link is a {type,id} hash under relationships, cleared only by null; valid_types is unenforced and cross-project links pass, so the API will point Version.sg_task at a Shot.  
+- **entity** — An entity link is a {type,id} hash under relationships, cleared only by null; valid_types binds on two of Version's seven editable entity fields, so the API will point sg_task at a Shot.  
   `field-type entity-field write filter operator dotted-field trap`
+- **entity_type** — An entity_type field is a bare schema-name string in attributes, validated on write against 290 built-in type names but not against the site's enabled ones, and filtered only by is/is_not/in/not_in.  
+  `field-type entity-field schema write filter operator custom-entity trap`
 - **float** — A float reads back as a JSON string rounded to 6 decimals and rejects Integer on both write and filter: send 1.0 or "1.0", never 1; 0.0 and null stay distinct, and 1e-9 silently becomes 0.0.  
   `field-type float write filter operator error-handling trap`
 - **image** — An image field cannot be assigned - every value but null 400s, one of them "not yet supported in API" - only the upload dance sets it, and clearing image also clears filmstrip_image.  
   `field-type image media upload filter operator write async trap`
+- **jsonb** — jsonb filters, where serializable cannot: is, is_not, contains, not_contains, values always hashes. Note.meta stores what you send but is create-only, so nothing written there is ever editable.  
+  `field-type jsonb serializable write filter operator schema error-handling trap`
 - **list** — A list is one bare string in attributes; a write outside valid_values 400s and is case-sensitive, while filters are case-insensitive and only is/is_not/in/not_in exist.  
   `field-type list-field filter operator schema write trap`
 - **multi_entity** — A bare list replaces the whole link set, but {"multi_entity_update_mode": "add"|"remove"|"set", "value": [...]} adds and removes in place; the field never reads null and null 400s.  
   `field-type multi-entity entity-field write filter operator dotted-field trap`
 - **number** — A number is a signed 32-bit integer: floats 400, 2**31 is "integer out of range", and 0 is not null, yet is_not and not_in match null rows while greater_than and less_than do not.  
   `field-type number write filter operator fill-rate trap`
+- **password** — A password field reads as a constant seven-asterisk mask on every row, including through a dotted path; it cannot be filtered, sort is accepted and ignored, and it must never be written.  
+  `field-type password filter operator schema dotted-field inspector trap`
 - **percent** — A percent is a bare integer on a 0-100 scale (50% is 50, and 0.5 is rejected as Float), but nothing is clamped, so -1, 1000 and 2**31-1 all store at HTTP 200.  
   `field-type percent number write filter operator fill-rate trap`
 - **pivot_column** — A pivot_column is a web-UI task rollup with no REST implementation - it reads null on every row, and write, filter, sort and _summarize each fail with a different error.  
@@ -85,12 +91,16 @@ One per `data_type`: how it reads, writes, clears and filters. `field_types/<typ
   `field-type serializable write filter operator schema error-handling trap`
 - **status_list** — REST does not enforce hidden_values: a project-hidden status writes and reads back fine, so every client must subtract it itself. Only valid_values is enforced.  
   `field-type status list-field filter operator write schema trap`
-- **summary** — A summary field is a live server-side rollup - never null, refused on write even where editable=true, and unfilterable and unsortable, so re-run the query /schema exposes to select on it.  
+- **summary** — A summary field is a live rollup: refused on write even where editable=true, unfilterable, unsortable, and null on every custom one here, so re-run the query /schema exposes to select on it.  
   `field-type summary schema fill-rate inspector filter trap`
 - **text** — A text field has no empty string: writing "" stores null, so `is ""` and `is None` are one filter; matching is case-insensitive, whitespace is stripped, and a non-string 400s.  
   `field-type text filter operator write trap`
+- **timecode** — A timecode stores milliseconds as a signed 32-bit integer. No schema or preference names its frame rate, but a _summarize group_name renders `HH:MM:SS:FF` and the rate solves out of that.  
+  `field-type timecode number media write filter operator schema summary trap`
 - **url** — A url field supports no filter relation at all and sort on it is accepted and ignored, so "which Versions have media" can only be answered by paging rows and testing the value.  
   `field-type url media upload attachment version filter operator write trap`
+- **uuid** — A uuid field is server-generated and rejects every write with "is read only", so it cannot hold your key; it filters on is/is_not/in/not_in only, and a malformed value 400s.  
+  `field-type uuid filter operator write schema trap`
 
 ## Recipes
 
@@ -109,31 +119,33 @@ One per `data_type`: how it reads, writes, clears and filters. `field_types/<typ
 - **colour** — 010_status_icons (finding), color (field type)
 - **cost** — 002_schema (finding), 020_summarize (finding)
 - **create** — 011_create_project (finding), 012_create_version (finding)
-- **custom-entity** — 008_custom_entities (finding)
+- **custom-entity** — 008_custom_entities (finding), entity_type (field type)
 - **custom-field** — 019_create_fields (finding)
 - **date** — date (field type)
 - **date-time** — date_time (field type)
 - **discovery** — 002_schema (finding), 008_custom_entities (finding)
-- **dotted-field** — 003_query (finding), 016_dotted_multi_entity (finding), 017_filter_operators (finding), entity (field type), multi_entity (field type)
+- **dotted-field** — 003_query (finding), 016_dotted_multi_entity (finding), 017_filter_operators (finding), entity (field type), multi_entity (field type), password (field type)
 - **duration** — duration (field type)
-- **entity-field** — 004_array_vs_hash (finding), 005_link_usage (finding), 010_status_icons (finding), 012_create_version (finding), 017_filter_operators (finding), 019_create_fields (finding), entity (field type), multi_entity (field type)
+- **entity-field** — 004_array_vs_hash (finding), 005_link_usage (finding), 010_status_icons (finding), 012_create_version (finding), 017_filter_operators (finding), 019_create_fields (finding), entity (field type), entity_type (field type), multi_entity (field type)
 - **enumeration** — 006_pagination (finding)
-- **error-handling** — 004_array_vs_hash (finding), 017_filter_operators (finding), float (field type), serializable (field type)
-- **field-type** — calculated (field type), checkbox (field type), color (field type), date (field type), date_time (field type), duration (field type), entity (field type), float (field type), image (field type), list (field type), multi_entity (field type), number (field type), percent (field type), pivot_column (field type), serializable (field type), status_list (field type), summary (field type), text (field type), url (field type)
+- **error-handling** — 004_array_vs_hash (finding), 017_filter_operators (finding), float (field type), jsonb (field type), serializable (field type)
+- **field-type** — calculated (field type), checkbox (field type), color (field type), date (field type), date_time (field type), duration (field type), entity (field type), entity_type (field type), float (field type), image (field type), jsonb (field type), list (field type), multi_entity (field type), number (field type), password (field type), percent (field type), pivot_column (field type), serializable (field type), status_list (field type), summary (field type), text (field type), timecode (field type), url (field type), uuid (field type)
 - **fill-rate** — 007_fill_rates (finding), 020_summarize (finding), checkbox (field type), number (field type), percent (field type), summary (field type)
-- **filter** — 003_query (finding), 014_attach_file (finding), 016_dotted_multi_entity (finding), 017_filter_operators (finding), 018_project_listing (finding), calculated (field type), checkbox (field type), color (field type), date (field type), date_time (field type), duration (field type), entity (field type), float (field type), image (field type), list (field type), multi_entity (field type), number (field type), percent (field type), pivot_column (field type), serializable (field type), status_list (field type), summary (field type), text (field type), url (field type)
+- **filter** — 003_query (finding), 014_attach_file (finding), 016_dotted_multi_entity (finding), 017_filter_operators (finding), 018_project_listing (finding), calculated (field type), checkbox (field type), color (field type), date (field type), date_time (field type), duration (field type), entity (field type), entity_type (field type), float (field type), image (field type), jsonb (field type), list (field type), multi_entity (field type), number (field type), password (field type), percent (field type), pivot_column (field type), serializable (field type), status_list (field type), summary (field type), text (field type), timecode (field type), url (field type), uuid (field type)
 - **float** — float (field type)
 - **header** — 004_array_vs_hash (finding), 014_attach_file (finding)
 - **icon** — 010_status_icons (finding)
 - **image** — image (field type)
-- **inspector** — 005_link_usage (finding), 007_fill_rates (finding), 009_status_lists (finding), 018_project_listing (finding), 020_summarize (finding), 021_media_resolution (finding), calculated (field type), checkbox (field type), pivot_column (field type), summary (field type)
+- **inspector** — 005_link_usage (finding), 007_fill_rates (finding), 009_status_lists (finding), 018_project_listing (finding), 020_summarize (finding), 021_media_resolution (finding), calculated (field type), checkbox (field type), password (field type), pivot_column (field type), summary (field type)
+- **jsonb** — jsonb (field type)
 - **link** — 005_link_usage (finding)
 - **list-field** — 009_status_lists (finding), 018_project_listing (finding), 020_summarize (finding), list (field type), status_list (field type)
-- **media** — 013_upload_media (finding), 021_media_resolution (finding), 022_sequence_on_version (finding), image (field type), url (field type)
+- **media** — 013_upload_media (finding), 021_media_resolution (finding), 022_sequence_on_version (finding), image (field type), timecode (field type), url (field type)
 - **multi-entity** — 014_attach_file (finding), 016_dotted_multi_entity (finding), multi_entity (field type)
-- **number** — duration (field type), number (field type), percent (field type)
-- **operator** — 017_filter_operators (finding), calculated (field type), checkbox (field type), color (field type), date (field type), date_time (field type), duration (field type), entity (field type), float (field type), image (field type), list (field type), multi_entity (field type), number (field type), percent (field type), pivot_column (field type), serializable (field type), status_list (field type), text (field type), url (field type)
+- **number** — duration (field type), number (field type), percent (field type), timecode (field type)
+- **operator** — 017_filter_operators (finding), calculated (field type), checkbox (field type), color (field type), date (field type), date_time (field type), duration (field type), entity (field type), entity_type (field type), float (field type), image (field type), jsonb (field type), list (field type), multi_entity (field type), number (field type), password (field type), percent (field type), pivot_column (field type), serializable (field type), status_list (field type), text (field type), timecode (field type), url (field type), uuid (field type)
 - **paging** — 003_query (finding), 005_link_usage (finding), 006_pagination (finding), 016_dotted_multi_entity (finding)
+- **password** — password (field type)
 - **path** — 021_media_resolution (finding), 022_sequence_on_version (finding)
 - **percent** — percent (field type)
 - **pivot-column** — pivot_column (field type)
@@ -142,17 +154,19 @@ One per `data_type`: how it reads, writes, clears and filters. `field_types/<typ
 - **published-file** — 021_media_resolution (finding)
 - **query** — 003_query (finding), 004_array_vs_hash (finding), 006_pagination (finding), 016_dotted_multi_entity (finding), 017_filter_operators (finding), 018_project_listing (finding), 020_summarize (finding), 021_media_resolution (finding)
 - **recipe** — 001_publish_version_with_media (recipe)
-- **schema** — 002_schema (finding), 007_fill_rates (finding), 008_custom_entities (finding), 009_status_lists (finding), 011_create_project (finding), 019_create_fields (finding), 020_summarize (finding), calculated (field type), color (field type), duration (field type), list (field type), pivot_column (field type), serializable (field type), status_list (field type), summary (field type)
+- **schema** — 002_schema (finding), 007_fill_rates (finding), 008_custom_entities (finding), 009_status_lists (finding), 011_create_project (finding), 019_create_fields (finding), 020_summarize (finding), calculated (field type), color (field type), duration (field type), entity_type (field type), jsonb (field type), list (field type), password (field type), pivot_column (field type), serializable (field type), status_list (field type), summary (field type), timecode (field type), uuid (field type)
 - **sequence** — 022_sequence_on_version (finding)
-- **serializable** — serializable (field type)
+- **serializable** — jsonb (field type), serializable (field type)
 - **status** — 009_status_lists (finding), 010_status_icons (finding), status_list (field type)
 - **step** — pivot_column (field type)
 - **storage** — 021_media_resolution (finding)
-- **summary** — summary (field type)
+- **summary** — summary (field type), timecode (field type)
 - **text** — text (field type)
+- **timecode** — timecode (field type)
 - **token** — 001_auth (finding)
-- **trap** — 004_array_vs_hash (finding), 016_dotted_multi_entity (finding), 018_project_listing (finding), 019_create_fields (finding), calculated (field type), checkbox (field type), color (field type), date (field type), date_time (field type), duration (field type), entity (field type), float (field type), image (field type), list (field type), multi_entity (field type), number (field type), percent (field type), pivot_column (field type), serializable (field type), status_list (field type), summary (field type), text (field type), url (field type)
+- **trap** — 004_array_vs_hash (finding), 016_dotted_multi_entity (finding), 018_project_listing (finding), 019_create_fields (finding), calculated (field type), checkbox (field type), color (field type), date (field type), date_time (field type), duration (field type), entity (field type), entity_type (field type), float (field type), image (field type), jsonb (field type), list (field type), multi_entity (field type), number (field type), password (field type), percent (field type), pivot_column (field type), serializable (field type), status_list (field type), summary (field type), text (field type), timecode (field type), url (field type), uuid (field type)
 - **upload** — 013_upload_media (finding), 014_attach_file (finding), 022_sequence_on_version (finding), 001_publish_version_with_media (recipe), image (field type), url (field type)
 - **url** — url (field type)
+- **uuid** — uuid (field type)
 - **version** — 003_query (finding), 005_link_usage (finding), 007_fill_rates (finding), 012_create_version (finding), 013_upload_media (finding), 014_attach_file (finding), 021_media_resolution (finding), 022_sequence_on_version (finding), 001_publish_version_with_media (recipe), url (field type)
-- **write** — 011_create_project (finding), 012_create_version (finding), 013_upload_media (finding), 014_attach_file (finding), 019_create_fields (finding), 022_sequence_on_version (finding), 001_publish_version_with_media (recipe), color (field type), date (field type), date_time (field type), duration (field type), entity (field type), float (field type), image (field type), list (field type), multi_entity (field type), number (field type), percent (field type), serializable (field type), status_list (field type), text (field type), url (field type)
+- **write** — 011_create_project (finding), 012_create_version (finding), 013_upload_media (finding), 014_attach_file (finding), 019_create_fields (finding), 022_sequence_on_version (finding), 001_publish_version_with_media (recipe), color (field type), date (field type), date_time (field type), duration (field type), entity (field type), entity_type (field type), float (field type), image (field type), jsonb (field type), list (field type), multi_entity (field type), number (field type), percent (field type), serializable (field type), status_list (field type), text (field type), timecode (field type), url (field type), uuid (field type)

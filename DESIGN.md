@@ -75,6 +75,13 @@ field, so it is cached, timestamped and explicitly refreshable.
 
 Per site *and* per project: some field configuration and every status list is project-scoped.
 
+## Stack
+
+Python 3.11 and `requests` for the corpus and the client. The site in `site/` is SvelteKit prerendered to
+static HTML: `@sveltejs/kit`, `@sveltejs/adapter-static`, `@sveltejs/vite-plugin-svelte`, `svelte` and `vite`
+to build, and `marked` to render the corpus markdown (not `mdsvex`, which compiles markdown as a Svelte
+component and so breaks on the `{type, id}` braces the corpus is full of).
+
 ## Licence
 
 Permissive, when it goes public. The whole positioning against AGPL tooling in this industry depends on studio
