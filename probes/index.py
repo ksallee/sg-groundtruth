@@ -31,9 +31,11 @@ def main():
     recipes = collect(RECIPES, "intent")
     # The field-type matrix is addressed by type, not by when it was probed, so it is named not numbered.
     types = collect(FINDINGS / "field_types", "verdict", "*.md")
+    entities = collect(FINDINGS / "entity_types", "verdict", "*.md")
 
     by_tag = defaultdict(list)
-    for kind, items in (("finding", findings), ("recipe", recipes), ("field type", types)):
+    for kind, items in (("finding", findings), ("recipe", recipes), ("field type", types),
+                              ("entity type", entities)):
         for e in items:
             for t in e["tags"]:
                 by_tag[t].append(f"{e['slug']} ({kind})")
@@ -48,6 +50,10 @@ def main():
     out += ["", "## Field types", "",
             "One per `data_type`: how it reads, writes, clears and filters. `field_types/<type>`.", ""]
     out += [f"- **{e['slug']}** — {e['summary']}  \n  `{' '.join(e['tags'])}`" for e in types] or ["- none yet"]
+    out += ["", "## Entity types", "",
+            "One per standard entity type: what it is, how it is identified, created and linked. "
+            "`entity_types/<Type>`.", ""]
+    out += [f"- **{e['slug']}** — {e['summary']}  \n  `{' '.join(e['tags'])}`" for e in entities] or ["- none yet"]
     out += ["", "## Recipes", ""]
     out += [f"- **{e['slug']}** — {e['summary']}  \n  `{' '.join(e['tags'])}`" for e in recipes] or ["- none yet"]
     out += ["", "## By tag", ""]
@@ -55,7 +61,7 @@ def main():
 
     (ROOT / "corpus" / "INDEX.md").write_text("\n".join(out) + "\n")
     print(f"indexed {len(findings)} findings, {len(types)} field types, "
-          f"{len(recipes)} recipes, {len(by_tag)} tags")
+          f"{len(entities)} entity types, {len(recipes)} recipes, {len(by_tag)} tags")
 
 
 if __name__ == "__main__":

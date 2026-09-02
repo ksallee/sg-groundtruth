@@ -15,13 +15,22 @@ Derive only from public Flow PT REST docs and this repo's own probes.
 `corpus/recipes/`: a verified call and its real response. Produced by probes.
 `corpus/INDEX.md`: generated. Read this first, always. Open an entry only when its one-liner falls short.
 
-Every finding carries `scope: api` or `scope: site`. `api` behaviour holds on any Flow PT site and is what
-ships publicly. `site` is a measurement of one site: useful as a worked example, never something to code
-against elsewhere. Inside an `api` finding, an individual site measurement is attributed inline, beginning
-"On the probed site, ...".
+Every finding carries a `scope`. There are three levels, and the probes are what proved they are distinct:
 
-`corpus.local/` is the per-site overlay: custom entities, status vocabularies, fill rates and examples drawn
-from the reader's own site. Gitignored, never deployed publicly, generated rather than written.
+| scope | true of | examples |
+|---|---|---|
+| `api` | any Flow PT site | operator vocabularies, create contracts, `links.next` never absent |
+| `site` | one site | custom entities and their slots, custom fields, `valid_values`, `/preferences` |
+| `project` | one project inside it | `hidden_values`, page settings and visible columns, fill rates |
+
+Probe 009 is why the last two are not one: `valid_values` is byte-identical at every scope and only
+`hidden_values` varies by project. "Which statuses can I use" has no site-level answer.
+
+Only `api` ships publicly. Inside an `api` finding, an individual site measurement is attributed inline,
+beginning "On the probed site, ...". A `project` entry names its project in a `project:` key.
+
+`corpus.local/` is the overlay, gitignored and generated: `site/` for what one site configures,
+`projects/<id>/` for what one project does. The site reads all three and switches between them.
 
 Never code against `docs/quirks.md`. Those are unverified operator claims. A job that depends on one has a gap;
 probe it.

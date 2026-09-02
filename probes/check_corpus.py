@@ -18,6 +18,8 @@ ACTUAL_MAX = 30
 SECTIONS = ("**Q**", "**Endpoint**", "**Docs claim**", "**Actual**", "**Teaches**")
 # The field-type matrix answers a different shape of question, so it has its own required sections.
 TYPE_SECTIONS = ("**Data type**", "**Read**", "**Write**", "**Clear**", "**Filter**", "**Traps**")
+# The entity-type matrix answers a different shape of question again.
+ENTITY_SECTIONS = ("**Type**", "**Identity**", "**Create**", "**Links**", "**Status**", "**Traps**")
 # Cap the prose, not the file. A card with forty rows of table is doing its job; forty
 # lines of paragraph is not. Counting both the same penalised measured cases exactly as
 # much as waffle, and nine of the first twenty-four cards ended up pinned to the ceiling.
@@ -86,16 +88,19 @@ for f in sorted(CORPUS.rglob("*.md")):
         if w not in CAPS_OK:
             fail(f, f"ALL-CAPS emphasis {w!r} — capitals are for API literals only (CLAUDE.md Style)")
 
-    is_type = f.parent.name == "field_types"
+    is_type = f.parent.name in ("field_types", "entity_types")
     if not is_type and (f.parent.name != "findings" or not f.stem[:1].isdigit()):
         continue
     head = re.match(r"---\n(.*?)\n---", text, re.S)
     if not head:
         fail(f, "no frontmatter")
         continue
-    scope = re.search(r"^scope:\s*(api|site)\s*$", head.group(1), re.M)
+    scope = re.search(r"^scope:\s*(api|site|project)\s*$", head.group(1), re.M)
     if not scope:
-        fail(f, "no scope: api|site — api behaviour transfers to any site, site is a measurement of this one")
+        fail(f, "no scope: api|site|project. api transfers anywhere; site is one Flow PT site; "
+                "project is one project inside it")
+    elif scope.group(1) == "project" and not re.search(r"^project:\s*\S", head.group(1), re.M):
+        fail(f, "scope: project needs a project: key naming which project it was measured on")
     verdict = re.search(r"verdict:\s*(.+)", head.group(1))
     if not verdict:
         fail(f, "no verdict")
@@ -107,7 +112,12 @@ for f in sorted(CORPUS.rglob("*.md")):
             fail(f, f"verdict is {len(v)} chars, max {VERDICT_MAX} — move the detail to **Teaches**")
     if not re.search(r"tags:\s*\[[^\]]+\]", head.group(1)):
         fail(f, "no tags")
-    for s in (TYPE_SECTIONS if is_type else SECTIONS):
+    wanted = SECTIONS
+    if f.parent.name == "field_types":
+        wanted = TYPE_SECTIONS
+    elif f.parent.name == "entity_types":
+        wanted = ENTITY_SECTIONS
+    for s in wanted:
         if s not in text:
             fail(f, f"missing section {s}")
     if is_type:
