@@ -25,6 +25,7 @@
 		margin-inline: auto;
 		padding-inline: var(--gutter);
 		display: grid;
+		grid-template-columns: var(--col);
 		gap: var(--space-4);
 	}
 

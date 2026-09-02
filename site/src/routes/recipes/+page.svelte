@@ -30,11 +30,13 @@
 		margin-inline: auto;
 		padding: var(--space-6) var(--gutter) var(--space-7);
 		display: grid;
+		grid-template-columns: var(--col);
 		gap: var(--space-5);
 	}
 
 	header {
 		display: grid;
+		grid-template-columns: var(--col);
 		gap: var(--space-3);
 		max-width: var(--measure);
 	}

@@ -1,8 +1,14 @@
 <script>
 	import Section from '$lib/components/Section.svelte';
 	import { REPO } from '$lib/site.js';
+	import { countsAt } from '$lib/reading.svelte.js';
 
 	let { data } = $props();
+
+	// The counts answer at the reading level in force, so choosing Site or a
+	// project grows the corpus on the front page rather than only on the pages
+	// behind it. A public build has one level and one set of numbers.
+	const counts = $derived(countsAt(data.counts));
 
 	// Written from finding 027. The API is the same for every caller; what it
 	// returns is filtered by permission, and every entry here was measured by a
@@ -30,10 +36,10 @@
 5. Ask the schema what my site calls things, one type at a time:
      PYTHONPATH=src python -m sg_groundtruth.schema entities --custom
      PYTHONPATH=src python -m sg_groundtruth.schema --project N statuses Version
-6. Record what you measured as markdown under corpus.local/, following the contract in
-   site/README.md: scope: site files in corpus.local/site/, and scope: project files,
-   each with a project: key, in corpus.local/projects/<id>/. corpus.local/ is gitignored
-   and is never committed.
+6. Write the docs for my site and my projects:
+     python probes/build_overlay.py
+   It is read-only and writes markdown under corpus.local/, which is gitignored and is
+   never committed. site/README.md has the contract if you want to add a file by hand.
 7. Build the docs: cd site && npm install && npm run dev, then open http://localhost:5173.`;
 
 	let copied = $state(false);
@@ -52,19 +58,19 @@
 		{
 			href: '/reference',
 			title: 'Reference',
-			count: `${data.counts.fieldTypes} data types, ${data.counts.entityTypes} entity types`,
+			count: `${counts.fieldTypes} data types, ${counts.entityTypes} entity types`,
 			note: 'Field types, entity types and filters. Complete, and addressed by name.'
 		},
 		{
 			href: '/recipes',
 			title: 'Recipes',
-			count: `${data.counts.recipes} ${data.counts.recipes === 1 ? 'recipe' : 'recipes'}`,
+			count: `${counts.recipes} ${counts.recipes === 1 ? 'recipe' : 'recipes'}`,
 			note: 'A task, the calls that perform it, the response each returned, and the errors hit on the way.'
 		},
 		{
 			href: '/findings',
 			title: 'Findings',
-			count: `${data.counts.findings} published`,
+			count: `${counts.findings} published`,
 			note: 'One question each, chronological, with later entries correcting earlier ones.'
 		},
 		{
@@ -186,6 +192,7 @@
 		margin-inline: auto;
 		padding-inline: var(--gutter);
 		display: grid;
+		grid-template-columns: var(--col);
 		gap: var(--space-5);
 	}
 
@@ -241,6 +248,7 @@
 	.sections li,
 	.facts li {
 		display: grid;
+		grid-template-columns: var(--col);
 		gap: var(--space-2);
 		align-content: start;
 		border-top: 2px solid var(--rule-strong);

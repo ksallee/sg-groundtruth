@@ -137,15 +137,17 @@ python probes/017_filter_operators.py</pre>
 		<h2>Enabling it for your site</h2>
 		<p>
 			Point a clone at your Flow PT site and rebuild. Its custom entities, status vocabularies and
-			fill rates render beside the shipped corpus, in a labelled band, at the level the header switch
-			is set to. The <a href="/">setup prompt on the front page</a> is one way to get there.
+			fill rates render on the pages that already cover the same subject, in a marked section, at the
+			level the header switch is set to. The <a href="/">setup prompt on the front page</a> is one way
+			to get there.
 		</p>
 		<p>
 			This site builds from three content sources, one per level. The first is
 			<code>corpus/</code>, committed and public, filtered to <code>scope: api</code>. The other two
 			are directories under <code>{data.overlayDir}/</code>, gitignored and generated against your own
-			Flow PT site. When either is present the navigation gains a <a href="/site">This site</a>
-			section, and the header gains a switch that sets which level every page answers at.
+			Flow PT site. When either is present the header gains a switch that sets which level every page
+			answers at. The overlay adds no section to the navigation: it is depth on the four that are
+			already there.
 		</p>
 		<p>
 			The overlay is never committed and so never reaches a public deployment. Building it is how you
@@ -165,7 +167,9 @@ python probes/017_filter_operators.py</pre>
 {data.overlayDir}/projects/&lt;id&gt;/recipes/&lt;nnn&gt;_&lt;slug&gt;.md</pre>
 		<p>
 			Frontmatter is the same shape the shipped corpus uses. The scope has to match the directory, and
-			a project file names its project.
+			a project file names its project. An optional <code>title</code> names the thing the way a person
+			does, <code>Lenses</code> for <code>CustomEntity19</code>; the schema name stays beside it and
+			stays the URL.
 		</p>
 		<pre>---
 tags: [version, status]
@@ -186,11 +190,13 @@ verdict: One line. What a reader of this site should do.
 				<tbody>
 					<tr>
 						<td>slug matches a shipped entry</td>
-						<td>On that entry's page, in a labelled band beside the shipped card.</td>
+						<td>On that entry's page, in a marked section below the shipped card, and as a mark
+							on that entry's row in the list.</td>
 					</tr>
 					<tr>
 						<td>slug matches nothing shipped</td>
-						<td>On <code>/site</code>, under its level.</td>
+						<td>As a row of its own in the list the group belongs to, and a page of its own under
+							it, with no API section on it.</td>
 					</tr>
 					<tr>
 						<td><code>scope</code> does not match the directory</td>
@@ -210,7 +216,9 @@ verdict: One line. What a reader of this site should do.
 		</div>
 		<p class="note">
 			The generator that populates the overlay lives in <code>probes/</code> and is separate from this
-			site. The site consumes the contract above and does not care what wrote the files.
+			site. <code>python probes/build_overlay.py</code> reads your site and writes every file above
+			that it can measure; it is read-only and re-runnable. The site consumes the contract above and
+			does not care what wrote the files.
 		</p>
 	</section>
 
@@ -240,15 +248,19 @@ verdict: One line. What a reader of this site should do.
 					</tr>
 					<tr>
 						<td>Project</td>
-						<td>Both of those, and one project inside that site, chosen from the projects the
-							overlay holds.</td>
+						<td>Both of those, and one project inside that site, or every project the overlay
+							holds at once. With more than one selected, each section names the project it was
+							measured on.</td>
 					</tr>
 				</tbody>
 			</table>
 		</div>
 		<p>
-			Local material is always inside a labelled band that names where it was read from, so a
-			measurement is never presented as API behaviour. With no overlay the switch is not drawn.
+			Every list row and every section on an entry page is marked with the kind of information it
+			holds: a word, an edge texture and a hue, so a measurement of one site is never read as API
+			behaviour, and the distinction survives a greyscale screen. Local sections are inset on their
+			own ground; API content sits flush on the page. A legend states the marks where they first
+			appear. With no overlay nothing is marked and the switch is not drawn.
 		</p>
 	</section>
 
@@ -280,11 +292,13 @@ verdict: One line. What a reader of this site should do.
 		margin-inline: auto;
 		padding: var(--space-6) var(--gutter) var(--space-7);
 		display: grid;
+		grid-template-columns: var(--col);
 		gap: var(--space-6);
 	}
 
 	header {
 		display: grid;
+		grid-template-columns: var(--col);
 		gap: var(--space-3);
 		max-width: var(--measure);
 	}
@@ -295,6 +309,7 @@ verdict: One line. What a reader of this site should do.
 
 	section {
 		display: grid;
+		grid-template-columns: var(--col);
 		gap: var(--space-4);
 		border-top: var(--border) solid var(--rule);
 		padding-top: var(--space-5);
@@ -373,6 +388,7 @@ verdict: One line. What a reader of this site should do.
 
 	.integrations li {
 		display: grid;
+		grid-template-columns: var(--col);
 		gap: var(--space-2);
 		align-content: start;
 		border-top: 2px solid var(--rule-strong);

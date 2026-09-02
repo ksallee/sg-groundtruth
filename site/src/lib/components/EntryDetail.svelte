@@ -1,15 +1,24 @@
 <script>
 	import Prose from './Prose.svelte';
-	import LocalBand from './LocalBand.svelte';
+	import ScopeSection from './ScopeSection.svelte';
+	import ScopeLegend from './ScopeLegend.svelte';
 	import { REPO } from '$lib/site.js';
-	import { visible } from '$lib/reading.svelte.js';
+	import { visible, mixed } from '$lib/reading.svelte.js';
 
-	// One corpus entry, rendered in full: the shipped card, then whatever the
-	// overlay measured about the same subject, at the reading level in force.
-	// `entry.locals` is empty in every public build.
+	// One subject, rendered in full and in one order: what the API does, then
+	// what one site configures, then what one project does. Each is its own
+	// marked section. A subject the published corpus has no card for renders the
+	// local sections alone.
+	//
+	// `entry.locals` is empty in every public build, so this is the shipped card
+	// and nothing else there.
 	let { entry, kicker = '', backHref = '', backLabel = '' } = $props();
 
 	const locals = $derived(visible(entry.locals ?? []));
+
+	// The header describes the subject with the API card's line. Without one,
+	// each local section carries its own verdict and the header carries none.
+	const tags = $derived(entry.hasApi ? entry.tags : (locals[0]?.tags ?? []));
 
 	// One directory per group, mirroring corpus/. Kept as a lookup rather than a
 	// chain of ternaries so a new group is one line.
@@ -29,23 +38,55 @@
 			<p class="back"><a href={backHref}>{backLabel}</a></p>
 		{/if}
 		{#if kicker}<p class="kicker">{kicker}</p>{/if}
-		<h1>{entry.fullName}</h1>
-		<p class="verdict">{entry.verdict}</p>
+		<h1>{entry.heading}</h1>
+		<!-- Kept in view rather than replaced: a reader who cannot see the schema
+		     name cannot call anything. -->
+		{#if entry.title && entry.title !== entry.slug}
+			<p class="slug"><code>{entry.slug}</code></p>
+		{/if}
+
+		{#if entry.hasApi}
+			<p class="verdict">{entry.verdict}</p>
+		{:else if locals.length}
+			<p class="absent">
+				The published corpus has no entry for this. Everything below was measured locally.
+			</p>
+		{:else}
+			<p class="absent">
+				This was measured on one site rather than read off the API. Set the reading level in the
+				header to see it.
+			</p>
+		{/if}
+
 		<ul class="meta">
-			{#each entry.tags as tag (tag)}
+			{#each tags as tag (tag)}
 				<li class="tag">{tag}</li>
 			{/each}
-			<li class="src"><a href="{REPO}/blob/main/{sourcePath}">Source markdown</a></li>
+			{#if entry.hasApi}
+				<li class="src"><a href="{REPO}/blob/main/{sourcePath}">Source markdown</a></li>
+			{/if}
 		</ul>
 	</header>
 
-	<Prose html={entry.html} />
+	{#if mixed()}
+		<ScopeLegend />
+	{/if}
+
+	{#if entry.hasApi}
+		{#if mixed()}
+			<ScopeSection level="api">
+				<Prose html={entry.html} />
+			</ScopeSection>
+		{:else}
+			<Prose html={entry.html} />
+		{/if}
+	{/if}
 
 	{#each locals as local (local.level + local.project + local.slug)}
-		<LocalBand level={local.level} project={local.projectLabel}>
-			<p class="local-verdict" class:project={local.level === 'project'}>{local.verdict}</p>
+		<ScopeSection level={local.level} project={local.projectLabel} dir={local.project}>
+			<p class="local-verdict" data-scope={local.level}>{local.verdict}</p>
 			<Prose html={local.html} tone={local.level} />
-		</LocalBand>
+		</ScopeSection>
 	{/each}
 </article>
 
@@ -55,11 +96,13 @@
 		margin-inline: auto;
 		padding: var(--space-6) var(--gutter) var(--space-7);
 		display: grid;
+		grid-template-columns: var(--col);
 		gap: var(--space-6);
 	}
 
 	header {
 		display: grid;
+		grid-template-columns: var(--col);
 		gap: var(--space-3);
 		max-width: var(--measure);
 	}
@@ -90,6 +133,19 @@
 		padding-left: var(--space-4);
 	}
 
+	.slug {
+		font-family: var(--font-mono);
+		font-size: var(--text-sm);
+		color: var(--ink-muted);
+	}
+
+	.absent {
+		font-size: var(--text-sm);
+		color: var(--ink-muted);
+		border-left: 3px solid var(--rule-strong);
+		padding-left: var(--space-4);
+	}
+
 	.meta {
 		list-style: none;
 		padding: 0;
@@ -111,12 +167,8 @@
 	}
 
 	.local-verdict {
-		border-left: 3px solid var(--accent-local);
+		border-left: 3px solid var(--scope-ink);
 		padding-left: var(--space-4);
 		max-width: var(--measure);
-	}
-
-	.local-verdict.project {
-		border-left-color: var(--accent-project);
 	}
 </style>

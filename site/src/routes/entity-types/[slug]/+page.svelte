@@ -8,7 +8,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.entry.fullName}: Flow PT entity type reference</title>
+	<title>{data.entry.heading}: Flow PT entity type reference</title>
 	<meta name="description" content={data.entry.verdict} />
 </svelte:head>
 

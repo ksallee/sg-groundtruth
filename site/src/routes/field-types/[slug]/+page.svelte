@@ -5,7 +5,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.entry.fullName}: Flow PT field type reference</title>
+	<title>{data.entry.heading}: Flow PT field type reference</title>
 	<meta name="description" content={data.entry.verdict} />
 </svelte:head>
 

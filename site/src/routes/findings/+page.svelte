@@ -71,10 +71,12 @@
 		padding: var(--space-6) var(--gutter) var(--space-7);
 		display: grid;
 		gap: var(--space-5);
+		grid-template-columns: var(--col);
 	}
 
 	header {
 		display: grid;
+		grid-template-columns: var(--col);
 		gap: var(--space-3);
 		max-width: var(--measure);
 	}
@@ -102,6 +104,7 @@
 
 	.cited {
 		display: grid;
+		grid-template-columns: var(--col);
 		gap: var(--space-4);
 		border-top: var(--border) solid var(--rule);
 		padding-top: var(--space-5);
@@ -123,6 +126,7 @@
 	.examples article {
 		height: 100%;
 		display: grid;
+		grid-template-columns: var(--col);
 		gap: var(--space-3);
 		align-content: start;
 		background: var(--ground-raised);

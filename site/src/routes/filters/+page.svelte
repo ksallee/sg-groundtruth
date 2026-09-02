@@ -175,11 +175,13 @@
 		margin-inline: auto;
 		padding: var(--space-6) var(--gutter) var(--space-7);
 		display: grid;
+		grid-template-columns: var(--col);
 		gap: var(--space-7);
 	}
 
 	header {
 		display: grid;
+		grid-template-columns: var(--col);
 		gap: var(--space-3);
 		max-width: var(--measure);
 	}
@@ -201,6 +203,7 @@
 
 	.part {
 		display: grid;
+		grid-template-columns: var(--col);
 		gap: var(--space-5);
 	}
 
@@ -212,6 +215,7 @@
 
 	.block {
 		display: grid;
+		grid-template-columns: var(--col);
 		gap: var(--space-3);
 		/* The anchor lands below the header rather than under it. */
 		scroll-margin-top: var(--space-5);

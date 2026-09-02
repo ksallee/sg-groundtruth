@@ -17,6 +17,7 @@
 	   children. Capping .prose instead traps the tables at --measure. */
 	.prose {
 		display: grid;
+		grid-template-columns: var(--col);
 		justify-items: start;
 		gap: var(--space-4);
 		max-width: 100%;
@@ -66,6 +67,7 @@
 	.prose :global(ol) {
 		padding-left: var(--space-5);
 		display: grid;
+		grid-template-columns: var(--col);
 		gap: var(--space-2);
 	}
 

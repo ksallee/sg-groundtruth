@@ -2,9 +2,10 @@
 	import { NAME } from '$lib/site.js';
 	import ReadingLevel from './ReadingLevel.svelte';
 
-	// The overlay facts come from the layout load. The /site link and the reading
-	// level switch exist only when a local overlay was found at build time, so a
-	// public build has neither a dead nav entry nor a control that does nothing.
+	// The overlay facts come from the layout load. The reading level switch
+	// exists only when a local overlay was found at build time, so a public build
+	// carries no control that does nothing. The overlay has no nav entry: it is
+	// depth on the four sections, not a fifth one.
 	let { hasOverlay = false, hasSite = false, projects = [] } = $props();
 </script>
 
@@ -16,9 +17,6 @@
 			<a href="/recipes">Recipes</a>
 			<a href="/findings">Findings</a>
 			<a href="/how-it-works">How it works</a>
-			{#if hasOverlay}
-				<a class="local" href="/site">This site</a>
-			{/if}
 		</nav>
 		{#if hasOverlay}
 			<ReadingLevel {hasSite} {projects} />
@@ -69,9 +67,5 @@
 	nav a:hover {
 		color: var(--ink);
 		text-decoration: underline;
-	}
-
-	nav a.local {
-		color: var(--accent-local);
 	}
 </style>

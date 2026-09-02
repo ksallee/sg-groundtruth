@@ -1,14 +1,20 @@
 // The reading level: one global choice, applied to every page, remembered
 // across navigation and reloads.
 //
-// It is additive, not a filter. `site` adds what one Flow PT site configures on
-// top of the API content; `project` adds one project on top of both. The API
-// content is on the page at every level.
+// It is depth on the page a reader is already on, not a destination and not a
+// filter. `site` adds what one Flow Production Tracking site configures on top
+// of the API content. `project` adds one project, or every project at once, on
+// top of both. Nothing is removed as the level rises; entries and sections are
+// added.
 //
 // A public build has no overlay, so `api` is the only level it can hold and the
 // switch is never drawn.
 
 const KEY = 'sg-groundtruth.reading-level';
+
+// The union of every project the overlay holds. A project id can never be this,
+// because a directory named `*` is not one a filesystem hands back here.
+export const ALL = '*';
 
 // Exported as an object and mutated, never reassigned, which is what lets a
 // component read it reactively.
@@ -48,7 +54,8 @@ export function restore({ hasSite = false, projects = [] } = {}) {
 		return;
 	}
 	const id = value.startsWith('project:') ? value.slice('project:'.length) : '';
-	if (id && projects.some((p) => p.id === id)) {
+	const known = id === ALL ? projects.length > 0 : projects.some((p) => p.id === id);
+	if (id && known) {
 		reading.level = 'project';
 		reading.project = id;
 		return;
@@ -67,11 +74,30 @@ export function choose(level, project = null) {
 export function shows(local) {
 	if (local.level === 'site') return reading.level === 'site' || reading.level === 'project';
 	if (local.level === 'project') {
-		return reading.level === 'project' && local.project === reading.project;
+		if (reading.level !== 'project') return false;
+		return reading.project === ALL || local.project === reading.project;
 	}
 	return true;
 }
 
 export function visible(locals = []) {
 	return locals.filter(shows);
+}
+
+// True when more than one kind of information can be on a page. At `api` there
+// is only one, so no page draws a mark or a legend and a public build looks
+// complete rather than annotated.
+export function mixed() {
+	return reading.level !== 'api';
+}
+
+// The key a per-level count is filed under. `corpus.js` builds one entry per
+// level the overlay can show, so a count never has to be recomputed in a
+// component from data the page did not load.
+export function levelKey() {
+	return reading.level === 'project' ? `project:${reading.project}` : reading.level;
+}
+
+export function countsAt(counts) {
+	return counts[levelKey()] ?? counts.api;
 }

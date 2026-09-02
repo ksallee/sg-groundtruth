@@ -2,7 +2,11 @@
 	// Three cards, written out rather than looped: each carries its own code
 	// spans, and there are three of them. Every number is read off the corpus at
 	// build time, so a group that grows says so with no edit here.
+	import { countsAt } from '$lib/reading.svelte.js';
+
 	let { data } = $props();
+
+	const counts = $derived(countsAt(data.counts));
 </script>
 
 <svelte:head>
@@ -29,7 +33,7 @@
 	<ul class="groups">
 		<li>
 			<h2><a href="/field-types">Field types</a></h2>
-			<p class="count">{data.counts.fieldTypes} data types</p>
+			<p class="count">{counts.fieldTypes} data types</p>
 			<p>One card per <code>data_type</code>, probed on a real field of that type.</p>
 			<p>
 				Answers what comes back on a read, every value accepted on a write, every value that clears
@@ -39,7 +43,7 @@
 
 		<li>
 			<h2><a href="/entity-types">Entity types</a></h2>
-			<p class="count">{data.counts.entityTypes} entity types</p>
+			<p class="count">{counts.entityTypes} entity types</p>
 			<p>One card per entity type, named for the schema name the API answers to.</p>
 			<p>
 				Answers what the REST slug is, which field identifies a row, what a create is refused
@@ -65,11 +69,13 @@
 		margin-inline: auto;
 		padding: var(--space-6) var(--gutter) var(--space-7);
 		display: grid;
+		grid-template-columns: var(--col);
 		gap: var(--space-6);
 	}
 
 	header {
 		display: grid;
+		grid-template-columns: var(--col);
 		gap: var(--space-3);
 		max-width: var(--measure);
 	}
@@ -97,6 +103,7 @@
 
 	.groups li {
 		display: grid;
+		grid-template-columns: var(--col);
 		gap: var(--space-2);
 		align-content: start;
 		border-top: 2px solid var(--rule-strong);

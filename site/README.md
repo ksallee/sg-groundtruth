@@ -27,8 +27,8 @@ so "which statuses can I use" has no site-level answer.
 | level | true of | source | committed | filter | renders as |
 |---|---|---|---|---|---|
 | `api` | any Flow PT site | `corpus/` | yes | `scope: api` | the public site |
-| `site` | one Flow PT site | `corpus.local/site/` | no, gitignored | `scope: site` | labelled bands, plus `/site` |
-| `project` | one project inside it | `corpus.local/projects/<id>/` | no, gitignored | `scope: project` with a `project:` key | labelled bands, plus `/site` |
+| `site` | one Flow PT site | `corpus.local/site/` | no, gitignored | `scope: site` | marked rows and sections on the same pages |
+| `project` | one project inside it | `corpus.local/projects/<id>/` | no, gitignored | `scope: project` with a `project:` key | marked rows and sections on the same pages |
 
 `corpus/findings/`, `corpus/findings/field_types/`, `corpus/findings/entity_types/` and `corpus/recipes/`
 each become a route. Frontmatter supplies the one-line verdict and the tags; the body is rendered to HTML at
@@ -73,6 +73,12 @@ Required frontmatter, the same shape the shipped corpus uses. The scope has to m
 
     # <heading>
 
+An optional `title` names the thing the way a person does: `Lenses` for `CustomEntity19`, the schema name
+for a standard type. It becomes the heading and the list label, and the slug stays beside it in both places,
+because the slug is what a caller writes into a URL or a filter. The slug is also still the route, so
+renaming a custom entity in the web interface moves no link. No shipped card carries the key, and without it
+the slug is the label.
+
 A project file carries one key more, naming which project it was measured on. `probes/check_corpus.py`
 enforces it, and this site skips a file that omits it.
 
@@ -89,16 +95,16 @@ How a file is picked up:
 
 | file | renders |
 |---|---|
-| slug matches a shipped entry | on that entry's page, in a labelled band beside the shipped card |
-| slug matches nothing shipped | in full on `/site`, under its level, at an anchor |
+| slug matches a shipped entry | in a marked section below the shipped card, and as a mark on that entry's row |
+| slug matches nothing shipped | as a row of its own in the same list, and a page of its own, with no API section |
 | `scope` does not match the directory | skipped, with a warning on the build log |
 | `scope: project` with no `project:` key | skipped, with a warning on the build log |
 | a project directory with no readable file | not offered as a reading level |
 | directory absent or empty | nothing changes; the public build is this case |
 
 An absent overlay is the normal case and is a first-class one: no dead links, no empty sections, no reading
-level switch, and the `This site` nav entry is not rendered at all. `/site` still exists in that state and
-explains the contract, so someone who cloned the repo lands on instructions rather than a blank page.
+level switch, and nothing marked, because at one level there is nothing to distinguish. The overlay contract
+is on `/how-it-works#overlay` in every build, so someone who cloned the repo finds the instructions there.
 
 `corpus.local/` is gitignored, so it is never committed and therefore can never reach a public deployment.
 That is the whole enforcement mechanism; there is no runtime check.
@@ -106,31 +112,86 @@ That is the whole enforcement mechanism; there is no runtime check.
 The generator that populates the overlay lives in `probes/` and is deliberately not part of this site. The
 site consumes the contract above and does not care what wrote the files.
 
+    python probes/build_overlay.py                 the site tier, then every FPT_PROBE_SAMPLE_PROJECTS project
+    python probes/build_overlay.py --site          the site tier only
+    python probes/build_overlay.py --project 70    one project, plus the site tier
+    python probes/build_overlay.py --refresh       re-fetch the schema cache instead of reading it
+
+It is read-only, re-runnable and replaces each tier wholesale, so a run that fails partway leaves the
+previous overlay intact. A full run over two projects takes about a minute cold and half that once the
+schema cache is warm. What it writes:
+
+| file | scope | holds |
+|---|---|---|
+| `site/findings/008_custom_entities.md` | site | the enabled `CustomEntityNN` slots, their display names, their REST paths and their row counts |
+| `site/findings/009_status_lists.md` | site | `valid_values` for every list, status and entity-type field, which is site-wide |
+| `site/findings/019_create_fields.md` | site | every `sg_` field per entity type, with its data type |
+| `site/findings/021_media_resolution.md` | site | the LocalStorage roots, and which `local_path_*` therefore resolve |
+| `site/findings/101_preferences.md` | site | the `GET /preferences` keys, `hours_per_day` and `duration_units` first |
+| `projects/<id>/findings/005_link_usage.md` | project | which link fields are set, and what they point at |
+| `projects/<id>/findings/007_fill_rates.md` | project | fill rate per field per entity type |
+| `projects/<id>/findings/009_status_lists.md` | project | `valid_values` minus `hidden_values`, per entity type |
+| `projects/<id>/findings/023_pages.md` | project | each Page and its columns, ready to hand to `?fields` |
+
+A slug that matches a shipped entry renders beside that entry's card; `101_preferences` matches nothing
+shipped, so it is a findings row of its own; so are `005_link_usage` and `007_fill_rates`, whose shipped
+counterparts are `scope: site` and never published. A `CustomEntityNN` card is a row in the entity types
+list. Nothing local gets a page outside the list it is about.
+
+The output is **not scrubbed**, unlike everything a probe prints. Its whole value is the real slot
+numbers, the real display names and the real vocabularies, and `corpus.local/` is gitignored.
+
 ### The reading level
 
-One global choice, set once in the header and applied to every page. It is additive rather than a filter:
-the API content is on the page at every level, and local material renders beside it inside a band that names
-where it was read from.
+One global choice, set once in the header and applied to every page. It is depth on the pages a reader is
+already on, not a destination and not a filter. Each level adds rows to the lists and sections to the entry
+pages; nothing is removed as it rises. Every count on the site answers at the level in force, the landing
+page included, so raising it visibly grows the corpus.
 
 | level | on the page |
 |---|---|
 | API | the shipped corpus; the default, and the only level a public build has |
 | Site | that, plus what one Flow PT site configures |
-| Project | both of those, plus one project, chosen from the projects the overlay holds |
+| Project | both of those, plus one project or every project the overlay holds |
 
-Stored in `localStorage` under `sg-groundtruth.reading-level`, as `api`, `site` or `project:<id>`. Every read
+Stored in `localStorage` under `sg-groundtruth.reading-level`, as `api`, `site`, `project:<id>` or
+`project:*` for every project at once. Every read
 and write is wrapped in try/catch, so a browser that throws or holds nothing renders at `api`. A remembered
 level this build cannot show, a project that has since been removed, falls back to `api` rather than leaving
 the switch pointing at nothing. The value is read once per page load; after that the switch on screen is the
 truth, so a failed write cannot revert a choice on the next navigation.
 
 The switch only offers the levels the overlay can show. With site content but no projects there is
-no project control; with projects but no site content there is no `Site` step; with no overlay the switch is
-not rendered at all. There is no disabled state and no level that yields nothing.
+no project control; with projects but no site content there is no `Site` step; with one project the control
+is that project's name rather than a menu, because the union of one project is that project; with no overlay
+the switch is not rendered at all. There is no disabled state and no level that yields nothing.
 
 Every page is prerendered at the `api` level, so local material appears on hydration. Nothing that is hidden
 at the current level is ever removed from the page's data: the overlay is local by construction, and the
 data it puts in a page is the same data a public build does not have.
+
+### The mark
+
+Above the `api` level, every list row and every section of an entry page carries a mark saying which of the
+three it is. The mark is three signals at once, and the hue is the one that matters least.
+
+| signal | API | Site | Project |
+|---|---|---|---|
+| word | `The API` | `This site` | the project's name |
+| edge texture | solid | dashed | dotted |
+| ground | flush on the page | inset panel | inset panel |
+
+The texture is what survives greyscale, a monochrome printout and a reader who cannot separate the hues, and
+the word is what survives everything. A local-only row is inset in the list exactly as a local section is
+inset on an entry page, so the two read as one signal rather than two conventions. Everything is declared in
+`tokens.css` under `--scope-*`, resolved by one `[data-scope]` rule in `app.css`, and drawn by `ScopeMark`,
+`ScopeSection` and `ScopeLegend`. Restyling the distinction is an edit to those nine token lines.
+
+At the `api` level nothing is marked and no legend is drawn: every row on the page is the same kind of
+thing, so the distinction has nothing to distinguish. A public build is always in that state.
+
+With more than one project selected, each mark names its project and each section names the directory it was
+read from, so a reader can tell which project every piece came from.
 
 ## Which files are design surface
 
@@ -159,15 +220,16 @@ The components:
 |---|---|
 | `SiteHeader` / `SiteFooter` | the shell |
 | `Section` | one band of a page: mono label, headline, lede, slot |
-| `EntryList` | the corpus index as a list of name, verdict, tags |
-| `EntryDetail` | one entry in full, plus whatever the overlay measured about the same subject |
+| `EntryList` | the corpus index as a list of name, verdict, tags, each row marked with what it holds |
+| `EntryDetail` | one subject in full: the API card, then what the overlay measured about the same subject |
 | `Prose` | rendered corpus markdown, and all the table and code-slab styling |
-| `LocalBand` | wraps anything that came from the overlay, so it can never be read as an API fact |
+| `ScopeMark` | the mark itself: a word, an edge texture and a hue. The one place the three are drawn |
+| `ScopeSection` | one section of an entry page, marked. Local sections are inset, the API section is flush |
+| `ScopeLegend` | says what the marks mean, where they first appear on a page |
 | `ReadingLevel` | the global level switch; rendered only when the build read an overlay |
 
 Three accents, one per level: `--accent` for a shipped fact or a link, `--accent-local` for one site,
-`--accent-project` for one project. Nothing rests on the hue alone. Every band is also labelled with where
-it was read from, and every flag in a list carries its own text.
+`--accent-project` for one project. Nothing rests on the hue alone: see **The mark** above.
 
 ## Which files are content plumbing
 
@@ -209,10 +271,11 @@ stay one flat segment each, so grouping them cost no link a move.
 | `/recipes/[slug]` | one recipe in full |
 | `/findings` | the numbered corpus, then the cited examples |
 | `/findings/[slug]` | one finding in full |
+| every list and `[slug]` above | grows with the reading level; a local-only entry is a row in the list it belongs to and a page under it |
 | `/how-it-works` | pointing a model at the index, running the probes, the scope field, enabling it for your site, the reading level, using it alongside an MCP server |
-| `/site` | everything the overlay holds at every level, or the overlay contract when there is no overlay |
 
-`/site` is added to the navigation only when the build read an overlay, and so is the reading level switch.
+The overlay has no route of its own and adds no nav entry. Only the reading level switch appears when the
+build read one.
 
 An entity-type card sets its own sections (`**Type**`, `**Identity**`, `**Create**`, `**Links**`,
 `**Status**`, `**Traps**`) and they are not the field-type ones. `EntryDetail` renders whatever the markdown
@@ -340,8 +403,9 @@ person watching the site. `marked` renders a string to a string and cannot be br
   nothing.
 - **`/filters` is flat, not `/reference/filters`.** `/reference` is an index over routes it does not own, so
   every reference route stays one segment and no link had to move when the index was added.
-- **The landing page no longer renders the overlay band or a sample card in full.** A local build sees its
-  overlay on the entry pages and on `/site`, not on `/`.
+- **The landing page renders no overlay content, only counts.** A local build sees its overlay in the lists
+  and on the entry pages. The front page states how many entries each section holds at the level in force,
+  which is the whole of what it says about the overlay.
 - **Family notes on `/filters` are written here, not read from the corpus.** The rows, the operators, the
   values, the counts and the grouping are all derived; the one-line note under each family heading is site
   copy, and it is the only prose on the page that a card does not supply.
@@ -350,10 +414,12 @@ person watching the site. `marked` renders a string to a string and cannot be br
 - **No `llms.txt` and no per-page raw markdown link.** Every page is prerendered static HTML and each entry
   links to its source markdown on GitHub, which covers the machine reader for now.
 - **Typography is system faces.** `--font-text` and `--font-mono` are one line each in `tokens.css`.
-- **`/site` is `noindex` but not otherwise protected.** It is harmless in a public build, where it holds
-  only the contract.
-- **`/site` ignores the reading level.** It inventories the whole overlay so a reader can see what is
-  available before choosing a level. Every other page answers at the level in force.
+- **Every stacked grid declares `grid-template-columns: var(--col)`.** A grid's default `auto` track is
+  sized by its widest child's max-content, so one long table cell widened the whole page instead of
+  scrolling inside its own container, and the percentages in `--measure` had nothing to resolve against.
+- **There is no page that inventories the overlay.** The level is depth on the pages a reader is already on,
+  so a local measurement is found where its subject is documented and nowhere else. Local-only entry pages
+  exist in a local build alone and are never prerendered by a public one.
 - **The level switch is not in the URL.** A link to a page carries no level with it, so a reader following
   one sees whatever they last chose. A query parameter would make a level shareable and would also make a
   local measurement linkable, which is the opposite of what the overlay is for.

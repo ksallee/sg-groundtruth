@@ -41,6 +41,37 @@
 	--accent-project: light-dark(oklch(0.47 0.11 150), oklch(0.79 0.1 155));
 	--accent-project-quiet: light-dark(oklch(0.95 0.03 155), oklch(0.24 0.04 155));
 
+	/* --- provenance ------------------------------------------------------
+	   Three kinds of information share every list and every entry page, and
+	   these nine lines are the whole distinction between them. Restyle it
+	   here and it changes on the switch, on a list row, on a chip and on a
+	   detail section at once.
+
+	   A mark is three signals at once: a word, an edge texture and a hue.
+	   The texture is the one that survives greyscale, a monochrome printout
+	   and a reader who cannot separate the hues. Solid for the API, dashed
+	   for one site, dotted for one project: coarser as the claim narrows. */
+	--scope-api-ink: var(--accent);
+	--scope-api-quiet: var(--accent-quiet);
+	--scope-api-edge: linear-gradient(var(--accent), var(--accent));
+
+	--scope-site-ink: var(--accent-local);
+	--scope-site-quiet: var(--accent-local-quiet);
+	--scope-site-edge: repeating-linear-gradient(
+		var(--accent-local) 0 7px,
+		transparent 7px 12px
+	);
+
+	--scope-project-ink: var(--accent-project);
+	--scope-project-quiet: var(--accent-project-quiet);
+	--scope-project-edge: repeating-linear-gradient(
+		var(--accent-project) 0 2px,
+		transparent 2px 6px
+	);
+
+	/* The width of every edge mark, so a chip and a section agree. */
+	--scope-edge-width: 3px;
+
 	/* Code slabs are the darkest surface in both schemes, so quoted API
 	   payloads read as one object at any brightness. */
 	--slab: light-dark(oklch(0.19 0 0), oklch(0.12 0 0));
@@ -85,11 +116,21 @@
 	/* --- measure ---------------------------------------------------------
 	   Three widths. --measure is the reading column. --measure-wide is what a
 	   reference table or a payload slab may spill out to before it starts
-	   scrolling inside itself. --wide is the page shell. */
-	--measure: 64ch;
-	--measure-wide: 58rem;
+	   scrolling inside itself. --wide is the page shell.
+
+	   The first two are capped at 100% because they are wider than a 390px
+	   phone: without the cap a reference card widens the page instead of
+	   scrolling inside its own container. */
+	--measure: min(100%, 64ch);
+	--measure-wide: min(100%, 58rem);
 	--wide: 78rem;
 	--gutter: clamp(var(--space-4), 4vw, var(--space-7));
+
+	/* The single column every stacked layout on the site declares. A grid's
+	   default `auto` track is sized by its widest child's max-content, so one
+	   long table cell widens the whole page and the percentages above have
+	   nothing definite to resolve against. Stated here, used everywhere. */
+	--col: minmax(0, 1fr);
 
 	--duration: 120ms;
 }

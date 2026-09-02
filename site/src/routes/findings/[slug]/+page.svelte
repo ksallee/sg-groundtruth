@@ -5,7 +5,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.entry.fullName}: Flow PT REST finding</title>
+	<title>{data.entry.heading}: Flow PT REST finding</title>
 	<meta name="description" content={data.entry.verdict} />
 </svelte:head>
 

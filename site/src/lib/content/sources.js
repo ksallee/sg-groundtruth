@@ -45,8 +45,10 @@
 //   can never be filed as true of the whole site.
 //
 //   A file whose slug matches a shipped entry renders on that entry's page,
-//   beside the shipped card. A file with no shipped counterpart is listed on
-//   /site. Nothing else has to be registered.
+//   below the shipped card. A file with no shipped counterpart is a row in the
+//   same list, and gets the same page, with no API card on it. The overlay is
+//   depth on the pages a reader is already on; it has no destination of its
+//   own. Nothing has to be registered.
 
 import fs from 'node:fs';
 import path from 'node:path';

@@ -80,6 +80,38 @@ hr {
 	max-width: 100%;
 }
 
+/* One attribute resolves the three provenance variables, so a switch step, a
+   list row, a chip and a detail section carry the identical mark without any
+   of them naming a colour. Global rather than scoped: the attribute is set in
+   several components and read by all of them. */
+[data-scope='api'] {
+	--scope-ink: var(--scope-api-ink);
+	--scope-quiet: var(--scope-api-quiet);
+	--scope-edge: var(--scope-api-edge);
+}
+
+[data-scope='site'] {
+	--scope-ink: var(--scope-site-ink);
+	--scope-quiet: var(--scope-site-quiet);
+	--scope-edge: var(--scope-site-edge);
+}
+
+[data-scope='project'] {
+	--scope-ink: var(--scope-project-ink);
+	--scope-quiet: var(--scope-project-quiet);
+	--scope-edge: var(--scope-project-edge);
+}
+
+/* The edge mark itself: a strip of the level's texture, drawn wherever the
+   distinction has to be visible without reading a word. */
+.scope-edge {
+	flex: 0 0 var(--scope-edge-width);
+	align-self: stretch;
+	min-height: 1em;
+	background-image: var(--scope-edge);
+	border-radius: var(--radius-sm);
+}
+
 .visually-hidden {
 	position: absolute;
 	width: 1px;
