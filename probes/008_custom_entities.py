@@ -5,6 +5,7 @@ env = _lib.load_env()
 c = _lib.client()
 
 schema = c.get("/schema").json()["data"]
+_lib.register_from(schema)
 custom = {k: v for k, v in schema.items() if k.startswith("CustomEntity") or k.startswith("CustomNonProject")}
 visible = {k: v for k, v in custom.items() if (v.get("visible") or {}).get("value")}
 

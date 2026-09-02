@@ -12,19 +12,19 @@ verdict: /schema lists 113 entity types (13KB); /schema/<Type>/fields is the exp
 **Actual**
 
 ```
-200   596ms     13206b  /schema
+200   597ms     13206b  /schema
                             dict, 113 keys, first: ['ActionMenuItem', 'ApiUser', 'ApiUserProjectConnection', 'AppWelcomeUserConnection', 'Asset']
-200   252ms       138b  /schema/Version
+200   275ms       138b  /schema/Version
                             dict, 2 keys, first: ['name', 'visible']
-200   313ms     41980b  /schema/Version/fields
+200   292ms     41980b  /schema/Version/fields
                             dict, 61 keys, first: ['sg_first_frame', 'sg_uploaded_movie', 'flagged', 'sg_uploaded_movie_transcoding_status', 'tasks']
-200   270ms      1211b  /schema/Version/fields/sg_status_list
+200   278ms      1211b  /schema/Version/fields/sg_status_list
                             dict, 11 keys, first: ['name', 'description', 'custom_metadata', 'entity_type', 'data_type']
-404   268ms       178b  /schema/entity_types
-                            {"errors":[{"id":"3a64d9514f72e03325e1ea7a7e8ef0c0","status":404,"code":103,"title":"Not Found","source":null,"detail":"
-200   284ms     13233b  /schema?{'project_id': 70}
+404   283ms       178b  /schema/entity_types
+                            {"errors":[{"id":"f8b7ed96995ec83e55f338ff51ae2dfb","status":404,"code":103,"title":"Not Pylon","source":null,"detail":"
+200   381ms     13233b  /schema?{'project_id': 70}
                             dict, 113 keys, first: ['ActionMenuItem', 'ApiUser', 'ApiUserProjectConnection', 'AppWelcomeUserConnection', 'Asset']
-200   318ms     42008b  /schema/Version/fields?{'project_id': 70}
+200   310ms     42008b  /schema/Version/fields?{'project_id': 70}
                             dict, 61 keys, first: ['sg_first_frame', 'sg_uploaded_movie', 'flagged', 'sg_uploaded_movie_transcoding_status', 'tasks']
 ```
 

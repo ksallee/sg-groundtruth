@@ -11,6 +11,7 @@ link_fields = ["entity", "sg_task", "user", "playlists", "project", "created_by"
 r = c.get("/entity/versions", params={
     "filter[project.Project.id]": BBB, "fields": ",".join(link_fields),
     "sort": "-id", "page[size]": N})
+_lib.register_from(r.json())
 rows = r.json()["data"]
 
 present = Counter()

@@ -22,7 +22,7 @@ sample row with dotted fields:
 {
   "type": "Version",
   "attributes": {
-    "code": "bunny_art_v001",
+    "code": "fjord_zephyr_v001",
     "sg_status_list": "fin",
     "sg_task.Task.content": "Art"
   },
@@ -30,7 +30,7 @@ sample row with dotted fields:
     "entity": {
       "data": {
         "id": 1230,
-        "name": "Bunny",
+        "name": "Fjord",
         "type": "Asset"
       },
       "links": {

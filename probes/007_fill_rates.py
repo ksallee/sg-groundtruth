@@ -8,6 +8,7 @@ BBB, N = 70, 100
 names = sorted(c.get("/schema/Version/fields", params={"project_id": BBB}).json()["data"])
 r = c.get("/entity/versions", params={"filter[project.Project.id]": BBB,
                                       "fields": ",".join(names), "sort": "-id", "page[size]": N})
+_lib.register_from(r.json())
 rows = r.json()["data"]
 n = len(rows)
 

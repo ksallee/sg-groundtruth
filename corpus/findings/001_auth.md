@@ -21,7 +21,7 @@ payload keys/values: {
 }
 
 GET /entity/projects -> 200
-projects: [(63, 'Start From Scratch'), (70, 'Big Buck Bunny'), (78, 'Game Template')]
+projects: [(63, 'Tundra Quartz Inlet'), (70, 'Fjord Inlet Vapor'), (78, 'Jules Quarry')]
 ```
 
 **Verdict** client_credentials works; token lives 600s; refresh_token returned but the client re-auths instead.

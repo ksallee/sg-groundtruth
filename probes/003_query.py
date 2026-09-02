@@ -32,6 +32,7 @@ d = try_("dotted fields in ?fields", "GET", "/entity/versions",
          params={"filter[project.Project.id]": BBB,
                  "fields": "code,sg_status_list,sg_task.Task.content,entity",
                  "page[size]": 3})
+_lib.register_from(d)
 sample = json.dumps(d["data"][0], indent=2)[:900] if d and d.get("data") else "(no rows)"
 
 # complex search endpoint

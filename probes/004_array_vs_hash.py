@@ -21,6 +21,7 @@ for label, headers in variants:
     if not r.ok:
         rows.append(f"{r.status_code} {label}: {r.text[:150]}")
         continue
+    _lib.register_from(r.json())
     row = r.json()["data"][0]
     rows.append(f"{r.status_code} {label}\n"
                 f"      content-type: {r.headers.get('Content-Type')}\n"

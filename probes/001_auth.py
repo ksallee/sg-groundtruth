@@ -21,6 +21,7 @@ shape = {k: (f"<{type(v).__name__}, {len(str(v))} chars>" if k.endswith("token")
 
 probe = _lib.client()
 g = probe.get("/entity/projects", params={"fields": "name", "page[size]": 3})
+_lib.register_from(g.json() if g.ok else {})
 
 actual = (
     f"POST auth -> {r.status_code}\n"

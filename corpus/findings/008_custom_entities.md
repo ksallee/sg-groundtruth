@@ -17,17 +17,17 @@ custom entity slots present: 11
 custom entity slots enabled:  11
 
 enabled:
-  CustomEntity01           display='E2E Test Run'
-  CustomEntity02           display='E2E Test Result'
-  CustomEntity03           display='Code Quality Report'
-  CustomEntity04           display='Benchmark Run'
-  CustomEntity05           display='Fields History'
-  CustomEntity06           display='Security Scan Report'
-  CustomEntity07           display='Security Finding'
-  CustomEntity19           display='Lenses'
-  CustomEntity29           display='Location'
-  CustomEntity29_sg_scene_Connection display='Custom Entity29 Sg Scene Connection'
-  CustomEntity66           display='Weekly Report Custom Entity '
+  CustomEntity01           display='GABLE2GABLE Orchard Juniper'
+  CustomEntity02           display='GABLE2GABLE Orchard Kiln'
+  CustomEntity03           display='Code Vapor Lantern'
+  CustomEntity04           display='Uma Stilt'
+  CustomEntity05           display='Wren Frost'
+  CustomEntity06           display='Delta Mesa Lantern'
+  CustomEntity07           display='Lux Brenn'
+  CustomEntity19           display='Sable'
+  CustomEntity29           display='Flint'
+  CustomEntity29_sg_scene_Connection display='Custom Entity29 Sg Scene Juniper'
+  CustomEntity66           display='Yarrow Lantern Custom Entity'
 
 sample of disabled slots (first 5):
 ```
