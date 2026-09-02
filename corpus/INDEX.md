@@ -24,8 +24,8 @@ Read this first. Open an entry only when its one-liner does not already answer t
   `schema custom-entity discovery`
 - **009_status_lists** — A project's usable statuses are valid_values MINUS hidden_values, read with project_id. valid_values is identical at every scope and is NOT the answer on its own; hidden_values is what varies (site-wide hides 0, one project hides 2, another hides 6). Status lists are also per entity type - Version and Task share no vocabulary. Always read display_values: raw codes like 'pndvs' mean nothing to a user.  
   `schema status list-field inspector`
-- **010_status_icons** — Status is a real queryable entity (32 rows, 11 fields) holding bg_color, name, code and a `system` flag separating built-in from custom statuses. bg_color is comma-separated RGB ('25,118,27'), NOT hex. GAP: `icon` is null on all 32 statuses on this site, so the standard/custom-icon branches are unverified - set a custom icon on one status to close it.  
-  `status icon cache schema colour`
+- **010_status_icons** — Status.icon is an ENTITY link, so it arrives under relationships, not attributes - reading attributes alone makes every icon look null. Icons basaltolve three ways by display_type: 'image_map' (94 standard, url empty, addbasaltsed by image_map_key like 'icon_apr' - a sprite, and its location is NOT guessable at /images/*, still unbasaltolved); 'image' (custom upload - url is a self-contained data:image/png;base64 URI, with newlines that must be stripped, and image_data holds the same bytes); 'html' (custom text badge - html holds the label, no image at all). bg_color is comma-separated RGB, not hex, and is enough to render a badge without any icon.  
+  `status icon cache colour entity-field`
 
 ## Recipes
 
@@ -41,7 +41,7 @@ Read this first. Open an entry only when its one-liner does not already answer t
 - **custom-entity** — 008_custom_entities (finding)
 - **discovery** — 002_schema (finding), 008_custom_entities (finding)
 - **dotted-field** — 003_query (finding)
-- **entity-field** — 004_array_vs_hash (finding), 005_link_usage (finding)
+- **entity-field** — 004_array_vs_hash (finding), 005_link_usage (finding), 010_status_icons (finding)
 - **enumeration** — 006_pagination (finding)
 - **error-handling** — 004_array_vs_hash (finding)
 - **fill-rate** — 007_fill_rates (finding)
@@ -53,7 +53,7 @@ Read this first. Open an entry only when its one-liner does not already answer t
 - **list-field** — 009_status_lists (finding)
 - **paging** — 003_query (finding), 005_link_usage (finding), 006_pagination (finding)
 - **query** — 003_query (finding), 004_array_vs_hash (finding), 006_pagination (finding)
-- **schema** — 002_schema (finding), 007_fill_rates (finding), 008_custom_entities (finding), 009_status_lists (finding), 010_status_icons (finding)
+- **schema** — 002_schema (finding), 007_fill_rates (finding), 008_custom_entities (finding), 009_status_lists (finding)
 - **status** — 009_status_lists (finding), 010_status_icons (finding)
 - **token** — 001_auth (finding)
 - **version** — 003_query (finding), 005_link_usage (finding), 007_fill_rates (finding)

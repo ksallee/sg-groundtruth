@@ -1,4 +1,4 @@
-"""Q: where do status colours and icons live, and can they be cached from REST?"""
+"""Q: how are status colours and icons resolved, and do standard and custom icons differ?"""
 import json
 
 import _lib
@@ -7,38 +7,52 @@ env = _lib.load_env()
 c = _lib.client()
 rows = []
 
-r = c.get("/schema/Status/fields")
-fields = sorted(r.json()["data"]) if r.ok else []
-rows.append(f"{r.status_code} /schema/Status/fields -> {len(fields)} fields\n      {fields}")
+sfields = sorted(c.get("/schema/Status/fields").json()["data"])
+rows.append(f"Status fields: {sfields}")
+rows.append(f"Status.icon data_type: "
+            f"{c.get('/schema/Status/fields/icon').json()['data']['data_type']['value']}")
 
-if fields:
-    r = c.get("/entity/statuses", params={"fields": ",".join(fields), "page[size]": 100})
-    if r.ok:
-        data = r.json()["data"]
-        _lib.register_from(r.json())
-        rows.append(f"200 /entity/statuses -> {len(data)} statuses")
-        for row in data[:6]:
-            a = row.get("attributes", {})
-            rows.append("      " + json.dumps({k: v for k, v in a.items() if v not in (None, "", [], {})})[:260])
-        # which carry an uploaded icon vs a named one
-        icons = [(a.get("code"), a.get("icon"), a.get("bg_color"))
-                 for a in (x.get("attributes", {}) for x in data)]
-        named = [c_ for c_, i, _ in icons if isinstance(i, str)]
-        uploaded = [c_ for c_, i, _ in icons if isinstance(i, dict)]
-        blank = [c_ for c_, i, _ in icons if not i]
-        rows.append(f"\n      icon as string (standard): {len(named)} {named[:8]}")
-        rows.append(f"      icon as object (uploaded): {len(uploaded)} {uploaded[:8]}")
-        rows.append(f"      icon empty:                {len(blank)} {blank[:8]}")
-    else:
-        rows.append(f"{r.status_code} /entity/statuses: {r.text[:200]}")
+st = c.get("/entity/statuses", params={"fields": "code,name,bg_color,system,icon", "page[size]": 100}).json()
+_lib.register_from(st)
+withicon = [x for x in st["data"] if (x.get("relationships", {}).get("icon") or {}).get("data")]
+rows.append(f"\nstatuses: {len(st['data'])}, with an icon relationship: {len(withicon)}")
+rows.append(f"sample bg_color: {json.dumps([x['attributes'].get('bg_color') for x in st['data'][:4]])}")
+
+ifields = sorted(c.get("/schema/Icon/fields").json()["data"])
+rows.append(f"\nIcon fields: {ifields}")
+icons = c.get("/entity/icons", params={"fields": ",".join(ifields), "page[size]": 200}).json()
+_lib.register_from(icons)
+
+groups = {}
+for x in icons["data"]:
+    a = x["attributes"]
+    groups.setdefault((a.get("icon_type"), a.get("display_type")), []).append(a)
+
+rows.append(f"\n{len(icons['data'])} icons, grouped by (icon_type, display_type):")
+for (it, dt), items in sorted(groups.items(), key=lambda kv: str(kv[0])):
+    a = items[0]
+    url = (a.get("url") or "").replace("\n", "")
+    url_desc = f"{url[:58]}...({len(url)} chars)" if url else "empty string"
+    idata = a.get("image_data")
+    data_desc = f"base64 str, {len(idata)} chars" if isinstance(idata, str) else "null"
+    rows.append(
+        f"\n  {it} / {dt}  n={len(items)}\n"
+        f"    url            {url_desc}\n"
+        f"    image_map_key  {json.dumps(a.get('image_map_key'))}\n"
+        f"    html           {json.dumps(a.get('html'))[:60]}\n"
+        f"    image_data     {data_desc}")
 
 actual = "\n".join(rows)
-_lib.record("010_status_icons", "GET /schema/Status/fields, GET /entity/statuses",
-            "Status colour and icon come from the Status entity; three icon cases must be handled.",
-            actual,
-            "Status is a real queryable entity (32 rows, 11 fields) holding bg_color, name, code and a "
-            "`system` flag separating built-in from custom statuses. bg_color is comma-separated RGB "
-            "('25,118,27'), NOT hex. GAP: `icon` is null on all 32 statuses on this site, so the "
-            "standard/custom-icon branches are unverified - set a custom icon on one status to close it.",
-            env, tags=("status", "icon", "cache", "schema", "colour"))
+_lib.record(
+    "010_status_icons", "GET /entity/statuses?fields=...,icon ; GET /entity/icons",
+    "Status colour and icon come from the Status entity; standard and custom icons resolve differently.",
+    actual,
+    "Status.icon is an ENTITY link, so it arrives under relationships, not attributes - reading attributes "
+    "alone makes every icon look null. Icons resolve three ways by display_type: 'image_map' (94 standard, "
+    "url empty, addressed by image_map_key like 'icon_apr' - a sprite, and its location is NOT guessable at "
+    "/images/*, still unresolved); 'image' (custom upload - url is a self-contained data:image/png;base64 URI, "
+    "with newlines that must be stripped, and image_data holds the same bytes); 'html' (custom text badge - "
+    "html holds the label, no image at all). bg_color is comma-separated RGB, not hex, and is enough to render "
+    "a badge without any icon.",
+    env, tags=("status", "icon", "cache", "colour", "entity-field"))
 print(actual)

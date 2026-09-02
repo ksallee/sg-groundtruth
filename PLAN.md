@@ -64,8 +64,9 @@ blob in an existing text field plus an attachment. Do not design provenance stor
 
 ## Open
 
-- Probe 010 left a gap: no status on this site has an icon, so the standard-vs-custom icon branches are
-  unverified. Setting one custom icon by hand unblocks it.
+- Probe 010 resolved all three icon cases, but the sprite behind `image_map_key` is still unlocated — not
+  under `/images/*`. Standard statuses render from `bg_color` + name until it is found; check the web app's
+  CSS for the sprite reference.
 
 
 - Does ComfyUI re-evaluate `INPUT_TYPES` on refresh, or does a profile change need a restart? Decides whether

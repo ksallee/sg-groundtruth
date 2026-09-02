@@ -84,9 +84,21 @@ Everything else stays a claim until something needs it.
 | Claim | Probe | Needed by comfyui-fpt |
 |---|---|---|
 | Status lists are site-wide; per-project usage is `valid_values` minus `hidden_values` when the field schema is read with `project_id` | 009 | yes |
-| A status may be standard, custom with a standard icon, or custom with an uploaded icon | 010 | yes |
-| Resolving the right icon for all three cases takes real code | 010 | yes |
+| A status may be standard, custom with a standard icon, or custom with an uploaded icon | 010 | **confirmed** |
+| Resolving the right icon for all three cases takes real code | 010 | **confirmed** |
 | Icons must be cached, not refetched per render | 010 | yes |
+| Icon entities cannot be created by a script/API user — needs a HumanUser session | — | only if we ever set icons |
+
+Probe 010: three cases, keyed on `Icon.display_type`.
+
+| display_type | who | how to render |
+|---|---|---|
+| `image_map` | 94 standard statuses | `image_map_key` (`icon_apr`) into a sprite. Sprite location still unknown — not under `/images/*`. |
+| `image` | custom uploaded | `url` is a self-contained `data:image/png;base64` URI. Strip newlines. `image_data` holds the same bytes. |
+| `html` | custom text badge | `html` holds the label. No image exists. |
+
+`Status.icon` is an entity link, so it arrives under `relationships`. `bg_color` is comma-separated RGB and is
+enough to render a badge with no icon at all — which is the fallback while the sprite is unresolved.
 
 The node displays statuses, so this is in scope under the scope rule. Icons belong in the schema cache
 alongside the field definitions, keyed per site, with the binary stored on disk rather than re-downloaded.

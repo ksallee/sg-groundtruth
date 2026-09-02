@@ -49,7 +49,7 @@ SAFE = {
     "and", "the", "for", "not", "all", "any", "date", "time", "list", "text", "float",
     "entity", "field", "value", "true", "false", "null", "none", "custom", "default", "system",
     "pending", "approved", "progress", "complete", "viewed", "confirmed", "closed", "omitted",
-    "ready", "waiting", "hold", "disabled",
+    "ready", "waiting", "hold", "disabled", "cbb", "icon", "active",
 }
 # Standard entity types are safe. Anything else capitalised is a name until proven otherwise —
 # an earlier version used [A-Z]\w* here and leaked every single-word display name.
