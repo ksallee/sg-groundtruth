@@ -44,7 +44,7 @@ Read this first. Open an entry only when its one-liner does not already answer t
   `schema write custom-field provenance entity-field trap`
 - **020_summarize** — _summarize needs the same vendor Content-Type as _search, and one `grouping` call returns a field's distinct-value count and its empty count. At ~300ms a field, rank a shortlist, never scan.  
   `query inspector fill-rate schema cost list-field`
-- **021_media_resolution** — PublishedFile.path is returned with the LocalStorage join already done (local_path_mac/windows/linux are server-filled), so a client never reads LocalStorage or reassembles a root.  
+- **021_media_resolution** — PublishedFile.path is returned with the LocalStorage join already done, so a client never reads LocalStorage or reassembles a root, but a platform whose storage root is unset reads null.  
   `version media published-file path storage inspector query`
 - **022_sequence_on_version** — sg_uploaded_movie is single-valued, and replacing it leaves sg_uploaded_movie_mp4 describing the old file while status reads 1. A sequence belongs in sg_path_to_frames.  
   `version media upload sequence path attachment write`
@@ -155,6 +155,10 @@ One per standard entity type: what it is, how it is identified, created and link
   `write version upload attachment provenance recipe`
 - **002_batch** — Apply many creates, updates and deletes in one atomic call, and match the results back to the requests  
   `write batch create version shot error-handling trap recipe`
+- **004_register_published_file** — Register the next PublishedFile without overwriting the last one, and write a path the server resolves for every platform  
+  `write published-file path storage version create entity-field trap recipe`
+- **005_propagate_status** — Roll a status up from a parent's Tasks and Versions onto the parent, without racing a concurrent write  
+  `write status task version shot schema batch filter trap recipe`
 
 ## By tag
 
@@ -162,14 +166,14 @@ One per standard entity type: what it is, how it is identified, created and link
 - **async** — 013_upload_media (finding), 024_read_after_write (finding), image (field type)
 - **attachment** — 013_upload_media (finding), 014_attach_file (finding), 022_sequence_on_version (finding), 001_publish_version_with_media (recipe), url (field type), Attachment (entity type), Note (entity type)
 - **auth** — 001_auth (finding), 027_auth_permissions (finding)
-- **batch** — 024_read_after_write (finding), 002_batch (recipe)
+- **batch** — 024_read_after_write (finding), 002_batch (recipe), 005_propagate_status (recipe)
 - **cache** — 010_status_icons (finding)
 - **calculated** — calculated (field type)
 - **checkbox** — checkbox (field type)
 - **client** — 001_auth (finding), 027_auth_permissions (finding)
 - **colour** — 010_status_icons (finding), color (field type)
 - **cost** — 002_schema (finding), 020_summarize (finding)
-- **create** — 011_create_project (finding), 012_create_version (finding), 024_read_after_write (finding), 025_event_log (finding), 002_batch (recipe), Asset (entity type), Attachment (entity type), Note (entity type), Playlist (entity type), PublishedFile (entity type), PublishedFileType (entity type), Reply (entity type), Sequence (entity type), Shot (entity type), Task (entity type), TimeLog (entity type), Version (entity type)
+- **create** — 011_create_project (finding), 012_create_version (finding), 024_read_after_write (finding), 025_event_log (finding), 002_batch (recipe), 004_register_published_file (recipe), Asset (entity type), Attachment (entity type), Note (entity type), Playlist (entity type), PublishedFile (entity type), PublishedFileType (entity type), Reply (entity type), Sequence (entity type), Shot (entity type), Task (entity type), TimeLog (entity type), Version (entity type)
 - **custom-entity** — 008_custom_entities (finding), entity_type (field type)
 - **custom-field** — 019_create_fields (finding)
 - **date** — date (field type)
@@ -178,14 +182,14 @@ One per standard entity type: what it is, how it is identified, created and link
 - **discovery** — 002_schema (finding), 008_custom_entities (finding)
 - **dotted-field** — 003_query (finding), 016_dotted_multi_entity (finding), 017_filter_operators (finding), 026_result_order (finding), entity (field type), multi_entity (field type), password (field type), Sequence (entity type)
 - **duration** — duration (field type), Task (entity type), TimeLog (entity type)
-- **entity-field** — 004_array_vs_hash (finding), 005_link_usage (finding), 010_status_icons (finding), 012_create_version (finding), 017_filter_operators (finding), 019_create_fields (finding), 024_read_after_write (finding), entity (field type), entity_type (field type), multi_entity (field type), Asset (entity type), Note (entity type), Playlist (entity type), PublishedFile (entity type), Reply (entity type), Sequence (entity type), Shot (entity type), Step (entity type), Task (entity type), TimeLog (entity type), Version (entity type)
+- **entity-field** — 004_array_vs_hash (finding), 005_link_usage (finding), 010_status_icons (finding), 012_create_version (finding), 017_filter_operators (finding), 019_create_fields (finding), 024_read_after_write (finding), 004_register_published_file (recipe), entity (field type), entity_type (field type), multi_entity (field type), Asset (entity type), Note (entity type), Playlist (entity type), PublishedFile (entity type), Reply (entity type), Sequence (entity type), Shot (entity type), Step (entity type), Task (entity type), TimeLog (entity type), Version (entity type)
 - **entity-type** — Asset (entity type), Attachment (entity type), Note (entity type), Playlist (entity type), Project (entity type), PublishedFile (entity type), PublishedFileType (entity type), Reply (entity type), Sequence (entity type), Shot (entity type), Step (entity type), Task (entity type), TimeLog (entity type), Version (entity type)
 - **enumeration** — 006_pagination (finding), PublishedFileType (entity type)
 - **error-handling** — 004_array_vs_hash (finding), 017_filter_operators (finding), 028_loud_and_silent (finding), 030_complex_filters (finding), 002_batch (recipe), float (field type), jsonb (field type), serializable (field type)
 - **event-log** — 025_event_log (finding)
 - **field-type** — calculated (field type), checkbox (field type), color (field type), date (field type), date_time (field type), duration (field type), entity (field type), entity_type (field type), float (field type), image (field type), jsonb (field type), list (field type), multi_entity (field type), number (field type), password (field type), percent (field type), pivot_column (field type), serializable (field type), status_list (field type), summary (field type), text (field type), timecode (field type), url (field type), uuid (field type)
 - **fill-rate** — 007_fill_rates (finding), 020_summarize (finding), checkbox (field type), number (field type), percent (field type), summary (field type)
-- **filter** — 003_query (finding), 014_attach_file (finding), 016_dotted_multi_entity (finding), 017_filter_operators (finding), 018_project_listing (finding), 023_pages (finding), 025_event_log (finding), 026_result_order (finding), 028_loud_and_silent (finding), 030_complex_filters (finding), calculated (field type), checkbox (field type), color (field type), date (field type), date_time (field type), duration (field type), entity (field type), entity_type (field type), float (field type), image (field type), jsonb (field type), list (field type), multi_entity (field type), number (field type), password (field type), percent (field type), pivot_column (field type), serializable (field type), status_list (field type), summary (field type), text (field type), timecode (field type), url (field type), uuid (field type), Project (entity type), PublishedFileType (entity type), Reply (entity type), Step (entity type)
+- **filter** — 003_query (finding), 014_attach_file (finding), 016_dotted_multi_entity (finding), 017_filter_operators (finding), 018_project_listing (finding), 023_pages (finding), 025_event_log (finding), 026_result_order (finding), 028_loud_and_silent (finding), 030_complex_filters (finding), 005_propagate_status (recipe), calculated (field type), checkbox (field type), color (field type), date (field type), date_time (field type), duration (field type), entity (field type), entity_type (field type), float (field type), image (field type), jsonb (field type), list (field type), multi_entity (field type), number (field type), password (field type), percent (field type), pivot_column (field type), serializable (field type), status_list (field type), summary (field type), text (field type), timecode (field type), url (field type), uuid (field type), Project (entity type), PublishedFileType (entity type), Reply (entity type), Step (entity type)
 - **float** — float (field type)
 - **header** — 004_array_vs_hash (finding), 014_attach_file (finding), 030_complex_filters (finding)
 - **icon** — 010_status_icons (finding)
@@ -202,35 +206,35 @@ One per standard entity type: what it is, how it is identified, created and link
 - **page** — 023_pages (finding), 030_complex_filters (finding)
 - **paging** — 003_query (finding), 005_link_usage (finding), 006_pagination (finding), 016_dotted_multi_entity (finding), 025_event_log (finding), 026_result_order (finding)
 - **password** — password (field type)
-- **path** — 021_media_resolution (finding), 022_sequence_on_version (finding), PublishedFile (entity type)
+- **path** — 021_media_resolution (finding), 022_sequence_on_version (finding), 004_register_published_file (recipe), PublishedFile (entity type)
 - **percent** — percent (field type)
 - **permission** — 027_auth_permissions (finding)
 - **pivot-column** — pivot_column (field type), Shot (entity type)
 - **playlist** — Playlist (entity type)
 - **project** — 011_create_project (finding), 018_project_listing (finding), 023_pages (finding), Project (entity type)
 - **provenance** — 014_attach_file (finding), 019_create_fields (finding), 001_publish_version_with_media (recipe)
-- **published-file** — 021_media_resolution (finding), PublishedFile (entity type), PublishedFileType (entity type)
+- **published-file** — 021_media_resolution (finding), 004_register_published_file (recipe), PublishedFile (entity type), PublishedFileType (entity type)
 - **query** — 003_query (finding), 004_array_vs_hash (finding), 006_pagination (finding), 016_dotted_multi_entity (finding), 017_filter_operators (finding), 018_project_listing (finding), 020_summarize (finding), 021_media_resolution (finding), 023_pages (finding), 025_event_log (finding), 026_result_order (finding), 028_loud_and_silent (finding), 030_complex_filters (finding), Reply (entity type), Step (entity type)
-- **recipe** — 001_publish_version_with_media (recipe), 002_batch (recipe)
+- **recipe** — 001_publish_version_with_media (recipe), 002_batch (recipe), 004_register_published_file (recipe), 005_propagate_status (recipe)
 - **reply** — Reply (entity type)
-- **schema** — 002_schema (finding), 007_fill_rates (finding), 008_custom_entities (finding), 009_status_lists (finding), 011_create_project (finding), 019_create_fields (finding), 020_summarize (finding), 023_pages (finding), calculated (field type), color (field type), duration (field type), entity_type (field type), jsonb (field type), list (field type), password (field type), pivot_column (field type), serializable (field type), status_list (field type), summary (field type), timecode (field type), uuid (field type), Project (entity type), PublishedFileType (entity type), Step (entity type)
+- **schema** — 002_schema (finding), 007_fill_rates (finding), 008_custom_entities (finding), 009_status_lists (finding), 011_create_project (finding), 019_create_fields (finding), 020_summarize (finding), 023_pages (finding), 005_propagate_status (recipe), calculated (field type), color (field type), duration (field type), entity_type (field type), jsonb (field type), list (field type), password (field type), pivot_column (field type), serializable (field type), status_list (field type), summary (field type), timecode (field type), uuid (field type), Project (entity type), PublishedFileType (entity type), Step (entity type)
 - **sequence** — 022_sequence_on_version (finding), Sequence (entity type)
 - **serializable** — 025_event_log (finding), jsonb (field type), serializable (field type)
-- **shot** — 002_batch (recipe), Sequence (entity type), Shot (entity type)
+- **shot** — 002_batch (recipe), 005_propagate_status (recipe), Sequence (entity type), Shot (entity type)
 - **sort** — 026_result_order (finding), 028_loud_and_silent (finding)
-- **status** — 009_status_lists (finding), 010_status_icons (finding), 025_event_log (finding), status_list (field type), Asset (entity type), Attachment (entity type), Note (entity type), PublishedFile (entity type), Sequence (entity type), Shot (entity type), Task (entity type), Version (entity type)
+- **status** — 009_status_lists (finding), 010_status_icons (finding), 025_event_log (finding), 005_propagate_status (recipe), status_list (field type), Asset (entity type), Attachment (entity type), Note (entity type), PublishedFile (entity type), Sequence (entity type), Shot (entity type), Task (entity type), Version (entity type)
 - **step** — pivot_column (field type), Step (entity type)
-- **storage** — 021_media_resolution (finding), PublishedFile (entity type)
+- **storage** — 021_media_resolution (finding), 004_register_published_file (recipe), PublishedFile (entity type)
 - **summary** — summary (field type), timecode (field type)
-- **task** — Step (entity type), Task (entity type), TimeLog (entity type)
+- **task** — 005_propagate_status (recipe), Step (entity type), Task (entity type), TimeLog (entity type)
 - **text** — text (field type)
 - **time-log** — TimeLog (entity type)
 - **timecode** — timecode (field type)
 - **token** — 001_auth (finding), 027_auth_permissions (finding)
-- **trap** — 004_array_vs_hash (finding), 016_dotted_multi_entity (finding), 018_project_listing (finding), 019_create_fields (finding), 023_pages (finding), 024_read_after_write (finding), 025_event_log (finding), 026_result_order (finding), 028_loud_and_silent (finding), 030_complex_filters (finding), 002_batch (recipe), calculated (field type), checkbox (field type), color (field type), date (field type), date_time (field type), duration (field type), entity (field type), entity_type (field type), float (field type), image (field type), jsonb (field type), list (field type), multi_entity (field type), number (field type), password (field type), percent (field type), pivot_column (field type), serializable (field type), status_list (field type), summary (field type), text (field type), timecode (field type), url (field type), uuid (field type), Asset (entity type), Attachment (entity type), Note (entity type), Playlist (entity type), Project (entity type), PublishedFile (entity type), PublishedFileType (entity type), Reply (entity type), Sequence (entity type), Shot (entity type), Step (entity type), Task (entity type), TimeLog (entity type)
+- **trap** — 004_array_vs_hash (finding), 016_dotted_multi_entity (finding), 018_project_listing (finding), 019_create_fields (finding), 023_pages (finding), 024_read_after_write (finding), 025_event_log (finding), 026_result_order (finding), 028_loud_and_silent (finding), 030_complex_filters (finding), 002_batch (recipe), 004_register_published_file (recipe), 005_propagate_status (recipe), calculated (field type), checkbox (field type), color (field type), date (field type), date_time (field type), duration (field type), entity (field type), entity_type (field type), float (field type), image (field type), jsonb (field type), list (field type), multi_entity (field type), number (field type), password (field type), percent (field type), pivot_column (field type), serializable (field type), status_list (field type), summary (field type), text (field type), timecode (field type), url (field type), uuid (field type), Asset (entity type), Attachment (entity type), Note (entity type), Playlist (entity type), Project (entity type), PublishedFile (entity type), PublishedFileType (entity type), Reply (entity type), Sequence (entity type), Shot (entity type), Step (entity type), Task (entity type), TimeLog (entity type)
 - **upload** — 013_upload_media (finding), 014_attach_file (finding), 022_sequence_on_version (finding), 024_read_after_write (finding), 001_publish_version_with_media (recipe), image (field type), url (field type), Attachment (entity type)
 - **url** — url (field type), Attachment (entity type)
 - **user** — 027_auth_permissions (finding)
 - **uuid** — uuid (field type)
-- **version** — 003_query (finding), 005_link_usage (finding), 007_fill_rates (finding), 012_create_version (finding), 013_upload_media (finding), 014_attach_file (finding), 021_media_resolution (finding), 022_sequence_on_version (finding), 001_publish_version_with_media (recipe), 002_batch (recipe), url (field type), Playlist (entity type), Version (entity type)
-- **write** — 011_create_project (finding), 012_create_version (finding), 013_upload_media (finding), 014_attach_file (finding), 019_create_fields (finding), 022_sequence_on_version (finding), 024_read_after_write (finding), 025_event_log (finding), 028_loud_and_silent (finding), 001_publish_version_with_media (recipe), 002_batch (recipe), color (field type), date (field type), date_time (field type), duration (field type), entity (field type), entity_type (field type), float (field type), image (field type), jsonb (field type), list (field type), multi_entity (field type), number (field type), percent (field type), serializable (field type), status_list (field type), text (field type), timecode (field type), url (field type), uuid (field type), Sequence (entity type)
+- **version** — 003_query (finding), 005_link_usage (finding), 007_fill_rates (finding), 012_create_version (finding), 013_upload_media (finding), 014_attach_file (finding), 021_media_resolution (finding), 022_sequence_on_version (finding), 001_publish_version_with_media (recipe), 002_batch (recipe), 004_register_published_file (recipe), 005_propagate_status (recipe), url (field type), Playlist (entity type), Version (entity type)
+- **write** — 011_create_project (finding), 012_create_version (finding), 013_upload_media (finding), 014_attach_file (finding), 019_create_fields (finding), 022_sequence_on_version (finding), 024_read_after_write (finding), 025_event_log (finding), 028_loud_and_silent (finding), 001_publish_version_with_media (recipe), 002_batch (recipe), 004_register_published_file (recipe), 005_propagate_status (recipe), color (field type), date (field type), date_time (field type), duration (field type), entity (field type), entity_type (field type), float (field type), image (field type), jsonb (field type), list (field type), multi_entity (field type), number (field type), percent (field type), serializable (field type), status_list (field type), text (field type), timecode (field type), url (field type), uuid (field type), Sequence (entity type)

@@ -48,6 +48,11 @@ DELETE -> 204, empty body. GET the same id -> 404
 ```
 
 **Teaches**
+- There is no conditional write. `If-Match`, `If-Unmodified-Since` and `If-None-Match` are ignored and the
+  update applies at 200, though a `GET` returns a weak `ETag`; echoing `updated_at` back is refused with
+  `API update() Task.updated_at is editable on create only.` So a read-then-write guard narrows the race
+  window and never closes it, and exactness needs serialisation outside the API (`recipes/005`).
+
 
 | operation | the response returns | it omits | how to get the rest |
 |---|---|---|---|

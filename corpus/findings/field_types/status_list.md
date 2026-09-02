@@ -100,6 +100,11 @@ differ only in that `status_list` adds `hidden_values` and an Icon (probe 010). 
 subset of text's eight (probe 017): `contains`, `not_contains`, `starts_with`, `ends_with` are 400s here.
 
 **Traps**
+- `hidden_values` is not a subset of `valid_values`. On the probed sandbox project Task hides `blk` and
+  `rdy`, neither of which `valid_values` contains, so writing one is 400 while the hidden-but-valid `hld`
+  writes at 200 and reads back. Subtracting one set from the other is right for offering a choice and wrong
+  for testing a row: a row may hold a code outside the usable set (`recipes/005`).
+
 - `hidden_values` is not enforced by the API. REST 201s and 200s on a status the project's UI refuses to
   offer, so **every client must subtract `hidden_values` itself** (probe 009). The API will not do it.
   Conversely, do not treat a hidden code read back off an entity as corrupt: it is a legal stored value.
