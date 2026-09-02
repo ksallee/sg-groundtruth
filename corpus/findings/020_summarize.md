@@ -53,3 +53,36 @@ verdict: _summarize needs the same vendor Content-Type as _search, and one `grou
 - At ~300ms a call, and up to 1.5s on an entity field, scanning every Version field costs many multiples of one paged fetch of 100 rows (306ms on the probed site). Fetch one page for the broad fill-rate pass, then `_summarize` only the shortlist to rank it by cardinality.
 - A checkbox cannot be filtered `is_not None`: 400 `API summarize() Version.flagged expected [String, FalseClass, TrueClass] data type(s) but got NilClass: nil`. Take fill rate on a checkbox from `grouping`, not from a filter.
 - `application/json` is 415 `Unsupported Content-Type 'application/json'`; send the same vendor Content-Type as `_search` (probe 004).
+- A bogus `type` 400s `Request Parameters invalid.` and `source.summary_fields` names the whole set, indexed by position in the list: `type must be one of: record_count, count, sum, maximum, minimum, average, earliest, latest, percentage, status_percentage, status_percentage_as_float, status_list, checked, unchecked`. Ask the endpoint rather than guessing (probe 017).
+
+**One summary type per field per call.** `summaries` is an object keyed by field name, so a second entry
+for the same field overwrites the first at 200, with nothing in the response to say so. The last entry wins.
+On the probed site, over 100 versions:
+
+| `summary_fields` | `summaries` |
+|---|---|
+| `id count` | `{"id": 100}` |
+| `id maximum` | `{"id": 25568}` |
+| `id count` + `id maximum` | `{"id": 25568}` |
+| `id maximum` + `id count` | `{"id": 100}` |
+| `id count` + `id count` | `{"id": 100}` |
+| `id count` + `id minimum` + `id maximum` | `{"id": 25568}` |
+| `id count` + `frame_count sum` | `{"id": 100, "frame_count": 0}` |
+
+Two types over one field costs two calls. Two different fields in one call return both.
+
+**A group's label and its value are not interchangeable.** `group_value` is what the grouping was
+computed on; `group_name` is the server's render of it for display:
+
+| grouping field | `group_name` | `group_value` |
+|---|---|---|
+| `user`, an entity field | `"<user>"` | `{"type": "HumanUser", "id": 385, "name": "<user>", "valid": "valid"}` |
+| `sg_task`, an entity field, no value set | `""` | `null` |
+| `sg_status_list`, a list field | `"na"` | `"na"` |
+| `workload`, a calculated field | `"1.25 days"` | `"600.000000"` (field_types/calculated) |
+
+Key on `group_value`, display `group_name`. On an entity grouping `group_value` is the full reference
+object, so `group_value.id` identifies the group and survives a rename; `group_name` is the display name
+and is not unique. On the probed site a `user` grouping over 100 versions returned 7 groups under 6
+distinct `group_name`, two HumanUsers of different id sharing one display name. A client keyed on
+`group_name` merges those two people into one row.

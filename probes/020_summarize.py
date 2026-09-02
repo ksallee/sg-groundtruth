@@ -61,6 +61,35 @@ rows.append("\n=== summary types")
 for t in ("count", "sum", "average", "maximum", "minimum"):
     r, _ = summarize({"filters": [PROJ], "summary_fields": [{"field": "frame_count", "type": t}]})
     rows.append(f"  frame_count {t:<8} -> {r.status_code} {json.dumps(r.json().get('data', {}))[:70]}")
+r, _ = summarize({"filters": [PROJ], "summary_fields": [{"field": "id", "type": "definitely_not_a_type"}]})
+rows.append(f"  bogus type -> {r.status_code} {json.dumps(r.json()['errors'])}")
+
+rows.append("\n=== two types on one field: `summaries` is keyed by field, so only one survives")
+for sf in ([{"field": "id", "type": "count"}],
+           [{"field": "id", "type": "maximum"}],
+           [{"field": "id", "type": "count"}, {"field": "id", "type": "maximum"}],
+           [{"field": "id", "type": "maximum"}, {"field": "id", "type": "count"}],
+           [{"field": "id", "type": "count"}, {"field": "id", "type": "count"}],
+           [{"field": "id", "type": "count"}, {"field": "id", "type": "minimum"},
+            {"field": "id", "type": "maximum"}],
+           [{"field": "id", "type": "count"}, {"field": "frame_count", "type": "sum"}]):
+    r, _ = summarize({"filters": [PROJ], "summary_fields": sf})
+    sent = " + ".join(f"{x['field']} {x['type']}" for x in sf)
+    rows.append(f"  {sent:<46} -> {r.status_code} {json.dumps(r.json()['data']['summaries'])}")
+
+rows.append("\n=== grouping on an entity field: what group_name and group_value each hold")
+for f in ("user", "sg_task", "sg_status_list"):
+    r, _ = summarize({"filters": [PROJ], "summary_fields": [{"field": "id", "type": "count"}],
+                      "grouping": [{"field": f, "type": "exact", "direction": "asc"}]})
+    g = r.json()["data"]["groups"]
+    _lib.note_from(g)
+    _lib.note_names(*[str(x["group_name"]) for x in g])
+    labels = [str(x["group_name"]) for x in g]
+    dupes = {n for n in labels if labels.count(n) > 1 and n}
+    rows.append(f"  {f}: {len(g)} groups, {len(set(labels))} distinct group_name, "
+                f"duplicate labels {sorted(dupes)}")
+    for x in g[:3]:
+        rows.append(f"    {json.dumps(x)}")
 
 rows.append("\n=== cardinality cap? 300 shots, all distinct codes")
 r, ms = summarize({"filters": [PROJ], "summary_fields": [{"field": "id", "type": "count"}],

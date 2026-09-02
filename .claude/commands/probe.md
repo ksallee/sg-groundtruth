@@ -140,3 +140,42 @@ what it matches. Include the negative control that returns 0.
 The corpus is public documentation and competes with the official docs. Read the **Style** section of
 `CLAUDE.md` before writing prose. `check_corpus.py` rejects the banned register and ALL-CAPS emphasis
 mechanically; the rest is judgment. State the fact, once, with the number and the error string verbatim.
+
+## Entity-type findings
+
+One card per standard entity type: `probes/entity_types/<Type>.py` ->
+`corpus/findings/entity_types/<Type>.md`, named for the schema name (`Version`, `PublishedFile`).
+
+**Standard types only.** A custom entity is site configuration: its slot number, its display name and its
+fields belong in the reader's own `corpus.local/` overlay, never in the shipped corpus. `008_custom_entities`
+covers how to resolve them generically, which is the portable part.
+
+Field censuses, row counts and which custom fields exist are site measurements. Attribute them inline,
+beginning "On the probed site, ...". What a stock field is called and how the type is addressed are portable.
+
+```markdown
+---
+tags: [entity-type, …; reuse tags from corpus/INDEX.md]
+scope: api
+verdict: One sentence, 200 chars max. The thing a client gets wrong about this type.
+---
+
+# Version
+
+**Type** Schema name, REST path slug, and whether it is project-scoped or site-wide.
+
+**Identity** The field a human reads as its name, and what is unique. `code`, `content` and `name` are all
+used by different types, and guessing wrong is the first thing that breaks.
+
+**Create** What the server actually requires, which is not the same as what the schema flags mandatory
+(probe 012). One row per attempt: body sent, result.
+
+**Links** Its entity and multi_entity fields, their `valid_types`, and which one a client actually uses.
+Cite `field_types/entity` and `field_types/multi_entity` rather than restating them.
+
+**Status** The status field if it has one, and its vocabulary. Say "none" if it has none.
+
+**Traps** 2-4 bullets. What is read only, what is server managed, what a caller assumes and gets wrong.
+```
+
+45 lines of prose maximum; tables and evidence do not count.

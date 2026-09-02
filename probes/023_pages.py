@@ -168,8 +168,8 @@ for p, cols in listy:
     miss = [x for x in cols if x.split(".")[0] not in schemas[et]]
     if miss:
         unknown.append((et, miss))
-rows.append(f"  pages carrying a grid column list: {len(listy)} of {len(pages)} listed, "
-            f"{len([p for p in pages if rel(p, 'project') and rel(p, 'project')['id'] == PROJECT])} in this project")
+in_project = len([p for p in pages if rel(p, "project") and rel(p, "project")["id"] == PROJECT])
+rows.append(f"  pages carrying a grid column list: {len(listy)} of the {in_project} in this project")
 rows.append(f"  pages whose columns include a name absent from that type's /schema fields: {len(unknown)}")
 for et, miss in unknown[:6]:
     rows.append(f"    {et:<16} {miss}")
@@ -179,22 +179,32 @@ got = r.json()["data"][0]
 rows.append(f"  GET /entity/shots?fields=<that page's columns verbatim> -> {r.status_code}")
 rows.append(f"    attributes {sorted(got['attributes'])}")
 rows.append(f"    relationships {sorted(got['relationships'])}")
+# a stale column is only harmless if ?fields tolerates a name the type does not have.
+for f in ("code,zzz_not_a_field", "zzz_not_a_field"):
+    r = c.get("/entity/shots", params={"fields": f, "page[size]": 1,
+                                       "filter[project.Project.id]": PROJECT})
+    rows.append(f"  GET /entity/shots?fields={f} -> {r.status_code} "
+                f"attributes {sorted(r.json()['data'][0]['attributes'])}")
 
 rows.append("\n=== a per-user PageSetting is a patch, not a tree")
-for x in setting_rows:
+patches = [x for x in setting_rows if isinstance(x["attributes"]["settings_json"], list)]
+for x in patches[:8]:
+    _lib.note_from(x)
     sj = x["attributes"]["settings_json"]
-    if isinstance(sj, list):
-        _lib.note_from(x)
-        rows.append(f"  PageSetting {x['id']} user={rel(x, 'user') is not None} "
-                    f"{json.dumps([{k: (v if k == 'spec_path' else sorted(v)) for k, v in e.items()} for e in sj])[:300]}")
+    rows.append(f"  PageSetting {x['id']} user={rel(x, 'user') is not None} "
+                f"{json.dumps([{k: (v if k == 'spec_path' else sorted(v)) for k, v in e.items()} for e in sj])[:300]}")
+rows.append(f"  ... {len(patches)} patch rows, every one of them user-owned: "
+            f"{all(rel(x, 'user') for x in patches)}")
 
 rows.append("\n=== filter and sort")
-p, pe = len(search("pages", [["name", "contains", "e"]], ["id"])), None
-rows.append(f'  ["name","contains","e"] -> {p if isinstance(p, int) else p}')
-rows.append(f'  negative control ["name","contains","ZZZNOPE"] -> '
-            f'{len(search("pages", [["name", "contains", "ZZZNOPE"]], ["id"]))}')
-rows.append(f'  ["settings_json","contains","SG.Widget.NewGrid"] on page_settings -> '
-            f'{len(search("page_settings", [["settings_json", "contains", "SG.Widget.NewGrid"]], ["id"]))}')
+for v in ("e", "ZZZNOPE"):
+    rows.append(f'  Page ["name","contains",{v!r}] -> {len(search("pages", [["name", "contains", v]], ["id"]))}')
+rows.append(f"  PageSetting baseline (no filter, _summarize): {count('page_settings', [])}")
+for op, v in (("contains", "SG.Widget.NewGrid"), ("contains", "ZZZNOPE"), ("not_contains", "ZZZNOPE"),
+              ("is", "ZZZNOPE"), ("is", None), ("is_not", None), ("starts_with", "ZZZNOPE"),
+              ("in", ["ZZZNOPE"])):
+    rows.append(f'  PageSetting ["settings_json",{op!r},{v!r}] -> {count("page_settings", [["settings_json", op, v]])}')
+rows.append(f'  control ["page","is",null] -> {count("page_settings", [["page", "is", None]])}')
 for s in ("name", "-name", "zzz_not_a_field"):
     r = c.get("/entity/pages", params={"sort": s, "fields": "name", "page[size]": 3,
                                        "filter[project.Project.id]": PROJECT})
