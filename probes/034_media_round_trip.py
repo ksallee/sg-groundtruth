@@ -8,7 +8,6 @@ window, work out where the file extension lives, and fetch the bytes.
 --write half: clear a target Version's media and put the same bytes back, then read what stayed stale.
 """
 import base64
-import json
 import os
 import tempfile
 import time
