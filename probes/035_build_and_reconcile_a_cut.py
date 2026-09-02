@@ -320,5 +320,111 @@ with _lib.Created(c) as made:
              "data": {"project": {"type": "Project", "id": P}, "code": f"{N}x"}}]})
         rows.append(f"  batch entity={name!r} -> {r.status_code} {err(r)}")
 
+    # ------------------------------------------------------------ 8. card facts: the type itself
+    rows.append("\n=== 8. addressing, identity and the schema's coverage of the response")
+    for slug in ("cuts", "cut", "Cut", "Cuts", "cutz", "cut_items", "cut_item", "CutItem",
+                 "cutitems", "cut_itemz"):
+        r = c.get(f"/entity/{slug}", params={"page[size]": 1})
+        rows.append(f"  GET /entity/{slug:10} -> {r.status_code} "
+                    f"{(r.json()['data'][0]['type'] if r.json().get('data') else '0 rows') if r.ok else err(r)}")
+    for slug, cid in (("cuts", cut_id), ("cut_items", made_items[0])):
+        got = set(c.get(f"/entity/{slug}/{cid}").json()["data"]["attributes"])
+        known = set(cut_f if slug == "cuts" else item_f)
+        rows.append(f"  {slug}: GET returns {len(got)} attribute keys, "
+                    f"/schema/*/fields lists {len(known)}; returned but not in the schema: "
+                    f"{sorted(got - known)}")
+    for slug, label in (("cuts", "Cut"), ("cut_items", "CutItem")):
+        r = c.post(f"/entity/{slug}", headers=JSON,
+                   json={"project": {"type": "Project", "id": P}, "code": ""})
+        rows.append(f"  create {label} with code '' -> {r.status_code} {err(r)}")
+        if r.ok:
+            made.add(slug, r.json()["data"]["id"])
+    rows.append("  status_list fields: "
+                f"Cut {[n for n, f in cut_f.items() if prop(f, 'data_type') == 'status_list']}, "
+                f"CutItem {[n for n, f in item_f.items() if prop(f, 'data_type') == 'status_list']}")
+    r = c.get("/schema/CutItem/fields/sg_status_list")
+    rows.append(f"  GET /schema/CutItem/fields/sg_status_list -> {r.status_code} {err(r)}")
+    for field in ("sg_status_list", "sg_cut_type"):
+        d = c.get(f"/schema/Cut/fields/{field}", params={"project_id": P}).json()["data"]
+        p = d.get("properties", {})
+        valid, hidden = prop(p, "valid_values", []) or [], prop(p, "hidden_values", []) or []
+        rows.append(f"  GET /schema/Cut/fields/{field}?project_id=N -> "
+                    f"data_type={prop(d, 'data_type')} default={prop(p, 'default_value')!r}")
+        rows.append(f"    valid_values ({len(valid)}) {valid}")
+        rows.append(f"    hidden_values ({len(hidden)}) {hidden}  "
+                    f"not in valid_values: {[v for v in hidden if v not in valid]}")
+
+    # ------------------------------------------------------------ 9. valid_types, binding or not
+    rows.append("\n=== 9. does valid_types bind (field_types/entity)")
+    seq = c.post("/entity/sequences", headers=JSON, json={
+        "project": {"type": "Project", "id": P}, "code": f"{N}seq01"}).json()["data"]["id"]
+    made.add("sequences", seq)
+    a_shot, a_version = shots[codes[0]], vers[codes[0]]
+    for slug, row_id, field, sent in (
+            ("cuts", cut_id, "entity", {"type": "Sequence", "id": seq}),
+            ("cuts", cut_id, "entity", {"type": "Shot", "id": a_shot}),
+            ("cuts", cut_id, "entity", {"type": "Version", "id": a_version}),
+            ("cuts", cut_id, "version", {"type": "Shot", "id": a_shot}),
+            ("cuts", cut_id, "sg_scene", {"type": "Shot", "id": a_shot}),
+            ("cut_items", made_items[0], "cut", {"type": "Shot", "id": a_shot}),
+            ("cut_items", made_items[0], "shot", {"type": "Version", "id": a_version}),
+            ("cut_items", made_items[0], "version", {"type": "Shot", "id": a_shot})):
+        r = c.put(f"/entity/{slug}/{row_id}", headers=JSON, json={field: sent})
+        back = c.get(f"/entity/{slug}/{row_id}").json()["data"]["relationships"][field]["data"]
+        rows.append(f"  {slug[:-1]}.{field:8} <- {sent['type']:9} -> {r.status_code} "
+                    f"{'reads back ' + back['type'] if r.ok else err(r)}")
+        c.put(f"/entity/{slug}/{row_id}", headers=JSON, json={field: None})
+    c.put(f"/entity/cut_items/{made_items[0]}", headers=JSON,
+          json={"cut": {"type": "Cut", "id": cut_id}, "shot": {"type": "Shot", "id": a_shot},
+                "version": {"type": "Version", "id": vers[codes[0]]}})
+
+    # ------------------------------------------------------------ 10. the filter matrix
+    rows.append("\n=== 10. filters on cut_order and cut")
+    fx = c.post("/entity/cuts", headers=JSON, json={
+        "project": {"type": "Project", "id": P}, "code": f"{N}fixture"}).json()["data"]["id"]
+    made.add("cuts", fx)
+    fixture = {}
+    for label, body in (("order1", {"cut_order": 1}), ("order2", {"cut_order": 2}),
+                        ("order2b", {"cut_order": 2}), ("ordernull", {"cut_order": None})):
+        d = c.post("/entity/cut_items", headers=JSON, json=dict(
+            {"project": {"type": "Project", "id": P}, "code": N + label,
+             "cut": {"type": "Cut", "id": fx}}, **body)).json()["data"]["id"]
+        made.add("cut_items", d)
+        fixture[label] = d
+    loose = c.post("/entity/cut_items", headers=JSON, json={
+        "project": {"type": "Project", "id": P}, "code": f"{N}nocut",
+        "cut_order": 1}).json()["data"]["id"]
+    made.add("cut_items", loose)
+    fixture["nocut"] = loose
+    by_id = {v: k for k, v in fixture.items()}
+    scope = ["project", "is", {"type": "Project", "id": P}]
+
+    def matrix(field, cases):
+        for op, val in cases:
+            r = c.post("/entity/cut_items/_search", headers=ARR, json={
+                "filters": [scope, [field, op, val]], "fields": ["code"], "page": {"size": 100}})
+            if not r.ok:
+                rows.append(f"    {op:14} {json.dumps(val)[:28]:30} -> {r.status_code} {err(r)}")
+                continue
+            got = sorted(by_id.get(d["id"], "other:%d" % d["id"]) for d in r.json()["data"])
+            rows.append(f"    {op:14} {json.dumps(val)[:28]:30} -> {got}")
+
+    THIS = {"type": "Cut", "id": fx}
+    rows.append(f"  fixture: {json.dumps({k: v for k, v in fixture.items()})}, all in one project; "
+                f"'nocut' has no cut")
+    r = c.post("/entity/cut_items/_search", headers=ARR, json={
+        "filters": [["cut_order", "definitely_not_an_operator", 1]], "fields": ["code"]})
+    rows.append(f"  cut_order bogus operator -> {r.status_code} {err(r)}")
+    matrix("cut_order", [("is", 2), ("is", None), ("is_not", 2), ("is_not", None),
+                         ("greater_than", 1), ("less_than", 2), ("between", [1, 2]),
+                         ("in", [1, 2]), ("not_in", [1]), ("contains", "1")])
+    r = c.post("/entity/cut_items/_search", headers=ARR, json={
+        "filters": [["cut", "definitely_not_an_operator", None]], "fields": ["code"]})
+    rows.append(f"  cut bogus operator -> {r.status_code} {err(r)}")
+    matrix("cut", [("is", THIS), ("is", None), ("is_not", THIS), ("is_not", None),
+                   ("in", [THIS]), ("not_in", [THIS]), ("type_is", "Cut"), ("type_is_not", "Cut"),
+                   ("name_contains", "fixture"), ("name_is", f"{N}fixture")])
+    matrix("cut.Cut.code", [("is", f"{N}fixture"), ("contains", "fixture")])
+
 rows.append("\n(deletions above: CutItems before their Cut, because a deleted Cut orphans them)")
 _lib.emit("035_build_and_reconcile_a_cut", "\n".join(rows), env)
