@@ -54,10 +54,10 @@ Schema-writing probes use `sg_zzprobe_<nnn>_*`. See `docs/quirks.md`.
 Ask; never read the raw dump. `.schema-cache/<site>/<site|pNNN>/` holds the JSON, gitignored, refreshed
 only with `--refresh`.
 
-    python -m fpt_llm_api.schema entities --custom          enabled CustomEntityNN and their display names
-    python -m fpt_llm_api.schema fields Version --editable  one type at a time; 42KB and 300ms each
-    python -m fpt_llm_api.schema --project N field Version sg_status_list
-    python -m fpt_llm_api.schema --project N statuses Version
+    PYTHONPATH=src python -m fpt_llm_api.schema entities --custom          enabled CustomEntityNN and their display names
+    PYTHONPATH=src python -m fpt_llm_api.schema fields Version --editable  one type at a time; the expensive call (probe 002)
+    PYTHONPATH=src python -m fpt_llm_api.schema --project N field Version sg_status_list
+    PYTHONPATH=src python -m fpt_llm_api.schema --project N statuses Version
 
 `inspect_site.py` measures one project and proposes a profile; `/inspect-site` is the operator-facing
 version of the same run. It proposes with evidence and never decides. See PLAN Phase 1.
