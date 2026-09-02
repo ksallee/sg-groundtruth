@@ -58,8 +58,8 @@ Responses are unaffected — entity fields always arrive under `relationships`.
 
 | Claim | Probe | Needed by comfyui-fpt |
 |---|---|---|
-| The final `next` link claims more results but returns zero rows | 006 | yes — enumeration |
-| `page[size]` is capped at 100 regardless of what is requested | 005 | **confirmed** |
+| The final `next` link claims more results but returns zero rows | 006 | **confirmed, worse — never absent** |
+| `page[size]` is capped at 100 regardless of what is requested | 016 | **false** — 150 returns 150 |
 
 Never trust `links.next` alone. Stop on an empty `data`, not on a missing `next`.
 
@@ -70,7 +70,7 @@ there is no generic path.
 
 | Claim | Probe | Needed by comfyui-fpt |
 |---|---|---|
-| Dotted reads differ for single vs multi-entity targets — `sg_version.Version.code` vs `sg_version.Version.entity` | — | yes, before Phase 2 |
+| Dotted paths through multi-entity fields | 016 | **reads no, filters yes** |
 | Query fields need a batched follow-up call per result | — | no |
 | TimeLog duration is stored in minutes but displayed in hours or days | — | no |
 | Hours-per-day is a site setting that is not obviously exposed | — | no |
@@ -103,3 +103,18 @@ enough to render a badge with no icon at all — which is the fallback while the
 
 The node displays statuses, so this is in scope under the scope rule. Icons belong in the schema cache
 alongside the field definitions, keyed per site, with the binary stored on disk rather than re-downloaded.
+
+## Filters
+
+| Claim | Probe | Outcome |
+|---|---|---|
+| Entity fields filter with a `{type, id}` hash: `[["entity", "is", {"type": "Asset", "id": 9}]]` | 014 | **confirmed** |
+| Flat `filter[field]=value` params cannot express an entity hash | 014 | **confirmed** |
+| Dotted paths through multi-entity fields cannot be **read** | 016 | **confirmed** — key silently absent |
+| Dotted paths through multi-entity fields cannot be **filtered** | 016 | **false** — works, two hops included |
+
+Check `data_type` before building a dotted path to *read*: `entity` is safe, `multi_entity` silently returns
+nothing. Filtering has no such restriction. To read multi-entity children, query the child entity separately.
+
+`POST /entity/<type>/_search` needs `Content-Type: application/vnd+shotgun.api3_array+json`; `application/json`
+is a 415.

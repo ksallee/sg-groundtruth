@@ -37,6 +37,7 @@ _lib.record("005_link_usage", "GET /entity/versions?fields=<link fields>",
             actual,
             "On BBB, Versions link via `entity` 100% (Shot 99%, Asset 1%) and via `sg_task` only 1% - hardcoding "
             "Task-linking would be wrong almost always here, which is the whole case for the site profile. "
-            "Also: page[size]=500 returned 100 rows, so page size is capped at 100.",
+            "(An earlier version of this finding claimed page[size] is capped at 100. It is not - probe 016 "
+            "shows 150 returns 150. BBB simply has exactly 100 Versions.)",
             env, tags=("version", "link", "inspector", "entity-field", "paging"))
 print(actual)

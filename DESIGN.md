@@ -40,6 +40,33 @@ and is useless for the rest of the session.
 The same pattern governs the schema cache: raw JSON on disk, a compact digest over it, and a query CLI. The
 agent asks; it does not read.
 
+## Provenance mapping
+
+Where a piece of provenance lands in Flow PT is the operator's decision, not this project's. One studio has
+`sg_seed` and `sg_model` already; another wants a JSON blob in `description`; another only cares about the
+workflow attachment.
+
+So the node ships a set of **source keys** it can extract from ComfyUI — model, prompt, negative prompt, seed,
+sampler, steps, cfg, workflow JSON, input Version ids, user, timestamp — and the profile carries a mapping from
+each to a destination:
+
+    "seed"     -> {"field": "sg_seed"}          a real field
+    "prompt"   -> {"blob": "description"}       merged into a JSON blob in a text field
+    "workflow" -> {"attachment": true}          uploaded as an Attachment (probe 014)
+    "cfg"      -> {"drop": true}                not tracked here
+
+The agent proposes a mapping by inspecting the site — which fields exist, which are filled (probe 007) — and
+the operator edits and confirms it. If they ask for a destination field that does not exist, *that* is when
+field creation runs. Probes 016 and 017 are on-demand setup machinery, not a phase.
+
+### Data-driven, with an eject hatch
+
+One shipped node reads the mapping at load time and builds its inputs from it. It is not a code generator:
+generated forks cannot receive upstream fixes, and this repo's whole value is that improvements travel.
+
+For anything the mapping cannot express, an agent command ejects a bespoke node the operator owns outright.
+Rare by design.
+
 ## Schema cache
 
 The schema is the only source of truth for what a site calls things — which `CustomEntityNN` are enabled and

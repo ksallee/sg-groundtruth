@@ -37,14 +37,13 @@ Writes — sandbox project `comfyui-fpt sandbox` (id 1180), never BBB:
 - [x] 014 attachments: arbitrary file as an Attachment entity
 - [ ] 015 dotted reads on multi-entity targets (needed before the node reads parents)
 
-Deferred until something needs them — both permanently burn field names site-wide:
+On demand, not scheduled — both permanently burn field names site-wide, so they run only when an operator
+maps provenance to a field that does not exist yet:
 
 - [ ] 016 custom field creation: allowed types, `sg_` prefix, display to programmatic name mapping
 - [ ] 017 trashed field collision: revive, type mismatch, rename recovery
 
-v0 provenance goes in `description` as a JSON blob plus the workflow as an attachment (probe 014). Typed
-custom fields only when someone wants provenance filterable in Flow PT's own UI — that is when 016 and 017
-earn their irreversible cost.
+Where provenance lands is the operator's mapping, not a project default. See DESIGN.md.
 
 **The write path is proven end to end.** The node can be built.
 
