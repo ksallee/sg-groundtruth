@@ -10,22 +10,16 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
 from fpt_llm_api.client import FPT  # noqa: E402
+from fpt_llm_api.env import load as _load  # noqa: E402
 
 FINDINGS = ROOT / "corpus" / "findings"
 RECIPES = ROOT / "corpus" / "recipes"
 
 
 def load_env():
-    env = {}
-    f = ROOT / ".env.local"
-    if not f.exists():
+    if not (ROOT / ".env.local").exists():
         raise SystemExit("no .env.local — copy .env.local.example")
-    for line in f.read_text().splitlines():
-        line = line.strip()
-        if line and not line.startswith("#") and "=" in line:
-            k, v = line.split("=", 1)
-            env[k.strip()] = v.strip()
-    return env
+    return _load(ROOT)
 
 
 def client():
