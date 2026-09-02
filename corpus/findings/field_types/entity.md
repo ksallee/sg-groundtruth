@@ -56,12 +56,24 @@ Version, each sent a type its own list omits, and every other case the type card
 | `Task.entity` | 8 types | Task | 200, reads back as a Task | `entity_types/Task` |
 | `TimeLog.entity` | `['Task']` | Shot, Project | 201 each, stored as sent | `entity_types/TimeLog` |
 | `Note.note_links`, multi_entity | 36 types | Project, HumanUser | 201 each, the link read back | `entity_types/Note` |
+| `Cut.entity` | `['Sequence','Scene','Episode','Reel']` | Shot, Version | 200 each, read back as sent | `entity_types/Cut` |
+| `Cut.sg_scene` | `['Scene']` | Shot | 200, reads back as a Shot | `entity_types/Cut` |
 | `Version.project` | `['Project']` | Shot | 400 `Update failed for [Version.project]: Project expected, got Shot` | here |
 | `Version.task_template` | `['TaskTemplate']` | Shot | 400 `Update failed for [Version.task_template]: TaskTemplate expected, got Shot` | here |
 | `Sequence.episode` | `['Episode']` | Sequence | 400 `Update failed for [Sequence.episode]: Episode expected, got Sequence` | `entity_types/Sequence` |
 | `TimeLog.user` | `['HumanUser']` | ApiUser, Project | 400 `Invalid field value, update failed [5 - Update failed for [TimeLog.user]: HumanUser expected, got ApiUser]` | `entity_types/TimeLog` |
+| `Cut.version` | `['Version']` | Shot | 400 `Update failed for [Cut.version]: Version expected, got Shot` | `entity_types/Cut` |
+| `CutItem.cut` | `['Cut']` | Shot | 400 `Cut expected, got Shot` | `entity_types/CutItem` |
+| `CutItem.shot` | `['Shot']` | Version | 400 `Shot expected, got Version` | `entity_types/CutItem` |
+| `CutItem.version` | `['Version']` | Shot | 400 `Version expected, got Shot` | `entity_types/CutItem` |
 | `Version.created_by`, `updated_by` | `['HumanUser','ApiUser']` | Shot | 400 `API update() Version.created_by is editable on create only.` | here |
 | `Version.image_source_entity` | 114 types | Task | 400 `API update() Version.image_source_entity is read only.` | here |
+
+No property in the schema separates the two groups, and the obvious guesses do not survive the table.
+The count of declared types does not predict it: `Version.source_clip` and `TimeLog.entity` each declare
+one type and are advisory, while `Version.project` and `TimeLog.user` each declare one and bind. The `sg_`
+prefix does not predict it either: `Version.source_clip` has no prefix and is advisory. Two fields on
+one type can differ, as `TimeLog.entity` and `TimeLog.user` do.
 
 A field that binds names the expected type, `<Expected> expected, got <Sent>`, at `code: 104` on the two
 Version fields; the last two rows refuse for editability, not for type. Nothing in the schema separates
