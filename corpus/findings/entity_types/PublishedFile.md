@@ -1,6 +1,7 @@
 ---
 tags: [entity-type, published-file, create, path, storage, entity-field, multi-entity, dependency, status, trap]
 scope: api
+summary: A file on disk registered against a project, with its path resolved per platform.
 verdict: Only `project` is required to create a PublishedFile, and nothing is unique: the same name, version_number and path publish twice at 201, so read the last version before writing the next.
 ---
 

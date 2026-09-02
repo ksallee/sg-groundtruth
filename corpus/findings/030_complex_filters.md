@@ -87,10 +87,13 @@ an operator string as the first element, and a fourth element on a triple. `["id
   a group, as the whole `filters` value, under both Content-Types, and on `_summarize` as well as
   `_search`. It is the web interface's storage format only (probe 023) and the rollup definition format
   (`field_types/summary`), so converting a saved page's filters into a query is a translation, never a
-  pass-through: rewrite each leaf `{"path": p, "relation": r, "values": v}` as `[p, r, v[0]]` and keep
-  the `logical_operator` groups as they stand. The group's own extra keys are tolerated: `filter_name`,
+  pass-through: rewrite each leaf `{"path": p, "relation": r, "values": v}` as a triple and keep the
+  `logical_operator` groups as they stand. The group's own extra keys are tolerated: `filter_name`,
   `filter_id` and an unknown key alongside triple conditions are all 200. The leaf's are not, so drop
-  `active` rather than appending it.
+  them rather than appending; `active` and `top_level_project_filter` both appear (`recipes/003`).
+  `v[0]` is right only where the relation takes a scalar. `in_last` and `in_next` take the whole list,
+  and passing the first element alone is 400 `expects a 2-element array: [4]` (`recipes/003`), so the
+  translator branches on the relation rather than flattening every leaf the same way.
 - One group holds mixed operators and mixes leaf conditions with sub-groups as siblings, which is what
   the stored page trees do. `and [["project","is",<p1>], {"or": [id is 862, id is 863]}]` returns 2 and
   the same with an inner `and` returns 0. Dotted paths work inside a nested group, and an error inside

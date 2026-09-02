@@ -1,6 +1,7 @@
 ---
 tags: [field-type, checkbox, filter, operator, fill-rate, inspector, trap]
 scope: api
+summary: A boolean.
 verdict: A checkbox is two-state, never null - an untouched row already reads false, null is unwritable and unfilterable, and the only relations are is/is_not, so fill rate reads 100% on every checkbox.
 ---
 

@@ -1,6 +1,7 @@
 ---
 tags: [field-type, calculated, filter, operator, schema, inspector, trap]
 scope: api
+summary: A value the server works out from a formula over other fields on the row.
 verdict: A calculated field refuses every write with "is read only" and every filter with "cannot be used in a filter", yet it sorts and summarizes fine, and the formula is exposed as calculated_function.
 ---
 

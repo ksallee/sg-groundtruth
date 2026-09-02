@@ -1,6 +1,7 @@
 ---
 tags: [entity-type, time-log, task, duration, create, entity-field, trap]
 scope: api
+summary: Hours logged against a Task by one person on one day.
 verdict: A TimeLog create requires only `project`; `date` defaults to the server's today instead of failing, `entity` takes any type despite valid_types ['Task'], and a script may log for any HumanUser.
 ---
 

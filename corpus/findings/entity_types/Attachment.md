@@ -1,6 +1,7 @@
 ---
 tags: [entity-type, attachment, upload, media, url, multi-entity, create, status, trap]
 scope: api
+summary: A file held on the site, linked to the rows it belongs to.
 verdict: POST /entity/attachments answers 201 on an empty body and returns a row with no file; this_file is editable on create only, so bytes reach a site through the upload dance and never through a create.
 ---
 

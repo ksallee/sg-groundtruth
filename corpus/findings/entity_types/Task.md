@@ -1,6 +1,7 @@
 ---
 tags: [entity-type, task, create, dependency, duration, status, entity-field, trap]
 scope: api
+summary: A unit of work on a Shot or an Asset, at one pipeline step.
 verdict: A Task is named by `content`, never `code`; a create needs only `project`; `start_date`, `due_date` and `duration` are one triple the server recomputes on every write.
 ---
 

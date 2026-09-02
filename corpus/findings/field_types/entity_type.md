@@ -1,6 +1,7 @@
 ---
 tags: [field-type, entity-field, schema, write, filter, operator, custom-entity, trap]
 scope: api
+summary: The name of an entity type, held as a string rather than as a link.
 verdict: An entity_type field is a bare schema-name string in attributes, validated on write against 290 built-in type names but not against the site's enabled ones, and filtered only by is/is_not/in/not_in.
 ---
 

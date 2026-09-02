@@ -1,6 +1,7 @@
 ---
 tags: [field-type, image, media, upload, filter, operator, write, async, trap]
 scope: api
+summary: A thumbnail for the row, set by uploading a file.
 verdict: An image field cannot be assigned - every value but null 400s, one of them "not yet supported in API" - only the upload dance sets it, and clearing image also clears filmstrip_image.
 ---
 

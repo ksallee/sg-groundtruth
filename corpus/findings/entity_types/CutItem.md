@@ -1,6 +1,7 @@
 ---
 tags: [entity-type, cut, timecode, create, entity-field, filter, operator, dotted-field, schema, trap]
 scope: api
+summary: One clip in a Cut, with its position in the edit and in its source.
 verdict: Nothing on a CutItem is unique and `code` repeats across Cuts, so an id found by a code search may sit on another Cut: check `cut` before every update or the write lands on the wrong edit.
 ---
 

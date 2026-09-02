@@ -14,6 +14,9 @@ from sg_groundtruth.env import load as _load  # noqa: E402
 
 CORPUS = ROOT / "corpus"
 VERDICT_MAX = 200
+# A verdict is the surprise, which is wrong in a list of 24 types. Every card in the two
+# matrices also says plainly what the thing is, and the site's list pages render that.
+SUMMARY_MAX = 100
 ACTUAL_MAX = 30
 SECTIONS = ("**Q**", "**Endpoint**", "**Docs claim**", "**Actual**", "**Teaches**")
 # The field-type matrix answers a different shape of question, so it has its own required sections.
@@ -128,6 +131,14 @@ for f in sorted(CORPUS.rglob("*.md")):
             fail(f, f"verdict is {len(v)} chars, max {VERDICT_MAX} — move the detail to **Teaches**")
     if not re.search(r"tags:\s*\[[^\]]+\]", head.group(1)):
         fail(f, "no tags")
+    if is_type:
+        summary = re.search(r"^summary:\s*(.*)$", head.group(1), re.M)
+        if not summary or not summary.group(1).strip():
+            fail(f, "no summary: one sentence saying what the thing is and what it is for, "
+                    "in the plainest words available")
+        elif len(summary.group(1).strip()) > SUMMARY_MAX:
+            fail(f, f"summary is {len(summary.group(1).strip())} chars, max {SUMMARY_MAX} — "
+                    f"the detail belongs in the verdict")
     wanted = SECTIONS
     if f.parent.name == "field_types":
         wanted = TYPE_SECTIONS

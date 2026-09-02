@@ -1,6 +1,7 @@
 ---
 tags: [field-type, multi-entity, entity-field, write, filter, operator, dotted-field, trap]
 scope: api
+summary: A link to many rows of another type.
 verdict: A bare list replaces the whole link set, but {"multi_entity_update_mode": "add"|"remove"|"set", "value": [...]} adds and removes in place; the field never reads null and null 400s.
 ---
 

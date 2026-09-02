@@ -1,6 +1,7 @@
 ---
 tags: [entity-type, note, create, multi-entity, entity-field, attachment, status, jsonb, trap]
 scope: api
+summary: A comment about something, with a subject, a body and a thread of replies.
 verdict: A Note is titled by `subject` and bodied by `content`; only `project` is required to create one, `attachments` link in that same call, and a bare write to `replies` destroys the Reply rows.
 ---
 

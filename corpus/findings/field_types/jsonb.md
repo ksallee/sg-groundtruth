@@ -1,6 +1,7 @@
 ---
 tags: [field-type, jsonb, serializable, write, filter, operator, schema, error-handling, trap]
 scope: api
+summary: Arbitrary JSON stored on the row, which the server can filter on.
 verdict: jsonb filters, where serializable cannot: is, is_not, contains, not_contains, values always hashes. Note.meta stores what you send but is create-only, so nothing written there is ever editable.
 ---
 

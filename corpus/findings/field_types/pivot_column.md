@@ -1,6 +1,7 @@
 ---
 tags: [field-type, pivot-column, step, schema, filter, operator, inspector, trap]
 scope: api
+summary: A per-step rollup the web interface draws, with no value over REST.
 verdict: A pivot_column is a web-UI task rollup with no REST implementation - it reads null on every row, and write, filter, sort and _summarize each fail with a different error.
 ---
 

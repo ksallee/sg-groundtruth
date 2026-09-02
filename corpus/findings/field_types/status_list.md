@@ -1,6 +1,7 @@
 ---
 tags: [field-type, status, list-field, filter, operator, write, schema, trap]
 scope: api
+summary: A workflow status, held as a short code from a per-type vocabulary.
 verdict: REST does not enforce hidden_values: a project-hidden status writes and reads back fine, so every client must subtract it itself. Only valid_values is enforced.
 ---
 

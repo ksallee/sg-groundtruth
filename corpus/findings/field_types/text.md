@@ -1,6 +1,7 @@
 ---
 tags: [field-type, text, filter, operator, write, trap]
 scope: api
+summary: A string of free text, of any length.
 verdict: A text field has no empty string: writing "" stores null, so `is ""` and `is None` are one filter; matching is case-insensitive, whitespace is stripped, and a non-string 400s.
 ---
 

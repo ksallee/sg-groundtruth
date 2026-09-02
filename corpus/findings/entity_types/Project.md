@@ -1,6 +1,7 @@
 ---
 tags: [entity-type, project, schema, filter, trap]
 scope: api
+summary: A show, the scope almost every other type is filtered by.
 verdict: Project is site-wide and has no `project` field, so a scoping filter 400s on it; `name` is the identity, the only field both mandatory and unique, and `code` is a second unique text field.
 ---
 

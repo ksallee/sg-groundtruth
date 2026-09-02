@@ -1,6 +1,7 @@
 ---
 tags: [entity-type, playlist, version, create, multi-entity, entity-field, trap]
 scope: api
+summary: An ordered set of Versions to review together.
 verdict: Playlist.versions reads back sorted by the Version's code, never in the order written; the human order is sg_sort_order on PlaylistVersionConnection, which a write through the field leaves null.
 ---
 

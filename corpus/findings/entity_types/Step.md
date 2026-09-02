@@ -1,6 +1,7 @@
 ---
 tags: [entity-type, step, task, entity-field, schema, filter, query, trap]
 scope: api
+summary: A pipeline step, shared by every project on the site.
 verdict: Step is site-wide with no project field, partitioned only by entity_type; list the Steps for a Shot with entity_type is "Shot", and treat neither code nor short_name as unique.
 ---
 

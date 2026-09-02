@@ -1,6 +1,7 @@
 ---
 tags: [entity-type, delivery, version, published-file, reply, attachment, create, multi-entity, entity-field, status, list-field, filter, trap]
 scope: api
+summary: A row grouping Versions, published files and attachments, addressed to people.
 verdict: Delivery has two independent Version links, sg_versions and version_sg_deliveries_versions; writing one leaves the other empty, and only the second mirrors Version.sg_deliveries.
 ---
 

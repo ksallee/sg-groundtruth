@@ -1,6 +1,7 @@
 ---
 tags: [entity-type, sequence, shot, write, create, entity-field, multi-entity, status, dotted-field, trap]
 scope: api
+summary: A group of Shots, and each Shot sits in exactly one of them.
 verdict: A Sequence needs `project`, not `code`, and project alone names it `New Sequence <id>`; `shots` is the reverse of `Shot.sg_sequence`, one link, so a Shot sits in exactly one Sequence.
 ---
 

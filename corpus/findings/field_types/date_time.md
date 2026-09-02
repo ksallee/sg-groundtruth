@@ -1,6 +1,7 @@
 ---
 tags: [field-type, date-time, filter, operator, write, trap]
 scope: api
+summary: A moment in time, stored and returned in UTC.
 verdict: Stored and read as UTC `YYYY-MM-DDTHH:MM:SSZ`: a written offset is silently normalised, a zoneless string is taken as UTC, and a date-only filter value means midnight UTC, not the whole day.
 ---
 

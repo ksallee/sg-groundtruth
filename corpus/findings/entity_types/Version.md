@@ -1,6 +1,7 @@
 ---
 tags: [entity-type, version, create, entity-field, media, status, link]
 scope: api
+summary: A reviewable piece of media, usually hanging off a Shot or an Asset.
 verdict: The schema inverts the create contract: `project` is required and `code` is not, generated as "New Version <id>" when omitted. `code` is not unique, so key on `id`.
 ---
 

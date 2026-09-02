@@ -1,6 +1,7 @@
 ---
 tags: [field-type, uuid, filter, operator, write, schema, trap]
 scope: api
+summary: An identifier the server generates for the row and never lets a client write.
 verdict: A uuid field is server-generated and rejects every write with "is read only", so it cannot hold your key; it filters on is/is_not/in/not_in only, and a malformed value 400s.
 ---
 

@@ -1,6 +1,7 @@
 ---
 tags: [entity-type, asset, create, entity-field, multi-entity, list-field, status, trap]
 scope: api
+summary: A thing that appears in shots, such as a character, a prop or an environment.
 verdict: Only project is required to create an Asset; omit code and the server writes "New Asset <id>", and two assets in one project may share a code, so key on id and never on code.
 ---
 

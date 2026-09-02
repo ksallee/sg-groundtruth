@@ -1,6 +1,7 @@
 ---
 tags: [field-type, password, filter, operator, schema, dotted-field, inspector, trap]
 scope: api
+summary: An account credential, which reads back as a constant mask and is never returned.
 verdict: A password field reads as a constant seven-asterisk mask on every row, including through a dotted path; it cannot be filtered, sort is accepted and ignored, and it must never be written.
 ---
 

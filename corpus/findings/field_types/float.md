@@ -1,6 +1,7 @@
 ---
 tags: [field-type, float, write, filter, operator, error-handling, trap]
 scope: api
+summary: A decimal number.
 verdict: A float reads back as a JSON string rounded to 6 decimals and rejects Integer on both write and filter: send 1.0 or "1.0", never 1; 0.0 and null stay distinct, and 1e-9 silently becomes 0.0.
 ---
 

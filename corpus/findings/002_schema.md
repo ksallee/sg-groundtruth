@@ -41,6 +41,11 @@ every enumeration spelling guessed, all 404:
 ```
 
 **Teaches**
+- A connection type's REST slug collapses the doubled underscore. `Asset_linked_projects_Connection` is
+  addressable as itself or as `asset_linked_projects_connections`, while the naive snake_case rule gives
+  `asset_linked_projects__connections`, which 404s. Ten types on the probed site are affected
+  (`recipes/003`).
+
 
 Sizes below are from the probed site.
 
