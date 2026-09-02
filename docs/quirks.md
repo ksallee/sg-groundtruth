@@ -63,6 +63,17 @@ Responses are unaffected — entity fields always arrive under `relationships`.
 
 `sg_status` has no `display_values` and is never set automatically. Filter the checkboxes; leave status alone.
 
+## Summaries
+
+| Claim | Probe | Outcome |
+|---|---|---|
+| Summarize calls are cheap and describe a field's values | 020 | **half true** — one call gives cardinality *and* the empty count, but ~300ms each, so scanning every field costs more than one paged fetch |
+| `_summarize` needs the same vendor Content-Type as `_search` | 020 | **confirmed** — `application/json` is 415 |
+
+`grouping` by a field returns one group per distinct value, with empties as a `''` group. That is the
+metric fill rate cannot give: `code` returns one group per row (an identifier), `flagged` returns exactly
+one (no information) — indistinguishable to a fill-rate scan. Not capped: 300 distinct codes, 300 groups.
+
 ## Pagination
 
 | Claim | Probe | Needed by comfyui-fpt |

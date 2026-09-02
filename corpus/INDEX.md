@@ -42,6 +42,8 @@ Read this first. Open an entry only when its one-liner does not already answer t
   `project query filter inspector list-field trap`
 - **019_create_fields** — Almost every useful type IS creatable - the 400s are missing properties, not refusals. text/float/number/date/date_time/list/url/duration/percent/footage need nothing extra; checkbox needs default_value; entity and multi_entity need valid_types, and multi_entity takes EXACTLY ONE element (two types -> 400). Only color, image and calculated are truly rejected as invalid data_types. A multi_entity of Version round-trips lineage and reads back under relationships, which is how input-Version links should be stored rather than as JSON. Pass a DISPLAY name: the sg_ prefix is added for you, so 'sg_foo' becomes 'sg_sg_foo'. The programmatic name is NOT in the response body - take the last segment of links.self. TWO TRAPS. (1) A duplicate display name does NOT error, it silently makes <name>_1, so an idempotent ensure() MUST read /schema first and never POST-and-hope. (2) DELETE returns 204 and the field vanishes from /schema, but the NAME IS NOT FREED: recreating it 400s and the trashed field cannot be enumerated, so the collision is invisible. Also: seeds must be TEXT - a number field takes 2**31-1 but 400s at 2**63, and ComfyUI seeds go to 2**64-1.  
   `schema write custom-field provenance entity-field trap`
+- **020_summarize** — _summarize takes the SAME vendor Content-Type as _search (application/json is 415, probe 004) and answers the inspector's second question directly: `grouping` by a field returns one group per distinct value with a count, so ONE call yields both cardinality and the empty count - empty values come back as a '' group. That is the metric fill rate cannot give: Version.code returns one group per row (an identifier, useless to expose) and flagged returns exactly one group (no information at all), while both look identical to a fill-rate scan. Grouping is NOT capped - 300 distinct Shot codes return 300 groups. Checkbox fields cannot be filtered `is_not None` at all (400), which is the same trap as probe 007 from the other side. BUT it is not free: ~300ms typical and up to 1.5s when the grouped field is an entity, so scanning all 61 Version fields costs far more than a single paged fetch of 100 rows. Use one fetch for the broad fill-rate pass, then _summarize per candidate field to rank the shortlist by cardinality.  
+  `query inspector fill-rate schema cost list-field`
 
 ## Recipes
 
@@ -56,7 +58,7 @@ Read this first. Open an entry only when its one-liner does not already answer t
 - **cache** — 010_status_icons (finding)
 - **client** — 001_auth (finding)
 - **colour** — 010_status_icons (finding)
-- **cost** — 002_schema (finding)
+- **cost** — 002_schema (finding), 020_summarize (finding)
 - **create** — 011_create_project (finding), 012_create_version (finding)
 - **custom-entity** — 008_custom_entities (finding)
 - **custom-field** — 019_create_fields (finding)
@@ -65,23 +67,23 @@ Read this first. Open an entry only when its one-liner does not already answer t
 - **entity-field** — 004_array_vs_hash (finding), 005_link_usage (finding), 010_status_icons (finding), 012_create_version (finding), 017_filter_operators (finding), 019_create_fields (finding)
 - **enumeration** — 006_pagination (finding)
 - **error-handling** — 004_array_vs_hash (finding), 017_filter_operators (finding)
-- **fill-rate** — 007_fill_rates (finding)
+- **fill-rate** — 007_fill_rates (finding), 020_summarize (finding)
 - **filter** — 003_query (finding), 014_attach_file (finding), 016_dotted_multi_entity (finding), 017_filter_operators (finding), 018_project_listing (finding)
 - **header** — 004_array_vs_hash (finding)
 - **icon** — 010_status_icons (finding)
-- **inspector** — 005_link_usage (finding), 007_fill_rates (finding), 009_status_lists (finding), 018_project_listing (finding)
+- **inspector** — 005_link_usage (finding), 007_fill_rates (finding), 009_status_lists (finding), 018_project_listing (finding), 020_summarize (finding)
 - **link** — 005_link_usage (finding)
-- **list-field** — 009_status_lists (finding), 018_project_listing (finding)
+- **list-field** — 009_status_lists (finding), 018_project_listing (finding), 020_summarize (finding)
 - **media** — 013_upload_media (finding)
 - **multi-entity** — 014_attach_file (finding), 016_dotted_multi_entity (finding)
 - **operator** — 017_filter_operators (finding)
 - **paging** — 003_query (finding), 005_link_usage (finding), 006_pagination (finding), 016_dotted_multi_entity (finding)
 - **project** — 011_create_project (finding), 018_project_listing (finding)
 - **provenance** — 014_attach_file (finding), 019_create_fields (finding), 001_publish_version_with_media (recipe)
-- **query** — 003_query (finding), 004_array_vs_hash (finding), 006_pagination (finding), 016_dotted_multi_entity (finding), 017_filter_operators (finding), 018_project_listing (finding)
+- **query** — 003_query (finding), 004_array_vs_hash (finding), 006_pagination (finding), 016_dotted_multi_entity (finding), 017_filter_operators (finding), 018_project_listing (finding), 020_summarize (finding)
 - **recipe** — 001_publish_version_with_media (recipe)
 - **sandbox** — 011_create_project (finding)
-- **schema** — 002_schema (finding), 007_fill_rates (finding), 008_custom_entities (finding), 009_status_lists (finding), 019_create_fields (finding)
+- **schema** — 002_schema (finding), 007_fill_rates (finding), 008_custom_entities (finding), 009_status_lists (finding), 019_create_fields (finding), 020_summarize (finding)
 - **status** — 009_status_lists (finding), 010_status_icons (finding)
 - **token** — 001_auth (finding)
 - **trap** — 016_dotted_multi_entity (finding), 018_project_listing (finding), 019_create_fields (finding)

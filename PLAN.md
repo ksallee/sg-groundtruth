@@ -50,8 +50,21 @@ Where provenance lands is the operator's mapping, not a project default. See DES
 ## Phase 1 — inspector
 
 - `src/fpt_llm_api/schema.py`: fetch, cache, digest, query CLI
-- `inspect.py` turns 005, 007, 008, 009 into `profile.local.json` for one project
+- `inspect.py` turns 005, 007, 008, 009, 020 into `profile.local.json` for one project
 - `/inspect-site` command: agent runs it, explains findings in plain language, operator edits and confirms
+
+**Two passes, for a measured reason (probe 020).** Fill rate alone is misleading: on BBB, 13 of the 18
+fields at ~100% are system fields or checkboxes reading full because `False` is not null, while `image`
+and `sg_uploaded_movie` — the fields the node actually writes — sit at 1%. So:
+
+1. **Broad pass** — one paged fetch of recent Versions, count non-null per field. ~700ms for everything.
+   Filter by schema first: `editable` drops computed fields, `data_type` excludes checkboxes from
+   ranking, `mandatory` is a requirement rather than a heuristic.
+2. **Shortlist pass** — `_summarize` with `grouping` per candidate, for cardinality. A field with one
+   distinct value carries no information; one distinct value per row is an identifier. ~300ms each, so
+   this runs over ~10 candidates, never all 61.
+
+Ranking produces a shortlist with evidence. The operator confirms it; nothing here decides alone.
 
 ## Phase 2 — node (in `comfyui-fpt`)
 
