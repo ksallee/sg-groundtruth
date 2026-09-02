@@ -1,6 +1,6 @@
 # Plan
 
-Covers both repos. `fpt-llm-api` is the corpus and client; `comfyui-fpt` is the node and first consumer.
+Covers both repos. `sg-groundtruth` is the corpus and client; `comfyui-fpt` is the node and first consumer.
 Phases 0 and 1 happen entirely here. `comfyui-fpt` comes alive at Phase 2.
 
 ## State
@@ -50,7 +50,7 @@ Where provenance lands is the operator's mapping, not a project default. See DES
 
 ## Phase 1 — inspector  *(done)*
 
-- [x] `src/fpt_llm_api/schema.py`: fetch, cache, digest, query CLI
+- [x] `src/sg_groundtruth/schema.py`: fetch, cache, digest, query CLI
 - [x] `inspect_site.py` turns 005, 007, 008, 009, 018, 020 into `profile.local.json` for one project
 - [x] `/inspect-site` command: agent runs it, explains findings in plain language, operator edits and confirms
 

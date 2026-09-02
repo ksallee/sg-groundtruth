@@ -1,4 +1,4 @@
-# fpt-llm-api
+# sg-groundtruth
 
 A corpus that makes an LLM good at Flow Production Tracking, and a thin client that uses it.
 
@@ -54,10 +54,10 @@ Schema-writing probes use `sg_zzprobe_<nnn>_*`. See `docs/quirks.md`.
 Ask; never read the raw dump. `.schema-cache/<site>/<site|pNNN>/` holds the JSON, gitignored, refreshed
 only with `--refresh`.
 
-    PYTHONPATH=src python -m fpt_llm_api.schema entities --custom          enabled CustomEntityNN and their display names
-    PYTHONPATH=src python -m fpt_llm_api.schema fields Version --editable  one type at a time; the expensive call (probe 002)
-    PYTHONPATH=src python -m fpt_llm_api.schema --project N field Version sg_status_list
-    PYTHONPATH=src python -m fpt_llm_api.schema --project N statuses Version
+    PYTHONPATH=src python -m sg_groundtruth.schema entities --custom          enabled CustomEntityNN and their display names
+    PYTHONPATH=src python -m sg_groundtruth.schema fields Version --editable  one type at a time; the expensive call (probe 002)
+    PYTHONPATH=src python -m sg_groundtruth.schema --project N field Version sg_status_list
+    PYTHONPATH=src python -m sg_groundtruth.schema --project N statuses Version
 
 `inspect_site.py` measures one project and proposes a profile; `/inspect-site` is the operator-facing
 version of the same run. It proposes with evidence and never decides. See PLAN Phase 1.
@@ -99,7 +99,7 @@ competes with the official docs. Write it to win that comparison.
   "On the probed site, ...". A reader forking this repo must be able to tell, sentence by sentence, what
   transfers to their site and what they have to measure again.
 - Name the product **Flow Production Tracking** in full on first use, **Flow PT** after. Never `FPT`.
-  `FPT_API_*`, `fpt_llm_api` and the `FPT` client class are identifiers and stay as they are.
+  `FPT_API_*`, `sg_groundtruth` and the `FPT` client class are identifiers and stay as they are.
 - No em dashes. They join two thoughts that should be two sentences. Recast:
   a full stop when both halves stand alone, a colon when the second explains the first, commas or
   parentheses for an aside. If none of those fit, the sentence needs rewriting, not punctuating.

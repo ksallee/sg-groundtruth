@@ -14,7 +14,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import _lib  # noqa: E402
 
-from fpt_llm_api.schema import Schema, val  # noqa: E402
+from sg_groundtruth.schema import Schema, val  # noqa: E402
 
 env = _lib.load_env()
 c = _lib.client()

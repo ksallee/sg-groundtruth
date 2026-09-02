@@ -27,9 +27,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 
-from fpt_llm_api.client import FPT                      # noqa: E402
-from fpt_llm_api.env import load as load_env            # noqa: E402
-from fpt_llm_api.schema import Schema, val              # noqa: E402
+from sg_groundtruth.client import FPT                      # noqa: E402
+from sg_groundtruth.env import load as load_env            # noqa: E402
+from sg_groundtruth.schema import Schema, val              # noqa: E402
 
 # probe 004 — _search and _summarize reject application/json with 415 and demand a vendor type.
 ARRAY_JSON = {"Content-Type": "application/vnd+shotgun.api3_array+json"}

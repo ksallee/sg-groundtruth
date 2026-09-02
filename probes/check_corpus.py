@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
-from fpt_llm_api.env import load as _load  # noqa: E402
+from sg_groundtruth.env import load as _load  # noqa: E402
 
 CORPUS = ROOT / "corpus"
 VERDICT_MAX = 200

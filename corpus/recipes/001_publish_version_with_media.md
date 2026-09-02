@@ -13,7 +13,7 @@ import json
 
 import requests
 
-# get/post are FPT.get/.post from src/fpt_llm_api/client.py; they add auth and the /api/v1 prefix.
+# get/post are FPT.get/.post from src/sg_groundtruth/client.py; they add auth and the /api/v1 prefix.
 # The caller supplies PROJECT_ID, SHOT_ID, png (bytes) and workflow_graph (dict).
 JSON = {"Content-Type": "application/json"}
 provenance = {"model": "flux1-dev.safetensors", "seed": 12345, "sampler": "euler", "steps": 20, "cfg": 7.5}

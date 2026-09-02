@@ -56,7 +56,7 @@ steps.append(f"5. read back        -> {back['data']['attributes'].get('code')}, 
              f"status={back['data']['attributes'].get('sg_status_list')}, "
              f"entity={json.dumps(back['data']['relationships'].get('entity', {}).get('data'))}")
 
-call = '''# get/post are FPT.get/.post from src/fpt_llm_api/client.py — they add auth and the /api/v1 prefix.
+call = '''# get/post are FPT.get/.post from src/sg_groundtruth/client.py — they add auth and the /api/v1 prefix.
 JSON = {"Content-Type": "application/json"}
 provenance = {"model": "flux1-dev.safetensors", "seed": 12345, "sampler": "euler", "steps": 20, "cfg": 7.5}
 workflow_json = json.dumps(workflow_graph).encode()
