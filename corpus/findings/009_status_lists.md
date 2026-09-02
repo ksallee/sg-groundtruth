@@ -1,6 +1,7 @@
 ---
 tags: [schema, status, list-field, inspector]
 scope: api
+measured: site-wide, then the same field read again per project across 20 projects
 verdict: A project's usable statuses are valid_values minus hidden_values, read with project_id: valid_values is identical at every scope, hidden_values is the only thing that varies.
 ---
 

@@ -1,6 +1,7 @@
 ---
 tags: [field-type, colour, filter, operator, write, schema, trap]
 scope: api
+measured: first sample project read, Tasks written only in the sandbox project
 summary: A display colour, held as a decimal red, green, blue triple.
 verdict: Task.color usually holds no colour at all but the token pipeline_step; a real value is decimal "r,g,b" (never hex), null is rejected outright, and only Task accepts the token.
 ---

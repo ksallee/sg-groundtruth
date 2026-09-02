@@ -2,6 +2,7 @@
 intent: Take media off one Version and put the same bytes on another, which is what every sync, transfer and hand-off does
 tags: [write, version, media, upload, attachment, url, image, async, trap, recipe]
 scope: api
+measured: the first sample project holding media, copied onto a sandbox project Version
 ---
 
 # 006_media_round_trip

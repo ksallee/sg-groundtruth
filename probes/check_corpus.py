@@ -17,6 +17,10 @@ VERDICT_MAX = 200
 # A verdict is the surprise, which is wrong in a list of 24 types. Every card in the two
 # matrices also says plainly what the thing is, and the site's list pages render that.
 SUMMARY_MAX = 100
+# `scope:` says whether a claim transfers; `measured:` says where the evidence came from. A reader
+# on their own site cannot weigh recorded output without it, and a `scope: api` finding still rests
+# on one run in one place.
+MEASURED_MAX = 120
 ACTUAL_MAX = 30
 SECTIONS = ("**Q**", "**Endpoint**", "**Docs claim**", "**Actual**", "**Teaches**")
 # The field-type matrix answers a different shape of question, so it has its own required sections.
@@ -108,11 +112,21 @@ for f in sorted(CORPUS.rglob("*.md")):
             fail(f, f"ALL-CAPS emphasis {w!r} — capitals are for API literals only (CLAUDE.md Style)")
 
     is_type = f.parent.name in ("field_types", "entity_types")
-    if not is_type and (f.parent.name != "findings" or not f.stem[:1].isdigit()):
+    is_recipe = f.parent.name == "recipes"
+    if not is_type and not is_recipe and (f.parent.name != "findings" or not f.stem[:1].isdigit()):
         continue
     head = re.match(r"---\n(.*?)\n---", text, re.S)
     if not head:
         fail(f, "no frontmatter")
+        continue
+    measured = re.search(r"^measured:\s*(\S.*?)\s*$", head.group(1), re.M)
+    if not measured:
+        fail(f, "no measured: where the evidence was taken. A sample project, the sandbox project, "
+                "site-wide, or unrecorded when the probe does not say")
+    elif len(measured.group(1)) > MEASURED_MAX:
+        fail(f, f"measured is {len(measured.group(1))} chars, max {MEASURED_MAX} — name the place "
+                f"and the sample size, nothing else")
+    if is_recipe:
         continue
     scope = re.search(r"^scope:\s*(api|site|project)\s*$", head.group(1), re.M)
     if not scope:

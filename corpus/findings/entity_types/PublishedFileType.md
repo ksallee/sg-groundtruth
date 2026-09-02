@@ -1,6 +1,7 @@
 ---
 tags: [entity-type, published-file, enumeration, schema, filter, create, trap]
 scope: api
+measured: site-wide plus the first sample project; read only
 summary: The kind of a published file, named once for the whole site.
 verdict: PublishedFileType is site-wide with no project field, so a publish that creates one on an unknown extension adds it to every project; `code` is the identity and the only unique field.
 ---

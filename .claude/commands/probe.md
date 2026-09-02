@@ -14,6 +14,11 @@ Question: $ARGUMENTS
 
 ## Redaction
 
+`_lib.emit` also prints a `measured:` line naming the projects the run touched, derived from what
+`sample_projects` and `sandbox_id` returned. Paste it into the frontmatter and add the sample size:
+"sample project, 100 Versions" is what a reader on their own site needs. Where the probe hardcodes a row
+id and nothing says which project it sits in, write `unrecorded` rather than guessing.
+
 `_lib.scrub` already replaced the site URL, script name, key, home directory, emails, bearer tokens and
 presigned URLs. Those are string replacements that cannot misfire. **Everything else is your judgment**,
 and the probe lists its candidates under `identifying, replace with a placeholder`.
@@ -42,6 +47,8 @@ the finding, where a reader can see what was cut, not at the point of capture.
 ```markdown
 ---
 tags: [reuse an existing tag from corpus/INDEX.md; singular, lowercase]
+scope: api|site|project
+measured: where the evidence was taken. Copy the line `_lib.emit` prints
 verdict: One sentence, 200 chars max. The actionable rule, not the story.
 ---
 
@@ -96,6 +103,8 @@ one for that data type (probe 017). Do that first; it is cheaper and more comple
 ```markdown
 ---
 tags: [field-type, …; reuse tags from corpus/INDEX.md]
+scope: api|site|project
+measured: where the evidence was taken. Copy the line `_lib.emit` prints
 verdict: One sentence, 200 chars max. The thing that surprises someone assuming this type behaves like text.
 ---
 
@@ -157,6 +166,7 @@ beginning "On the probed site, ...". What a stock field is called and how the ty
 ---
 tags: [entity-type, …; reuse tags from corpus/INDEX.md]
 scope: api
+measured: where the evidence was taken. Copy the line `_lib.emit` prints
 verdict: One sentence, 200 chars max. The thing a client gets wrong about this type.
 ---
 

@@ -69,18 +69,45 @@ def resolve_project(c, ref):
     return by_name[ref]
 
 
+_MEASURED = {"sample": [], "used": set(), "sandbox": None}
+
+
+class _Sampled(list):
+    """The sample projects, remembering which ones the probe reached for.
+
+    A probe that takes `[0]` measured one project, not the three the environment offers, and the
+    finding should say so. Recording the subscript is the only way to know that without asking the
+    probe to declare it.
+    """
+
+    def __getitem__(self, i):
+        if isinstance(i, slice):
+            _MEASURED["used"].update(range(*i.indices(len(self))))
+        else:
+            _MEASURED["used"].add(i if i >= 0 else len(self) + i)
+        return list.__getitem__(self, i)
+
+    def __iter__(self):
+        _MEASURED["used"].update(range(len(self)))
+        return list.__iter__(self)
+
+
 def sample_projects(c, env):
     """Read-only projects a probe may measure, most interesting first. Ids or names, comma separated.
 
     Site ids and names are site data: hardcoding one in committed source is the same leak either way.
     """
     raw = _need(env, "FPT_PROBE_SAMPLE_PROJECTS", "comma-separated project ids or names probes may READ")
-    return [resolve_project(c, x) for x in raw.split(",") if x.strip()]
+    ids = [resolve_project(c, x) for x in raw.split(",") if x.strip()]
+    _MEASURED["sample"] = ids
+    return _Sampled(ids)
 
 
 def sandbox_name(env):
     """The one project a probe may WRITE into. A name, because probe 011 creates it if absent."""
-    return _need(env, "FPT_PROBE_SANDBOX_PROJECT", "the project name probes may WRITE into")
+    _MEASURED["sandbox"] = _need(env, "FPT_PROBE_SANDBOX_PROJECT",
+                                 "the project name probes may WRITE into")
+    return _MEASURED["sandbox"]
 
 
 def sandbox_id(c, env):
@@ -88,7 +115,26 @@ def sandbox_id(c, env):
     name = sandbox_name(env)
     if name not in _projects(c):
         raise SystemExit(f"no project named {name!r}; run probe 011 --write to create the sandbox")
-    return _projects(c)[name]
+    _MEASURED["sandbox"] = _projects(c)[name]
+    return _MEASURED["sandbox"]
+
+
+def measured():
+    """Where this run took its evidence, as the finding's `measured:` value.
+
+    Derived from what the probe reached for, not from anything it declares: a declaration goes stale
+    the first time someone edits the probe below it.
+    """
+    parts = []
+    used, n = sorted(_MEASURED["used"]), len(_MEASURED["sample"])
+    if len(used) == n and n > 1:
+        parts.append(f"all {n} sample projects")
+    elif used:
+        which = ", ".join(str(i + 1) for i in used)
+        parts.append(f"sample project{'s' if len(used) > 1 else ''} {which} of {n}")
+    if _MEASURED["sandbox"] is not None:
+        parts.append("sandbox project written" if writes_allowed() else "sandbox project read")
+    return ", ".join(parts) or "site-wide"
 
 
 def scrub(text, env):
@@ -172,9 +218,18 @@ class Created:
 
 
 def emit(slug, actual, env):
-    """Print the probe's evidence, scrubbed, plus the names the agent must judge."""
+    """Print the probe's evidence, scrubbed, where it was measured, and the names the agent judges.
+
+    The provenance goes to the frontmatter, not into the `**Actual**` block: field-type and
+    entity-type cards have no `**Actual**` block to hold it, the block is capped at 30 lines of
+    evidence, and only a key can be required by `check_corpus.py` and read by the site.
+    """
     print(f"===== {slug} =====")
     print(scrub(actual.strip(), env))
+    print("\n----- measured on <site>, paste the second line into the finding's frontmatter -----")
+    print(f"# sample projects {_MEASURED['sample'] or 'none read'}, "
+          f"sandbox {scrub(str(_MEASURED['sandbox'] or 'not resolved'), env)}")
+    print(f"measured: {measured()}")
     if _SEEN:
         flagged = sorted(scrub(n, env) for n in _SEEN)
         print("\n----- identifying, replace with a placeholder before writing the finding -----")

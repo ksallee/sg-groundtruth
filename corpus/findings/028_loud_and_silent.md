@@ -1,6 +1,7 @@
 ---
 tags: [query, filter, sort, write, operator, error-handling, trap]
 scope: api
+measured: first sample project, read only
 verdict: A 400 is trustworthy and usually names the legal set, but a 200 proves nothing: an unknown field, sort key or query param is a no-op, and a batch can return an id for a row it never made.
 ---
 

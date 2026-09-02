@@ -1,6 +1,7 @@
 ---
 tags: [entity-type, reply, note, create, entity-field, query, filter, trap]
 scope: api
+measured: first sample project read, sandbox project written
 summary: One message in a thread, hanging off almost any row and not only off a Note.
 verdict: Reply is site-wide with no project field, and entity accepts almost every type on the site, not only Note; send entity on create, because a Reply whose entity is null cannot be deleted.
 ---

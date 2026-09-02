@@ -1,6 +1,7 @@
 ---
 tags: [write, upload, media, attachment, version, async]
 scope: api
+measured: unrecorded, one existing Version whose project the probe never names
 verdict: Media upload is three calls: GET {field}/_upload for the presigned links, PUT the bytes to links.upload, POST links.complete_upload with upload_info and upload_data.
 ---
 

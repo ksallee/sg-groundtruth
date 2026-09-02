@@ -1,6 +1,7 @@
 ---
 tags: [field-type, timecode, number, media, write, filter, operator, schema, summary, trap]
 scope: api
+measured: first sample project read, sandbox project written
 summary: A position in a timeline.
 verdict: A timecode stores milliseconds as a signed 32-bit integer. No schema or preference names its frame rate, but a _summarize group_name renders `HH:MM:SS:FF` and the rate solves out of that.
 ---

@@ -2,6 +2,7 @@
 intent: Resolve a query field's value, and run the rows a saved Page shows
 tags: [query, filter, summary, page, schema, operator, dotted-field, trap, recipe]
 scope: api
+measured: all sample projects, read only
 ---
 
 # 003_query_fields_and_pages

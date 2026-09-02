@@ -1,6 +1,7 @@
 ---
 tags: [write, create, batch, upload, async, entity-field, trap]
 scope: api
+measured: first sample project read, sandbox project written
 verdict: Every write ignores ?fields. A create returns what you sent plus the server defaults, an update returns the whole record, and neither resolves a dotted path, so re-read for those and after an upload.
 ---
 

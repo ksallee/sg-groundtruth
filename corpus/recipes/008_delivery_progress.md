@@ -2,6 +2,7 @@
 intent: Keep a Delivery honest about what a long transfer is doing, including when it is cancelled and when it crashes
 tags: [write, delivery, status, list-field, reply, upload, attachment, version, error-handling, trap, recipe]
 scope: api
+measured: sandbox project; Delivery holds 0 rows site-wide, so every row was created here
 ---
 
 # 008_delivery_progress

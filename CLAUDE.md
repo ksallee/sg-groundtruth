@@ -29,6 +29,11 @@ Probe 009 is why the last two are not one: `valid_values` is byte-identical at e
 Only `api` ships publicly. Inside an `api` finding, an individual site measurement is attributed inline,
 beginning "On the probed site, ...". A `project` entry names its project in a `project:` key.
 
+Every entry carries a `measured:` key as well, recipes included: one line saying where the evidence was
+taken, a sample project, the sandbox project, or site-wide. `scope` says whether a claim transfers;
+`measured` says what it rests on, and a `scope: api` claim can still rest on three rows the probe made in
+the sandbox. Where the probe does not say, the key reads `unrecorded`. `_lib.emit` prints the line.
+
 `corpus.local/` is the overlay, gitignored and generated: `site/` for what one site configures,
 `projects/<id>/` for what one project does. The site reads all three and switches between them.
 

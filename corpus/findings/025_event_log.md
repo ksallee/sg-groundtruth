@@ -1,6 +1,7 @@
 ---
 tags: [event-log, query, filter, operator, paging, write, create, serializable, status, trap]
 scope: api
+measured: first sample project read, sandbox project written
 verdict: meta.old_value and meta.new_value answer "what was this before", but meta is unfilterable and unsortable: narrow on entity, event_type and attribute_name, sort -id, read meta yourself.
 ---
 

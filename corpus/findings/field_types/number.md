@@ -1,6 +1,7 @@
 ---
 tags: [field-type, number, write, filter, operator, fill-rate, trap]
 scope: api
+measured: first sample project read, 4 rows written in the sandbox project
 summary: A whole number.
 verdict: A number is a signed 32-bit integer: floats 400, 2**31 is "integer out of range", and 0 is not null, yet is_not and not_in match null rows while greater_than and less_than do not.
 ---

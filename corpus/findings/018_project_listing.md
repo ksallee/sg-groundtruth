@@ -1,6 +1,7 @@
 ---
 tags: [project, query, filter, inspector, list-field, trap]
 scope: api
+measured: site-wide, all 22 projects
 verdict: Filter a project picker on the checkboxes (is_template/is_demo/archived is False), never on sg_status, which on the probed site is set on 7 of 22 projects and null on the other 15.
 ---
 

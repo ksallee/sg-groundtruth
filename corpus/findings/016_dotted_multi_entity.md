@@ -1,6 +1,7 @@
 ---
 tags: [query, dotted-field, multi-entity, filter, paging, trap]
 scope: api
+measured: first sample project, Shots
 verdict: A dotted path through a multi_entity field reads back nothing: HTTP 200 with the key silently absent from attributes. Filters on that same path work, including two hops.
 ---
 

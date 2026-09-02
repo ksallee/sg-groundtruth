@@ -1,6 +1,7 @@
 ---
 tags: [auth, client, token]
 scope: api
+measured: site-wide, one token call and a 3-row project listing
 verdict: client_credentials works and returns a 600s bearer token; a refresh_token comes back but re-authing is simpler and costs one call.
 ---
 

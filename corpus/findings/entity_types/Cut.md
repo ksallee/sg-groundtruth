@@ -1,6 +1,7 @@
 ---
 tags: [entity-type, cut, timecode, create, entity-field, multi-entity, status, list-field, schema, trap]
 scope: api
+measured: sandbox project; Cut holds 0 rows site-wide, so every row here was created by the probe
 summary: An edit of a sequence or a reel, holding the clips that make it up.
 verdict: A Cut stores an edit, it does not model one: no field is computed or validated, and `cut_items` is returned sorted by the item's display name rather than by `cut_order`.
 ---

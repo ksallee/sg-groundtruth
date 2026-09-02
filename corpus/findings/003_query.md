@@ -1,6 +1,7 @@
 ---
 tags: [query, filter, dotted-field, paging, version]
 scope: api
+measured: first sample project, Versions
 verdict: A dotted ?fields path comes back flat under literal key "sg_task.Task.content" in attributes; an entity field is returned under relationships as {data, links}. Never read a row from attributes alone.
 ---
 

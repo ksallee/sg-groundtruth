@@ -1,6 +1,7 @@
 ---
 tags: [field-type, url, media, upload, attachment, version, filter, operator, write, trap]
 scope: api
+measured: first sample project read, sandbox project written
 summary: A link to a file or a web address, returned as an object rather than a string.
 verdict: A url field supports no filter relation at all and sort on it is accepted and ignored, so "which Versions have media" can only be answered by paging rows and testing the value.
 ---

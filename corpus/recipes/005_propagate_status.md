@@ -2,6 +2,7 @@
 intent: Roll a status up from a parent's Tasks and Versions onto the parent, without racing a concurrent write
 tags: [write, status, task, version, shot, schema, batch, filter, trap, recipe]
 scope: api
+measured: first sample project read, sandbox project written
 ---
 
 # 005_propagate_status

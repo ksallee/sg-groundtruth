@@ -2,6 +2,7 @@
 intent: Write a Cut and its CutItems from an edit, read the timeline back, and reconcile a second edit against the Cut already there
 tags: [write, cut, timecode, version, shot, batch, filter, entity-field, multi-entity, trap, recipe]
 scope: api
+measured: sandbox project; Cut and CutItem hold 0 rows site-wide, so every row was created here
 ---
 
 # 007_build_and_reconcile_a_cut

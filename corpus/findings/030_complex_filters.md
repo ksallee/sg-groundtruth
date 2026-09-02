@@ -1,6 +1,7 @@
 ---
 tags: [query, filter, operator, header, page, error-handling, trap]
 scope: api
+measured: two sample projects, Shots
 verdict: api3_hash nests and/or groups 265 deep and mixes leaves with sub-groups; api3_array cannot express or, query-string filter[] is ignored on _search, and {path,relation,values} runs nowhere.
 ---
 

@@ -1,6 +1,7 @@
 ---
 tags: [version, media, published-file, path, storage, inspector, query]
 scope: api
+measured: the first sample project holding PublishedFiles, plus site-wide counts
 verdict: PublishedFile.path is returned with the LocalStorage join already done, so a client never reads LocalStorage or reassembles a root, but a platform whose storage root is unset reads null.
 ---
 

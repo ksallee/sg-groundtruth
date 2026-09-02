@@ -1,6 +1,7 @@
 ---
 tags: [entity-type, cut, timecode, create, entity-field, filter, operator, dotted-field, schema, trap]
 scope: api
+measured: sandbox project; CutItem holds 0 rows site-wide, so every row here was created by the probe
 summary: One clip in a Cut, with its position in the edit and in its source.
 verdict: Nothing on a CutItem is unique and `code` repeats across Cuts, so an id found by a code search may sit on another Cut: check `cut` before every update or the write lands on the wrong edit.
 ---

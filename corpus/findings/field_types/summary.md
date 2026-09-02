@@ -1,6 +1,7 @@
 ---
 tags: [field-type, summary, schema, fill-rate, inspector, filter, trap]
 scope: api
+measured: first sample project read, one Version written in the sandbox project
 summary: A count or aggregate the server computes from related rows.
 verdict: A summary field is a live rollup: refused on write even where editable=true, unfilterable, unsortable, and null on every custom one here, so re-run the query /schema exposes to select on it.
 ---

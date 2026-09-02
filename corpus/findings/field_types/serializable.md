@@ -1,6 +1,7 @@
 ---
 tags: [field-type, serializable, write, filter, operator, schema, error-handling, trap]
 scope: api
+measured: first sample project read, Tasks written in the sandbox project
 summary: A structured blob stored on the row, which no filter can reach.
 verdict: No operator works on a serializable field: every filter 400s as unfilterable. Task.splits answers a well-formed array of hashes with 200 while storing null, so REST cannot write it.
 ---

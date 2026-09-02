@@ -1,6 +1,7 @@
 ---
 tags: [field-type, date, filter, operator, write, trap]
 scope: api
+measured: first sample project read, 2 rows written in the sandbox project
 summary: A calendar date, with no time of day.
 verdict: A date is the string "YYYY-MM-DD" and nothing else: any timestamp 400s on write and as a filter value. Every negating operator (is_not, not_in, not_in_last) also matches rows that are null.
 ---

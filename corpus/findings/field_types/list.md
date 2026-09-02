@@ -1,6 +1,7 @@
 ---
 tags: [field-type, list-field, filter, operator, schema, write, trap]
 scope: api
+measured: first sample project read, sandbox project written
 summary: A single choice from a fixed set of strings.
 verdict: A list is one bare string in attributes; a write outside valid_values 400s and is case-sensitive, while filters are case-insensitive and only is/is_not/in/not_in exist.
 ---

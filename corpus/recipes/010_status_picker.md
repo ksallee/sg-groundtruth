@@ -2,6 +2,7 @@
 intent: List the statuses a project actually offers, each with the label, colour and icon needed to draw it
 tags: [status, icon, colour, schema, list-field, entity-field, dotted-field, project, cache, trap, recipe]
 scope: api
+measured: the first 3 sample projects, read only
 ---
 
 # 010_status_picker

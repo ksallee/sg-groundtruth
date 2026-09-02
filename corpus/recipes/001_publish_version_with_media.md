@@ -2,6 +2,7 @@
 intent: Publish a generated image to Flow PT as a Version, with provenance and the workflow attached
 tags: [write, version, upload, attachment, provenance, recipe]
 scope: api
+measured: sandbox project, one Version created and deleted
 ---
 
 # 001_publish_version_with_media
