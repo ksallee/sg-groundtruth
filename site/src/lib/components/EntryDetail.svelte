@@ -53,7 +53,7 @@
 
 	// The switch follows the scroll: the active section is the last one whose
 	// top has reached the top of the viewport. Above the first section, while
-	// the reader is on the title, nothing is active and no badge is drawn.
+	// the reader is on the title, no row is lit.
 	let active = $state('');
 	$effect(() => {
 		if (!several) return;
@@ -124,7 +124,7 @@
 	</header>
 
 	{#if entry.hasApi}
-		<ScopeSection level="api" id="scope-api" badge={several} pinned={active === 'scope-api'}>
+		<ScopeSection level="api" id="scope-api" badge={several}>
 			<Prose html={entry.html} />
 		</ScopeSection>
 	{/if}
@@ -135,7 +135,6 @@
 			project={local.projectLabel}
 			id={anchor(local)}
 			badge={several}
-			pinned={active === anchor(local)}
 		>
 			<p class="local-verdict">{local.verdict}</p>
 			<Prose html={local.html} tone={local.level} />

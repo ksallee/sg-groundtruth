@@ -19,7 +19,8 @@
 		border-radius: var(--radius-sm);
 		background: var(--scope-quiet);
 		color: var(--scope-ink);
-		font-size: var(--text-xs);
+		font-size: var(--text-sm);
+		font-weight: 400;
 		line-height: 1.6;
 		letter-spacing: 0;
 		white-space: nowrap;

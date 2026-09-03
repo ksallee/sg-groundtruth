@@ -141,9 +141,16 @@
 	--space-8: 4rem;
 	--space-9: 6rem;
 	--gap-prose: 1.25rem;
-	/* The strip under a pinned section badge: page colour at the badge, nothing
-	   this far below it, so content fades as it scrolls under. It is also the
-	   gap between the badge and the section's first block. Move it to taste. */
+	/* The pinned section badge and the strip under it. Move these to taste.
+	   --pin-top         where the badge stops when it pins, from the top of the viewport
+	   --pin-pad         page colour above the badge while pinned
+	   --pin-fade-start  page colour below the badge before the fade begins
+	   --pin-fade        the fade itself, page colour to nothing
+	   The gap from the badge to the section's first block is --pin-fade-start
+	   plus --pin-fade. */
+	--pin-top: 0px;
+	--pin-pad: 0.75rem;
+	--pin-fade-start: 0.5rem;
 	--pin-fade: 2.5rem;
 	--cell-y: 0.5rem;
 	--cell-x: 0.75rem;

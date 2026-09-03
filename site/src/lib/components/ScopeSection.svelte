@@ -4,14 +4,13 @@
 	// One section of an entry page: what the API does, what one site configures,
 	// or what one project does. It starts with its badge and then its content,
 	// with no box around it; the API section is drawn exactly like the others.
-	// `id` is the anchor the switch scrolls to. `pinned` is true while the reader
-	// is inside this section; the badge is drawn only then.
-	let { level = 'api', project = '', id = '', badge = true, pinned = false, children } = $props();
+	// `id` is the anchor the switch scrolls to.
+	let { level = 'api', project = '', id = '', badge = true, children } = $props();
 </script>
 
 <section class="scoped" data-scope={level} {id}>
 	{#if badge}
-		<div class="pin" class:on={pinned}><ScopeMark {level} {project} /></div>
+		<div class="pin"><ScopeMark {level} {project} /></div>
 	{/if}
 	{@render children?.()}
 </section>
@@ -27,21 +26,19 @@
 		scroll-margin-top: var(--space-4);
 	}
 
-	/* The badge appears at the top of the viewport once the reader is inside
-	   the section, stays there while the content scrolls under it, and hands
-	   over to the next section's badge when that arrives. Until then the strip
-	   holds its place unseen, so nothing moves. The strip fades the passing
-	   content out: page colour at the badge, nothing --pin-fade below. It is
-	   also the gap to the section's first block. No transition: it is there or
-	   it is not. */
+	/* The badge sits at the head of its section, pins at --pin-top while the
+	   content scrolls under it, and hands over to the next section's badge when
+	   that arrives. The strip below it fades the passing content out: page
+	   colour for --pin-fade-start below the badge, then nothing over --pin-fade.
+	   The strip is also the gap to the section's first block, so nothing moves
+	   when it pins. Every length is a token in tokens.css. */
 	.pin {
-		visibility: hidden;
 		position: sticky;
-		top: 0;
+		top: var(--pin-top);
 		z-index: 2;
-		padding-top: var(--space-3);
-		padding-bottom: var(--pin-fade);
-		margin-top: calc(-1 * var(--space-3));
+		padding-top: var(--pin-pad);
+		padding-bottom: calc(var(--pin-fade-start) + var(--pin-fade));
+		margin-top: calc(-1 * var(--pin-pad));
 		margin-bottom: calc(-1 * var(--gap-prose));
 		background: linear-gradient(
 			to bottom,
@@ -51,14 +48,10 @@
 		);
 	}
 
-	.pin.on {
-		visibility: visible;
-	}
-
 	/* Under the phone's bar rather than behind it. */
 	@media (max-width: 63.99rem) {
 		.pin {
-			top: 3.5rem;
+			top: calc(3.5rem + var(--pin-top));
 		}
 
 		.scoped[id] {
