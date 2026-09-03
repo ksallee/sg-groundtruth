@@ -52,7 +52,7 @@
 	const several = $derived(sections.length > 1);
 
 	// The switch follows the scroll: the active section is the last one whose
-	// top has passed the switch.
+	// badge has pinned to the top of the viewport.
 	let active = $state('');
 	$effect(() => {
 		if (!several) return;
@@ -61,7 +61,7 @@
 			let cur = ids[0];
 			for (const id of ids) {
 				const el = document.getElementById(id);
-				if (el && el.getBoundingClientRect().top <= 96) cur = id;
+				if (el && el.getBoundingClientRect().top <= 24) cur = id;
 			}
 			active = cur;
 		};
@@ -83,16 +83,17 @@
 					type="button"
 					data-scope={s.level}
 					aria-pressed={active === s.id}
-					onclick={() => jump(s.id)}>{s.label}</button
+					onclick={() => jump(s.id)}
 				>
+					<span>{s.label}</span>
+					<span class="dot" aria-hidden="true"></span>
+				</button>
 			{/each}
 		</div>
 	{/if}
 
 	<header>
-		<div class="crumbs">
-			<Breadcrumb trail={[section, { label: entry.title || entry.fullName }]} />
-		</div>
+		<Breadcrumb trail={[section, { label: entry.title || entry.fullName }]} />
 		<h1 class:literal>{heading}</h1>
 		<!-- Kept in view rather than replaced: a reader who cannot see the schema
 		     name cannot call anything. -->
@@ -142,48 +143,60 @@
 		gap: var(--space-6);
 	}
 
-	/* Top right, and it stays there while the page scrolls. It sits on the
-	   breadcrumb's line: the row it occupies is pulled back out of the flow. */
+	/* At the far right of the page, fixed, one row per section with its dot,
+	   in the sidebar's idiom. The row of the section under the badge is lit.
+	   Hidden where the page is too narrow for it to sit beside the column. */
 	.jump {
-		position: sticky;
-		top: var(--space-3);
+		position: fixed;
+		right: var(--space-5);
+		top: var(--space-7);
 		z-index: 5;
-		justify-self: end;
-		align-self: start;
-		height: 1.75rem;
-		display: flex;
-		align-items: center;
+		display: grid;
 		gap: 2px;
-		padding: 2px;
-		background: var(--ground);
-		border: var(--border) solid var(--rule);
-		border-radius: var(--radius-pill);
-		margin-bottom: calc(-1 * (1.75rem + var(--space-6)));
+		font-size: var(--text-menu);
+		line-height: 1.6;
 	}
 
 	.jump button {
 		font: inherit;
-		font-size: var(--text-xs);
-		line-height: 1.6;
-		letter-spacing: 0;
+		letter-spacing: inherit;
+		text-align: right;
 		border: 0;
 		background: none;
 		color: var(--ink-muted);
-		height: 100%;
-		padding: 0 0.7rem;
-		border-radius: var(--radius-pill);
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		gap: var(--space-2);
+		padding: var(--space-1) var(--space-2);
+		border-radius: 6px;
 		transition:
 			background var(--duration) ease,
 			color var(--duration) ease;
 	}
 
 	.jump button:hover {
+		background: var(--sidebar-hover);
 		color: var(--ink);
 	}
 
 	.jump button[aria-pressed='true'] {
-		background: var(--scope-quiet);
-		color: var(--scope-ink);
+		background: var(--sidebar-active);
+		color: var(--ink);
+	}
+
+	.jump .dot {
+		flex: 0 0 auto;
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: var(--scope-ink);
+	}
+
+	@media (max-width: 79.99rem) {
+		.jump {
+			display: none;
+		}
 	}
 
 	header {
@@ -192,11 +205,6 @@
 		gap: var(--space-3);
 		padding-bottom: var(--space-6);
 		border-bottom: var(--border) solid var(--rule);
-	}
-
-	/* Leaves the right of its line to the switch. */
-	.crumbs {
-		max-width: 62%;
 	}
 
 	h1.literal {

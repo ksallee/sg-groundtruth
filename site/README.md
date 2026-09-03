@@ -158,7 +158,9 @@ Every count on the site answers at the deepest level the build holds.
 A section or a list row that is not the API alone carries a badge: the level's word on the level's colour.
 Blue is the API, orange is one site, green is one project, and these three are the only hues on the site.
 The sidebar carries the same colours as a dot beside every entry and as a key at its foot. A page with more
-than one section has a switch at its top right that scrolls to a section and follows the scroll.
+than one section has a list at the far right of the page, one row per section with its dot, that scrolls to
+a section and follows the scroll. Each section's badge pins to the top of the viewport while its content
+scrolls under it, over a fade `--pin-fade` tall, and hands over to the next section's badge.
 
 Everything is declared in `tokens.css` under `--scope-*`, resolved by one `[data-scope]` rule in `app.css`,
 and drawn by `ScopeMark` and `ScopeSection`.

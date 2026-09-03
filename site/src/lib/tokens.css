@@ -141,6 +141,10 @@
 	--space-8: 4rem;
 	--space-9: 6rem;
 	--gap-prose: 1.25rem;
+	/* The strip under a pinned section badge: page colour at the badge, nothing
+	   this far below it, so content fades as it scrolls under. It is also the
+	   gap between the badge and the section's first block. Move it to taste. */
+	--pin-fade: 2.5rem;
 	--cell-y: 0.5rem;
 	--cell-x: 0.75rem;
 
