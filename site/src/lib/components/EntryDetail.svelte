@@ -38,8 +38,8 @@
 	);
 	const heading = $derived(entry.title || entry.name || entry.fullName.replace(/^\d+\s+/, ''));
 
-	// Every section on the page, in order. With one section there is nothing to
-	// tell apart, so no badge and no switch is drawn.
+	// Every section on the page, in order. Each carries its badge; the switch at
+	// the right is drawn only when there is more than one to switch between.
 	const anchor = (l) => (l.level === 'site' ? 'scope-site' : `scope-project-${l.project}`);
 	const sections = $derived([
 		...(entry.hasApi ? [{ id: 'scope-api', level: 'api', label: 'API' }] : []),
@@ -124,7 +124,7 @@
 	</header>
 
 	{#if entry.hasApi}
-		<ScopeSection level="api" id="scope-api" badge={several}>
+		<ScopeSection level="api" id="scope-api">
 			<Prose html={entry.html} />
 		</ScopeSection>
 	{/if}
@@ -134,7 +134,6 @@
 			level={local.level}
 			project={local.projectLabel}
 			id={anchor(local)}
-			badge={several}
 		>
 			<p class="local-verdict">{local.verdict}</p>
 			<Prose html={local.html} tone={local.level} />

@@ -5,13 +5,11 @@
 	// or what one project does. It starts with its badge and then its content,
 	// with no box around it; the API section is drawn exactly like the others.
 	// `id` is the anchor the switch scrolls to.
-	let { level = 'api', project = '', id = '', badge = true, children } = $props();
+	let { level = 'api', project = '', id = '', children } = $props();
 </script>
 
 <section class="scoped" data-scope={level} {id}>
-	{#if badge}
-		<div class="pin"><ScopeMark {level} {project} /></div>
-	{/if}
+	<div class="pin"><ScopeMark {level} {project} /></div>
 	{@render children?.()}
 </section>
 
