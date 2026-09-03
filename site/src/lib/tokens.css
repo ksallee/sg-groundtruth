@@ -154,6 +154,9 @@
 	/* The same fade, upside down, where the sidebar's tree meets the colour key
 	   at its foot: nothing at the top, page colour at the key. */
 	--key-fade: 2.5rem;
+	/* And once more along the bottom edge of the main area: content dissolves
+	   as it leaves the screen. */
+	--main-fade: 3rem;
 	--cell-y: 0.5rem;
 	--cell-x: 0.75rem;
 

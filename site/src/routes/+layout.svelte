@@ -66,6 +66,27 @@
 		min-width: 0;
 	}
 
+	/* The bottom edge of the main area fades the page out as it scrolls off:
+	   nothing --main-fade up, page colour at the edge. Fixed, over the page
+	   only, and under the section list at the right. */
+	.page::after {
+		content: '';
+		position: fixed;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		height: var(--main-fade);
+		background: linear-gradient(to top, var(--ground) 0, transparent 100%);
+		pointer-events: none;
+		z-index: 4;
+	}
+
+	@media (min-width: 64rem) {
+		.page::after {
+			left: var(--sidebar-width);
+		}
+	}
+
 	main {
 		display: block;
 		padding-bottom: var(--space-9);
