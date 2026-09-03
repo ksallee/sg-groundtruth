@@ -1,6 +1,5 @@
 <script>
 	import { page } from '$app/state';
-	import { afterNavigate } from '$app/navigation';
 	import { NAME } from '$lib/site.js';
 	import ReadingLevel from './ReadingLevel.svelte';
 	import { visible } from '$lib/reading.svelte.js';
@@ -38,12 +37,15 @@
 		{ id: 'findings', label: 'Findings', href: '/findings', items: shown(nav.findings) }
 	]);
 
-	// A group is open while the reader is inside it. A reader can open or close
-	// any group by hand; that choice lasts until the next navigation.
-	let toggled = $state({});
-	const isOpen = (g) => toggled[g.id] ?? here(g.href);
-	const toggle = (g) => (toggled[g.id] = !isOpen(g));
-	afterNavigate(() => (toggled = {}));
+	// A group opens and closes by hand, any number at once, and stays as the
+	// reader left it across navigations. The group the reader is inside opens on
+	// its own; nothing ever closes on its own.
+	let expanded = $state({});
+	$effect(() => {
+		for (const g of groups) if (here(g.href)) expanded[g.id] = true;
+	});
+	const isOpen = (g) => Boolean(expanded[g.id]);
+	const toggle = (g) => (expanded[g.id] = !expanded[g.id]);
 
 	const current = (href) =>
 		href.includes('#') ? path + page.url.hash === href : path === href;
@@ -71,23 +73,18 @@
 
 			{#each groups as g (g.id)}
 				<li class="group" class:here={here(g.href)} class:is-open={isOpen(g)}>
-					<div class="row">
-						<a class="item" href={g.href} aria-current={path === g.href ? 'page' : undefined}
-							>{g.label}</a
-						>
-						<button
-							type="button"
-							class="chev"
-							aria-expanded={isOpen(g)}
-							aria-controls="sub-{g.id}"
-							aria-label="{isOpen(g) ? 'Collapse' : 'Expand'} {g.label}"
-							onclick={() => toggle(g)}
-						>
-							<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-								<path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" fill="none" />
-							</svg>
-						</button>
-					</div>
+					<button
+						type="button"
+						class="item toggle"
+						aria-expanded={isOpen(g)}
+						aria-controls="sub-{g.id}"
+						onclick={() => toggle(g)}
+					>
+						<span>{g.label}</span>
+						<svg class="chev" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+							<path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" fill="none" />
+						</svg>
+					</button>
 					{#if isOpen(g)}
 						<ul class="sub" id="sub-{g.id}">
 							{#each g.items as e (e.slug)}
@@ -129,7 +126,7 @@
 		position: sticky;
 		top: 0;
 		height: 100dvh;
-		overflow-y: auto;
+		overflow: hidden;
 		background: var(--sidebar);
 		border-right: var(--border) solid var(--rule);
 		padding: var(--space-4) var(--space-3);
@@ -170,8 +167,13 @@
 		background: var(--sidebar-hover);
 	}
 
+	/* The tree scrolls on its own. The name above it and the reading level below
+	   it stay put. */
 	nav {
 		flex: 1;
+		min-height: 0;
+		overflow-y: auto;
+		scrollbar-width: thin;
 	}
 
 	.menu,
@@ -182,15 +184,9 @@
 		gap: 2px;
 	}
 
-	.row {
-		display: flex;
-		align-items: stretch;
-		gap: 2px;
-	}
-
 	.item {
-		flex: 1;
 		display: block;
+		width: 100%;
 		padding: var(--space-1) var(--space-2);
 		border-radius: 6px;
 		color: var(--ink-body);
@@ -200,13 +196,24 @@
 			color var(--duration) ease;
 	}
 
-	.item:hover,
-	.chev:hover {
+	.item:hover {
 		background: var(--sidebar-hover);
 		color: var(--ink);
 	}
 
-	.group.here > .row > .item {
+	/* A group is a button, not a link: it opens, it never navigates. */
+	.toggle {
+		font: inherit;
+		text-align: left;
+		border: 0;
+		background: none;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-2);
+	}
+
+	.group.here > .toggle {
 		color: var(--ink);
 		font-weight: var(--weight-medium);
 	}
@@ -218,20 +225,12 @@
 	}
 
 	.chev {
-		flex: 0 0 1.75rem;
-		border: 0;
-		background: none;
+		flex: 0 0 auto;
 		color: var(--ink-muted);
-		border-radius: 6px;
-		display: grid;
-		place-items: center;
-	}
-
-	.chev svg {
 		transition: transform var(--duration) var(--ease-out);
 	}
 
-	.is-open .chev svg {
+	.is-open .chev {
 		transform: rotate(90deg);
 	}
 
