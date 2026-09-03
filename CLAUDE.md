@@ -29,6 +29,20 @@ Probe 009 is why the last two are not one: `valid_values` is byte-identical at e
 Only `api` ships publicly. Inside an `api` finding, an individual site measurement is attributed inline,
 beginning "On the probed site, ...". A `project` entry names its project in a `project:` key.
 
+A `verdict:` states what was measured. It does not issue a rule the measurement does not carry.
+
+The 200-character cap makes this easy to get wrong: a tally compresses into an imperative and the
+qualifier is what gets dropped. Two entries did exactly this. `010_status_icons` ended on
+"bg_color alone already draws a badge" while its body documented that the stock sprite is reachable
+from the site's own stylesheet, so a reader following the index gave up one step early.
+`018_project_listing` said to filter a project picker on `is_template`/`is_demo`/`archived` all
+False, while its body only tallied the three as discriminators - and `is_demo` is True on exactly
+one project, the demo show, which on this site is the richest one a picker would want.
+
+Both read as complete, which is what made them expensive: the index exists so an agent can stop at
+the one-liner, so a one-liner that reads finished while omitting the qualifier is worse than a
+vague one. When the body describes and the verdict prescribes, the verdict is wrong.
+
 Every entry carries a `measured:` key as well, recipes included: one line saying where the evidence was
 taken, a sample project, the sandbox project, or site-wide. `scope` says whether a claim transfers;
 `measured` says what it rests on, and a `scope: api` claim can still rest on three rows the probe made in

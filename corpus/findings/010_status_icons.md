@@ -2,7 +2,7 @@
 tags: [status, icon, cache, colour, entity-field]
 scope: api
 measured: site-wide, the Status and Icon listings
-verdict: Status.icon is an entity link, so it is returned under relationships; display_type then picks one of three renderings, and bg_color alone already draws a badge.
+verdict: Status.icon is an entity link under relationships; display_type picks one of three renderings, and stock icons are absent from the API but reachable via the sprite in the site's own stylesheet.
 ---
 
 # 010_status_icons

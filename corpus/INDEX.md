@@ -24,7 +24,7 @@ Read this first. Open an entry only when its one-liner does not already answer t
   `schema custom-entity discovery`
 - **009_status_lists** — A project's usable statuses are valid_values minus hidden_values, read with project_id: valid_values is identical at every scope, hidden_values is the only thing that varies.  
   `schema status list-field inspector`
-- **010_status_icons** — Status.icon is an entity link, so it is returned under relationships; display_type then picks one of three renderings, and bg_color alone already draws a badge.  
+- **010_status_icons** — Status.icon is an entity link under relationships; display_type picks one of three renderings, and stock icons are absent from the API but reachable via the sprite in the site's own stylesheet.  
   `status icon cache colour entity-field`
 - **011_create_project** — A script user can create a Project with nothing but {"name": ...}, at 201, but the response echoes only 6 attributes, so read the project back if you need anything else.  
   `write project create schema`
@@ -38,7 +38,7 @@ Read this first. Open an entry only when its one-liner does not already answer t
   `query dotted-field multi-entity filter paging trap`
 - **017_filter_operators** — is/is_not/contains/not_contains/starts_with/ends_with/in/not_in all work, on text fields and through dotted paths; an unknown operator 400s on all 21 data types, naming the valid list on 16.  
   `query filter operator dotted-field entity-field error-handling`
-- **018_project_listing** — Filter a project picker on the checkboxes (is_template/is_demo/archived is False), never on sg_status, which on the probed site is set on 7 of 22 projects and null on the other 15.  
+- **018_project_listing** — sg_status is not a liveness filter and is null on 15 of 22 projects; is_template, is_demo and archived are the discriminators, so pick the ones your list wants - is_demo hides the demo show.  
   `project query filter inspector list-field trap`
 - **019_create_fields** — Custom fields are creatable over REST, but you pass a display name and a duplicate silently becomes <name>_1: an idempotent ensure() must read /schema first, never POST-and-hope.  
   `schema write custom-field provenance entity-field trap`
