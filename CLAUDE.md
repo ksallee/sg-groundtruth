@@ -96,6 +96,13 @@ Its output is deliberately **not** scrubbed. `corpus.local/` is gitignored and n
 slot numbers, display names and vocabularies are the entire point of it. `probes/check_corpus.py` lints
 `corpus/` only. The file layout and frontmatter are the contract in `site/README.md`.
 
+## The corpus over MCP
+
+`python -m sg_groundtruth.mcp` serves the corpus to an agent: stdio, JSON-RPC, standard library only, no
+dependency. Four tools, `scope: api` alone unless given `--overlay`. `docs/mcp.md` carries registration,
+the tool list and what has and has not been tested. It answers what the API does; a Flow PT MCP server
+calls the API, and an agent holding both has to be told which is which.
+
 ## Stack
 
 Python 3.11, `requests`. A new dependency needs a line in DESIGN.md.

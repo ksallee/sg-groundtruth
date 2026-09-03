@@ -234,23 +234,33 @@ Open corpus/findings/&lt;entry&gt;.md only when the one-liner falls short.</pre>
 	<!-- Structure only: the copy is a content edit that fills `integrations` in
 	     the script above, from site/RESEARCH-mcp.md. Renders nothing when the
 	     list is empty. -->
-	{#if integrations.length}
-		<section id="mcp">
-			<h2>Using this alongside an MCP server</h2>
-			<p>
-				Each of these is MIT licensed and maintained. The corpus is markdown, so an agent can read it
-				alongside any of them with no change to either project.
-			</p>
-			<ul class="integrations">
-				{#each integrations as it (it.href)}
-					<li>
-						<h3><a href={it.href}>{it.name}</a></h3>
-						<p>{it.note}</p>
-					</li>
-				{/each}
-			</ul>
-		</section>
-	{/if}
+	<section id="mcp">
+		<h2>Using this alongside an MCP server</h2>
+		<p>
+			The corpus is served over MCP by <code>python -m sg_groundtruth.mcp</code>: standard library
+			only, stdio, no dependency. Four tools, of which <code>filter_operators</code> is the one to
+			call before building anything that filters. Registration and the tool list are in
+			<a href="{REPO}/blob/main/docs/mcp.md">docs/mcp.md</a>.
+		</p>
+		<p>
+			It answers what the API does. A Flow PT MCP server calls the API. Neither replaces the other,
+			and an agent given both has to be told which is which.
+		</p>
+		<p class="note">
+			Each server below is MIT licensed and maintained. What is recorded about them was read from
+			their own source at a pinned commit, in
+			<a href="{REPO}/blob/main/site/RESEARCH-mcp.md">RESEARCH-mcp.md</a>. Nothing was installed and
+			no agent was measured using one, so treat these as source verification rather than as a test.
+		</p>
+		<ul class="integrations">
+			{#each integrations as it (it.href)}
+				<li>
+					<h3><a href={it.href}>{it.name}</a></h3>
+					<p>{it.note}</p>
+				</li>
+			{/each}
+		</ul>
+	</section>
 </div>
 
 <style>
