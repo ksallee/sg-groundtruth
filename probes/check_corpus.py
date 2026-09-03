@@ -19,6 +19,10 @@ CORPUS = ROOT / "corpus"
 # nor the shape ones: `AD Approval Required` and `Bid - MOD` are display names read off a site,
 # and the ALL-CAPS rule governs an agent reaching for emphasis. See docs/example-overlay.md.
 EXAMPLE = ROOT / "corpus.example"
+# experiments/ holds committed artifacts of runs made against a real site: scripts, notes and the
+# grader's ground truth. Same leak checks, same reason. Their prose is a record of what happened
+# rather than corpus writing, so the register and shape checks do not apply.
+EXPERIMENTS = ROOT / "experiments"
 VERDICT_MAX = 200
 # A verdict is the surprise, which is wrong in a list of 24 types. Every card in the two
 # matrices also says plainly what the thing is, and the site's list pages render that.
@@ -121,8 +125,12 @@ def check_register(f, text):
             fail(f, f"ALL-CAPS emphasis {w!r} — capitals are for API literals only (CLAUDE.md Style)")
 
 
-for f in sorted(EXAMPLE.rglob("*.md")):
-    check_leaks(f, f.read_text())
+for root in (EXAMPLE, EXPERIMENTS):
+    if not root.is_dir():
+        continue
+    for f in sorted(root.rglob("*")):
+        if f.is_file() and f.suffix in (".md", ".py", ".txt", ".csv"):
+            check_leaks(f, f.read_text(errors="replace"))
 
 for f in sorted(CORPUS.rglob("*.md")):
     text = f.read_text()

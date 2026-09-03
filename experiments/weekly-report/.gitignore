@@ -1,0 +1,7 @@
+.env
+*.venv/
+__pycache__/
+# The produced CSVs are the run's evidence and are described in RESULT.md, but they
+# carry the site host and, in the corpus arm, 22 presigned S3 URLs with their keys.
+# The numbers that matter are graded in RESULT.md against the live API.
+report.csv

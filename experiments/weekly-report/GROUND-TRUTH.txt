@@ -1,0 +1,34 @@
+_summarize count: 23
+_search walked count: 23
+
+oldest 3 by created_at (the correct sort):
+  26262  probe_v001  2026-09-02T02:04:29Z  shot=None
+  26265  FOO  2026-09-02T02:35:08Z  shot=None
+  26278  previs_from_plate_v001  2026-09-02T15:18:11Z  shot=None
+
+id-ascending? True  (if False, a no-op sort is detectable)
+
+linked Shot codes: {7514: 'sbx_0020'}
+versions with a Shot link: 20
+versions with sg_uploaded_movie: 22
+
+Notes (most recent last):
+   10941 Client review round 1 2026-09-03T02:31:02Z
+   10942 Client review round 2 2026-09-03T02:31:03Z
+   10943 Client review round 3 2026-09-03T02:31:04Z
+
+attachments on each Note BEFORE the run:
+   10941 []
+   10942 []
+   10943 []
+
+=== is a bad sort key silent here? ===
+  sort=created_at       200  first ids [26262, 26265, 26278, 26406, 26407]
+  sort=-created_at      200  first ids [31720, 31719, 31718, 31717, 31716]
+  sort=created          200  first ids [26262, 26265, 26278, 26406, 26407]
+  sort=date_created     200  first ids [26262, 26265, 26278, 26406, 26407]
+  sort=zzz_nonexistent  200  first ids [26262, 26265, 26278, 26406, 26407]
+
+NOTE FOR GRADING: on this data the correct created_at order equals id order, so a script that
+omits the sort produces an identical CSV. Trap 2 is graded by reading the request the script
+sends, not by comparing output.
