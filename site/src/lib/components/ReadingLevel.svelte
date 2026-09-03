@@ -1,13 +1,12 @@
 <script>
 	import { reading, choose, ALL } from '$lib/reading.svelte.js';
 
-	// The global reading level. Rendered only when the build read an overlay, and
-	// only with the levels the overlay can show, so no control on the bar is ever
-	// disabled or empty.
+	// The global reading level, at the foot of the sidebar. Rendered only when the
+	// build read an overlay, and only with the levels the overlay can show, so
+	// nothing here is ever disabled or empty.
 	//
-	// Read left to right: each step adds to the one before it. The step carries
-	// the same edge texture the content it adds carries, so the switch teaches
-	// the marks on the page below it.
+	// Each level is a dot in its colour. The same dot sits beside every entry in
+	// the tree above, so the switch teaches the dots.
 	let { hasSite = false, projects = [] } = $props();
 
 	// One project needs no union: every project is that project.
@@ -23,7 +22,7 @@
 		aria-pressed={reading.level === 'api'}
 		onclick={() => choose('api')}
 	>
-		<span class="scope-edge" aria-hidden="true"></span>API
+		<span class="dot" aria-hidden="true"></span>API
 	</button>
 
 	{#if hasSite}
@@ -34,7 +33,7 @@
 			aria-pressed={reading.level === 'site'}
 			onclick={() => choose('site')}
 		>
-			<span class="scope-edge" aria-hidden="true"></span>Site
+			<span class="dot" aria-hidden="true"></span>Site
 		</button>
 	{/if}
 
@@ -46,11 +45,11 @@
 			aria-pressed={reading.level === 'project'}
 			onclick={() => choose('project', only.id)}
 		>
-			<span class="scope-edge" aria-hidden="true"></span>{only.label}
+			<span class="dot" aria-hidden="true"></span><span class="label">{only.label}</span>
 		</button>
 	{:else if projects.length}
 		<label class="step pick" data-scope="project" aria-current={reading.level === 'project'}>
-			<span class="scope-edge" aria-hidden="true"></span>
+			<span class="dot" aria-hidden="true"></span>
 			<span class="visually-hidden">Project</span>
 			<select value={chosen} onchange={(e) => choose('project', e.currentTarget.value)}>
 				<option value="" disabled>Project</option>
@@ -64,14 +63,11 @@
 </div>
 
 <style>
-	/* Stacked, one level per line, in the sidebar's own idiom. */
 	.switch {
 		display: grid;
 		gap: 2px;
-		font-family: var(--font-mono);
-		font-size: var(--text-xs);
+		font-size: var(--text-menu);
 		line-height: 1.6;
-		letter-spacing: 0;
 	}
 
 	.step {
@@ -82,10 +78,10 @@
 		border: 0;
 		border-radius: 6px;
 		padding: var(--space-1) var(--space-2);
-		white-space: nowrap;
 		display: flex;
-		align-items: stretch;
+		align-items: center;
 		gap: var(--space-2);
+		min-width: 0;
 		transition:
 			color var(--duration) ease,
 			background var(--duration) ease;
@@ -98,12 +94,23 @@
 
 	.step[aria-pressed='true'],
 	.step[aria-current='true'] {
-		background: var(--scope-quiet);
-		color: var(--scope-ink);
+		background: var(--sidebar-active);
+		color: var(--ink);
 	}
 
-	.pick {
-		align-items: center;
+	.dot {
+		flex: 0 0 auto;
+		width: 12px;
+		height: 12px;
+		border-radius: 50%;
+		background: var(--scope-ink);
+	}
+
+	.label {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	select {
@@ -113,6 +120,7 @@
 		border: 0;
 		padding: 0;
 		cursor: pointer;
+		min-width: 0;
 		max-width: 100%;
 	}
 

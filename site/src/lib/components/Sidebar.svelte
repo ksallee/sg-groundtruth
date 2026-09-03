@@ -4,18 +4,27 @@
 	import ReadingLevel from './ReadingLevel.svelte';
 	import { visible } from '$lib/reading.svelte.js';
 
-	// The whole navigation. Two plain pages, Intro and How it works, and five
-	// groups that open to list what they hold. The lists come from the corpus at
-	// build time and grow with the reading level exactly as the index pages do.
-	// The name at the top is the way home.
+	// The whole navigation. The name is the way home. Two pages come first,
+	// then five groups that open to list what they hold; the lists come from the
+	// corpus at build time and grow with the reading level exactly as the index
+	// pages do. Every entry carries a dot per level it has content at.
 	let { nav, hasOverlay = false, hasSite = false, projects = [], open = false, onclose } = $props();
 
 	const path = $derived(page.url.pathname);
 	const here = (href) => path === href || path.startsWith(href + '/');
 
-	// A subject exists at this level if it has an API card, or a local card the
-	// level shows. Nothing is hidden as the level rises; subjects are added.
-	const shown = (items) => items.filter((e) => e.hasApi || visible(e.locals ?? []).length);
+	// The levels an entry has content at, of the ones the reading level shows.
+	// An entry with none is not listed.
+	function levelsOf(e) {
+		const out = [];
+		if (e.hasApi) out.push('api');
+		const locals = visible(e.locals ?? []);
+		if (locals.some((l) => l.level === 'site')) out.push('site');
+		if (locals.some((l) => l.level === 'project')) out.push('project');
+		return out;
+	}
+	const shown = (items) =>
+		items.map((e) => ({ ...e, levels: levelsOf(e) })).filter((e) => e.levels.length);
 
 	// Filters has one section per data type, so its list is the field types
 	// again, pointing at the anchors.
@@ -50,9 +59,8 @@
 	const current = (href) =>
 		href.includes('#') ? path + page.url.hash === href : path === href;
 
-	// A field type, or an entity type with no display title, is the API's own
-	// literal, and is set in mono.
-	const mono = (g, e) => g.id !== 'recipes' && g.id !== 'findings' && !e.title;
+	const WORD = { api: 'API', site: 'Site', project: 'Project' };
+	const describe = (levels) => levels.map((l) => WORD[l]).join(', ');
 </script>
 
 <aside class="sidebar" class:open aria-label="Site">
@@ -69,6 +77,11 @@
 		<ul class="menu">
 			<li>
 				<a class="item" href="/" aria-current={path === '/' ? 'page' : undefined}>Intro</a>
+			</li>
+			<li>
+				<a class="item" href="/how-it-works" aria-current={here('/how-it-works') ? 'page' : undefined}
+					>How it works</a
+				>
 			</li>
 
 			{#each groups as g (g.id)}
@@ -89,14 +102,14 @@
 						<ul class="sub" id="sub-{g.id}">
 							{#each g.items as e (e.slug)}
 								<li>
-									<a
-										class="subitem"
-										class:mono={mono(g, e)}
-										href={e.href}
-										aria-current={current(e.href) ? 'page' : undefined}
-									>
+									<a class="subitem" href={e.href} aria-current={current(e.href) ? 'page' : undefined}>
 										{#if e.number}<span class="num">{e.number}</span>{/if}
-										<span>{e.title || e.name}</span>
+										<span class="label">{e.title || e.name}</span>
+										<span class="dots" role="img" aria-label={describe(e.levels)}>
+											{#each e.levels as level (level)}
+												<span class="dot" data-scope={level}></span>
+											{/each}
+										</span>
 									</a>
 								</li>
 							{/each}
@@ -104,12 +117,6 @@
 					{/if}
 				</li>
 			{/each}
-
-			<li>
-				<a class="item" href="/how-it-works" aria-current={here('/how-it-works') ? 'page' : undefined}
-					>How it works</a
-				>
-			</li>
 		</ul>
 	</nav>
 
@@ -128,13 +135,13 @@
 		height: 100dvh;
 		overflow: hidden;
 		background: var(--sidebar);
-		border-right: var(--border) solid var(--rule);
 		padding: var(--space-4) var(--space-3);
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-5);
-		font-size: var(--text-sm);
+		font-size: var(--text-menu);
 		line-height: 1.6;
+		letter-spacing: var(--tracking-body);
 	}
 
 	.head {
@@ -147,6 +154,7 @@
 	}
 
 	.mark {
+		font-size: var(--text-sm);
 		font-weight: var(--weight-bold);
 		color: var(--ink);
 		text-decoration: none;
@@ -168,12 +176,38 @@
 	}
 
 	/* The tree scrolls on its own. The name above it and the reading level below
-	   it stay put. */
+	   it stay put. The scrollbar is a thin thumb that appears on hover, in place
+	   of the browser's own. */
 	nav {
 		flex: 1;
 		min-height: 0;
 		overflow-y: auto;
 		scrollbar-width: thin;
+		scrollbar-color: transparent transparent;
+		padding-right: var(--space-1);
+	}
+
+	nav:hover,
+	nav:focus-within {
+		scrollbar-color: var(--rule-strong) transparent;
+	}
+
+	nav::-webkit-scrollbar {
+		width: 6px;
+	}
+
+	nav::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	nav::-webkit-scrollbar-thumb {
+		background: transparent;
+		border-radius: 999px;
+	}
+
+	nav:hover::-webkit-scrollbar-thumb,
+	nav:focus-within::-webkit-scrollbar-thumb {
+		background: var(--rule-strong);
 	}
 
 	.menu,
@@ -204,6 +238,7 @@
 	/* A group is a button, not a link: it opens, it never navigates. */
 	.toggle {
 		font: inherit;
+		letter-spacing: inherit;
 		text-align: left;
 		border: 0;
 		background: none;
@@ -215,13 +250,11 @@
 
 	.group.here > .toggle {
 		color: var(--ink);
-		font-weight: var(--weight-medium);
 	}
 
 	.item[aria-current] {
 		background: var(--sidebar-active);
 		color: var(--ink);
-		font-weight: var(--weight-medium);
 	}
 
 	.chev {
@@ -236,27 +269,22 @@
 
 	.sub {
 		margin: 2px 0 var(--space-2) var(--space-3);
-		padding-left: var(--space-3);
-		border-left: var(--border) solid var(--rule);
+		padding-left: var(--space-2);
 	}
 
+	/* One line per entry. The label gives way; the number and the dots do not. */
 	.subitem {
 		display: flex;
+		align-items: center;
 		gap: var(--space-2);
-		align-items: baseline;
+		min-width: 0;
 		padding: 0.2rem var(--space-2);
 		border-radius: 6px;
-		font-size: var(--text-xs);
 		color: var(--ink-body);
 		text-decoration: none;
 		transition:
 			background var(--duration) ease,
 			color var(--duration) ease;
-	}
-
-	.subitem.mono {
-		font-family: var(--font-mono);
-		letter-spacing: 0;
 	}
 
 	.subitem:hover {
@@ -270,9 +298,30 @@
 	}
 
 	.num {
-		font-family: var(--font-mono);
-		font-size: var(--text-xs);
+		flex: 0 0 auto;
 		color: var(--ink-muted);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.label {
+		flex: 1 1 auto;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.dots {
+		flex: 0 0 auto;
+		display: flex;
+		gap: 4px;
+	}
+
+	.dot {
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		background: var(--scope-ink);
 	}
 
 	.foot {
@@ -283,7 +332,6 @@
 	}
 
 	.foot-label {
-		font-family: var(--font-mono);
 		font-size: var(--text-xs);
 		color: var(--ink-muted);
 		padding-inline: var(--space-2);
@@ -299,6 +347,7 @@
 			z-index: 30;
 			transform: translateX(-100%);
 			transition: transform var(--duration) var(--ease-out);
+			box-shadow: 0 0 0 var(--border) var(--rule);
 		}
 
 		.sidebar.open {

@@ -43,32 +43,31 @@
 	--slab-ink: light-dark(#e6e6e3, #d9d9d6);
 	--slab-rule: light-dark(#161615, #242423);
 
-	/* One site. Warm amber against the graphite. */
-	--accent-local: light-dark(#8a5a12, #dcae6b);
-	--accent-local-quiet: light-dark(#faf3e4, #2a2114);
-	--accent-local-rule: light-dark(#e6d3ab, #4a3a1e);
+	/* The three levels of truth are the only hues on the site. Everything else
+	   is black and white, so a dot or a mark in one of these is always a scope.
+	   Bright, and tuned per scheme. */
+	--accent-api: light-dark(#007aff, #0a84ff);
+	--accent-api-quiet: light-dark(#e9f2ff, #13233a);
+	--accent-api-rule: light-dark(#b8d3ff, #1f3c68);
 
-	/* One project inside it. A green, so the two local levels are two hues.
-	   Nothing rests on hue alone: see provenance below. */
-	--accent-project: light-dark(#2f6f45, #86cf9c);
-	--accent-project-quiet: light-dark(#eaf4ec, #16261b);
-	--accent-project-rule: light-dark(#bfdcc6, #24402c);
+	--accent-local: light-dark(#ff9500, #ff9f0a);
+	--accent-local-quiet: light-dark(#fff4e3, #332409);
+	--accent-local-rule: light-dark(#ffd699, #5a3f10);
+
+	--accent-project: light-dark(#34c759, #30d158);
+	--accent-project-quiet: light-dark(#e7f8ec, #0f2f18);
+	--accent-project-rule: light-dark(#a6e6b6, #1e5a2f);
 
 	/* --- provenance ------------------------------------------------------
 	   Three kinds of information share every list and every entry page, and
 	   these lines are the whole distinction between them. Restyle it here and
 	   it changes on the switch, on a list row, on a chip and on a detail
-	   section at once.
-
-	   A mark is three signals: a word, an edge texture and a hue. The texture
-	   survives greyscale and a reader who cannot separate the hues. Solid for
-	   the API, dashed for one site, dotted for one project: coarser as the
-	   claim narrows. The API takes the page's own ink, because at the default
-	   reading level it is the only voice on the page and needs no colour. */
-	--scope-api-ink: var(--ink);
-	--scope-api-quiet: var(--ground-sunken);
-	--scope-api-rule: var(--rule);
-	--scope-api-edge: linear-gradient(var(--ink), var(--ink));
+	   section at once. A mark is three signals: a word, an edge texture and a
+	   hue. Solid for the API, dashed for one site, dotted for one project. */
+	--scope-api-ink: var(--accent-api);
+	--scope-api-quiet: var(--accent-api-quiet);
+	--scope-api-rule: var(--accent-api-rule);
+	--scope-api-edge: linear-gradient(var(--accent-api), var(--accent-api));
 
 	--scope-site-ink: var(--accent-local);
 	--scope-site-quiet: var(--accent-local-quiet);
@@ -155,12 +154,13 @@
 	--radius-pill: 999px;
 	--border: 1px;
 
-	/* The sidebar sits one step off the page, so the column reads as the page
-	   and the menu as its margin. */
-	--sidebar: light-dark(#f7f7f5, #151514);
-	--sidebar-hover: light-dark(#ececea, #1f1f1e);
-	--sidebar-active: light-dark(#e4e4e1, #272726);
+	/* The sidebar is the page's own ground, with no rule between them, so it
+	   floats at the left rather than boxing the column in. */
+	--sidebar: var(--ground);
+	--sidebar-hover: var(--ground-sunken);
+	--sidebar-active: light-dark(#e9e9e6, #242423);
 	--sidebar-width: 16rem;
+	--text-menu: 0.875rem; /* 14px  every sidebar row */
 
 	/* --- measure ---------------------------------------------------------
 	   The reading column, and the space either side of it on a small screen.

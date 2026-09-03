@@ -21,7 +21,7 @@ export const ALL = '*';
 export const reading = $state({ level: 'api', project: null });
 
 // localStorage throws in some privacy modes and returns nothing on a first
-// visit. Both land on `api`, which is what a reader gets with no overlay.
+// visit. Both count as nothing remembered.
 function stored() {
 	try {
 		return localStorage.getItem(KEY) ?? '';
@@ -48,6 +48,22 @@ export function restore({ hasSite = false, projects = [] } = {}) {
 	if (restored) return;
 	restored = true;
 	const value = stored();
+	// Nothing remembered yet: the deepest level the build can show, so a reader
+	// who has an overlay sees all of it without being asked. A public build with
+	// no overlay has only `api`.
+	if (!value) {
+		if (projects.length) {
+			reading.level = 'project';
+			reading.project = projects.length === 1 ? projects[0].id : ALL;
+		} else if (hasSite) {
+			reading.level = 'site';
+			reading.project = null;
+		} else {
+			reading.level = 'api';
+			reading.project = null;
+		}
+		return;
+	}
 	if (value === 'site' && hasSite) {
 		reading.level = 'site';
 		reading.project = null;

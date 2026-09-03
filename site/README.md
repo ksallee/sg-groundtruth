@@ -149,14 +149,15 @@ numbers, the real display names and the real vocabularies, and `corpus.local/` i
 
 ### The reading level
 
-One global choice, set once in the header and applied to every page. It is depth on the pages a reader is
+One global choice, set once at the foot of the sidebar and applied to every page. With nothing remembered
+it starts at the deepest level the build can show. It is depth on the pages a reader is
 already on, not a destination and not a filter. Each level adds rows to the lists and sections to the entry
 pages; nothing is removed as it rises. Every count on the site answers at the level in force, the landing
 page included, so raising it visibly grows the corpus.
 
 | level | on the page |
 |---|---|
-| API | the shipped corpus; the default, and the only level a public build has |
+| API | the shipped corpus; the only level a public build has |
 | Site | that, plus what one Flow PT site configures |
 | Project | both of those, plus one project or every project the overlay holds |
 
