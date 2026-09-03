@@ -152,6 +152,9 @@
 	--pin-pad: 0.75rem;
 	--pin-fade-start: 0.5rem;
 	--pin-fade: 2.5rem;
+	/* The same fade, upside down, where the sidebar's tree meets the colour key
+	   at its foot: nothing at the top, page colour at the key. */
+	--key-fade: 2.5rem;
 	--cell-y: 0.5rem;
 	--cell-x: 0.75rem;
 

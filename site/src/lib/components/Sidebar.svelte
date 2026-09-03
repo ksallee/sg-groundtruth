@@ -147,7 +147,6 @@
 		padding: var(--space-4) var(--space-3);
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-5);
 		font-size: var(--text-menu);
 		line-height: 1.6;
 		letter-spacing: var(--tracking-body);
@@ -196,11 +195,14 @@
 	nav {
 		flex: 1;
 		min-height: 0;
+		margin-top: var(--space-5);
 		overflow-y: auto;
 		overflow-x: hidden;
 		scrollbar-width: thin;
 		scrollbar-color: transparent transparent;
 		padding-right: var(--space-1);
+		/* Room for the last entry to scroll clear of the fade over the key. */
+		padding-bottom: var(--key-fade);
 	}
 
 	nav:hover,
@@ -355,14 +357,29 @@
 		background: var(--scope-ink);
 	}
 
+	/* The key sits on the page colour with no rule above it. Instead a fade
+	   rises from it over the foot of the tree, so entries scrolling under it
+	   dissolve: nothing --key-fade above the key, page colour at the key. */
 	.key {
+		position: relative;
 		list-style: none;
-		padding: var(--space-4) var(--space-2) 0;
+		padding: var(--space-2) var(--space-2) 0;
 		margin: 0;
-		border-top: var(--border) solid var(--rule);
+		background: var(--sidebar);
 		display: grid;
 		gap: var(--space-1);
 		color: var(--ink-muted);
+	}
+
+	.key::before {
+		content: '';
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 100%;
+		height: var(--key-fade);
+		background: linear-gradient(to top, var(--sidebar) 0, transparent 100%);
+		pointer-events: none;
 	}
 
 	.key li {
