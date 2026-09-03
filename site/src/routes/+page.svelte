@@ -45,14 +45,26 @@ which is gitignored and is never committed or deployed.`;
 		copyTimer = setTimeout(() => (copied = false), 2000);
 	}
 
-	// The four sections, in the order a reader meets them. Counts come from the
+	// The sections, in the order a reader meets them. Counts come from the
 	// corpus, so a group that grows says so without an edit here.
 	const sections = $derived([
 		{
-			href: '/reference',
-			title: 'Reference',
-			count: `${counts.fieldTypes} data types, ${counts.entityTypes} entity types`,
-			note: 'Field types, entity types and filters. Complete, and addressed by name.'
+			href: '/field-types',
+			title: 'Field types',
+			count: `${counts.fieldTypes} data types`,
+			note: 'One card per data_type: what it reads, writes and clears as, and what filters it.'
+		},
+		{
+			href: '/entity-types',
+			title: 'Entity types',
+			count: `${counts.entityTypes} entity types`,
+			note: 'One card per schema name: identity, the create contract, every link field, the status field.'
+		},
+		{
+			href: '/filters',
+			title: 'Filters',
+			count: '',
+			note: 'Every relation each data type accepts and the value to send with it, generated from the field-type cards.'
 		},
 		{
 			href: '/recipes',
@@ -92,7 +104,7 @@ which is gitignored and is never committed or deployed.`;
 	</p>
 
 	<p class="actions">
-		<a class="button" href="/reference">The reference</a>
+		<a class="button" href="/field-types">Start with the field types</a>
 		<a href={REPO}>Read it on GitHub</a>
 	</p>
 </section>
@@ -230,7 +242,7 @@ which is gitignored and is never committed or deployed.`;
 	{/if}
 </Section>
 
-<Section label="The site" title="Four sections.">
+<Section label="The site" title="What is on it.">
 	<ul class="items">
 		{#each sections as item (item.href)}
 			<li>

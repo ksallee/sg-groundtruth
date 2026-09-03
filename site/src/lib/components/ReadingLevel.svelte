@@ -64,25 +64,24 @@
 </div>
 
 <style>
+	/* Stacked, one level per line, in the sidebar's own idiom. */
 	.switch {
-		display: flex;
-		align-items: stretch;
-		border: var(--border) solid var(--rule-strong);
-		border-radius: var(--radius-pill);
-		overflow: hidden;
+		display: grid;
+		gap: 2px;
 		font-family: var(--font-mono);
 		font-size: var(--text-xs);
-		line-height: 1.5;
+		line-height: 1.6;
 		letter-spacing: 0;
 	}
 
 	.step {
 		font: inherit;
+		text-align: left;
 		color: var(--ink-muted);
-		background: var(--ground);
+		background: none;
 		border: 0;
-		border-left: var(--border) solid var(--rule);
-		padding: var(--space-1) var(--space-3);
+		border-radius: 6px;
+		padding: var(--space-1) var(--space-2);
 		white-space: nowrap;
 		display: flex;
 		align-items: stretch;
@@ -92,12 +91,9 @@
 			background var(--duration) ease;
 	}
 
-	.step:first-child {
-		border-left: 0;
-	}
-
 	.step:hover {
 		color: var(--ink);
+		background: var(--sidebar-hover);
 	}
 
 	.step[aria-pressed='true'],
@@ -107,7 +103,6 @@
 	}
 
 	.pick {
-		padding-right: 0;
 		align-items: center;
 	}
 
@@ -116,9 +111,9 @@
 		color: inherit;
 		background: none;
 		border: 0;
-		padding: var(--space-1) var(--space-3) var(--space-1) 0;
+		padding: 0;
 		cursor: pointer;
-		max-width: 16ch;
+		max-width: 100%;
 	}
 
 	select:focus-visible {

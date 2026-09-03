@@ -21,8 +21,8 @@
 		</p>
 		<p>
 			Findings are chronological and question-shaped, and some correct an earlier one. The
-			<a href="/reference">reference</a> is elsewhere: field types, entity types and filters are
-			complete and addressed by name.
+			<a href="/field-types">field types</a>, <a href="/entity-types">entity types</a> and
+			<a href="/filters">filters</a> are the other half: complete, and addressed by name.
 		</p>
 		<p class="scope">
 			Only findings marked <code>scope: api</code> are published here. A finding that measures one

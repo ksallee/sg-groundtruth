@@ -224,7 +224,8 @@ The components:
 
 | component | does |
 |---|---|
-| `SiteHeader` / `SiteFooter` | the shell |
+| `Sidebar` | the navigation: home, two pages, five groups that open, and the reading level |
+| `SiteHeader` / `SiteFooter` | the phone's top bar with the menu button, and the footer |
 | `Section` | one band of a page: mono label, headline, lede, slot |
 | `EntryList` | the corpus index as a list of name, verdict, tags, each row marked with what it holds |
 | `EntryDetail` | one subject in full: the API card, then what the overlay measured about the same subject |
@@ -252,22 +253,18 @@ Leave these alone unless the pipeline itself is the problem.
 
 ## Routes
 
-The site has four sections, and the navigation carries one entry each.
+The navigation is a sidebar on the left. Two entries are pages, Intro and How it works. Five open to
+list what they hold: field types, entity types, filters, recipes, findings. The name at the top is home.
 
 | section | route | is |
 |---|---|---|
-| Reference | `/reference` | the three groups that are complete and addressed by name: field types, entity types, filters |
 | Recipes | `/recipes` | a task and the calls that perform it, which is a different kind of thing from a reference card |
 | Findings | `/findings` | what was learned, question by question, chronological, later entries correcting earlier ones |
 | How it works | `/how-it-works` | the probes, the scope field, the overlay contract, the reading level |
 
-`/reference` is an index over three routes it does not own. `/field-types`, `/entity-types` and `/filters`
-stay one flat segment each, so grouping them cost no link a move.
-
 | route | on it |
 |---|---|
-| `/` | the hero, five facts about what this is, the setup prompt, and links to the four sections |
-| `/reference` | the three reference groups, each with what it is and what it answers |
+| `/` | the hero, the setup prompt, why it exists, what it does, three facts, and links to every section |
 | `/field-types` | every data type with verdicts and tags |
 | `/field-types/[slug]` | one reference card in full |
 | `/entity-types` | every entity type with verdicts and tags |
@@ -392,7 +389,7 @@ person watching the site. `marked` renders a string to a string and cannot be br
 
 One column, `--column` wide (700px), and nothing on any page is wider than it: header, content and footer
 all sit in it, and a table or a slab that needs more room scrolls inside itself. There is no sidebar and no
-table of contents. A page is read top to bottom. The header is the one fixed element.
+table of contents. A page is read top to bottom. The sidebar is the one fixed element.
 
 | decision | where |
 |---|---|
