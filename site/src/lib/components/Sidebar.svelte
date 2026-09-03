@@ -144,8 +144,9 @@
 		font-size: var(--text-menu);
 		line-height: 1.6;
 		letter-spacing: var(--tracking-body);
-		/* The column at the right of every row: room for three dots, and the
-		   chevron centred where the first dot goes, so the two line up. */
+		/* The column at the right of every row: room for three dots, flush right,
+		   with the chevron centred over the last one so a single dot sits exactly
+		   under it and more dots run leftwards. */
 		--slot: 30px;
 		--dot: 6px;
 		--dot-gap: 4px;
@@ -271,7 +272,7 @@
 	.slot {
 		flex: 0 0 var(--slot);
 		display: flex;
-		justify-content: flex-start;
+		justify-content: flex-end;
 	}
 
 	.chev {
@@ -288,7 +289,7 @@
 	.sub {
 		margin: 2px 0 var(--space-2) var(--space-3);
 		padding-left: var(--space-2);
-		border-left: var(--border) solid color-mix(in srgb, var(--ink) 14%, transparent);
+		border-left: var(--border) solid color-mix(in srgb, var(--ink) 5%, transparent);
 	}
 
 	/* One line per entry. The label gives way; the number and the dots do not. */
@@ -330,13 +331,14 @@
 		white-space: nowrap;
 	}
 
-	/* The first dot is centred under the chevron; the second and third run on
-	   to the right and fill the slot exactly. */
+	/* The last dot is centred under the chevron; a second and a third run
+	   leftwards from it. */
 	.dots {
 		flex: 0 0 var(--slot);
 		display: flex;
+		justify-content: flex-end;
 		gap: var(--dot-gap);
-		padding-left: calc((14px - var(--dot)) / 2);
+		padding-right: calc((14px - var(--dot)) / 2);
 	}
 
 	.dot {
