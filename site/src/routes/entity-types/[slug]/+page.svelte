@@ -19,12 +19,7 @@
 	<meta name="description" content={data.entry.verdict} />
 </svelte:head>
 
-<EntryDetail
-	entry={data.entry}
-	kicker="Entity type"
-	backHref="/entity-types"
-	backLabel="All entity types"
-/>
+<EntryDetail entry={data.entry} section={{ label: 'Entity types', href: '/entity-types' }} />
 
 {#if st}
 	<section class="col statuses">

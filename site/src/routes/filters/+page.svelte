@@ -1,4 +1,5 @@
 <script>
+	import Breadcrumb from '$lib/components/Breadcrumb.svelte';
 	// ROUTE CHOICE: /filters, not /reference/filters. /reference is an index page
 	// over this route, /field-types and /entity-types; it groups them without
 	// owning their URLs, so every reference route stays one flat segment and no
@@ -31,6 +32,7 @@
 
 <div class="col page">
 	<header>
+		<Breadcrumb trail={[{ label: 'Filters' }]} />
 		<h1>Filters</h1>
 		<p class="lede">
 			The relations each <code>data_type</code> accepts in a filter, and the value to send with each

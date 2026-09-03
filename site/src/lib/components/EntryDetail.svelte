@@ -2,6 +2,7 @@
 	import Prose from './Prose.svelte';
 	import ScopeSection from './ScopeSection.svelte';
 	import ScopeLegend from './ScopeLegend.svelte';
+	import Breadcrumb from './Breadcrumb.svelte';
 	import { REPO } from '$lib/site.js';
 	import { visible, mixed } from '$lib/reading.svelte.js';
 
@@ -12,7 +13,8 @@
 	//
 	// `entry.locals` is empty in every public build, so this is the shipped card
 	// and nothing else there.
-	let { entry, kicker = '', backHref = '', backLabel = '' } = $props();
+	// `section` is the group the entry belongs to, for the breadcrumb.
+	let { entry, section } = $props();
 
 	const locals = $derived(visible(entry.locals ?? []));
 
@@ -33,7 +35,7 @@
 
 	// A field type, or an entity type with no display title, is named by the
 	// API's own literal, so the heading is set in mono, exactly as the API
-	// spells it. The number goes on the kicker line, so the heading is the name.
+	// spells it. The number is in the breadcrumb, so the heading is the name.
 	const literal = $derived(
 		!entry.title && (entry.group === 'field_types' || entry.group === 'entity_types')
 	);
@@ -42,12 +44,7 @@
 
 <article class="col entry">
 	<header>
-		{#if backHref}
-			<p class="back"><a href={backHref}>{backLabel}</a></p>
-		{/if}
-		{#if kicker || entry.number}
-			<p class="kicker">{[kicker, entry.number].filter(Boolean).join(' ')}</p>
-		{/if}
+		<Breadcrumb trail={[section, { label: entry.title || entry.fullName }]} />
 		<h1 class:literal>{heading}</h1>
 		<!-- Kept in view rather than replaced: a reader who cannot see the schema
 		     name cannot call anything. -->
@@ -114,25 +111,6 @@
 		gap: var(--space-3);
 		padding-bottom: var(--space-6);
 		border-bottom: var(--border) solid var(--rule);
-	}
-
-	.back {
-		font-size: var(--text-sm);
-	}
-
-	.back a {
-		color: var(--ink-muted);
-		text-decoration: none;
-	}
-
-	.back a:hover {
-		color: var(--ink);
-	}
-
-	.kicker {
-		font-family: var(--font-mono);
-		font-size: var(--text-xs);
-		color: var(--ink-muted);
 	}
 
 	h1.literal {

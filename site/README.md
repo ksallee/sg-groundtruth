@@ -227,6 +227,7 @@ The components:
 |---|---|
 | `Sidebar` | the navigation: home, two pages, five groups that open, and the reading level |
 | `SiteHeader` / `SiteFooter` | the phone's top bar with the menu button, and the footer |
+| `Breadcrumb` | home, the section, the page: on every page but the intro |
 | `Section` | one band of a page: mono label, headline, lede, slot |
 | `EntryList` | the corpus index as a list of name, verdict, tags, each row marked with what it holds |
 | `EntryDetail` | one subject in full: the API card, then what the overlay measured about the same subject |

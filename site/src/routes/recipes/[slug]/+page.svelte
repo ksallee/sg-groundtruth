@@ -9,4 +9,4 @@
 	<meta name="description" content={data.entry.verdict} />
 </svelte:head>
 
-<EntryDetail entry={data.entry} kicker="Recipe" backHref="/recipes" backLabel="All recipes" />
+<EntryDetail entry={data.entry} section={{ label: 'Recipes', href: '/recipes' }} />

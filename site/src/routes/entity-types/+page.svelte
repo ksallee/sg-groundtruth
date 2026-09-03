@@ -1,4 +1,5 @@
 <script>
+	import Breadcrumb from '$lib/components/Breadcrumb.svelte';
 	import EntryList from '$lib/components/EntryList.svelte';
 
 	let { data } = $props();
@@ -14,6 +15,7 @@
 
 <div class="col page">
 	<header>
+		<Breadcrumb trail={[{ label: 'Entity types' }]} />
 		<h1>Entity types</h1>
 		<p class="lede">
 			One card per entity type. Each gives the schema name and the REST slug, the field that

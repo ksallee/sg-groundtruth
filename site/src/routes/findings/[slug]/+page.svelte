@@ -23,7 +23,7 @@
 	<meta name="description" content={data.entry.verdict} />
 </svelte:head>
 
-<EntryDetail entry={data.entry} kicker="Finding" backHref="/findings" backLabel="All findings" />
+<EntryDetail entry={data.entry} section={{ label: 'Findings', href: '/findings' }} />
 
 {#if sets.length}
 	<section class="col sets">

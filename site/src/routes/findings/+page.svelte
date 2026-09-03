@@ -1,4 +1,5 @@
 <script>
+	import Breadcrumb from '$lib/components/Breadcrumb.svelte';
 	import EntryList from '$lib/components/EntryList.svelte';
 
 	let { data } = $props();
@@ -14,6 +15,7 @@
 
 <div class="col page">
 	<header>
+		<Breadcrumb trail={[{ label: 'Findings' }]} />
 		<h1>Findings</h1>
 		<p class="lede">
 			One finding answers one question and ends in a single actionable sentence. Each names the probe

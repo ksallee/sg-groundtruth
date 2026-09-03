@@ -1,4 +1,5 @@
 <script>
+	import Breadcrumb from '$lib/components/Breadcrumb.svelte';
 	import EntryList from '$lib/components/EntryList.svelte';
 
 	let { data } = $props();
@@ -14,6 +15,7 @@
 
 <div class="col page">
 	<header>
+		<Breadcrumb trail={[{ label: 'Field types' }]} />
 		<h1>Field types</h1>
 		<p class="lede">
 			One card per <code>data_type</code>, {data.counts.fieldTypes} in all. Each was probed on a real

@@ -1,4 +1,5 @@
 <script>
+	import Breadcrumb from '$lib/components/Breadcrumb.svelte';
 	import { REPO } from '$lib/site.js';
 	import { countsAt } from '$lib/reading.svelte.js';
 
@@ -45,6 +46,7 @@
 
 <div class="col page">
 	<header>
+		<Breadcrumb trail={[{ label: 'How it works' }]} />
 		<h1>How it works</h1>
 		<p class="lede">
 			Every entry here is the recorded output of one script asking a live Flow Production Tracking
