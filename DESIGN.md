@@ -80,7 +80,9 @@ Per site *and* per project: some field configuration and every status list is pr
 Python 3.11 and `requests` for the corpus and the client. The site in `site/` is SvelteKit prerendered to
 static HTML: `@sveltejs/kit`, `@sveltejs/adapter-static`, `@sveltejs/vite-plugin-svelte`, `svelte` and `vite`
 to build, and `marked` to render the corpus markdown (not `mdsvex`, which compiles markdown as a Svelte
-component and so breaks on the `{type, id}` braces the corpus is full of).
+component and so breaks on the `{type, id}` braces the corpus is full of). `agent-ui-annotation` draws the
+feedback toolbar on the dev server and reaches no build. It is a custom element, so the site takes on no
+second framework to run it.
 
 ## Licence
 

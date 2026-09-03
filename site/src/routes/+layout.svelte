@@ -17,9 +17,9 @@
 	$effect(() => restore(data));
 	afterNavigate(() => (menuOpen = false));
 
-	// The feedback toolbar, dev server only. See src/lib/dev/agentation.js.
+	// The feedback toolbar, dev server only. See src/lib/dev/annotation.js.
 	$effect(() => {
-		if (import.meta.env.DEV) import('$lib/dev/agentation.js').then((m) => m.mount());
+		if (import.meta.env.DEV) import('$lib/dev/annotation.js').then((m) => m.mount());
 	});
 </script>
 

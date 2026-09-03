@@ -341,11 +341,18 @@ Verify after the first deploy that a push to a non-`prod` branch shows as skippe
 
 ## Dependencies
 
-Five build dependencies and one runtime one, plus three that exist for the dev server alone.
+Five build dependencies and one runtime one, plus one that exists for the dev server alone.
 
-`agentation`, with `react` and `react-dom` to host it, draws a feedback toolbar on the dev server: click an
-element, write a note, copy every note as one prompt for an agent. It is mounted from
-`src/lib/dev/agentation.js` behind `import.meta.env.DEV`, so no build carries it.
+`agent-ui-annotation` draws a feedback toolbar on the dev server: click an element, write a note, copy every
+note as one prompt for an agent. It is mounted from `src/lib/dev/annotation.js` behind
+`import.meta.env.DEV`, so no build carries it. It is a custom element and brings no framework of its own.
+
+`agentation` is the better known tool, and the reason it is not here: its component and source mapping walks
+React fibers. `grep -i svelte` over its bundle returns nothing; `fiber` returns 32 hits. On a Svelte page
+`reactComponents` and `sourceFile` never fill, so it costs `react` and `react-dom` for the one feature that
+cannot run here. `agent-ui-annotation` reads `__svelte_meta`, the source location Svelte compiles onto every
+element in dev, and a note comes back as `+layout.svelte:29 > Section.svelte:9`. It is MIT; `agentation` is
+PolyForm Shield 1.0.0, which is not permissive.
 
 `marked` renders the corpus markdown. `mdsvex` is the conventional SvelteKit choice and was the obvious
 first pick, but it compiles markdown as a Svelte component, which makes `{` and `}` in the source into
