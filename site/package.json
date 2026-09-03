@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "prebuild": "node scripts/fetch-status-icons.mjs",
+    "predev": "node scripts/fetch-status-icons.mjs"
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.10",

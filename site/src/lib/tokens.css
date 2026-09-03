@@ -44,6 +44,14 @@
 
 	/* Site-specific content. Warm against the cool accent, so a reader can
 	   tell a measurement from a rule at a glance. 6.39 and 9.39. */
+	/* Stock status icons are dark artwork on transparency, drawn for a light
+	   interface. They are the vendor's bitmaps and cannot be recoloured, so the
+	   chip behind them stays light in both themes: inverting the page would
+	   erase the icon. The one fixed surface on the site, and it is fixed for a
+	   reason rather than by omission. */
+	--icon-chip: oklch(0.94 0 0);
+	--icon-chip-rule: oklch(0.86 0 0);
+
 	--accent-local: light-dark(oklch(0.48 0.13 62), oklch(0.82 0.12 72));
 	--accent-local-quiet: light-dark(oklch(0.965 0.025 70), oklch(0.31 0.04 62));
 

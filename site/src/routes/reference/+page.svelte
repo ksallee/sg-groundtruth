@@ -3,10 +3,16 @@
 	// spans, and there are three of them. Every number is read off the corpus at
 	// build time, so a group that grows says so with no edit here.
 	import { countsAt } from '$lib/reading.svelte.js';
+	import StatusTable from '$lib/components/StatusTable.svelte';
+	import icons from '$lib/content/status-icons.json';
 
 	let { data } = $props();
 
 	const counts = $derived(countsAt(data.counts));
+
+	// Every status the site defines. Unlike the three groups above this is a
+	// site-level fact, so it is only drawn when the build had credentials.
+	const all = $derived(Object.keys(icons.statuses ?? {}));
 </script>
 
 <svelte:head>
@@ -61,6 +67,22 @@
 			</p>
 		</li>
 	</ul>
+
+	{#if all.length}
+		<section class="statuses">
+			<h2>Statuses</h2>
+			<p>
+				Every status this site defines, with the label a person sees, the code the API stores and
+				the colour. A status is drawn the same way here, on an entity type, and in
+				<code>009_status_lists</code>.
+			</p>
+			<p class="note">
+				The stock icons are not in the API. They are cells in the web app's own sprite, matched
+				from its stylesheet at build time — see <a href="/findings">010_status_icons</a>.
+			</p>
+			<StatusTable codes={all} caption={`${all.length} statuses defined site-wide`} />
+		</section>
+	{/if}
 </div>
 
 <style>

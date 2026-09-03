@@ -16,3 +16,9 @@ site/.env
 
 # Stray screenshots
 /page.png
+
+# Live status icons, fetched at build time from the configured site (site/scripts/
+# fetch-status-icons.mjs). Never committed: the sprite is the vendor's artwork, and the
+# deploy fetches its own copy from the env vars set on Vercel.
+site/static/status-sprite.png
+site/src/lib/content/status-icons.json
