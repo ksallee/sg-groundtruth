@@ -168,8 +168,8 @@ Open corpus/findings/&lt;entry&gt;.md only when the one-liner falls short.</pre>
 	<section id="scope">
 		<h2>The three levels</h2>
 		<p>
-			Every file declares a <code>scope</code>, and the switch in the header sets which levels a page
-			answers at. Each level adds to the one before it; nothing is removed as it rises.
+			Every file declares a <code>scope</code>. A page shows every level this build holds, each
+			section under its badge, the API first.
 		</p>
 		<div class="scroll-x">
 			<table>
@@ -202,9 +202,9 @@ Open corpus/findings/&lt;entry&gt;.md only when the one-liner falls short.</pre>
 			has no site-level answer.
 		</p>
 		<p>
-			Above <code>api</code>, every row and section is marked with the level it holds: a word, an edge
-			texture and a hue. The texture is what survives greyscale, so a measurement of one site is never
-			read as API behaviour. With no overlay nothing is marked and the switch is not drawn.
+			A section or a list row that is not the API alone carries a badge in the level's colour: blue
+			for the API, orange for one site, green for one project. With no overlay there is only the API
+			and nothing is marked.
 		</p>
 	</section>
 

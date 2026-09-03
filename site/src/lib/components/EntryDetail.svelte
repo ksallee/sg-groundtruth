@@ -1,18 +1,15 @@
 <script>
 	import Prose from './Prose.svelte';
 	import ScopeSection from './ScopeSection.svelte';
-	import ScopeLegend from './ScopeLegend.svelte';
 	import Breadcrumb from './Breadcrumb.svelte';
 	import { REPO } from '$lib/site.js';
-	import { visible, mixed } from '$lib/reading.svelte.js';
+	import { visible } from '$lib/reading.svelte.js';
 
 	// One subject, rendered in full and in one order: what the API does, then
-	// what one site configures, then what one project does. Each is its own
-	// marked section. A subject the published corpus has no card for renders the
-	// local sections alone.
+	// what one site configures, then what one project does. Each is a section
+	// under its badge. A subject the published corpus has no card for renders
+	// the local sections alone.
 	//
-	// `entry.locals` is empty in every public build, so this is the shipped card
-	// and nothing else there.
 	// `section` is the group the entry belongs to, for the breadcrumb.
 	let { entry, section } = $props();
 
@@ -40,11 +37,62 @@
 		!entry.title && (entry.group === 'field_types' || entry.group === 'entity_types')
 	);
 	const heading = $derived(entry.title || entry.name || entry.fullName.replace(/^\d+\s+/, ''));
+
+	// Every section on the page, in order. With one section there is nothing to
+	// tell apart, so no badge and no switch is drawn.
+	const anchor = (l) => (l.level === 'site' ? 'scope-site' : `scope-project-${l.project}`);
+	const sections = $derived([
+		...(entry.hasApi ? [{ id: 'scope-api', level: 'api', label: 'API' }] : []),
+		...locals.map((l) => ({
+			id: anchor(l),
+			level: l.level,
+			label: l.level === 'site' ? 'Site' : l.projectLabel || 'Project'
+		}))
+	]);
+	const several = $derived(sections.length > 1);
+
+	// The switch follows the scroll: the active section is the last one whose
+	// top has passed the switch.
+	let active = $state('');
+	$effect(() => {
+		if (!several) return;
+		const ids = sections.map((s) => s.id);
+		const update = () => {
+			let cur = ids[0];
+			for (const id of ids) {
+				const el = document.getElementById(id);
+				if (el && el.getBoundingClientRect().top <= 96) cur = id;
+			}
+			active = cur;
+		};
+		update();
+		addEventListener('scroll', update, { passive: true });
+		return () => removeEventListener('scroll', update);
+	});
+
+	function jump(id) {
+		document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+	}
 </script>
 
 <article class="col entry">
+	{#if several}
+		<div class="jump" role="group" aria-label="Sections on this page">
+			{#each sections as s (s.id)}
+				<button
+					type="button"
+					data-scope={s.level}
+					aria-pressed={active === s.id}
+					onclick={() => jump(s.id)}>{s.label}</button
+				>
+			{/each}
+		</div>
+	{/if}
+
 	<header>
-		<Breadcrumb trail={[section, { label: entry.title || entry.fullName }]} />
+		<div class="crumbs">
+			<Breadcrumb trail={[section, { label: entry.title || entry.fullName }]} />
+		</div>
 		<h1 class:literal>{heading}</h1>
 		<!-- Kept in view rather than replaced: a reader who cannot see the schema
 		     name cannot call anything. -->
@@ -59,10 +107,7 @@
 				The published corpus has no entry for this. Everything below was measured locally.
 			</p>
 		{:else}
-			<p class="absent">
-				This was measured on one site rather than read off the API. Set the reading level in the
-				header to see it.
-			</p>
+			<p class="absent">This was measured on one site rather than read off the API.</p>
 		{/if}
 
 		<ul class="meta">
@@ -75,22 +120,14 @@
 		</ul>
 	</header>
 
-	{#if mixed()}
-		<ScopeLegend />
-	{/if}
-
 	{#if entry.hasApi}
-		{#if mixed()}
-			<ScopeSection level="api">
-				<Prose html={entry.html} />
-			</ScopeSection>
-		{:else}
+		<ScopeSection level="api" id="scope-api" badge={several}>
 			<Prose html={entry.html} />
-		{/if}
+		</ScopeSection>
 	{/if}
 
 	{#each locals as local (local.level + local.project + local.slug)}
-		<ScopeSection level={local.level} project={local.projectLabel} dir={local.project}>
+		<ScopeSection level={local.level} project={local.projectLabel} id={anchor(local)} badge={several}>
 			<p class="local-verdict">{local.verdict}</p>
 			<Prose html={local.html} tone={local.level} />
 		</ScopeSection>
@@ -105,12 +142,57 @@
 		gap: var(--space-6);
 	}
 
+	/* Top right, and it stays there while the page scrolls. It sits on the
+	   breadcrumb's line: the row it occupies is pulled back out of the flow. */
+	.jump {
+		position: sticky;
+		top: var(--space-3);
+		z-index: 5;
+		justify-self: end;
+		display: flex;
+		gap: 2px;
+		padding: 2px;
+		background: var(--ground);
+		border: var(--border) solid var(--rule);
+		border-radius: var(--radius-pill);
+		margin-bottom: calc(-1 * (1.75rem + var(--space-6)));
+	}
+
+	.jump button {
+		font: inherit;
+		font-size: var(--text-xs);
+		line-height: 1.6;
+		letter-spacing: 0;
+		border: 0;
+		background: none;
+		color: var(--ink-muted);
+		padding: 0.1rem 0.7rem;
+		border-radius: var(--radius-pill);
+		transition:
+			background var(--duration) ease,
+			color var(--duration) ease;
+	}
+
+	.jump button:hover {
+		color: var(--ink);
+	}
+
+	.jump button[aria-pressed='true'] {
+		background: var(--scope-quiet);
+		color: var(--scope-ink);
+	}
+
 	header {
 		display: grid;
 		grid-template-columns: var(--col);
 		gap: var(--space-3);
 		padding-bottom: var(--space-6);
 		border-bottom: var(--border) solid var(--rule);
+	}
+
+	/* Leaves the right of its line to the switch. */
+	.crumbs {
+		max-width: 62%;
 	}
 
 	h1.literal {

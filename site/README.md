@@ -149,56 +149,19 @@ numbers, the real display names and the real vocabularies, and `corpus.local/` i
 
 ### The reading level
 
-One global choice, set once at the foot of the sidebar and applied to every page. With nothing remembered
-it starts at the deepest level the build can show. It is depth on the pages a reader is
-already on, not a destination and not a filter. Each level adds rows to the lists and sections to the entry
-pages; nothing is removed as it rises. Every count on the site answers at the level in force, the landing
-page included, so raising it visibly grows the corpus.
+There is nothing to choose. A page shows every level the build holds, the API first, then the site, then
+each project, each as a section under its badge. A public build has no overlay and shows the API alone.
+Every count on the site answers at the deepest level the build holds.
 
-| level | on the page |
-|---|---|
-| API | the shipped corpus; the only level a public build has |
-| Site | that, plus what one Flow PT site configures |
-| Project | both of those, plus one project or every project the overlay holds |
+### The badge
 
-Stored in `localStorage` under `sg-groundtruth.reading-level`, as `api`, `site`, `project:<id>` or
-`project:*` for every project at once. Every read
-and write is wrapped in try/catch, so a browser that throws or holds nothing renders at `api`. A remembered
-level this build cannot show, a project that has since been removed, falls back to `api` rather than leaving
-the switch pointing at nothing. The value is read once per page load; after that the switch on screen is the
-truth, so a failed write cannot revert a choice on the next navigation.
+A section or a list row that is not the API alone carries a badge: the level's word on the level's colour.
+Blue is the API, orange is one site, green is one project, and these three are the only hues on the site.
+The sidebar carries the same colours as a dot beside every entry and as a key at its foot. A page with more
+than one section has a switch at its top right that scrolls to a section and follows the scroll.
 
-The switch only offers the levels the overlay can show. With site content but no projects there is
-no project control; with projects but no site content there is no `Site` step; with one project the control
-is that project's name rather than a menu, because the union of one project is that project; with no overlay
-the switch is not rendered at all. There is no disabled state and no level that yields nothing.
-
-Every page is prerendered at the `api` level, so local material appears on hydration. Nothing that is hidden
-at the current level is ever removed from the page's data: the overlay is local by construction, and the
-data it puts in a page is the same data a public build does not have.
-
-### The mark
-
-Above the `api` level, every list row and every section of an entry page carries a mark saying which of the
-three it is. The mark is three signals at once, and the hue is the one that matters least.
-
-| signal | API | Site | Project |
-|---|---|---|---|
-| word | `The API` | `This site` | the project's name |
-| edge texture | solid | dashed | dotted |
-| ground | flush on the page | inset panel | inset panel |
-
-The texture is what survives greyscale, a monochrome printout and a reader who cannot separate the hues, and
-the word is what survives everything. A local-only row is inset in the list exactly as a local section is
-inset on an entry page, so the two read as one signal rather than two conventions. Everything is declared in
-`tokens.css` under `--scope-*`, resolved by one `[data-scope]` rule in `app.css`, and drawn by `ScopeMark`,
-`ScopeSection` and `ScopeLegend`. Restyling the distinction is an edit to those nine token lines.
-
-At the `api` level nothing is marked and no legend is drawn: every row on the page is the same kind of
-thing, so the distinction has nothing to distinguish. A public build is always in that state.
-
-With more than one project selected, each mark names its project and each section names the directory it was
-read from, so a reader can tell which project every piece came from.
+Everything is declared in `tokens.css` under `--scope-*`, resolved by one `[data-scope]` rule in `app.css`,
+and drawn by `ScopeMark` and `ScopeSection`.
 
 ## Which files are design surface
 
@@ -225,17 +188,15 @@ The components:
 
 | component | does |
 |---|---|
-| `Sidebar` | the navigation: home, two pages, five groups that open, and the reading level |
+| `Sidebar` | the navigation: home, two pages, five groups that open, and the key to the colours |
 | `SiteHeader` / `SiteFooter` | the phone's top bar with the menu button, and the footer |
 | `Breadcrumb` | home, the section, the page: on every page but the intro |
 | `Section` | one band of a page: mono label, headline, lede, slot |
 | `EntryList` | the corpus index as a list of name, verdict, tags, each row marked with what it holds |
 | `EntryDetail` | one subject in full: the API card, then what the overlay measured about the same subject |
 | `Prose` | rendered corpus markdown, and all the table and code-slab styling |
-| `ScopeMark` | the mark itself: a word, an edge texture and a hue. The one place the three are drawn |
-| `ScopeSection` | one section of an entry page, marked. Local sections are inset, the API section is flush |
-| `ScopeLegend` | says what the marks mean, where they first appear on a page |
-| `ReadingLevel` | the global level switch; rendered only when the build read an overlay |
+| `ScopeMark` | the badge: the level's word on the level's colour |
+| `ScopeSection` | one section of an entry page, under its badge |
 
 Three accents, one per level: `--accent` for a shipped fact or a link, `--accent-local` for one site,
 `--accent-project` for one project. Nothing rests on the hue alone: see **The mark** above.
@@ -248,7 +209,7 @@ Leave these alone unless the pipeline itself is the problem.
 |---|---|
 | `src/lib/content/sources.js` | the seam: the three content roots and the scope rules |
 | `src/lib/content/corpus.js` | reads, parses frontmatter, renders markdown, merges the overlay |
-| `src/lib/reading.svelte.js` | the reading level: what is stored, what is restored, what is shown |
+| `src/lib/reading.svelte.js` | the reading level: the deepest the build holds, and what that shows |
 | `src/lib/site.js` | repo URL, the overlay directory a reader is told to create, and the one this build read |
 | `src/lib/content/filters.js` | the operator vocabulary read out of each field-type card, and the families it groups them into |
 | `svelte.config.js`, `vite.config.js`, `vercel.json` | build and deploy |

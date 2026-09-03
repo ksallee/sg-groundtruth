@@ -1,13 +1,13 @@
 <script>
 	import { page } from '$app/state';
 	import { NAME } from '$lib/site.js';
-	import ReadingLevel from './ReadingLevel.svelte';
 	import { visible } from '$lib/reading.svelte.js';
 
 	// The whole navigation. The name is the way home. Two pages come first,
 	// then five groups that open to list what they hold; the lists come from the
 	// corpus at build time and grow with the reading level exactly as the index
-	// pages do. Every entry carries a dot per level it has content at.
+	// pages do. Every entry carries a dot per level it has content at, and the
+	// foot of the sidebar is the key to the colours.
 	let { nav, hasOverlay = false, hasSite = false, projects = [], open = false, onclose } = $props();
 
 	const path = $derived(page.url.pathname);
@@ -123,10 +123,17 @@
 	</nav>
 
 	{#if hasOverlay}
-		<div class="foot">
-			<p class="foot-label">Reading level</p>
-			<ReadingLevel {hasSite} {projects} />
-		</div>
+		<!-- A key to the colours, nothing to choose: a page shows every level it
+		     holds. -->
+		<ul class="key" aria-label="Colours">
+			<li><span class="keydot" data-scope="api"></span>API</li>
+			{#if hasSite}
+				<li><span class="keydot" data-scope="site"></span>Site</li>
+			{/if}
+			{#each projects as p (p.id)}
+				<li><span class="keydot" data-scope="project"></span><span class="label">{p.label}</span></li>
+			{/each}
+		</ul>
 	{/if}
 </aside>
 
@@ -348,17 +355,29 @@
 		background: var(--scope-ink);
 	}
 
-	.foot {
+	.key {
+		list-style: none;
+		padding: var(--space-4) var(--space-2) 0;
+		margin: 0;
 		border-top: var(--border) solid var(--rule);
-		padding-top: var(--space-4);
 		display: grid;
-		gap: var(--space-2);
+		gap: var(--space-1);
+		color: var(--ink-muted);
 	}
 
-	.foot-label {
-		font-size: var(--text-xs);
-		color: var(--ink-muted);
-		padding-inline: var(--space-2);
+	.key li {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		min-width: 0;
+	}
+
+	.keydot {
+		flex: 0 0 auto;
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: var(--scope-ink);
 	}
 
 	/* Below the desktop width the sidebar is a drawer, opened from the top bar

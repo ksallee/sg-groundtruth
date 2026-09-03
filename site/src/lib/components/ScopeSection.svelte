@@ -1,32 +1,15 @@
 <script>
 	import ScopeMark from './ScopeMark.svelte';
-	import { OVERLAY_SOURCE_DIR } from '$lib/site.js';
 
-	// One section of an entry page, marked with where it was read from. Every
-	// section of every entry page is one of these once the reading level is
-	// above `api`, so a reader never has to work out which kind they are looking
-	// at from the content.
-	//
-	// The API section sits flush on the page. A local section is inset: its own
-	// ground, its own border and the level's edge texture down its left side. A
-	// measurement of one site can therefore never be mistaken for API behaviour
-	// with the hues removed.
-	let { level = 'api', project = '', dir = '', children } = $props();
-
-	const source = $derived(
-		level === 'project'
-			? `${OVERLAY_SOURCE_DIR}/projects/${dir}/`
-			: level === 'site'
-				? `${OVERLAY_SOURCE_DIR}/site/`
-				: ''
-	);
+	// One section of an entry page: what the API does, what one site configures,
+	// or what one project does. It starts with its badge and then its content,
+	// with no box around it; the API section is drawn exactly like the others.
+	// `id` is the anchor the switch at the top of the page scrolls to.
+	let { level = 'api', project = '', id = '', badge = true, children } = $props();
 </script>
 
-<section class="scoped" class:inset={level !== 'api'} data-scope={level}>
-	<header>
-		<ScopeMark {level} {project} />
-		{#if source}<code>{source}</code>{/if}
-	</header>
+<section class="scoped" data-scope={level} {id}>
+	{#if badge}<ScopeMark {level} {project} />{/if}
 	{@render children?.()}
 </section>
 
@@ -35,43 +18,14 @@
 		display: grid;
 		grid-template-columns: var(--col);
 		gap: var(--gap-prose);
+		justify-items: start;
 	}
 
-	/* The panel is the ground now, so a .scroll-x inside it masks against this
-	   rather than against the page. */
-	.inset {
-		--surface: var(--scope-quiet);
-		position: relative;
-		background: var(--scope-quiet);
-		border: var(--border) solid var(--scope-rule);
-		border-radius: var(--radius-lg);
-		padding: var(--space-5);
-		padding-left: calc(var(--space-5) + var(--scope-edge-width));
-		overflow: hidden;
+	.scoped > :global(*) {
+		width: 100%;
 	}
 
-	/* The edge texture, not a colour: solid for the API, dashed for one site,
-	   dotted for one project. It is the signal that survives greyscale. */
-	.inset::before {
-		content: '';
-		position: absolute;
-		inset-block: 0;
-		left: 0;
-		width: var(--scope-edge-width);
-		background-image: var(--scope-edge);
-	}
-
-	header {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: var(--space-2) var(--space-3);
-	}
-
-	header code {
-		font-size: var(--text-xs);
-		color: var(--ink-muted);
-		background: none;
-		padding: 0;
+	.scoped > :global(.badge) {
+		width: auto;
 	}
 </style>

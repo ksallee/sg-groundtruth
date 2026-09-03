@@ -203,9 +203,9 @@ caption {
 	color: var(--ink-muted);
 }
 
-/* An anchor lands below the sticky header rather than under it. */
+/* An anchor lands below the phone's bar and the section switch, not under them. */
 [id] {
-	scroll-margin-top: calc(var(--space-8) + var(--space-5));
+	scroll-margin-top: var(--space-8);
 }
 
 hr {
@@ -243,31 +243,18 @@ hr {
 	--scope-ink: var(--scope-api-ink);
 	--scope-quiet: var(--scope-api-quiet);
 	--scope-rule: var(--scope-api-rule);
-	--scope-edge: var(--scope-api-edge);
 }
 
 [data-scope='site'] {
 	--scope-ink: var(--scope-site-ink);
 	--scope-quiet: var(--scope-site-quiet);
 	--scope-rule: var(--scope-site-rule);
-	--scope-edge: var(--scope-site-edge);
 }
 
 [data-scope='project'] {
 	--scope-ink: var(--scope-project-ink);
 	--scope-quiet: var(--scope-project-quiet);
 	--scope-rule: var(--scope-project-rule);
-	--scope-edge: var(--scope-project-edge);
-}
-
-/* The edge mark itself: a strip of the level's texture, drawn wherever the
-   distinction has to be visible without reading a word. */
-.scope-edge {
-	flex: 0 0 var(--scope-edge-width);
-	align-self: stretch;
-	min-height: 1em;
-	background-image: var(--scope-edge);
-	border-radius: var(--radius-sm);
 }
 
 .visually-hidden {

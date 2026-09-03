@@ -63,12 +63,11 @@
 	   Three kinds of information share every list and every entry page, and
 	   these lines are the whole distinction between them. Restyle it here and
 	   it changes on the switch, on a list row, on a chip and on a detail
-	   section at once. A mark is three signals: a word, an edge texture and a
-	   hue. Solid for the API, dashed for one site, dotted for one project. */
+	   section at once. A mark is a badge: the level's word on the level's
+	   colour. */
 	--scope-api-ink: var(--accent-api);
 	--scope-api-quiet: var(--accent-api-quiet);
 	--scope-api-rule: var(--accent-api-rule);
-	--scope-api-edge: linear-gradient(var(--accent-api), var(--accent-api));
 
 	--scope-site-ink: var(--accent-local);
 	--scope-site-quiet: var(--accent-local-quiet);
@@ -85,9 +84,6 @@
 		var(--accent-project) 0 2px,
 		transparent 2px 6px
 	);
-
-	/* The width of every edge mark, so a chip and a section agree. */
-	--scope-edge-width: 3px;
 
 	/* Stock status icons are the vendor's dark bitmaps on transparency, drawn
 	   for a light interface and not recolourable, so the chip behind them stays

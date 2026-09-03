@@ -225,8 +225,9 @@ which is gitignored and is never committed or deployed.`;
 			</p>
 		</li>
 		<li>
-			<h3>One reading level, set once</h3>
-			<p>The API, your site, or one project in it. Every page answers at that level.</p>
+			<h3>Every level on one page</h3>
+			<p>The API, your site and your projects, each section under its badge, on the pages that already
+				cover the subject.</p>
 		</li>
 		<li>
 			<h3>Read-only by default</h3>

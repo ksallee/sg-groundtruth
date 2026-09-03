@@ -1,16 +1,9 @@
-// The reading level: one global choice, applied to every page, remembered
-// across navigation and reloads.
+// The reading level: the deepest the build can show, always.
 //
-// It is depth on the page a reader is already on, not a destination and not a
-// filter. `site` adds what one Flow Production Tracking site configures on top
-// of the API content. `project` adds one project, or every project at once, on
-// top of both. Nothing is removed as the level rises; entries and sections are
-// added.
-//
-// A public build has no overlay, so `api` is the only level it can hold and the
-// switch is never drawn.
-
-const KEY = 'sg-groundtruth.reading-level';
+// `site` adds what one Flow Production Tracking site configures on top of the
+// API content. `project` adds one project, or every project at once, on top of
+// both. A page shows every level it holds, each section under its badge, and
+// nothing chooses: a public build has no overlay and shows the API alone.
 
 // The union of every project the overlay holds. A project id can never be this,
 // because a directory named `*` is not one a filesystem hands back here.
@@ -20,70 +13,22 @@ export const ALL = '*';
 // component read it reactively.
 export const reading = $state({ level: 'api', project: null });
 
-// localStorage throws in some privacy modes and returns nothing on a first
-// visit. Both count as nothing remembered.
-function stored() {
-	try {
-		return localStorage.getItem(KEY) ?? '';
-	} catch {
-		return '';
-	}
-}
-
-function remember(value) {
-	try {
-		localStorage.setItem(KEY, value);
-	} catch {
-		// Nothing to do. The choice holds for this session and is lost on reload.
-	}
-}
-
 let restored = false;
 
-// `hasSite` and `projects` describe the overlay this build read. A remembered
-// level the current build cannot show falls back to `api` rather than leaving
-// the switch pointing at nothing. Read once: after that the choice on screen is
-// the truth, and a failed write must not revert it on the next navigation.
+// `hasSite` and `projects` describe the overlay this build read.
 export function restore({ hasSite = false, projects = [] } = {}) {
 	if (restored) return;
 	restored = true;
-	const value = stored();
-	// Nothing remembered yet: the deepest level the build can show, so a reader
-	// who has an overlay sees all of it without being asked. A public build with
-	// no overlay has only `api`.
-	if (!value) {
-		if (projects.length) {
-			reading.level = 'project';
-			reading.project = projects.length === 1 ? projects[0].id : ALL;
-		} else if (hasSite) {
-			reading.level = 'site';
-			reading.project = null;
-		} else {
-			reading.level = 'api';
-			reading.project = null;
-		}
-		return;
-	}
-	if (value === 'site' && hasSite) {
+	if (projects.length) {
+		reading.level = 'project';
+		reading.project = projects.length === 1 ? projects[0].id : ALL;
+	} else if (hasSite) {
 		reading.level = 'site';
 		reading.project = null;
-		return;
+	} else {
+		reading.level = 'api';
+		reading.project = null;
 	}
-	const id = value.startsWith('project:') ? value.slice('project:'.length) : '';
-	const known = id === ALL ? projects.length > 0 : projects.some((p) => p.id === id);
-	if (id && known) {
-		reading.level = 'project';
-		reading.project = id;
-		return;
-	}
-	reading.level = 'api';
-	reading.project = null;
-}
-
-export function choose(level, project = null) {
-	reading.level = level;
-	reading.project = level === 'project' ? project : null;
-	remember(level === 'project' ? `project:${project}` : level);
 }
 
 // One rule, read by every place that renders overlay content.
@@ -100,9 +45,7 @@ export function visible(locals = []) {
 	return locals.filter(shows);
 }
 
-// True when more than one kind of information can be on a page. At `api` there
-// is only one, so no page draws a mark or a legend and a public build looks
-// complete rather than annotated.
+// True when more than one kind of information can be on a page.
 export function mixed() {
 	return reading.level !== 'api';
 }

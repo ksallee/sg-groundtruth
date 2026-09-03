@@ -1,7 +1,6 @@
 <script>
 	import ScopeMark from './ScopeMark.svelte';
-	import ScopeLegend from './ScopeLegend.svelte';
-	import { visible, mixed } from '$lib/reading.svelte.js';
+	import { visible } from '$lib/reading.svelte.js';
 
 	// The corpus index, as a list. One row is a name, its one-line verdict and
 	// its tags, and it grows rather than moves as the reading level rises: the
@@ -9,8 +8,8 @@
 	// measured about the same subject and by the subjects the API says nothing
 	// about at all.
 	//
-	// At the API level nothing is marked, because everything on the page is the
-	// same kind of thing. Above it every row states what it holds.
+	// A row that holds more than one level, or none of the API's, says so with a
+	// badge per level. A row that is the API alone needs no badge.
 	let { entries = [], showTags = true } = $props();
 
 	// A row exists at this level if it has an API card, or a local card the
@@ -32,13 +31,9 @@
 	const nameOf = (entry) => entry.title || entry.name || entry.fullName.replace(/^\d+\s+/, '');
 </script>
 
-{#if mixed()}
-	<ScopeLegend />
-{/if}
-
 <ul class="list">
 	{#each rows as { entry, locals, lead } (entry.group + entry.slug)}
-		<li data-scope={lead ? lead.level : 'api'} class:local-only={Boolean(lead)}>
+		<li>
 			<article class:literal={literal(entry)}>
 				<h3>
 					<a href={entry.href}>
@@ -50,7 +45,7 @@
 					{#if entry.title && entry.title !== entry.slug}
 						<code class="slug">{entry.slug}</code>
 					{/if}
-					{#if mixed()}
+					{#if locals.length}
 						{#if entry.hasApi}
 							<ScopeMark level="api" />
 						{/if}
@@ -89,25 +84,6 @@
 
 	.list > li:last-child {
 		border-bottom: var(--border) solid var(--rule);
-	}
-
-	/* A row the published corpus knows nothing about is inset, on its own
-	   ground, behind the level's edge texture. The same treatment a detail
-	   section gets, so the two read as one signal. */
-	.list > li.local-only {
-		position: relative;
-		background: var(--scope-quiet);
-		padding-right: var(--space-4);
-		padding-left: calc(var(--space-4) + var(--scope-edge-width));
-	}
-
-	.list > li.local-only::before {
-		content: '';
-		position: absolute;
-		inset-block: 0;
-		left: 0;
-		width: var(--scope-edge-width);
-		background-image: var(--scope-edge);
 	}
 
 	article {
