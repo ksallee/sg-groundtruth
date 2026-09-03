@@ -4,13 +4,14 @@
 	// One section of an entry page: what the API does, what one site configures,
 	// or what one project does. It starts with its badge and then its content,
 	// with no box around it; the API section is drawn exactly like the others.
-	// `id` is the anchor the switch at the top of the page scrolls to.
-	let { level = 'api', project = '', id = '', badge = true, children } = $props();
+	// `id` is the anchor the switch scrolls to. `pinned` is true while the reader
+	// is inside this section; the badge is drawn only then.
+	let { level = 'api', project = '', id = '', badge = true, pinned = false, children } = $props();
 </script>
 
 <section class="scoped" data-scope={level} {id}>
 	{#if badge}
-		<div class="pin"><ScopeMark {level} {project} /></div>
+		<div class="pin" class:on={pinned}><ScopeMark {level} {project} /></div>
 	{/if}
 	{@render children?.()}
 </section>
@@ -26,12 +27,15 @@
 		scroll-margin-top: var(--space-4);
 	}
 
-	/* The badge stays at the top of the viewport while its section scrolls
-	   under it, and hands over to the next section's badge when that arrives.
-	   The strip below it fades the passing content out: page colour at the
-	   badge, nothing --pin-fade below. The strip is also the gap to the
-	   section's first block, so nothing moves when it pins. */
+	/* The badge appears at the top of the viewport once the reader is inside
+	   the section, stays there while the content scrolls under it, and hands
+	   over to the next section's badge when that arrives. Until then the strip
+	   holds its place unseen, so nothing moves. The strip fades the passing
+	   content out: page colour at the badge, nothing --pin-fade below. It is
+	   also the gap to the section's first block. No transition: it is there or
+	   it is not. */
 	.pin {
+		visibility: hidden;
 		position: sticky;
 		top: 0;
 		z-index: 2;
@@ -45,6 +49,10 @@
 			var(--ground) calc(100% - var(--pin-fade)),
 			transparent 100%
 		);
+	}
+
+	.pin.on {
+		visibility: visible;
 	}
 
 	/* Under the phone's bar rather than behind it. */

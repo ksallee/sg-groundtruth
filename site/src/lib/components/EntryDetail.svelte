@@ -52,13 +52,14 @@
 	const several = $derived(sections.length > 1);
 
 	// The switch follows the scroll: the active section is the last one whose
-	// badge has pinned to the top of the viewport.
+	// top has reached the top of the viewport. Above the first section, while
+	// the reader is on the title, nothing is active and no badge is drawn.
 	let active = $state('');
 	$effect(() => {
 		if (!several) return;
 		const ids = sections.map((s) => s.id);
 		const update = () => {
-			let cur = ids[0];
+			let cur = '';
 			for (const id of ids) {
 				const el = document.getElementById(id);
 				if (el && el.getBoundingClientRect().top <= 24) cur = id;
@@ -70,8 +71,9 @@
 		return () => removeEventListener('scroll', update);
 	});
 
+	// A jump, not a glide.
 	function jump(id) {
-		document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+		document.getElementById(id)?.scrollIntoView({ behavior: 'instant', block: 'start' });
 	}
 </script>
 
@@ -122,13 +124,19 @@
 	</header>
 
 	{#if entry.hasApi}
-		<ScopeSection level="api" id="scope-api" badge={several}>
+		<ScopeSection level="api" id="scope-api" badge={several} pinned={active === 'scope-api'}>
 			<Prose html={entry.html} />
 		</ScopeSection>
 	{/if}
 
 	{#each locals as local (local.level + local.project + local.slug)}
-		<ScopeSection level={local.level} project={local.projectLabel} id={anchor(local)} badge={several}>
+		<ScopeSection
+			level={local.level}
+			project={local.projectLabel}
+			id={anchor(local)}
+			badge={several}
+			pinned={active === anchor(local)}
+		>
 			<p class="local-verdict">{local.verdict}</p>
 			<Prose html={local.html} tone={local.level} />
 		</ScopeSection>
@@ -170,9 +178,6 @@
 		gap: var(--space-2);
 		padding: var(--space-1) var(--space-2);
 		border-radius: 6px;
-		transition:
-			background var(--duration) ease,
-			color var(--duration) ease;
 	}
 
 	.jump button:hover {
