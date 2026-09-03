@@ -93,10 +93,12 @@
 						aria-controls="sub-{g.id}"
 						onclick={() => toggle(g)}
 					>
-						<span>{g.label}</span>
-						<svg class="chev" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-							<path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" fill="none" />
-						</svg>
+						<span class="label">{g.label}</span>
+						<span class="slot">
+							<svg class="chev" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+								<path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" fill="none" />
+							</svg>
+						</span>
 					</button>
 					{#if isOpen(g)}
 						<ul class="sub" id="sub-{g.id}">
@@ -142,6 +144,11 @@
 		font-size: var(--text-menu);
 		line-height: 1.6;
 		letter-spacing: var(--tracking-body);
+		/* The column at the right of every row: room for three dots, and the
+		   chevron centred where the first dot goes, so the two line up. */
+		--slot: 30px;
+		--dot: 6px;
+		--dot-gap: 4px;
 	}
 
 	.head {
@@ -261,8 +268,14 @@
 		color: var(--ink);
 	}
 
+	.slot {
+		flex: 0 0 var(--slot);
+		display: flex;
+		justify-content: flex-start;
+	}
+
 	.chev {
-		flex: 0 0 auto;
+		display: block;
 		color: var(--ink-muted);
 		transition: transform var(--duration) var(--ease-out);
 	}
@@ -271,9 +284,11 @@
 		transform: rotate(90deg);
 	}
 
+	/* The open list hangs from a faint line, a whisper of the ink. */
 	.sub {
 		margin: 2px 0 var(--space-2) var(--space-3);
 		padding-left: var(--space-2);
+		border-left: var(--border) solid color-mix(in srgb, var(--ink) 14%, transparent);
 	}
 
 	/* One line per entry. The label gives way; the number and the dots do not. */
@@ -315,15 +330,18 @@
 		white-space: nowrap;
 	}
 
+	/* The first dot is centred under the chevron; the second and third run on
+	   to the right and fill the slot exactly. */
 	.dots {
-		flex: 0 0 auto;
+		flex: 0 0 var(--slot);
 		display: flex;
-		gap: 4px;
+		gap: var(--dot-gap);
+		padding-left: calc((14px - var(--dot)) / 2);
 	}
 
 	.dot {
-		width: 6px;
-		height: 6px;
+		width: var(--dot);
+		height: var(--dot);
 		border-radius: 50%;
 		background: var(--scope-ink);
 	}

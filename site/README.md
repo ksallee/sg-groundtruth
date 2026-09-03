@@ -218,8 +218,8 @@ it styles every rendered corpus body, so a change there lands on every entry pag
 | `src/routes/**/+page.svelte` | page composition and copy |
 
 Every component reads tokens. Nothing hardcodes a colour or a length, so the whole look changes from
-`tokens.css` alone. Light and dark come from one `light-dark()` declaration per colour and follow
-`prefers-color-scheme`. There is no theme toggle and no theme script.
+`tokens.css` alone. The site is dark only: `color-scheme` is pinned to `dark` on the root, so every
+`light-dark()` resolves to its second value. The light values stay in the tokens for the day that changes.
 
 The components:
 
@@ -396,9 +396,9 @@ table of contents. A page is read top to bottom. The sidebar is the one fixed el
 |---|---|
 | body text is 17px on a 1.6 line, tracked -1% | `--text-body`, `--leading-body`, `--tracking-body` |
 | three inks: headings, emphasis and links in `--ink`; paragraphs in `--ink-body`; metadata in `--ink-muted` | `tokens.css` |
-| warm graphite neutrals, light and dark from one `light-dark()` each | `tokens.css` |
+| warm graphite neutrals, dark only, with light values kept in the tokens | `tokens.css` |
 | links underline in `--underline`, a lighter ink, and darken on hover | `app.css` |
-| code slabs are the darkest surface in both schemes | `--slab` |
+| code slabs are the darkest surface on the page | `--slab` |
 | tables wrap their cells instead of scrolling, so a 300-character error string gets a taller row | `app.css` |
 | the API mark takes the page's ink; only the two local levels carry a hue, amber and green | `--scope-*` |
 | the system UI face and the system mono face, no webfont | `--font-text`, `--font-mono` |

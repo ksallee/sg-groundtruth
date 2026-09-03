@@ -3,8 +3,9 @@
    duration on the site is declared here. Change the look by changing this
    file; no component hardcodes a value.
 
-   Light and dark come from one declaration each, via light-dark(). The page
-   follows prefers-color-scheme and ships no theme script and no toggle.
+   The site is dark only: color-scheme is pinned to dark, so every
+   light-dark() below resolves to its second value. The first values stay in
+   place for the day a light scheme is wanted; flipping the pin brings it back.
 
    One column, three inks. Everything on every page sits in a single reading
    column, --column wide. Text is set in three levels of ink: headings,
@@ -14,7 +15,7 @@
    =========================================================================== */
 
 :root {
-	color-scheme: light dark;
+	color-scheme: dark;
 
 	/* --- colour ----------------------------------------------------------
 	   Warm graphite. The neutrals carry a trace of yellow rather than sitting
