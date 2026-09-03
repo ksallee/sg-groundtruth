@@ -26,5 +26,8 @@
   10948,
   10949,
   10950
- ]
+ ],
+ "schema_state": {
+  "Version.sg_department": "live, text, empty on every Version. Must end the run in this state. Delete any sg_department_N an arm creates."
+ }
 }
