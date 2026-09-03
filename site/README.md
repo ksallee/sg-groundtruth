@@ -2,7 +2,8 @@
 
 The public documentation site for the corpus. SvelteKit, prerendered to static HTML.
 
-First draft. Layout and content are settled; the visual design is a placeholder meant to be replaced.
+Layout and content are settled. The visual design is on its second pass: one reading column, no
+sidebars, three levels of ink. See "The look" below.
 
 ## Run it
 
@@ -387,15 +388,34 @@ JSON payloads in prose as well as in code spans. Seven corpus files already carr
 fence. Under mdsvex any one of them breaks the build, and the corpus is edited by probes rather than by a
 person watching the site. `marked` renders a string to a string and cannot be broken by content.
 
+## The look
+
+One column, `--column` wide (700px), and nothing on any page is wider than it: header, content and footer
+all sit in it, and a table or a slab that needs more room scrolls inside itself. There is no sidebar and no
+table of contents. A page is read top to bottom. The header is the one fixed element.
+
+| decision | where |
+|---|---|
+| body text is 17px on a 1.6 line, tracked -1% | `--text-body`, `--leading-body`, `--tracking-body` |
+| three inks: headings, emphasis and links in `--ink`; paragraphs in `--ink-body`; metadata in `--ink-muted` | `tokens.css` |
+| warm graphite neutrals, light and dark from one `light-dark()` each | `tokens.css` |
+| links underline in `--underline`, a lighter ink, and darken on hover | `app.css` |
+| code slabs are the darkest surface in both schemes | `--slab` |
+| tables wrap their cells instead of scrolling, so a 300-character error string gets a taller row | `app.css` |
+| the API mark takes the page's ink; only the two local levels carry a hue, amber and green | `--scope-*` |
+| the system UI face and the system mono face, no webfont | `--font-text`, `--font-mono` |
+
+**The corpus marks its sections with bold, not headings.** `**Read**`, `**Write**`, `**Clear**`,
+`**Filter**`, `**Traps**` open a paragraph on a field-type card; `**Type**`, `**Identity**`, `**Create**`,
+`**Links**`, `**Status**` on an entity type; `**Q**`, `**Endpoint**`, `**Actual**`, `**Teaches**` on a
+finding. `Prose.svelte` sets `p > strong:first-child` on its own line with a section's worth of air above
+it, so they read as heads. The markdown is untouched.
+
 ## Left undecided
 
 - **No syntax highlighting.** Code blocks hold JSON, Python, HTTP and raw Ruby error strings, often in one
   block. Picking one language per block is a content decision, and a highlighter is a dependency and a
   colour system of its own. Slabs are monospace on a dark ground and nothing more.
-- **The corpus marks its sections with bold, not headings.** `**Read**`, `**Write**`, `**Clear**`,
-  `**Filter**`, `**Traps**` open a paragraph. They cannot be styled as real section heads without either
-  editing the corpus to use `###` or pattern-matching bold-leading paragraphs. Left as plain bold. Noted in
-  `Prose.svelte`.
 - **The cited examples sit at the foot of `/findings`.** They are evidence for a reader who has already
   decided, and they belong beside the entries that recorded them rather than on the landing page. The MCP
   integrations sit on `/how-it-works`, under `#mcp`: they answer a question a reader already has rather than

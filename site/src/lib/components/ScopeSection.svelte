@@ -34,8 +34,7 @@
 	.scoped {
 		display: grid;
 		grid-template-columns: var(--col);
-		gap: var(--space-4);
-		justify-items: start;
+		gap: var(--gap-prose);
 	}
 
 	/* The panel is the ground now, so a .scroll-x inside it masks against this
@@ -44,11 +43,11 @@
 		--surface: var(--scope-quiet);
 		position: relative;
 		background: var(--scope-quiet);
-		border: var(--border) solid var(--rule);
-		border-left: 0;
-		border-radius: var(--radius);
-		padding: var(--space-4) var(--space-5);
+		border: var(--border) solid var(--scope-rule);
+		border-radius: var(--radius-lg);
+		padding: var(--space-5);
 		padding-left: calc(var(--space-5) + var(--scope-edge-width));
+		overflow: hidden;
 	}
 
 	/* The edge texture, not a colour: solid for the API, dashed for one site,
@@ -60,8 +59,6 @@
 		left: 0;
 		width: var(--scope-edge-width);
 		background-image: var(--scope-edge);
-		border-start-start-radius: var(--radius);
-		border-end-start-radius: var(--radius);
 	}
 
 	header {
@@ -71,8 +68,10 @@
 		gap: var(--space-2) var(--space-3);
 	}
 
-	code {
+	header code {
 		font-size: var(--text-xs);
 		color: var(--ink-muted);
+		background: none;
+		padding: 0;
 	}
 </style>

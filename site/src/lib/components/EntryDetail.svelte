@@ -30,15 +30,25 @@
 	};
 
 	const sourcePath = $derived(`${SOURCE_DIR[entry.group] ?? 'corpus/findings'}/${entry.slug}.md`);
+
+	// A field type, or an entity type with no display title, is named by the
+	// API's own literal, so the heading is set in mono, exactly as the API
+	// spells it. The number goes on the kicker line, so the heading is the name.
+	const literal = $derived(
+		!entry.title && (entry.group === 'field_types' || entry.group === 'entity_types')
+	);
+	const heading = $derived(entry.title || entry.name || entry.fullName.replace(/^\d+\s+/, ''));
 </script>
 
-<article class="entry">
+<article class="col entry">
 	<header>
 		{#if backHref}
 			<p class="back"><a href={backHref}>{backLabel}</a></p>
 		{/if}
-		{#if kicker}<p class="kicker">{kicker}</p>{/if}
-		<h1>{entry.heading}</h1>
+		{#if kicker || entry.number}
+			<p class="kicker">{[kicker, entry.number].filter(Boolean).join(' ')}</p>
+		{/if}
+		<h1 class:literal>{heading}</h1>
 		<!-- Kept in view rather than replaced: a reader who cannot see the schema
 		     name cannot call anything. -->
 		{#if entry.title && entry.title !== entry.slug}
@@ -84,7 +94,7 @@
 
 	{#each locals as local (local.level + local.project + local.slug)}
 		<ScopeSection level={local.level} project={local.projectLabel} dir={local.project}>
-			<p class="local-verdict" data-scope={local.level}>{local.verdict}</p>
+			<p class="local-verdict">{local.verdict}</p>
 			<Prose html={local.html} tone={local.level} />
 		</ScopeSection>
 	{/each}
@@ -92,9 +102,7 @@
 
 <style>
 	.entry {
-		max-width: var(--wide);
-		margin-inline: auto;
-		padding: var(--space-6) var(--gutter) var(--space-7);
+		padding-block: var(--space-7) 0;
 		display: grid;
 		grid-template-columns: var(--col);
 		gap: var(--space-6);
@@ -104,53 +112,68 @@
 		display: grid;
 		grid-template-columns: var(--col);
 		gap: var(--space-3);
-		max-width: var(--measure);
+		padding-bottom: var(--space-6);
+		border-bottom: var(--border) solid var(--rule);
 	}
 
 	.back {
 		font-size: var(--text-sm);
 	}
 
+	.back a {
+		color: var(--ink-muted);
+		text-decoration: none;
+	}
+
+	.back a:hover {
+		color: var(--ink);
+	}
+
 	.kicker {
 		font-family: var(--font-mono);
 		font-size: var(--text-xs);
-		letter-spacing: 0.14em;
-		text-transform: uppercase;
 		color: var(--ink-muted);
 	}
 
-	h1 {
+	h1.literal {
 		font-family: var(--font-mono);
-		font-size: var(--text-xl);
+		font-weight: var(--weight-medium);
+		letter-spacing: 0;
 	}
 
-	/* The verdict is the entry's whole argument in one line, so it is set larger
-	   than the body it introduces. */
-	.verdict {
-		font-size: var(--text-md);
-		color: var(--ink);
-		border-left: var(--scope-edge-width) solid var(--accent);
-		padding-left: var(--space-4);
-	}
-
-	.slug {
-		font-family: var(--font-mono);
+	.slug code {
 		font-size: var(--text-sm);
 		color: var(--ink-muted);
+		background: none;
+		padding: 0;
+	}
+
+	/* The verdict is the entry's whole argument in one line. It is set as the
+	   page's lede, in the full ink, and nothing else on the page is boxed or
+	   ruled to compete with it. */
+	.verdict,
+	.local-verdict {
+		font-size: var(--text-lede);
+		line-height: 1.5;
+		color: var(--ink);
+	}
+
+	.verdict {
+		margin-top: var(--space-1);
 	}
 
 	.absent {
 		font-size: var(--text-sm);
 		color: var(--ink-muted);
-		border-left: var(--scope-edge-width) solid var(--rule-strong);
-		padding-left: var(--space-4);
 	}
 
 	.meta {
 		list-style: none;
 		padding: 0;
+		margin-top: var(--space-2);
 		display: flex;
 		flex-wrap: wrap;
+		align-items: baseline;
 		gap: var(--space-2) var(--space-3);
 		font-family: var(--font-mono);
 		font-size: var(--text-xs);
@@ -159,16 +182,18 @@
 
 	.tag::before {
 		content: '#';
-		opacity: 0.5;
+		opacity: 0.6;
 	}
 
 	.src {
 		margin-left: auto;
 	}
 
-	.local-verdict {
-		border-left: var(--scope-edge-width) solid var(--scope-ink);
-		padding-left: var(--space-4);
-		max-width: var(--measure);
+	.src a {
+		color: var(--ink-muted);
+	}
+
+	.src a:hover {
+		color: var(--ink);
 	}
 </style>

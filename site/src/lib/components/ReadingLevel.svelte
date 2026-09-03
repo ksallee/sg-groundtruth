@@ -68,10 +68,12 @@
 		display: flex;
 		align-items: stretch;
 		border: var(--border) solid var(--rule-strong);
-		border-radius: var(--radius);
+		border-radius: var(--radius-pill);
 		overflow: hidden;
 		font-family: var(--font-mono);
 		font-size: var(--text-xs);
+		line-height: 1.5;
+		letter-spacing: 0;
 	}
 
 	.step {
@@ -81,11 +83,13 @@
 		border: 0;
 		border-left: var(--border) solid var(--rule);
 		padding: var(--space-1) var(--space-3);
-		cursor: pointer;
 		white-space: nowrap;
 		display: flex;
 		align-items: stretch;
 		gap: var(--space-2);
+		transition:
+			color var(--duration) ease,
+			background var(--duration) ease;
 	}
 
 	.step:first-child {

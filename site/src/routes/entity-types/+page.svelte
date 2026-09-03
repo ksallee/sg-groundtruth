@@ -12,7 +12,7 @@
 	/>
 </svelte:head>
 
-<div class="page">
+<div class="col page">
 	<header>
 		<h1>Entity types</h1>
 		<p class="lede">
@@ -31,27 +31,22 @@
 
 <style>
 	.page {
-		max-width: var(--wide);
-		margin-inline: auto;
-		padding: var(--space-6) var(--gutter) var(--space-7);
+		padding-block: var(--space-7) 0;
 		display: grid;
 		grid-template-columns: var(--col);
-		gap: var(--space-5);
+		gap: var(--space-6);
 	}
 
 	header {
 		display: grid;
 		grid-template-columns: var(--col);
 		gap: var(--space-3);
-		max-width: var(--measure);
-	}
-
-	h1 {
-		font-size: var(--text-xl);
 	}
 
 	.lede {
-		color: var(--ink-muted);
+		font-size: var(--text-lede);
+		line-height: 1.5;
+		color: var(--ink);
 	}
 
 	.note {

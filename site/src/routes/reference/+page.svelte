@@ -1,5 +1,5 @@
 <script>
-	// Three cards, written out rather than looped: each carries its own code
+	// Three groups, written out rather than looped: each carries its own code
 	// spans, and there are three of them. Every number is read off the corpus at
 	// build time, so a group that grows says so with no edit here.
 	import { countsAt } from '$lib/reading.svelte.js';
@@ -23,7 +23,7 @@
 	/>
 </svelte:head>
 
-<div class="page">
+<div class="col page">
 	<header>
 		<h1>Reference</h1>
 		<p class="lede">
@@ -78,7 +78,7 @@
 			</p>
 			<p class="note">
 				The stock icons are not in the API. They are cells in the web app's own sprite, matched
-				from its stylesheet at build time — see <a href="/findings">010_status_icons</a>.
+				from its stylesheet at build time. See <a href="/findings">010_status_icons</a>.
 			</p>
 			<StatusTable codes={all} caption={`${all.length} statuses defined site-wide`} />
 		</section>
@@ -87,27 +87,22 @@
 
 <style>
 	.page {
-		max-width: var(--wide);
-		margin-inline: auto;
-		padding: var(--space-6) var(--gutter) var(--space-7);
+		padding-block: var(--space-7) 0;
 		display: grid;
 		grid-template-columns: var(--col);
-		gap: var(--space-6);
+		gap: var(--space-7);
 	}
 
 	header {
 		display: grid;
 		grid-template-columns: var(--col);
 		gap: var(--space-3);
-		max-width: var(--measure);
-	}
-
-	h1 {
-		font-size: var(--text-xl);
 	}
 
 	.lede {
-		color: var(--ink-muted);
+		font-size: var(--text-lede);
+		line-height: 1.5;
+		color: var(--ink);
 	}
 
 	.note {
@@ -119,30 +114,43 @@
 		list-style: none;
 		padding: 0;
 		display: grid;
-		gap: var(--space-5);
-		grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+		grid-template-columns: var(--col);
 	}
 
 	.groups li {
 		display: grid;
 		grid-template-columns: var(--col);
 		gap: var(--space-2);
-		align-content: start;
-		border-top: 2px solid var(--rule-strong);
-		padding-top: var(--space-3);
+		padding-block: var(--space-5);
+		border-top: var(--border) solid var(--rule);
+	}
+
+	.groups li:last-child {
+		border-bottom: var(--border) solid var(--rule);
 	}
 
 	.groups h2 {
-		font-size: var(--text-md);
+		font-size: var(--text-h3);
+		margin-bottom: var(--space-1);
 	}
 
-	.groups p {
-		color: var(--ink-muted);
-		font-size: var(--text-sm);
+	.groups h2 a {
+		text-decoration-color: transparent;
+	}
+
+	.groups h2 a:hover {
+		text-decoration-color: currentColor;
 	}
 
 	.count {
 		font-family: var(--font-mono);
 		font-size: var(--text-xs);
+		color: var(--ink-muted);
+	}
+
+	.statuses {
+		display: grid;
+		grid-template-columns: var(--col);
+		gap: var(--space-4);
 	}
 </style>

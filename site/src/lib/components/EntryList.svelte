@@ -23,6 +23,13 @@
 			})
 			.filter((row) => row.entry.hasApi || row.locals.length)
 	);
+
+	// A field type, or an entity type with no display title, is named by the
+	// API's own literal and is set in mono, exactly as the API spells it.
+	const literal = (entry) =>
+		!entry.title && (entry.group === 'field_types' || entry.group === 'entity_types');
+
+	const nameOf = (entry) => entry.title || entry.name || entry.fullName.replace(/^\d+\s+/, '');
 </script>
 
 {#if mixed()}
@@ -32,11 +39,11 @@
 <ul class="list">
 	{#each rows as { entry, locals, lead } (entry.group + entry.slug)}
 		<li data-scope={lead ? lead.level : 'api'} class:local-only={Boolean(lead)}>
-			<article>
+			<article class:literal={literal(entry)}>
 				<h3>
 					<a href={entry.href}>
 						{#if entry.number}<span class="num">{entry.number}</span>{/if}
-						<span class="name">{entry.title || entry.name}</span>
+						<span class="name">{nameOf(entry)}</span>
 					</a>
 					<!-- The slug is what a caller writes into a URL or a filter, so it
 					     stays on the row whenever the label is something else. -->
@@ -74,7 +81,6 @@
 		padding: 0;
 		display: grid;
 		grid-template-columns: var(--col);
-		gap: 0;
 	}
 
 	.list > li {
@@ -91,8 +97,8 @@
 	.list > li.local-only {
 		position: relative;
 		background: var(--scope-quiet);
-		padding-left: calc(var(--space-4) + var(--scope-edge-width));
 		padding-right: var(--space-4);
+		padding-left: calc(var(--space-4) + var(--scope-edge-width));
 	}
 
 	.list > li.local-only::before {
@@ -108,21 +114,22 @@
 		padding: var(--space-4) 0;
 		display: grid;
 		grid-template-columns: var(--col);
-		gap: var(--space-2);
-		max-width: var(--measure);
+		gap: var(--space-1);
 	}
 
 	h3 {
-		font-size: var(--text-md);
-		font-weight: 600;
+		font-size: var(--text-body);
+		font-weight: var(--weight-medium);
+		line-height: var(--leading-body);
+		letter-spacing: var(--tracking-body);
+		text-wrap: pretty;
 		display: flex;
 		flex-wrap: wrap;
-		align-items: center;
+		align-items: baseline;
 		gap: var(--space-2) var(--space-3);
 	}
 
 	h3 a {
-		color: var(--ink);
 		text-decoration: none;
 		display: inline-flex;
 		align-items: baseline;
@@ -131,31 +138,40 @@
 
 	h3 a:hover .name {
 		text-decoration: underline;
-	}
-
-	.num,
-	.name {
-		font-family: var(--font-mono);
+		text-decoration-color: var(--underline);
+		text-decoration-thickness: 1px;
+		text-underline-offset: 0.18em;
 	}
 
 	.num {
-		color: var(--ink-muted);
-		font-size: var(--text-sm);
+		font-family: var(--font-mono);
+		font-size: var(--text-xs);
 		font-weight: 400;
+		color: var(--ink-muted);
+	}
+
+	.literal .name {
+		font-family: var(--font-mono);
+		font-size: var(--text-sm);
 	}
 
 	.slug {
 		font-size: var(--text-xs);
 		color: var(--ink-muted);
+		background: none;
+		padding: 0;
 	}
 
 	.verdict {
-		color: var(--ink-muted);
+		font-size: var(--text-sm);
+		line-height: 1.5;
+		color: var(--ink-body);
 	}
 
 	.tags {
 		list-style: none;
 		padding: 0;
+		margin-top: var(--space-1);
 		display: flex;
 		flex-wrap: wrap;
 		gap: var(--space-1) var(--space-2);
@@ -166,6 +182,6 @@
 
 	.tags li::before {
 		content: '#';
-		opacity: 0.5;
+		opacity: 0.6;
 	}
 </style>

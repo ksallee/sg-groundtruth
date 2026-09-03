@@ -46,30 +46,30 @@
 {/if}
 
 <style>
-	/* The kinds side by side, so the marks are compared rather than read in
-	   sequence. Each is the mark itself, at the size it appears at below. */
+	/* One kind per line, the mark first, at the size it appears at below. */
 	.legend {
-		margin: 0;
 		display: grid;
-		gap: var(--space-2) var(--space-5);
-		grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+		grid-template-columns: var(--col);
+		gap: var(--space-2);
 		border-block: var(--border) solid var(--rule);
 		padding-block: var(--space-3);
 	}
 
 	.legend > div {
-		display: grid;
-		grid-template-columns: var(--col);
-		gap: var(--space-1);
-		align-content: start;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: var(--space-1) var(--space-3);
 	}
 
 	dt {
 		display: flex;
+		flex: 0 0 auto;
 	}
 
 	dd {
 		margin: 0;
+		flex: 1 1 16rem;
 		font-size: var(--text-sm);
 		color: var(--ink-muted);
 	}

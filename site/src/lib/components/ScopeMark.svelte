@@ -25,15 +25,17 @@
 		background: var(--scope-quiet);
 		border-radius: var(--radius-sm);
 		padding: 0 var(--space-2) 0 0;
+		overflow: hidden;
 		font-family: var(--font-mono);
 		font-size: var(--text-xs);
-		font-weight: 600;
-		letter-spacing: 0.02em;
+		font-weight: var(--weight-medium);
+		line-height: 1.5;
+		letter-spacing: 0;
 		color: var(--scope-ink);
 		white-space: nowrap;
 	}
 
 	.word {
-		padding-block: 0.15em;
+		padding-block: 0.1em;
 	}
 </style>

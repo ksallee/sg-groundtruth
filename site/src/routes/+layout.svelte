@@ -21,6 +21,7 @@
 <style>
 	main {
 		display: block;
+		padding-bottom: var(--space-9);
 	}
 
 	.skip {
@@ -32,8 +33,10 @@
 		border: var(--border) solid var(--rule-strong);
 		border-radius: var(--radius);
 		padding: var(--space-2) var(--space-3);
+		font-size: var(--text-sm);
+		text-decoration: none;
 		transform: translateY(-200%);
-		transition: transform var(--duration);
+		transition: transform var(--duration) var(--ease-out);
 	}
 
 	.skip:focus {
