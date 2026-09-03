@@ -149,7 +149,10 @@
 		top: var(--space-3);
 		z-index: 5;
 		justify-self: end;
+		align-self: start;
+		height: 1.75rem;
 		display: flex;
+		align-items: center;
 		gap: 2px;
 		padding: 2px;
 		background: var(--ground);
@@ -166,7 +169,8 @@
 		border: 0;
 		background: none;
 		color: var(--ink-muted);
-		padding: 0.1rem 0.7rem;
+		height: 100%;
+		padding: 0 0.7rem;
 		border-radius: var(--radius-pill);
 		transition:
 			background var(--duration) ease,
