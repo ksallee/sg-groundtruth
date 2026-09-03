@@ -182,6 +182,7 @@
 		flex: 1;
 		min-height: 0;
 		overflow-y: auto;
+		overflow-x: hidden;
 		scrollbar-width: thin;
 		scrollbar-color: transparent transparent;
 		padding-right: var(--space-1);
@@ -210,11 +211,14 @@
 		background: var(--rule-strong);
 	}
 
+	/* One track the width of the sidebar, never the width of the widest label,
+	   so a long entry truncates instead of pushing the tree sideways. */
 	.menu,
 	.sub {
 		list-style: none;
 		padding: 0;
 		display: grid;
+		grid-template-columns: var(--col);
 		gap: 2px;
 	}
 
@@ -318,8 +322,8 @@
 	}
 
 	.dot {
-		width: 10px;
-		height: 10px;
+		width: 6px;
+		height: 6px;
 		border-radius: 50%;
 		background: var(--scope-ink);
 	}

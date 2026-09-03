@@ -100,8 +100,8 @@
 
 	.dot {
 		flex: 0 0 auto;
-		width: 12px;
-		height: 12px;
+		width: 8px;
+		height: 8px;
 		border-radius: 50%;
 		background: var(--scope-ink);
 	}
