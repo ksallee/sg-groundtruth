@@ -19,13 +19,15 @@ a claim however plausible it reads.
 | Display name maps to a computed programmatic name; `Foo (Bar)` becomes something like `sg_foo__bar_` | 019 | **confirmed**: `zzprobe 019 With (Parens)` becomes `sg_zzprobe_019_with__parens_`, and the name is absent from the response body. Take the last segment of `links.self` |
 | Trashed fields cannot be listed | 019 | **confirmed**: `DELETE` returns 204 and the field vanishes from `/schema` |
 | Creating a field can collide with a trashed field you cannot see | 019 | **confirmed**: recreating the same display name 400s `schema_field_create() failed` |
-| A trashed field can be revived | none | still a claim |
-| Reviving fails if the trashed field's type differs from the type you want | none | still a claim |
-| Recovery is: trash again, pick another programmatic name | none | still a claim |
+| A trashed field can be revived | 040 | **confirmed**: `POST /schema/<Type>/fields/<name>` with `{"revive": true}` is a 204. The call is in no documentation; the API names the parameter in a 400 |
+| Reviving fails if the trashed field's type differs from the type you want | 040 | **confirmed in effect**: the revive succeeds but returns the field at its original type, and `data_type` is not editable. A `PUT` changing it at the top level is a 200 that does nothing |
+| Recovery is: trash again, pick another programmatic name | 040 | **confirmed**: a different display name is a 201 |
 
 Consequence: never POST and hope. A duplicate display name does not error, it creates `<name>_1`, so an
-idempotent `ensure()` reads `/schema/<Type>/fields` and matches before it writes. The revive half of the
-state machine is still unprobed. Encode the sequence once, in one place, cited to 019.
+idempotent `ensure()` reads `/schema/<Type>/fields` and matches before it writes. The revive half is
+settled by 040: there is no revive, the type is irrelevant, and a create 400 naming a retired field is
+terminal over REST because no listing shows what was collided with. Encode the sequence once, in one
+place, cited to 019 and 040.
 
 **Probe fields are permanent litter.** Trashed names still collide and cannot be enumerated (019), so every
 schema probe burns a name on the site forever. All probe fields use `sg_zzprobe_<nnn>_*` so they can never
