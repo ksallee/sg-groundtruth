@@ -1,7 +1,10 @@
 <script>
 	import { REPO } from '$lib/site.js';
+	import { countsAt } from '$lib/reading.svelte.js';
 
 	let { data } = $props();
+
+	const counts = $derived(countsAt(data.counts));
 
 	// Third-party integrations. Rendered only when this array has entries; empty
 	// is the shipped state. Fill it from site/RESEARCH-mcp.md when that research
@@ -33,10 +36,10 @@
 </script>
 
 <svelte:head>
-	<title>How it works: probes, scope, and the local overlay</title>
+	<title>How it works: what the corpus holds and how to use it</title>
 	<meta
 		name="description"
-		content="One question per probe. Point a model at the corpus index, run the probes against your own Flow PT site, and read the scope field to tell what transfers from what you have to measure again."
+		content="What the corpus holds, how to point an agent at it, and how to put your own Flow PT site in it. One question per probe, and every claim re-runs."
 	/>
 </svelte:head>
 
@@ -44,118 +47,172 @@
 	<header>
 		<h1>How it works</h1>
 		<p class="lede">
-			One question per probe. A probe is a script that asks a live Flow Production Tracking site one
-			question, and what it prints is the reference.
-		</p>
-		<p class="lede">
-			The corpus is markdown files, each with a one-line verdict in its frontmatter.
+			Every entry here is the recorded output of one script asking a live Flow Production Tracking
+			site one question. Nothing is written from the documentation, and every claim re-runs.
 		</p>
 	</header>
 
 	<section>
-		<h2>Point a model at the index, not the corpus</h2>
+		<h2>What you get</h2>
+		<div class="scroll-x" tabindex="0">
+			<table>
+				<thead>
+					<tr><th>on the site</th><th>answers</th><th>holds</th></tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td><a href="/field-types">Field types</a></td>
+						<td>What does this data type read, write and clear as, and what can I filter it with</td>
+						<td>{counts.fieldTypes} types, each with an operator vocabulary and a value matrix</td>
+					</tr>
+					<tr>
+						<td><a href="/entity-types">Entity types</a></td>
+						<td>What is required to create one, what does it link to, how is it identified</td>
+						<td>{counts.entityTypes} types</td>
+					</tr>
+					<tr>
+						<td><a href="/filters">Filters</a></td>
+						<td>Which relations does this type accept, and what value does each one take</td>
+						<td>Generated from the field-type cards, so it cannot drift from them</td>
+					</tr>
+					<tr>
+						<td><a href="/recipes">Recipes</a></td>
+						<td>How do I do this, and what does it return</td>
+						<td>{counts.recipes} tasks, each with the real response and the errors hit on the way</td>
+					</tr>
+					<tr>
+						<td><a href="/findings">Findings</a></td>
+						<td>What does it actually do here, where the docs are silent or wrong</td>
+						<td>{counts.findings} questions, chronological, later entries correcting earlier ones</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</section>
+
+	<section id="use">
+		<h2>Use it</h2>
+
+		<h3>Point an agent at the index</h3>
 		<p>
-			<code>corpus/INDEX.md</code> is generated and small enough to load whole. It carries every entry's
-			name, its one-line verdict and its tags. A model reads the index, then opens the two or three entries
-			it needs.
-		</p>
-		<p>
-			A model that reads the whole corpus to answer one question spends its context on the first call
-			and is useless for the rest of the session. The index exists to prevent that.
+			<code>corpus/INDEX.md</code> is generated and small enough to load whole: every entry's name,
+			its one-line verdict, its tags. An agent that reads the whole corpus to answer one question
+			spends its context on the first call and is useless for the rest of the session.
 		</p>
 		<pre>Read corpus/INDEX.md first.
 Open corpus/findings/&lt;entry&gt;.md only when the one-liner falls short.</pre>
+
+		<h3>Put your own site in it</h3>
+		<p>
+			One command. It checks the toolchain before asking for a credential, proves the credential with
+			two read-only probes, then writes documentation covering your custom entities, your field
+			names, your status vocabularies and your projects.
+		</p>
+		<pre>git clone {REPO} &amp;&amp; cd sg-groundtruth
+/sg-groundtruth-setup</pre>
+		<p class="note">
+			Read-only throughout. No probe writes without <code>--write</code>, and the only project one may
+			write into is the sandbox you name. What it measures is written to
+			<code>{data.overlayDir}/</code>, which is gitignored and never leaves your machine.
+		</p>
+
+		<h3>Grow it as you build</h3>
+		<div class="scroll-x" tabindex="0">
+			<table>
+				<thead>
+					<tr><th>command</th><th>when</th></tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td><code>/probe &lt;question&gt;</code></td>
+						<td>The docs are silent or wrong and you need to know. One question per probe, answered
+							against your own site, and the answer is in the corpus for every agent after you.</td>
+					</tr>
+					<tr>
+						<td><code>/recipe &lt;task&gt;</code></td>
+						<td>You made a call work and want the call, its real response and the errors you hit
+							recorded.</td>
+					</tr>
+					<tr>
+						<td><code>/sg-groundtruth-adopt &lt;path&gt;</code></td>
+						<td>You already have code calling this API. It turns each distinct call into a recipe,
+							and each retry loop, sleep and swallowed error into a probe.</td>
+					</tr>
+					<tr>
+						<td><code>/inspect-site [project]</code></td>
+						<td>You are wiring something to one project and want a profile with the evidence beside
+							it rather than a guess.</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
 	</section>
 
 	<section>
-		<h2>Run the probes against your own site</h2>
+		<h2>How an entry is made</h2>
 		<p>
-			Every entry names the probe that produced it. A probe asks one question, prints what the API
-			answered, and leaves no trace: it is read-only unless given <code>--write</code>, and deletes
-			anything it creates before it exits.
+			A probe asks one question, prints what the API answered, and leaves no trace: it deletes
+			anything it created before it exits. It never writes the corpus. An agent reads the output,
+			judges what is identifying, and writes the entry by hand.
 		</p>
-		<pre>git clone {REPO}
-cp .env.local.example .env.local   # site URL, script name, API key
-python probes/017_filter_operators.py</pre>
+		<pre>python probes/017_filter_operators.py</pre>
 		<p>
-			If your site answers differently from what is published here, the finding is wrong or your site
-			is configured differently. Both are worth knowing, and the probe output tells you which.
+			Every entry names the probe that produced it, so a claim you doubt, you re-run. If your site
+			answers differently, either the finding is wrong or your site is configured differently. Both
+			are worth knowing, and the probe output says which.
 		</p>
 	</section>
 
 	<section id="scope">
-		<h2>Read the scope field</h2>
+		<h2>The three levels</h2>
 		<p>
-			Every corpus file declares a <code>scope</code> in its frontmatter. There are three levels, and
-			the probes are what proved they are distinct.
+			Every file declares a <code>scope</code>, and the switch in the header sets which levels a page
+			answers at. Each level adds to the one before it; nothing is removed as it rises.
 		</p>
-		<div class="scroll-x">
+		<div class="scroll-x" tabindex="0">
 			<table>
 				<thead>
-					<tr>
-						<th>scope</th>
-						<th>means</th>
-						<th>published here</th>
-					</tr>
+					<tr><th>level</th><th>true of</th><th>public</th></tr>
 				</thead>
 				<tbody>
 					<tr>
 						<td><code>api</code></td>
-						<td>Behaviour that holds on any Flow PT site: status codes, error strings, accepted
-							value shapes, operator vocabularies.</td>
-						<td>Yes. This is the whole public site.</td>
+						<td>Any Flow PT site: status codes, error strings, value shapes, operator vocabularies</td>
+						<td>Yes. The default, and the only level a public build has</td>
 					</tr>
 					<tr>
 						<td><code>site</code></td>
-						<td>True of one Flow PT site: which custom entities are enabled, which custom fields
-							exist, a field's <code>valid_values</code>, what <code>/preferences</code> returns.</td>
-						<td>No. It does not generalise, so it is not stated as fact on a public page.</td>
+						<td>One site: which custom entities are enabled, which fields exist,
+							<code>valid_values</code>, <code>/preferences</code></td>
+						<td>No</td>
 					</tr>
 					<tr>
 						<td><code>project</code></td>
-						<td>True of one project inside one site: <code>hidden_values</code>, page settings and
-							visible columns, fill rates. The file also carries a <code>project:</code> key naming
-							which project it was measured on.</td>
-						<td>No. Not even another project on the same site can be assumed to match.</td>
+						<td>One project inside it: <code>hidden_values</code>, page columns, fill rates</td>
+						<td>No</td>
 					</tr>
 				</tbody>
 			</table>
 		</div>
 		<p>
-			Probe 009 is why the last two are not one level. A status field's <code>valid_values</code> is
-			byte-identical at every scope, and only <code>hidden_values</code> varies by project. "Which
-			statuses can I use" has no site-level answer.
+			Probe 009 is why the last two are not one level. <code>valid_values</code> is byte-identical at
+			every scope and only <code>hidden_values</code> varies by project, so "which statuses can I use"
+			has no site-level answer.
 		</p>
 		<p>
-			A reader forking this repository has to be able to tell, sentence by sentence, what transfers to
-			their site and what they have to measure again. That is what the field is for. Findings marked
-			<code>scope: api</code> still attribute any local number inline, beginning "On the probed site".
+			Above <code>api</code>, every row and section is marked with the level it holds: a word, an edge
+			texture and a hue. The texture is what survives greyscale, so a measurement of one site is never
+			read as API behaviour. With no overlay nothing is marked and the switch is not drawn.
 		</p>
 	</section>
 
 	<section id="overlay">
-		<h2>Enabling it for your site</h2>
+		<h2>Your own site, on these same pages</h2>
 		<p>
-			Point a clone at your Flow PT site and rebuild. Its custom entities, status vocabularies and
-			fill rates render on the pages that already cover the same subject, in a marked section, at the
-			level the header switch is set to. The <a href="/">setup prompt on the front page</a> is one way
-			to get there.
+			What <code>/sg-groundtruth-setup</code> builds renders here, in marked sections on the pages that
+			already cover the same subject. It adds no navigation entry: it is depth on the four sections
+			that are already there, and it is never committed, so it cannot reach a deployment.
 		</p>
-		<p>
-			This site builds from three content sources, one per level. The first is
-			<code>corpus/</code>, committed and public, filtered to <code>scope: api</code>. The other two
-			are directories under <code>{data.overlayDir}/</code>, gitignored and generated against your own
-			Flow PT site. When either is present the header gains a switch that sets which level every page
-			answers at. The overlay adds no section to the navigation: it is depth on the four that are
-			already there.
-		</p>
-		<p>
-			The overlay is never committed and so never reaches a public deployment. Building it is how you
-			get documentation that covers your custom entities, your status vocabularies and your fill
-			rates, with examples drawn from your own data.
-		</p>
-
-		<h3>The contract</h3>
 		<p>Drop a markdown file in the matching directory. Nothing has to be registered.</p>
 		<pre>{data.overlayDir}/site/findings/&lt;nnn&gt;_&lt;slug&gt;.md               one Flow PT site
 {data.overlayDir}/site/findings/field_types/&lt;type&gt;.md
@@ -166,101 +223,11 @@ python probes/017_filter_operators.py</pre>
 {data.overlayDir}/projects/&lt;id&gt;/findings/entity_types/&lt;Type&gt;.md
 {data.overlayDir}/projects/&lt;id&gt;/recipes/&lt;nnn&gt;_&lt;slug&gt;.md</pre>
 		<p>
-			Frontmatter is the same shape the shipped corpus uses. The scope has to match the directory, and
-			a project file names its project. An optional <code>title</code> names the thing the way a person
-			does, <code>Lenses</code> for <code>CustomEntity19</code>; the schema name stays beside it and
-			stays the URL.
-		</p>
-		<pre>---
-tags: [version, status]
-scope: project
-project: &lt;the project this was measured on&gt;
-verdict: One line. What a reader of this site should do.
----
-
-# &lt;heading&gt;</pre>
-		<div class="scroll-x">
-			<table>
-				<thead>
-					<tr>
-						<th>file</th>
-						<th>renders</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr>
-						<td>slug matches a shipped entry</td>
-						<td>On that entry's page, in a marked section below the shipped card, and as a mark
-							on that entry's row in the list.</td>
-					</tr>
-					<tr>
-						<td>slug matches nothing shipped</td>
-						<td>As a row of its own in the list the group belongs to, and a page of its own under
-							it, with no API section on it.</td>
-					</tr>
-					<tr>
-						<td><code>scope</code> does not match the directory</td>
-						<td>Skipped, with a warning on the build log. An overlay file can never be published
-							as a general fact.</td>
-					</tr>
-					<tr>
-						<td><code>scope: project</code> with no <code>project:</code> key</td>
-						<td>Skipped, with a warning on the build log.</td>
-					</tr>
-					<tr>
-						<td>directory absent or empty</td>
-						<td>Nothing changes. The public build is this case.</td>
-					</tr>
-				</tbody>
-			</table>
-		</div>
-		<p class="note">
-			The generator that populates the overlay lives in <code>probes/</code> and is separate from this
-			site. <code>python probes/build_overlay.py</code> reads your site and writes every file above
-			that it can measure; it is read-only and re-runnable. The site consumes the contract above and
-			does not care what wrote the files.
-		</p>
-	</section>
-
-	<section id="level">
-		<h2>Set the reading level once</h2>
-		<p>
-			The switch in the header is global. It is chosen once, applied to every page, and remembered
-			across navigation and reloads in <code>localStorage</code>. Each level adds to the one before
-			it, so the API content is on the page whatever is selected.
-		</p>
-		<div class="scroll-x">
-			<table>
-				<thead>
-					<tr>
-						<th>level</th>
-						<th>on the page</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr>
-						<td>API</td>
-						<td>The shipped corpus. The default, and the only level a public build has.</td>
-					</tr>
-					<tr>
-						<td>Site</td>
-						<td>The shipped corpus, and what one Flow PT site configures.</td>
-					</tr>
-					<tr>
-						<td>Project</td>
-						<td>Both of those, and one project inside that site, or every project the overlay
-							holds at once. With more than one selected, each section names the project it was
-							measured on.</td>
-					</tr>
-				</tbody>
-			</table>
-		</div>
-		<p>
-			Every list row and every section on an entry page is marked with the kind of information it
-			holds: a word, an edge texture and a hue, so a measurement of one site is never read as API
-			behaviour, and the distinction survives a greyscale screen. Local sections are inset on their
-			own ground; API content sits flush on the page. A legend states the marks where they first
-			appear. With no overlay nothing is marked and the switch is not drawn.
+			Frontmatter is the shape the shipped corpus uses, and the <code>scope</code> has to match the
+			directory, so a local measurement can never be published as a general fact. A
+			<code>scope: project</code> file also names its project. The full contract, every field and what
+			happens to a file that gets one wrong, is in
+			<a href="{REPO}/blob/main/site/README.md">site/README.md</a>.
 		</p>
 	</section>
 
@@ -357,7 +324,8 @@ verdict: One line. What a reader of this site should do.
 	td {
 		text-align: left;
 		vertical-align: top;
-		padding: var(--space-2) var(--space-3);
+		padding: var(--cell-y) var(--cell-x);
+		line-height: var(--leading-tabular);
 		border-bottom: var(--border) solid var(--rule);
 		max-width: 34ch;
 	}
@@ -374,7 +342,7 @@ verdict: One line. What a reader of this site should do.
 
 	.note {
 		font-size: var(--text-sm);
-		border-left: 3px solid var(--rule-strong);
+		border-left: var(--scope-edge-width) solid var(--rule-strong);
 		padding-left: var(--space-4);
 	}
 
@@ -391,7 +359,7 @@ verdict: One line. What a reader of this site should do.
 		grid-template-columns: var(--col);
 		gap: var(--space-2);
 		align-content: start;
-		border-top: 2px solid var(--rule-strong);
+		border-top: var(--border-bar) solid var(--rule-strong);
 		padding-top: var(--space-3);
 	}
 

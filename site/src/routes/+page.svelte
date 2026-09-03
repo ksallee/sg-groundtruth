@@ -24,23 +24,16 @@
 	const SETUP_PROMPT = `Clone ${REPO} and set it up to document my Flow Production Tracking site.
 
 1. git clone ${REPO} && cd sg-groundtruth
-2. Python 3.11 with requests: python3.11 -m venv .venv && source .venv/bin/activate && pip install requests
-3. cp .env.local.example .env.local, then ask me for the values and fill in:
-     FPT_API_SITE_URL, FPT_API_SCRIPT_NAME, FPT_API_API_KEY
-     FPT_PROBE_SAMPLE_PROJECTS   projects you may read, names or ids, most interesting first
-     FPT_PROBE_SANDBOX_PROJECT   the only project you may write into
-   .env.local is gitignored. Never print the key.
-4. Run the read-only probes in probes/ against my site and read what they print,
-   starting with python probes/001_auth.py and python probes/002_schema.py.
-   A probe is read-only unless given --write. Do not pass --write.
-5. Ask the schema what my site calls things, one type at a time:
-     PYTHONPATH=src python -m sg_groundtruth.schema entities --custom
-     PYTHONPATH=src python -m sg_groundtruth.schema --project N statuses Version
-6. Write the docs for my site and my projects:
-     python probes/build_overlay.py
-   It is read-only and writes markdown under corpus.local/, which is gitignored and is
-   never committed. site/README.md has the contract if you want to add a file by hand.
-7. Build the docs: cd site && npm install && npm run dev, then open http://localhost:5173.`;
+2. Run /sg-groundtruth-setup and follow it. If your agent has no slash commands,
+   read .claude/commands/sg-groundtruth-setup.md and follow that instead.
+
+It checks the toolchain before it asks me for a credential, asks for the five values it
+needs and says what each is for, proves them with two read-only probes, writes the docs
+for my own site and projects, and serves them on localhost.
+
+Everything is read-only. No probe writes anything without --write, and the only project
+one may write into is the sandbox I name. My site's data is written to corpus.local/,
+which is gitignored and is never committed or deployed.`;
 
 	let copied = $state(false);
 	let copyTimer;
@@ -106,53 +99,10 @@
 	</div>
 </section>
 
-<!-- Five flat facts, one line each. The privacy one leads, because it is the
-     fact a reader most needs and it is stated nowhere else. -->
-<Section label="What it is" title="One corpus ships, one is written on your machine.">
-	<ul class="facts">
-		<li>
-			<h3>Two corpora</h3>
-			<p>
-				One describes the Flow Production Tracking REST API and ships with the repository. One
-				describes your site and is written on your machine.
-			</p>
-		</li>
-		<li>
-			<h3>Your site's data never leaves it</h3>
-			<p>
-				The files describing your site are written to <code>corpus.local/</code>, which is gitignored
-				and never deployed. Nothing is sent anywhere, including to whoever maintains this.
-			</p>
-		</li>
-		<li>
-			<h3>One reading level, set once</h3>
-			<p>The API, your site, or one project in it. Every page answers at that level.</p>
-		</li>
-		<li>
-			<h3>Every claim re-runs</h3>
-			<p>
-				Each entry names the probe that produced it. Run that probe against your own site and
-				compare.
-			</p>
-		</li>
-		<li>
-			<h3>Read-only by default</h3>
-			<p>
-				A probe changes nothing without <code>--write</code>, and deletes anything it creates before
-				it exits.
-			</p>
-		</li>
-	</ul>
-
-	{#if PERMISSIONS_CAVEAT}
-		<p class="body">{PERMISSIONS_CAVEAT}</p>
-	{/if}
-</Section>
-
 <Section
-	label="Enabling it for your site"
-	title="The same documentation on localhost, with your own data in it."
-	lede="Hand this to an LLM agent with a terminal. It clones the repository, runs the read-only probes against your Flow PT site, and builds this site locally with what it measured in it."
+	label="Start here"
+	title="Setup Ground Truth on your Flow Production Tracking site."
+	lede="Hand this to an agent with a terminal. It clones the repository, runs the read-only probes against your Flow PT site, and rebuilds this documentation with your own entities, fields, status vocabularies and projects in it."
 >
 	<figure class="prompt">
 		<figcaption>
@@ -166,6 +116,124 @@
 		<a href="/how-it-works#overlay">What the local corpus is</a>, which files are picked up, and
 		where each one renders.
 	</p>
+</Section>
+
+<!-- The argument for the thing, made with the corpus's own findings. Every row
+     is cited, because the claim is that these failures are silent and a reader
+     has no reason to take that on trust. -->
+<Section
+	label="Why it exists"
+	title="The failures are silent, so an agent cannot correct them."
+	lede="A 400 names the legal set and an agent recovers from it. A 200 that ignored what you sent tells it nothing. Each row is a published finding."
+>
+	<div class="scroll-x" tabindex="0">
+		<table class="traps">
+			<thead>
+				<tr><th>you do this</th><th>you get</th><th>what happened</th></tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td>Filter on a misspelled field</td>
+					<td><code>400</code></td>
+					<td>Caught, and the error names the legal set. This is the good case <a href="/findings/028_loud_and_silent">028</a></td>
+				</tr>
+				<tr>
+					<td>Sort on that same misspelled field</td>
+					<td><code>200</code></td>
+					<td>Ignored. Rows come back id ascending and nothing says so <a href="/findings/026_result_order">026</a></td>
+				</tr>
+				<tr>
+					<td>Read a dotted path through a <code>multi_entity</code> field</td>
+					<td><code>200</code></td>
+					<td>The key is absent from <code>attributes</code>. Filtering that same path works <a href="/findings/016_dotted_multi_entity">016</a></td>
+				</tr>
+				<tr>
+					<td>Send <code>?fields</code> on a write</td>
+					<td><code>200</code></td>
+					<td>Ignored. Re-read the row if you need a dotted path <a href="/findings/024_read_after_write">024</a></td>
+				</tr>
+				<tr>
+					<td>Page until <code>links.next</code> is absent</td>
+					<td>a <code>next</code>, always</td>
+					<td>It is emitted forever, on zero-row pages too. Stop when <code>data</code> is empty <a href="/findings/006_pagination">006</a></td>
+				</tr>
+				<tr>
+					<td>Create a field whose display name is taken</td>
+					<td><code>201</code></td>
+					<td>You got <code>&lt;name&gt;_1</code>. Read <code>/schema</code> first, never post and hope <a href="/findings/019_create_fields">019</a></td>
+				</tr>
+				<tr>
+					<td>Create rows in a batch</td>
+					<td>an id per row</td>
+					<td>A batch can return an id for a row it never made <a href="/findings/028_loud_and_silent">028</a></td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+
+</Section>
+
+<Section
+	label="What it does"
+	title="Four uses."
+>
+	<div class="scroll-x" tabindex="0">
+		<table class="traps">
+			<thead>
+				<tr><th>use</th><th>how</th></tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td>Point an agent at it</td>
+					<td>It reads recorded behaviour rather than documentation. Each entry names the probe that
+						produced it, so a claim it doubts, it re-runs.</td>
+				</tr>
+				<tr>
+					<td>Feed it code you have</td>
+					<td><code>/sg-groundtruth-adopt</code> reads a codebase that calls this API and turns each
+						distinct call into a recipe, each retry loop and swallowed error into a probe.</td>
+				</tr>
+				<tr>
+					<td>Answer a new question</td>
+					<td><code>/probe</code> asks it against your own site and records what came back.</td>
+				</tr>
+				<tr>
+					<td>Cover your own site</td>
+					<td>Your custom entities, field names, status vocabularies and projects, on these same
+						pages.</td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+</Section>
+
+<!-- Five flat facts, one line each. The privacy one leads, because it is the
+     fact a reader most needs and it is stated nowhere else. -->
+<Section label="What it is" title="Three things worth knowing before you run it.">
+	<ul class="facts">
+		<li>
+			<h3>Your site's data never leaves it</h3>
+			<p>
+				The files describing your site are written to <code>corpus.local/</code>, which is gitignored
+				and never deployed. Nothing is sent anywhere, including to whoever maintains this.
+			</p>
+		</li>
+		<li>
+			<h3>One reading level, set once</h3>
+			<p>The API, your site, or one project in it. Every page answers at that level.</p>
+		</li>
+		<li>
+			<h3>Read-only by default</h3>
+			<p>
+				A probe changes nothing without <code>--write</code>, and deletes anything it creates before
+				it exits.
+			</p>
+		</li>
+	</ul>
+
+	{#if PERMISSIONS_CAVEAT}
+		<p class="body">{PERMISSIONS_CAVEAT}</p>
+	{/if}
 </Section>
 
 <Section label="The site" title="Four sections.">
@@ -183,6 +251,39 @@
 </Section>
 
 <style>
+	/* The one table on this page. Reads the same density tokens as every other
+	   table on the site, so it cannot drift from Prose or from /filters. */
+	.traps {
+		border-collapse: collapse;
+		width: max-content;
+		min-width: 100%;
+		font-size: var(--text-sm);
+	}
+
+	.traps th,
+	.traps td {
+		text-align: left;
+		vertical-align: top;
+		padding: var(--cell-y) var(--cell-x);
+		line-height: var(--leading-tabular);
+		border-bottom: var(--border) solid var(--rule);
+	}
+
+	.traps thead th {
+		font-family: var(--font-mono);
+		font-size: var(--text-xs);
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--ink-muted);
+		border-bottom-color: var(--rule-strong);
+		white-space: nowrap;
+	}
+
+	.traps tbody tr:last-child td {
+		border-bottom: 0;
+	}
+
 	.hero {
 		padding-block: var(--space-8) var(--space-7);
 	}
@@ -251,7 +352,7 @@
 		grid-template-columns: var(--col);
 		gap: var(--space-2);
 		align-content: start;
-		border-top: 2px solid var(--rule-strong);
+		border-top: var(--border-bar) solid var(--rule-strong);
 		padding-top: var(--space-3);
 	}
 

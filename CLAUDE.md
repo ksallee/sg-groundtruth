@@ -37,6 +37,12 @@ the sandbox. Where the probe does not say, the key reads `unrecorded`. `_lib.emi
 `corpus.local/` is the overlay, gitignored and generated: `site/` for what one site configures,
 `projects/<id>/` for what one project does. The site reads all three and switches between them.
 
+`corpus.example/` is a reviewed copy of one site's overlay, committed, so the public deploy has something
+to show above the `api` level. `corpus.local/` is unchanged and still cannot reach a deployment; the copy
+is separate so that stays true. Never copy into it without the review in `docs/example-overlay.md`, which
+also carries why `build_overlay.py` leaving a stale project directory on disk is the leak that already
+happened once.
+
 Never code against `docs/quirks.md`. Those are unverified operator claims. A job that depends on one has a gap;
 probe it.
 

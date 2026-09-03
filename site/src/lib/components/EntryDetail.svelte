@@ -129,7 +129,7 @@
 	.verdict {
 		font-size: var(--text-md);
 		color: var(--ink);
-		border-left: 3px solid var(--accent);
+		border-left: var(--scope-edge-width) solid var(--accent);
 		padding-left: var(--space-4);
 	}
 
@@ -142,7 +142,7 @@
 	.absent {
 		font-size: var(--text-sm);
 		color: var(--ink-muted);
-		border-left: 3px solid var(--rule-strong);
+		border-left: var(--scope-edge-width) solid var(--rule-strong);
 		padding-left: var(--space-4);
 	}
 
@@ -167,7 +167,7 @@
 	}
 
 	.local-verdict {
-		border-left: 3px solid var(--scope-ink);
+		border-left: var(--scope-edge-width) solid var(--scope-ink);
 		padding-left: var(--space-4);
 		max-width: var(--measure);
 	}

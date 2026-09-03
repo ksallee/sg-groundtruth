@@ -78,6 +78,22 @@ hr {
 .scroll-x {
 	overflow-x: auto;
 	max-width: 100%;
+	/* A cell clipped at the container edge with nothing saying so is a reader who
+	   does not know there is more. Two covers travel with the content and two cues
+	   are pinned to the box, so a cue shows only while there is something to
+	   scroll to on that side and nothing is drawn when the table already fits.
+	   background-attachment does the detection: no script, and no scroll-driven
+	   animation that half the engines ignore. Covers are declared first because
+	   the first layer paints on top. */
+	background:
+		linear-gradient(to right, var(--surface), transparent) 0 0 / var(--space-6) 100% no-repeat
+			local,
+		linear-gradient(to left, var(--surface), transparent) 100% 0 / var(--space-6) 100% no-repeat
+			local,
+		linear-gradient(to right, var(--scroll-cue), transparent) 0 0 / var(--space-5) 100% no-repeat
+			scroll,
+		linear-gradient(to left, var(--scroll-cue), transparent) 100% 0 / var(--space-5) 100%
+			no-repeat scroll;
 }
 
 /* One attribute resolves the three provenance variables, so a switch step, a

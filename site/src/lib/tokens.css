@@ -16,30 +16,42 @@
 	   or a shipped fact, --accent-local marks content measured on one site,
 	   --accent-project marks content measured on one project inside it.
 	   Meaning never rests on colour alone; each band is also labelled and
-	   boxed. */
-	--ground: light-dark(oklch(0.985 0 0), oklch(0.17 0 0));
-	--ground-raised: light-dark(oklch(1 0 0), oklch(0.21 0 0));
-	--ground-sunken: light-dark(oklch(0.955 0 0), oklch(0.14 0 0));
+	   boxed.
 
-	--ink: light-dark(oklch(0.19 0 0), oklch(0.94 0 0));
-	--ink-muted: light-dark(oklch(0.48 0 0), oklch(0.68 0 0));
+	   The three are tuned to the same contrast on the ground, 6.4 in light
+	   and 9.4 in dark, so no level reads as louder than another. They
+	   therefore resolve to one grey in greyscale. The word and the edge
+	   texture below are the signals that carry. */
+	--ground: light-dark(oklch(0.98 0 0), oklch(0.235 0 0));
 
-	--rule: light-dark(oklch(0.9 0 0), oklch(0.3 0 0));
-	--rule-strong: light-dark(oklch(0.8 0 0), oklch(0.4 0 0));
+	/* CHANGED. Dark was 0.17, which is #0f0f0f and left the slab nowhere
+	   below it. At 0.235 the four dark surfaces are four visible steps. */
+	--ground-raised: light-dark(oklch(1 0 0), oklch(0.285 0 0));
 
-	--accent: light-dark(oklch(0.45 0.16 250), oklch(0.78 0.12 250));
-	--accent-quiet: light-dark(oklch(0.95 0.02 250), oklch(0.26 0.04 250));
+	/* CHANGED. Light was 0.955, 3% off the ground and invisible. */
+	--ground-sunken: light-dark(oklch(0.945 0 0), oklch(0.195 0 0));
+
+	--ink: light-dark(oklch(0.22 0 0), oklch(0.94 0 0));
+	--ink-muted: light-dark(oklch(0.475 0 0), oklch(0.72 0 0));
+
+	--rule: light-dark(oklch(0.885 0 0), oklch(0.36 0 0));
+	--rule-strong: light-dark(oklch(0.76 0 0), oklch(0.48 0 0));
+
+	/* CHANGED. Retuned from 0.45/0.78 to sit at 6.37 and 9.44 against the
+	   ground, matching the two accents below inside 1%. */
+	--accent: light-dark(oklch(0.475 0.17 255), oklch(0.825 0.13 255));
+	--accent-quiet: light-dark(oklch(0.955 0.022 255), oklch(0.3 0.045 255));
 
 	/* Site-specific content. Warm against the cool accent, so a reader can
-	   tell a measurement from a rule at a glance. */
-	--accent-local: light-dark(oklch(0.5 0.12 65), oklch(0.8 0.1 70));
-	--accent-local-quiet: light-dark(oklch(0.96 0.03 75), oklch(0.25 0.04 60));
+	   tell a measurement from a rule at a glance. 6.39 and 9.39. */
+	--accent-local: light-dark(oklch(0.48 0.13 62), oklch(0.82 0.12 72));
+	--accent-local-quiet: light-dark(oklch(0.965 0.025 70), oklch(0.31 0.04 62));
 
 	/* Project-specific content, one level narrower again. A third hue, so the
 	   three levels of truth are three colours. Every band that uses it is also
-	   labelled and boxed, so nothing rests on the hue alone. */
-	--accent-project: light-dark(oklch(0.47 0.11 150), oklch(0.79 0.1 155));
-	--accent-project-quiet: light-dark(oklch(0.95 0.03 155), oklch(0.24 0.04 155));
+	   labelled and boxed, so nothing rests on the hue alone. 6.43 and 9.36. */
+	--accent-project: light-dark(oklch(0.458 0.11 155), oklch(0.8 0.12 155));
+	--accent-project-quiet: light-dark(oklch(0.955 0.03 158), oklch(0.3 0.04 155));
 
 	/* --- provenance ------------------------------------------------------
 	   Three kinds of information share every list and every entry page, and
@@ -50,7 +62,10 @@
 	   A mark is three signals at once: a word, an edge texture and a hue.
 	   The texture is the one that survives greyscale, a monochrome printout
 	   and a reader who cannot separate the hues. Solid for the API, dashed
-	   for one site, dotted for one project: coarser as the claim narrows. */
+	   for one site, dotted for one project: coarser as the claim narrows.
+
+	   UNCHANGED. The nine lines below are the load-bearing part of the
+	   design and this proposal does not touch them. */
 	--scope-api-ink: var(--accent);
 	--scope-api-quiet: var(--accent-quiet);
 	--scope-api-edge: linear-gradient(var(--accent), var(--accent));
@@ -69,49 +84,91 @@
 		transparent 2px 6px
 	);
 
-	/* The width of every edge mark, so a chip and a section agree. */
+	/* The width of every edge mark, so a chip and a section agree. The
+	   verdict rail on an entry page is the same bar and reads this too. */
 	--scope-edge-width: 3px;
 
 	/* Code slabs are the darkest surface in both schemes, so quoted API
-	   payloads read as one object at any brightness. */
-	--slab: light-dark(oklch(0.19 0 0), oklch(0.12 0 0));
-	--slab-ink: light-dark(oklch(0.96 0 0), oklch(0.9 0 0));
+	   payloads read as one object at any brightness.
+	   CHANGED. Dark was 0.12 against a 0.14 sunken ground, a 2% step that
+	   was not a step. It follows the ground up and keeps its distance. */
+	--slab: light-dark(oklch(0.21 0 0), oklch(0.155 0 0));
+	--slab-ink: light-dark(oklch(0.93 0 0), oklch(0.9 0 0));
+
+	/* The cue on a container that scrolls sideways. Drawn only while there is
+	   more to scroll to; see `.scroll-x` in app.css. */
+	--scroll-cue: light-dark(oklch(0.22 0 0 / 0.16), oklch(0 0 0 / 0.55));
+
+	/* Whatever a container is currently sitting on. `.scroll-x` masks its own
+	   edges with this, so anything that changes the ground under it, an inset
+	   local section above all, reassigns it rather than the mask going wrong. */
+	--surface: var(--ground);
 
 	/* --- type ------------------------------------------------------------
-	   No webfonts. The corpus is mostly API literals, so the mono stack does
-	   most of the work and a system UI face carries the prose. Swapping in a
-	   licensed pair means editing these two lines and adding @font-face. */
+	   A system sans sets prose and a monospace sets everything the API said.
+	   The corpus is a record of what an API answered, and the two registers
+	   are already in the content: a sentence a person wrote, and a string the
+	   API returned. The mono carries that distinction on its own.
+
+	   A serif was tried here for the prose half and was too loud against
+	   pages that are 40 to 60% literals. Swapping in a licensed pair is these
+	   two lines plus an @font-face block, which cannot live in this file. */
 	--font-text: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
-	--font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+	--font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Segoe UI Mono', 'Roboto Mono', Menlo,
+		Consolas, monospace;
 
+	/* CHANGED. Seven steps. --text-base to --text-md widens from 1.13 to
+	   1.19, because a list row's name and its verdict were 2px apart and
+	   read as one block. */
 	--text-xs: 0.75rem;
-	--text-sm: 0.8125rem;
-	--text-base: 0.9375rem;
-	--text-md: 1.0625rem;
-	--text-lg: 1.375rem;
-	--text-xl: clamp(1.5rem, 1.1rem + 1.8vw, 2.25rem);
-	--text-display: clamp(2rem, 1.2rem + 3.6vw, 3.5rem);
+	--text-sm: 0.875rem;
+	--text-base: 1rem;
+	--text-md: 1.1875rem;
+	--text-lg: 1.5rem;
+	--text-xl: clamp(1.75rem, 1.15rem + 2.4vw, 2.5rem);
+	--text-display: clamp(2.5rem, 1.5rem + 4.6vw, 4.25rem);
 
-	--leading-tight: 1.15;
-	--leading-normal: 1.6;
+	/* CHANGED. Four, up from two. Heads and table cells both wrap and
+	   neither wants 1.62. */
+	--leading-tight: 1.12;
+	--leading-snug: 1.35;
+	--leading-normal: 1.62;
+	--leading-tabular: 1.45;
 
 	/* --- space -----------------------------------------------------------
-	   One scale, used for every margin, padding and gap. */
+	   One scale, used for every margin, padding and gap.
+	   CHANGED. Steps 1 to 5 hold. 6, 7 and 8 grow, because a band on / and
+	   /reference is separated by one hairline and the type above it is now
+	   larger. */
 	--space-1: 0.25rem;
 	--space-2: 0.5rem;
 	--space-3: 0.75rem;
 	--space-4: 1rem;
 	--space-5: 1.5rem;
-	--space-6: 2.25rem;
-	--space-7: 3.5rem;
-	--space-8: 5.5rem;
+	--space-6: 2.5rem;
+	--space-7: 4rem;
+	--space-8: 6.5rem;
+
+	/* --- density ---------------------------------------------------------
+	   NEW. A table row is 2 * --cell-y + --leading-tabular * --text-sm, so
+	   34px. It was 46px on /filters and 37px in Prose, two densities on one
+	   site. Table density is one line here rather than a value in two
+	   components. */
+	--cell-y: 0.4375rem;
+	--cell-x: 0.75rem;
 
 	/* --- shape -----------------------------------------------------------
-	   Near-square by default. The whole site rounds by raising --radius. */
-	--radius-sm: 2px;
-	--radius: 4px;
-	--radius-lg: 8px;
+	   CHANGED. Square. An inset panel behind a textured left edge reads as a
+	   margin note at 0 and as a card at 4px. The three names stay, so
+	   rounding the site is still one line. */
+	--radius-sm: 0px;
+	--radius: 0px;
+	--radius-lg: 0px;
+
+	/* NEW. --border-bar names the 2px top rule over a card in a grid, which
+	   routes/+page.svelte hardcodes today. */
 	--border: 1px;
+	--border-bar: 2px;
 
 	/* --- measure ---------------------------------------------------------
 	   Three widths. --measure is the reading column. --measure-wide is what a
@@ -120,11 +177,15 @@
 
 	   The first two are capped at 100% because they are wider than a 390px
 	   phone: without the cap a reference card widens the page instead of
-	   scrolling inside its own container. */
+	   scrolling inside its own container.
+
+	   CHANGED. --wide 78rem to 72rem, because a 1248px shell held a 600px
+	   column and left 690px of every prose page empty at 1440px. --measure
+	   stays at 64ch, which is right for the sans. */
 	--measure: min(100%, 64ch);
-	--measure-wide: min(100%, 58rem);
-	--wide: 78rem;
-	--gutter: clamp(var(--space-4), 4vw, var(--space-7));
+	--measure-wide: min(100%, 60rem);
+	--wide: 72rem;
+	--gutter: clamp(var(--space-4), 4vw, var(--space-6));
 
 	/* The single column every stacked layout on the site declares. A grid's
 	   default `auto` track is sized by its widest child's max-content, so one

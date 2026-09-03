@@ -10,3 +10,9 @@ corpus.local/
 node_modules/
 .svelte-kit/
 site/build/
+
+# No longer written: the default lives in site/vite.config.js so a fresh clone builds unconfigured.
+site/.env
+
+# Stray screenshots
+/page.png

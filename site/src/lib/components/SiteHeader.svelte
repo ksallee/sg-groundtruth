@@ -33,6 +33,15 @@
 		z-index: 10;
 	}
 
+	/* The bar wraps to three rows on a phone and stands 120px tall, which is 14%
+	   of the viewport held on every scroll. The height comes from wrapping, so
+	   it cannot be capped with a length. Below 40rem it scrolls away instead. */
+	@media (max-width: 40rem) {
+		header {
+			position: static;
+		}
+	}
+
 	.bar {
 		max-width: var(--wide);
 		margin-inline: auto;

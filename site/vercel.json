@@ -3,12 +3,15 @@
   "buildCommand": "npm run build",
   "outputDirectory": "build",
   "framework": "sveltekit",
-
   "git": {
     "deploymentEnabled": {
       "main": false
     }
   },
-
-  "ignoreCommand": "bash -c 'if [ \"$VERCEL_GIT_COMMIT_REF\" = \"prod\" ]; then exit 1; else exit 0; fi'"
+  "ignoreCommand": "bash -c 'if [ \"$VERCEL_GIT_COMMIT_REF\" = \"prod\" ]; then exit 1; else exit 0; fi'",
+  "build": {
+    "env": {
+      "PUBLIC_OVERLAY_SOURCE": "corpus.example"
+    }
+  }
 }

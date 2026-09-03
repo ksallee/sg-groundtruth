@@ -52,7 +52,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { OVERLAY_DIR } from '$lib/site.js';
+import { OVERLAY_SOURCE_DIR } from '$lib/site.js';
 
 // Found by walking up from the working directory looking for `corpus/`, so the
 // build works from `site/` and from the repository root alike.
@@ -77,7 +77,7 @@ function findRepoRoot() {
 
 const repoRoot = findRepoRoot();
 
-const overlayRoot = path.join(repoRoot, OVERLAY_DIR);
+const overlayRoot = path.join(repoRoot, OVERLAY_SOURCE_DIR);
 
 export const SHIPPED = {
 	id: 'api',
@@ -98,7 +98,7 @@ export const SITE = {
 	label: 'This site'
 };
 
-// One source per directory under corpus.local/projects/. The directory name is
+// One source per directory under the overlay's projects/. The directory name is
 // the id; the display name comes from the `project:` key its files carry.
 export function projectSources() {
 	const dir = path.join(overlayRoot, 'projects');

@@ -197,7 +197,7 @@
 	.note {
 		font-size: var(--text-sm);
 		color: var(--ink-muted);
-		border-left: 3px solid var(--rule-strong);
+		border-left: var(--scope-edge-width) solid var(--rule-strong);
 		padding-left: var(--space-4);
 	}
 
@@ -221,13 +221,15 @@
 		scroll-margin-top: var(--space-5);
 	}
 
+	/* The data type is what the section is about, so it is the largest thing in
+	   it. At --text-xs uppercase muted it was drawn identically to the column
+	   head below it and was the smallest text on its own page. */
 	h3 {
 		font-family: var(--font-mono);
-		font-size: var(--text-xs);
+		font-size: var(--text-md);
 		font-weight: 600;
-		letter-spacing: 0.14em;
-		text-transform: uppercase;
-		color: var(--ink-muted);
+		line-height: var(--leading-tight);
+		color: var(--ink);
 		border-top: var(--border) solid var(--rule);
 		padding-top: var(--space-3);
 	}
@@ -265,7 +267,8 @@
 	td {
 		text-align: left;
 		vertical-align: top;
-		padding: var(--space-3);
+		padding: var(--cell-y) var(--cell-x);
+		line-height: var(--leading-tabular);
 		border-bottom: var(--border) solid var(--rule);
 	}
 

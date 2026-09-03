@@ -1,6 +1,6 @@
 <script>
 	import ScopeMark from './ScopeMark.svelte';
-	import { OVERLAY_DIR } from '$lib/site.js';
+	import { OVERLAY_SOURCE_DIR } from '$lib/site.js';
 
 	// One section of an entry page, marked with where it was read from. Every
 	// section of every entry page is one of these once the reading level is
@@ -15,9 +15,9 @@
 
 	const source = $derived(
 		level === 'project'
-			? `${OVERLAY_DIR}/projects/${dir}/`
+			? `${OVERLAY_SOURCE_DIR}/projects/${dir}/`
 			: level === 'site'
-				? `${OVERLAY_DIR}/site/`
+				? `${OVERLAY_SOURCE_DIR}/site/`
 				: ''
 	);
 </script>
@@ -38,7 +38,10 @@
 		justify-items: start;
 	}
 
+	/* The panel is the ground now, so a .scroll-x inside it masks against this
+	   rather than against the page. */
 	.inset {
+		--surface: var(--scope-quiet);
 		position: relative;
 		background: var(--scope-quiet);
 		border: var(--border) solid var(--rule);

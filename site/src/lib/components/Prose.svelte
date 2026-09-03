@@ -33,16 +33,18 @@
 		max-width: var(--measure-wide);
 	}
 
+	/* The section head is larger than the body under it and set in ink. It was
+	   --text-xs uppercase muted, which drew it identically to the table head
+	   beneath it and left a reader scrolling for a name nothing to scan for. */
 	.prose :global(h2) {
 		font-family: var(--font-mono);
-		font-size: var(--text-xs);
+		font-size: var(--text-md);
 		font-weight: 600;
-		letter-spacing: 0.12em;
-		text-transform: uppercase;
-		color: var(--ink-muted);
+		line-height: var(--leading-tight);
+		color: var(--ink);
 		border-top: var(--border) solid var(--rule);
-		padding-top: var(--space-2);
-		margin-top: var(--space-4);
+		padding-top: var(--space-3);
+		margin-top: var(--space-5);
 	}
 
 	.prose :global(h3) {
@@ -51,12 +53,21 @@
 
 	/* The corpus marks its section heads with bold at the start of a paragraph
 	   (**Read**, **Write**, **Clear**, **Filter**, **Traps**) rather than with
-	   headings. Nothing here can turn those into real headings without editing
-	   the corpus, which this site does not do.
-	   DESIGN NOTE: unsure. Either the designer styles bold-leading paragraphs as
-	   section heads, or the corpus adopts `###`. Left as plain bold for now. */
+	   headings, and nothing here can turn those into real headings without
+	   editing the corpus, which this site does not do. A bold run that opens a
+	   paragraph is drawn as a run-in label instead: the card's structure is
+	   visible without a heading existing. Bold anywhere else stays bold. */
 	.prose :global(strong) {
 		font-weight: 650;
+	}
+
+	.prose :global(p > strong:first-child) {
+		font-family: var(--font-mono);
+		font-size: var(--text-xs);
+		font-weight: 600;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--ink-muted);
 	}
 
 	.prose :global(a) {
@@ -71,9 +82,10 @@
 		gap: var(--space-2);
 	}
 
+	/* A tint, no border. These paragraphs are 40 to 60% literals, and a bordered
+	   chip per literal renders a sentence as a row of boxes. */
 	.prose :global(code) {
 		background: var(--ground-sunken);
-		border: var(--border) solid var(--rule);
 		border-radius: var(--radius-sm);
 		padding: 0.1em 0.3em;
 	}
@@ -109,7 +121,8 @@
 	.prose :global(td) {
 		text-align: left;
 		vertical-align: top;
-		padding: var(--space-2) var(--space-3);
+		padding: var(--cell-y) var(--cell-x);
+		line-height: var(--leading-tabular);
 		border-bottom: var(--border) solid var(--rule);
 	}
 

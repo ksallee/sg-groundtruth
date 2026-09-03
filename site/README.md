@@ -30,6 +30,10 @@ so "which statuses can I use" has no site-level answer.
 | `site` | one Flow PT site | `corpus.local/site/` | no, gitignored | `scope: site` | marked rows and sections on the same pages |
 | `project` | one project inside it | `corpus.local/projects/<id>/` | no, gitignored | `scope: project` with a `project:` key | marked rows and sections on the same pages |
 
+Which directory the overlay is read from is `PUBLIC_OVERLAY_SOURCE`, defaulting to `corpus.local`. The
+public deploy sets `corpus.example`, a committed copy reviewed by hand, so the deployed site has something
+to show above the `api` level. `docs/example-overlay.md` carries the mechanism and the review it needs.
+
 `corpus/findings/`, `corpus/findings/field_types/`, `corpus/findings/entity_types/` and `corpus/recipes/`
 each become a route. Frontmatter supplies the one-line verdict and the tags; the body is rendered to HTML at
 build time. A group is declared once, in `GROUPS` in `src/lib/content/sources.js`; adding one there gives the
@@ -107,7 +111,8 @@ level switch, and nothing marked, because at one level there is nothing to disti
 is on `/how-it-works#overlay` in every build, so someone who cloned the repo finds the instructions there.
 
 `corpus.local/` is gitignored, so it is never committed and therefore can never reach a public deployment.
-That is the whole enforcement mechanism; there is no runtime check.
+That is the whole enforcement mechanism; there is no runtime check. A public build shows an overlay only
+by reading `corpus.example/`, a different directory that somebody reviewed and committed on purpose.
 
 The generator that populates the overlay lives in `probes/` and is deliberately not part of this site. The
 site consumes the contract above and does not care what wrote the files.
@@ -240,7 +245,7 @@ Leave these alone unless the pipeline itself is the problem.
 | `src/lib/content/sources.js` | the seam: the three content roots and the scope rules |
 | `src/lib/content/corpus.js` | reads, parses frontmatter, renders markdown, merges the overlay |
 | `src/lib/reading.svelte.js` | the reading level: what is stored, what is restored, what is shown |
-| `src/lib/site.js` | repo URL and overlay directory name |
+| `src/lib/site.js` | repo URL, the overlay directory a reader is told to create, and the one this build read |
 | `src/lib/content/filters.js` | the operator vocabulary read out of each field-type card, and the families it groups them into |
 | `svelte.config.js`, `vite.config.js`, `vercel.json` | build and deploy |
 

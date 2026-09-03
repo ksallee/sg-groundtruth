@@ -13,6 +13,12 @@ sys.path.insert(0, str(ROOT / "src"))
 from sg_groundtruth.env import load as _load  # noqa: E402
 
 CORPUS = ROOT / "corpus"
+# corpus.example/ is a reviewed copy of one site's overlay, committed so the public deploy has
+# something to show at the site and project reading levels. It is public, so it gets the leak
+# checks. It is measured output rather than written prose, so it gets neither the register checks
+# nor the shape ones: `AD Approval Required` and `Bid - MOD` are display names read off a site,
+# and the ALL-CAPS rule governs an agent reaching for emphasis. See docs/example-overlay.md.
+EXAMPLE = ROOT / "corpus.example"
 VERDICT_MAX = 200
 # A verdict is the surprise, which is wrong in a list of 24 types. Every card in the two
 # matrices also says plainly what the thing is, and the site's list pages render that.
@@ -92,8 +98,8 @@ def filter_heads(text):
             if ln.startswith("|") and SEP_RE.match(nxt.strip())]
 
 
-for f in sorted(CORPUS.rglob("*.md")):
-    text = f.read_text()
+def check_leaks(f, text):
+    """What must not be in any committed file, written or measured."""
     for s in secrets:
         if s in text:
             fail(f, f"leaks a secret or host ({len(s)} chars)")
@@ -102,6 +108,9 @@ for f in sorted(CORPUS.rglob("*.md")):
         if m and "<" not in m.group(0)[:1]:
             fail(f, f"leaks a {what}: {m.group(0)[:40]}")
 
+
+def check_register(f, text):
+    """How an agent is allowed to write. Prose only; a measured value is not prose."""
     prose = "" if f.name == "INDEX.md" else FENCE_RE.sub("", text)  # INDEX is generated   # payloads and error strings are evidence, not register
     for m in dict.fromkeys(x.lower() for x in BANNED_RE.findall(prose)):
         fail(f, f"banned register {m!r} — state the fact plainly (CLAUDE.md Style)")
@@ -110,6 +119,15 @@ for f in sorted(CORPUS.rglob("*.md")):
     for w in dict.fromkeys(CAPS_RE.findall(TICK_RE.sub("", prose))):
         if w not in CAPS_OK:
             fail(f, f"ALL-CAPS emphasis {w!r} — capitals are for API literals only (CLAUDE.md Style)")
+
+
+for f in sorted(EXAMPLE.rglob("*.md")):
+    check_leaks(f, f.read_text())
+
+for f in sorted(CORPUS.rglob("*.md")):
+    text = f.read_text()
+    check_leaks(f, text)
+    check_register(f, text)
 
     is_type = f.parent.name in ("field_types", "entity_types")
     is_recipe = f.parent.name == "recipes"
