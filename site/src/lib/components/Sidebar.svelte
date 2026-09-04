@@ -1,7 +1,7 @@
 <script>
 	import { page } from '$app/state';
 	import { NAME } from '$lib/site.js';
-	import { visible } from '$lib/reading.svelte.js';
+	import { reading, visible } from '$lib/reading.svelte.js';
 
 	// The whole navigation. The name is the way home. Two pages come first,
 	// then five groups that open to list what they hold; the lists come from the
@@ -211,14 +211,26 @@
 		</ul>
 	</nav>
 
-	{#if projects.length}
-		<!-- The project the overlay was read from, nothing to choose: a page shows
-		     every level it holds. -->
-		<ul class="key" aria-label="Project">
-			{#each projects as p (p.id)}
-				<li><span class="keydot" data-scope="project"></span><span class="label">{p.label}</span></li>
-			{/each}
-		</ul>
+	{#if projects.length > 1}
+		<!-- Several projects in the overlay, read one at a time. Everything
+		     downstream reads `reading.project`, so choosing here filters the dots
+		     beside every entry, the sections on an entry page and the counts. -->
+		<p class="key">
+			<span class="keydot" data-scope="project"></span>
+			<select bind:value={reading.project} aria-label="Project">
+				{#each projects as p (p.id)}
+					<option value={p.id}>{p.label}</option>
+				{/each}
+			</select>
+			<svg class="chev down" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+				<path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" fill="none" />
+			</svg>
+		</p>
+	{:else if projects.length}
+		<!-- One project: the name of the one the overlay was read from. -->
+		<p class="key">
+			<span class="keydot" data-scope="project"></span><span class="label">{projects[0].label}</span>
+		</p>
 	{/if}
 
 	{#if tip}
@@ -562,8 +574,6 @@
 		padding: var(--space-2) var(--space-2) 0;
 		margin: 0;
 		background: var(--sidebar);
-		display: grid;
-		gap: var(--space-1);
 		color: var(--ink-muted);
 	}
 
@@ -578,11 +588,44 @@
 		pointer-events: none;
 	}
 
-	.key li {
+	.key {
 		display: flex;
 		align-items: center;
 		gap: var(--space-2);
 		min-width: 0;
+		padding-bottom: var(--space-2);
+	}
+
+	/* The picker is the label, not a control drawn on top of one: the sidebar's
+	   own type and colour, the chrome removed, and the full width so a long
+	   project name has the room the static line had. */
+	.key select {
+		flex: 1 1 auto;
+		min-width: 0;
+		appearance: none;
+		border: 0;
+		padding: 0;
+		background: none;
+		color: inherit;
+		font: inherit;
+		cursor: pointer;
+	}
+
+	.key:has(select):hover {
+		color: var(--ink);
+	}
+
+	/* The group chevron, turned to point down: the same mark the tree uses for
+	   a thing that opens, so the picker reads as one. */
+	.chev.down {
+		flex: 0 0 auto;
+		transform: rotate(90deg);
+	}
+
+	.key select:focus-visible {
+		outline: var(--border) solid var(--rule-strong);
+		outline-offset: var(--space-1);
+		border-radius: var(--radius-sm);
 	}
 
 	.keydot {

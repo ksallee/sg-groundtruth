@@ -307,7 +307,6 @@ function build() {
 
 // One count per group per level the switch can offer, computed here because a
 // page renders its counts on the client and must not carry the corpus to do it.
-// `project:*` is every project at once.
 function countsByLevel(subjects, { hasSite, projects }) {
 	const at = (show) => {
 		const out = {};
@@ -325,7 +324,6 @@ function countsByLevel(subjects, { hasSite, projects }) {
 	for (const p of projects) {
 		counts[`project:${p.id}`] = at((l) => isSite(l) || l.project === p.id);
 	}
-	if (projects.length) counts['project:*'] = at(() => true);
 	return counts;
 }
 

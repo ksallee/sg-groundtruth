@@ -1,13 +1,10 @@
 // The reading level: the deepest the build can show, always.
 //
 // `site` adds what one Flow Production Tracking site configures on top of the
-// API content. `project` adds one project, or every project at once, on top of
-// both. A page shows every level it holds, each section under its badge, and
-// nothing chooses: a public build has no overlay and shows the API alone.
-
-// The union of every project the overlay holds. A project id can never be this,
-// because a directory named `*` is not one a filesystem hands back here.
-export const ALL = '*';
+// API content. `project` adds one project on top of both, one at a time: with
+// several in the overlay the foot of the sidebar picks which, and every section,
+// dot and count reads that choice. A public build has no overlay and shows the
+// API alone.
 
 // Exported as an object and mutated, never reassigned, which is what lets a
 // component read it reactively.
@@ -21,7 +18,7 @@ export function restore({ hasSite = false, projects = [] } = {}) {
 	restored = true;
 	if (projects.length) {
 		reading.level = 'project';
-		reading.project = projects.length === 1 ? projects[0].id : ALL;
+		reading.project = projects[0].id;
 	} else if (hasSite) {
 		reading.level = 'site';
 		reading.project = null;
@@ -36,7 +33,7 @@ export function shows(local) {
 	if (local.level === 'site') return reading.level === 'site' || reading.level === 'project';
 	if (local.level === 'project') {
 		if (reading.level !== 'project') return false;
-		return reading.project === ALL || local.project === reading.project;
+		return local.project === reading.project;
 	}
 	return true;
 }
