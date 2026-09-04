@@ -1,9 +1,11 @@
 ---
 endpoint: POST /webhook/deliveries/<record_uuid>/redeliver
-tags: [webhook, delivery, error-handling]
+coverage: partial
+unmeasured: Answers 204 and produced no second delivery on the probed site. Whether it redelivers anywhere is unmeasured.
+tags: [webhook, delivery, silent]
 scope: api
-measured: called only against a uuid that is not a delivery
-verdict: A uuid that is not a delivery answers 404 code 104 with `detail` `delivery: <uuid> not found`. No delivery was observed on the probed site, so the call itself is unprobed.
+measured: site-wide, one delivery manufactured by toggling a hook's status
+verdict: Answers 204 with no body. On the probed site no second delivery record followed, so 204 reports that the request was accepted and nothing more.
 ---
 
 # POST /webhook/deliveries/<record_uuid>/redeliver
@@ -12,26 +14,29 @@ verdict: A uuid that is not a delivery answers 404 code 104 with `detail` `deliv
 
 | part | value |
 |---|---|
-| `<record_uuid>` | the `id` of a delivery record, from `GET /webhook/hooks/<hook_id>/deliveries` |
+| `<record_uuid>` | a delivery `id` |
+| body | none |
 
 **Sample requests**
 
-Unprobed. This call sends one delivery again, and no delivery record existed on the probed site to make it against.
-
 ```python
-r = c.post(f"/webhook/deliveries/{delivery_uuid}")
+r = c.post(f"/webhook/deliveries/{delivery_uuid}/redeliver")   # 204, empty body
 ```
 
 **Response codes**
 
 | status | when |
 |---|---|
-| 404 code 104 | a well-formed uuid that is not a delivery. `detail` is `delivery: <uuid> not found` |
+| 204 | accepted |
+| 404 code 104 | a well-formed uuid that is not a delivery |
 
 **Edge cases**
 
-- **Unprobed against a real delivery.** The 404 above is the only measured behaviour. Probe 045
-  produced no delivery to act on: see `findings/045_webhooks`.
+- On the probed site the hook's delivery count was unchanged ten seconds after a 204, and no second
+  record appeared. That site does not deliver entity events at all (`045_webhooks`), so this is not
+  evidence the call does nothing everywhere.
+- 204 has no delivery id in it, so a caller cannot correlate a redelivery with its result. Poll
+  `GET /webhook/hooks/<hook_id>/deliveries` and compare.
 
 **Links**
 

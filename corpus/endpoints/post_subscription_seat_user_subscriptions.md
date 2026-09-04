@@ -1,5 +1,6 @@
 ---
 endpoint: POST /subscription_seat/user_subscriptions
+coverage: measured
 tags: [discovery, user, write, error-handling]
 scope: api
 measured: site-wide, rejections only

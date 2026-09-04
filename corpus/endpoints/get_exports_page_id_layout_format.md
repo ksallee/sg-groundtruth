@@ -1,5 +1,6 @@
 ---
 endpoint: GET /exports/page/<page_id>/<layout_name>.<format>
+coverage: measured
 tags: [page]
 scope: api
 measured: sample project 1 of 1, read only

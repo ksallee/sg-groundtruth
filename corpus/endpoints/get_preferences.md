@@ -1,5 +1,6 @@
 ---
 endpoint: GET /preferences
+coverage: measured
 tags: [schema, duration, discovery]
 scope: api
 measured: site-wide

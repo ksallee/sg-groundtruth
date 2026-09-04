@@ -1,5 +1,6 @@
 ---
 endpoint: POST <links.complete_upload>
+coverage: measured
 tags: [upload, attachment, async, silent]
 scope: api
 measured: sandbox project written

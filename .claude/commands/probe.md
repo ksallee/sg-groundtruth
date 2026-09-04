@@ -51,6 +51,8 @@ endpoints: [every call this covers, spelled as its card in corpus/endpoints/ spe
 phase: auth|protocol|schema|read|filter|write|upload|observe|render
 scope: api|site|project
 measured: where the evidence was taken. Copy the line `_lib.emit` prints
+coverage: omit when every call was made and answered; else partial or untested
+unmeasured: with coverage, one line naming what was not reached and whether the work or the site blocked it
 verdict: One sentence, 200 chars max. The actionable rule, not the story.
 ---
 
@@ -107,6 +109,8 @@ one for that data type (probe 017). Do that first; it is cheaper and more comple
 tags: [reuse tags from corpus/INDEX.md; may be empty]
 scope: api|site|project
 measured: where the evidence was taken. Copy the line `_lib.emit` prints
+coverage: omit when every call was made and answered; else partial or untested
+unmeasured: with coverage, one line naming what was not reached and whether the work or the site blocked it
 verdict: One sentence, 200 chars max. The thing that surprises someone assuming this type behaves like text.
 ---
 
@@ -212,6 +216,8 @@ beginning "On the probed site, ...". What a stock field is called and how the ty
 tags: [reuse tags from corpus/INDEX.md; may be empty]
 scope: api
 measured: where the evidence was taken. Copy the line `_lib.emit` prints
+coverage: omit when every call was made and answered; else partial or untested
+unmeasured: with coverage, one line naming what was not reached and whether the work or the site blocked it
 verdict: One sentence, 200 chars max. The thing a client gets wrong about this type.
 ---
 

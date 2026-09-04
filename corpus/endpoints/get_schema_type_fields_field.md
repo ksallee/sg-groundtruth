@@ -1,5 +1,6 @@
 ---
 endpoint: GET /schema/<Type>/fields/<field>
+coverage: measured
 tags: [schema, status, list-field]
 scope: api
 measured: sample project 1 of 1

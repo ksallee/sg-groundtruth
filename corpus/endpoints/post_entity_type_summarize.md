@@ -1,5 +1,6 @@
 ---
 endpoint: POST /entity/<type>/_summarize
+coverage: measured
 tags: [query, fill-rate, cost, list-field, summary]
 scope: api
 measured: sample project 1 of 1

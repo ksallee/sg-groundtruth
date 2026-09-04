@@ -1,5 +1,6 @@
 ---
 endpoint: GET /entity/<type>/<id>/<field>
+coverage: measured
 tags: [attachment, media, image, trap]
 scope: api
 measured: sample project 1 of 1, read only

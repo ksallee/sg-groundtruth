@@ -1,5 +1,6 @@
 ---
 endpoint: PUT /schedule/work_day_rules
+coverage: measured
 tags: [date, write, error-handling, project, user]
 scope: api
 measured: site-wide, rejections only

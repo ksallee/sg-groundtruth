@@ -1,5 +1,6 @@
 ---
 endpoint: POST /transcode/attachment_metadata/<id>
+coverage: measured
 tags: [transcode, media, async, silent]
 scope: api
 measured: sandbox project written, one Version and its uploaded Attachment, both deleted

@@ -1,5 +1,6 @@
 ---
 endpoint: POST /entity/<type>/<id>/<field>/_upload/multipart_abort
+coverage: measured
 tags: [multipart, storage]
 scope: api
 measured: sandbox project written, one Version, six multipart uploads aborted, all rows deleted

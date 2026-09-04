@@ -186,6 +186,19 @@ for f in sorted(CORPUS.rglob("*.md")):
     elif len(measured.group(1)) > MEASURED_MAX:
         fail(f, f"measured is {len(measured.group(1))} chars, max {MEASURED_MAX} — name the place "
                 f"and the sample size, nothing else")
+    # An entry that reads like the others while resting on a call nobody completed is the one kind
+    # that costs a reader more than it gives. Any entry may say so, in a key the index and the site
+    # group by, rather than in a sentence buried in the body. Absent means `measured`.
+    cov = re.search(r"^coverage:\s*(\S.*?)\s*$", head.group(1), re.M)
+    if cov and cov.group(1) not in ("measured", "partial", "untested"):
+        fail(f, f"coverage {cov.group(1)!r} is not measured, partial or untested")
+    elif cov and cov.group(1) != "measured":
+        if not re.search(r"^unmeasured:\s*(\S.*?)\s*$", head.group(1), re.M):
+            fail(f, f"coverage: {cov.group(1)} needs an unmeasured: line naming what was not "
+                    f"reached, so a reader knows which half of the entry to trust")
+    if re.search(r"^unmeasured:", head.group(1), re.M) and not cov:
+        fail(f, "unmeasured: without coverage: — say which, measured, partial or untested")
+
     if is_endpoint:
         ep = re.search(r"^endpoint:\s*(\S.*?)\s*$", head.group(1), re.M)
         if not ep:
@@ -193,13 +206,17 @@ for f in sorted(CORPUS.rglob("*.md")):
                     "It is the card's identity and the spelling every other entry has to reuse")
         elif not re.match(r"^(GET|POST|PUT|DELETE|PATCH) \S", ep.group(1)):
             fail(f, f"endpoint {ep.group(1)!r} does not start with a method")
+        if not cov:
+            fail(f, "no coverage: measured, partial or untested. A card is where the question has "
+                    "to be answered outright, because a card is what a docs sweep adds before "
+                    "anything has been probed")
         for s in ENDPOINT_SECTIONS:
             if s not in text:
                 fail(f, f"missing section {s}")
         if "|---" not in text.replace(" ", ""):
             fail(f, "no table — **Params** and **Response codes** are one row per part and per "
                     "status code (CLAUDE.md Style)")
-        if "```" not in text:
+        if "```" not in text and (not cov or cov.group(1) != "untested"):
             fail(f, "no recorded response. Every sample request is followed by what it actually "
                     "answered; a card without one is an index entry")
     if is_recipe or is_endpoint:

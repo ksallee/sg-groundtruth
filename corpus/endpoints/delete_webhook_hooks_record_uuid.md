@@ -1,5 +1,6 @@
 ---
 endpoint: DELETE /webhook/hooks/<record_uuid>
+coverage: measured
 tags: [webhook, destructive]
 scope: api
 measured: hooks created and deleted in-run

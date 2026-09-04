@@ -1,5 +1,6 @@
 ---
 endpoint: POST /entity/<type>/<id>/<field>/_upload
+coverage: measured
 tags: [multipart, etag, attachment]
 scope: api
 measured: sandbox project written, one Version and two Attachments, all deleted

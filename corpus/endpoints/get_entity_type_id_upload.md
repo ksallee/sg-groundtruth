@@ -1,5 +1,6 @@
 ---
 endpoint: GET /entity/<type>/<id>/_upload
+coverage: measured
 tags: [upload, attachment, provenance]
 scope: api
 measured: sandbox project written

@@ -1,5 +1,6 @@
 ---
 endpoint: GET /
+coverage: measured
 tags: [auth, discovery]
 scope: api
 measured: site-wide

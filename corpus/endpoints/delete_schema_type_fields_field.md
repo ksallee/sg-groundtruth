@@ -1,5 +1,6 @@
 ---
 endpoint: DELETE /schema/<Type>/fields/<field>
+coverage: measured
 tags: [schema, custom-field, destructive]
 scope: api
 measured: sandbox project written, probe 019

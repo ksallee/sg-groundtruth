@@ -1,5 +1,6 @@
 ---
 endpoint: GET /entity/<type>
+coverage: measured
 tags: [query, paging, filter, entity-field, silent]
 scope: api
 measured: sample project 1 of 1

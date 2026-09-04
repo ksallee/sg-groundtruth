@@ -37,6 +37,15 @@
 			Grouped by the resource each one acts on, in the order a client meets them. The grouping is
 			read off the path, so a card cannot fall outside it.
 		</p>
+		<p class="contribute">
+			A card marked <span class="coverage" data-coverage="partial">partial</span> or
+			<span class="coverage" data-coverage="untested">untested</span> says on its own row what was
+			not reached. Every one of them today is a webhook delivery call: on the site these probes run
+			against, entity events reach no hook at all, so the delivery payload,
+			<code>X-SG-SIGNATURE</code> and the batch headers cannot be recorded here.
+			<strong>If you run a site where webhooks deliver, those are the entries to contribute.</strong>
+			A probe and the response it actually got is the whole ask.
+		</p>
 	</header>
 
 	{#each data.families as fam (fam.id)}
@@ -70,6 +79,23 @@
 		display: grid;
 		grid-template-columns: var(--col);
 		gap: var(--space-3);
+	}
+
+	.contribute {
+		border-left: var(--border) solid var(--rule);
+		padding-left: var(--space-3);
+		color: var(--ink-2);
+	}
+
+	.coverage {
+		font-size: var(--text-xs);
+		font-family: var(--mono);
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		padding: 0.1em 0.45em;
+		border-radius: 0.25em;
+		border: var(--border) solid currentColor;
+		color: var(--ink-3);
 	}
 
 	.lede {

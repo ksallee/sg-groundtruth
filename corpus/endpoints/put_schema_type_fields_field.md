@@ -1,5 +1,6 @@
 ---
 endpoint: PUT /schema/<Type>/fields/<field>
+coverage: measured
 tags: [schema, custom-field, silent]
 scope: api
 measured: sandbox project written, probe 040

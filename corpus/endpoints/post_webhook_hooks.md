@@ -1,5 +1,6 @@
 ---
 endpoint: POST /webhook/hooks
+coverage: measured
 tags: [webhook, create, silent, trap, token]
 scope: api
 measured: hooks created and deleted in-run against the sandbox project

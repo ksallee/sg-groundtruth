@@ -1,5 +1,7 @@
 ---
 endpoint: POST /webhook/hooks/<record_uuid>/test_connection
+coverage: partial
+unmeasured: Answers 204 for any uuid and produced no delivery record on the probed site. What it does on a working site is unmeasured.
 tags: [webhook, silent, trap]
 scope: api
 measured: called against a real hook and a uuid that is not a hook

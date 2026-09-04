@@ -1,5 +1,6 @@
 ---
 endpoint: GET /spec.<format>
+coverage: measured
 tags: [schema, discovery, cost]
 scope: api
 measured: site-wide, one fetch of each format

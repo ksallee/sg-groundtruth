@@ -117,6 +117,15 @@
 			<p class="absent">This was measured on one site rather than read off the API.</p>
 		{/if}
 
+		<!-- The list rows carry this badge, so the page a row opens has to as well.
+		     A reader who arrives from a search sees only this page. -->
+		{#if entry.coverage && entry.coverage !== 'measured'}
+			<p class="coverage" data-coverage={entry.coverage}>
+				<strong>{entry.coverage === 'untested' ? 'Not tested.' : 'Partly measured.'}</strong>
+				{entry.unmeasured}
+			</p>
+		{/if}
+
 		<ul class="meta">
 			{#each tags as tag (tag)}
 				<li class="tag">{tag}</li>
@@ -228,6 +237,20 @@
 		color: var(--ink-muted);
 		background: none;
 		padding: 0;
+	}
+
+	.coverage {
+		font-size: var(--text-sm);
+		color: var(--ink-2);
+		border: var(--border) solid var(--rule);
+		border-left-width: 3px;
+		border-radius: 0.25em;
+		padding: var(--space-3);
+		background: var(--surface-2, transparent);
+	}
+
+	.coverage strong {
+		color: var(--ink-1);
 	}
 
 	/* The verdict is the entry's whole argument in one line. It is set as the

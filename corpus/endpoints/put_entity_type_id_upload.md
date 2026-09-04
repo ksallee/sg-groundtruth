@@ -1,5 +1,6 @@
 ---
 endpoint: PUT /entity/<type>/<id>/_upload
+coverage: measured
 tags: [storage, attachment]
 scope: api
 measured: sandbox project written, one Note, deleted

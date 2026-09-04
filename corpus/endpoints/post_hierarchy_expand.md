@@ -1,5 +1,6 @@
 ---
 endpoint: POST /hierarchy/_expand
+coverage: measured
 tags: [query, header, project, trap]
 scope: api
 measured: sample project 1 of 1, read only

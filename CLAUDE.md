@@ -80,6 +80,15 @@ Both read as complete, which is what made them expensive: the index exists so an
 the one-liner, so a one-liner that reads finished while omitting the qualifier is worse than a
 vague one. When the body describes and the verdict prescribes, the verdict is wrong.
 
+An entry may also carry `coverage:`, one of `measured`, `partial` or `untested`. Absent means
+`measured`. Anything else needs an `unmeasured:` line naming what was not reached, and the index and
+the site put both on the row: an entry that reads like the rest while resting on a call nobody
+completed is the one that costs a reader more than it gives. An endpoint card has to state it
+outright, because a card is what a docs sweep adds before anything has been probed. `partial` is for
+an entry whose calls were made but whose subject was not fully reached; `untested` is for a call
+nobody has completed at all. Put the gap in the key, not only in a sentence in the body, and say
+whether it is blocked on the work or on the site.
+
 Every entry carries a `measured:` key as well, recipes included: one line saying where the evidence was
 taken, a sample project, the sandbox project, or site-wide. `scope` says whether a claim transfers;
 `measured` says what it rests on, and a `scope: api` claim can still rest on three rows the probe made in

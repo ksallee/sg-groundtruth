@@ -1,5 +1,6 @@
 ---
 endpoint: GET /subscription_seat/user_subscriptions
+coverage: measured
 tags: [discovery, user, read-only]
 scope: api
 measured: site-wide

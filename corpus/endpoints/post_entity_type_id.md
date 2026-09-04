@@ -1,5 +1,6 @@
 ---
 endpoint: POST /entity/<type>/<id>
+coverage: measured
 tags: [write, trap]
 scope: api
 measured: sandbox project written

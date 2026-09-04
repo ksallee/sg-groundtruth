@@ -1,5 +1,6 @@
 ---
 endpoint: GET /schema/<Type>
+coverage: measured
 tags: [schema, custom-entity, discovery]
 scope: api
 measured: site-wide

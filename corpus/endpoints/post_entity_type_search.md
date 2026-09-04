@@ -1,5 +1,6 @@
 ---
 endpoint: POST /entity/<type>/_search
+coverage: measured
 tags: [query, filter, operator, header, paging, silent]
 scope: api
 measured: sample project 1 of 1

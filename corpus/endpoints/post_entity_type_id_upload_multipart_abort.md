@@ -1,5 +1,6 @@
 ---
 endpoint: POST /entity/<type>/<id>/_upload/multipart_abort
+coverage: measured
 tags: [multipart, note]
 scope: api
 measured: sandbox project written, one Note whose multipart init was aborted, all rows deleted

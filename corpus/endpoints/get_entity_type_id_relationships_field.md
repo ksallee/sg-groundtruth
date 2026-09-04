@@ -1,5 +1,6 @@
 ---
 endpoint: GET /entity/<type>/<id>/relationships/<related_field>
+coverage: measured
 tags: [entity-field, multi-entity, cost]
 scope: api
 measured: sample project 1 of 1, read only

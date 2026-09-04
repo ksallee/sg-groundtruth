@@ -1,5 +1,6 @@
 ---
 endpoint: PUT <links.upload>
+coverage: measured
 tags: [upload, media, attachment, silent]
 scope: api
 measured: sandbox project written

@@ -42,6 +42,8 @@ def parse(f, summary_key):
         "tags": lst("tags"),
         "endpoints": lst("endpoints"),
         "phase": one("phase"),
+        "coverage": one("coverage") or "measured",
+        "unmeasured": one("unmeasured"),
         "summary": summary.group(1).strip() if summary else "—",
     }
 
@@ -108,7 +110,9 @@ def endpoint_cards():
 
 
 def line(e):
-    return f"- **{e['slug']}** — {e['summary']}  \n  `{' '.join(e['tags'])}`"
+    mark = "" if e.get("coverage", "measured") == "measured" else f" **[{e['coverage']}]**"
+    return (f"- **{e['slug']}**{mark} — {e['summary']}  \n  `{' '.join(e['tags'])}`"
+            + (f"  \n  not measured: {e['unmeasured']}" if e.get("unmeasured") else ""))
 
 
 def main():
@@ -177,6 +181,17 @@ def main():
             "that live on the call. `endpoints/<slug>`.", "",
             f"{covered} of {len(eps)} have a finding or recipe behind them as well. A card with none "
             "is documented and not yet probed, which is the queue.", ""]
+    unfinished = [e for e in eps if e["coverage"] != "measured"]
+    if unfinished:
+        out += [f"{len(eps) - len(unfinished)} cards are marked `measured`: every call on them was "
+                f"made and answered. {len(unfinished)} are marked `partial` or `untested` and say "
+                "on the card what was not reached.", "",
+                "Those {} are all in the webhook family, and they are blocked on the site rather "
+                "than on the work: entity events reach no hook on the probed site, so the delivery "
+                "payload, `X-SG-SIGNATURE` and the batch headers cannot be recorded here "
+                "(`045_webhooks`). **If you run a site where webhooks deliver, these are the entries "
+                "to contribute.** A probe and a recorded response is the whole "
+                "ask.".format(len(unfinished)), ""]
     for fam in FAMILIES:
         rows = [e for e in eps if family(e["endpoint"]) == fam]
         if not rows:
@@ -184,7 +199,9 @@ def main():
         out += [f"### {fam}", ""]
         for e in rows:
             entries = by_endpoint.get(e["endpoint"])
-            out.append(f"- **`{e['endpoint']}`** — {e['summary']}  \n  `{' '.join(e['tags'])}`"
+            mark = "" if e["coverage"] == "measured" else f" **[{e['coverage']}]**"
+            out.append(f"- **`{e['endpoint']}`**{mark} — {e['summary']}  \n  `{' '.join(e['tags'])}`"
+                       + (f"  \n  not measured: {e['unmeasured']}" if e["unmeasured"] else "")
                        + (f"  \n  also: {', '.join(entries)}" if entries else "  \n  *no finding yet*"))
         out.append("")
     unknown = sorted(set(by_endpoint) - known)
