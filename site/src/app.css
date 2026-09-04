@@ -140,7 +140,7 @@ pre {
 	background: var(--slab);
 	color: var(--slab-ink);
 	border: var(--border) solid var(--slab-rule);
-	border-radius: var(--radius);
+	border-radius: var(--radius-lg);
 	padding: var(--space-4) var(--space-5);
 	font-size: var(--text-code);
 	line-height: var(--leading-body);

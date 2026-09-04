@@ -338,21 +338,22 @@ which is gitignored and is never committed or deployed.`;
 	   rather than wrapping: a wrapped command line is a command that fails when
 	   it is pasted back. */
 	.prompt {
-		border: var(--border) solid var(--rule);
+		border: var(--border) solid var(--slab-rule);
 		border-radius: var(--radius-lg);
 		overflow: hidden;
 	}
 
+	/* The box's title bar: same surface as the body, a divider between them. */
 	.prompt figcaption {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		gap: var(--space-4);
-		padding: var(--space-1) var(--space-2) var(--space-1) var(--space-5);
-		background: var(--ground-raised);
-		border-bottom: var(--border) solid var(--rule);
-		font-family: var(--font-mono);
+		padding: var(--space-2) var(--space-3) var(--space-2) var(--space-5);
+		background: var(--slab);
+		border-bottom: var(--border) solid var(--slab-divider);
 		font-size: var(--text-xs);
+		font-weight: var(--weight-medium);
 		color: var(--ink-muted);
 	}
 
