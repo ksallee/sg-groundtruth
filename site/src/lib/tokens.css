@@ -32,6 +32,11 @@
 	--ink-muted: light-dark(#85857f, #898c92);
 
 	--rule: light-dark(#e9e9e6, #242528);
+
+	/* The only drop shadow on the site. A tooltip is the one thing that has to
+	   read as floating over what it covers rather than as part of it: painted
+	   darker than its own ground, it read as a hole in the sidebar. */
+	--shadow-raised: light-dark(0 6px 16px rgb(0 0 0 / 0.16), 0 6px 16px rgb(0 0 0 / 0.5));
 	--rule-strong: light-dark(#d6d5d1, #34353a);
 
 	/* A link underlines in a lighter ink than its text and darkens on hover. */
