@@ -150,7 +150,11 @@ def scrub(text, env):
     if home and home != "/":
         text = text.replace(home, "<home>")
     text = re.sub(r"[\w.+-]+@[\w-]+\.[\w.]+", "<email>", text)
-    text = re.sub(r"(?i)(bearer\s+|access_token\"?\s*[:=]\s*\"?)[\w.\-]{20,}", r"\1<token>", text)
+    text = re.sub(r"(?i)(bearer\s+|(?:access|refresh|session)_token\"?\s*[:=]\s*\"?)[\w.\-]{20,}",
+                  r"\1<token>", text)
+    # A JWT is three base64url segments. The token endpoint returns two of them and only one was
+    # ever named in a key this pattern could see.
+    text = re.sub(r"\beyJ[\w-]{8,}\.[\w-]{8,}\.[\w-]{8,}", "<token>", text)
     # Presigned media URLs carry the site host and a signature.
     text = re.sub(r"https://[\w.\-]*(amazonaws|shotgrid|shotgunstudio)[\w.\-]*/\S+", "<media-url>", text)
     return text

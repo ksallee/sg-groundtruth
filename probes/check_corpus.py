@@ -6,6 +6,7 @@ which is everything now that probes only print.
 import os
 import re
 import sys
+from collections import defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -37,6 +38,10 @@ SECTIONS = ("**Q**", "**Endpoint**", "**Docs claim**", "**Actual**", "**Teaches*
 TYPE_SECTIONS = ("**Data type**", "**Read**", "**Write**", "**Clear**", "**Filter**", "**Traps**")
 # The entity-type matrix answers a different shape of question again.
 ENTITY_SECTIONS = ("**Type**", "**Identity**", "**Create**", "**Links**", "**Status**", "**Traps**")
+# An endpoint card answers "what does this call take and what does it answer". The quirks are not
+# here: they are the verdicts of the entries that name this endpoint, rendered under the card.
+ENDPOINT_SECTIONS = ("**Params**", "**Sample requests**", "**Response codes**", "**Edge cases**",
+                     "**Links**")
 # Cap the prose, not the file. A card with forty rows of table is doing its job; forty
 # lines of paragraph is not. Counting both the same penalised measured cases exactly as
 # much as waffle, and nine of the first twenty-four cards ended up pinned to the ceiling.
@@ -80,11 +85,38 @@ CAPS_OK = {"REST", "API", "URL", "URI", "JSON", "HTTP", "GET", "PUT", "POST", "D
            "CRUD", "CSV", "VFX", "PT", "DAY", "HOUR", "WEEK", "MONTH", "YEAR", "YYYY", "MM", "DD",
            "HTML", "XML", "EDL", "MP4", "PNG", "JPG", "TIF", "EXR", "MOV", "OTIO"}
 
+# The order a client meets them. index.py groups the findings listing by this, so a phase that is
+# not here renders under "unphased" rather than where a reader is looking.
+PHASES = ("auth", "protocol", "schema", "read", "filter", "write", "upload", "observe", "render")
+# One card per call, named by the call. `endpoint:` is the identity and the canonical spelling, so a
+# search for one form finds every entry that touches it.
+ENDPOINT_DIR = CORPUS / "endpoints"
+KNOWN_ENDPOINTS = {
+    m.group(1).strip()
+    for f in ENDPOINT_DIR.glob("*.md") if f.name != "README.md"
+    for m in [re.search(r"^endpoint:\s*(\S.*?)\s*$", f.read_text(), re.M)] if m
+}
+# A tag the group's own required sections already imply is not a retrieval key. `trap` was on 61 of
+# 81 entries before this rule; following it returned the corpus.
+IMPLIED_TAGS = {
+    "field_types": {"field-type", "write", "filter", "operator", "trap", "schema"},
+    "entity_types": {"entity-type", "create", "status", "trap", "entity-field", "multi-entity",
+                     "schema"},
+    "recipes": {"recipe", "trap"},
+}
+# A subject tag matching more than this many entries is a group, not a key: following it returns the
+# corpus. A class tag names what kind of failure an entry is rather than what it is about, and is
+# meant to span. Capping those would be capping the answer to "what can go wrong here", so they are
+# declared instead of counted.
+TAG_MAX = 25
+CLASS_TAGS = {"silent", "destructive", "trap"}
+
 # The site generates its filter matrix from these three columns, so they are a contract, not a habit.
 FILTER_COLS = ("operator", "value", "matches")
 SEP_RE = re.compile(r"^\|[\s\-:|]*-[\s\-:|]*\|$")
 
 fails = []
+tag_census = defaultdict(list)
 
 
 def fail(f, msg):
@@ -139,7 +171,9 @@ for f in sorted(CORPUS.rglob("*.md")):
 
     is_type = f.parent.name in ("field_types", "entity_types")
     is_recipe = f.parent.name == "recipes"
-    if not is_type and not is_recipe and (f.parent.name != "findings" or not f.stem[:1].isdigit()):
+    is_endpoint = f.parent.name == "endpoints" and f.name != "README.md"
+    if (not is_type and not is_recipe and not is_endpoint
+            and (f.parent.name != "findings" or not f.stem[:1].isdigit())):
         continue
     head = re.match(r"---\n(.*?)\n---", text, re.S)
     if not head:
@@ -152,7 +186,23 @@ for f in sorted(CORPUS.rglob("*.md")):
     elif len(measured.group(1)) > MEASURED_MAX:
         fail(f, f"measured is {len(measured.group(1))} chars, max {MEASURED_MAX} — name the place "
                 f"and the sample size, nothing else")
-    if is_recipe:
+    if is_endpoint:
+        ep = re.search(r"^endpoint:\s*(\S.*?)\s*$", head.group(1), re.M)
+        if not ep:
+            fail(f, "no endpoint: the call this card is about, e.g. `POST /entity/<type>/_search`. "
+                    "It is the card's identity and the spelling every other entry has to reuse")
+        elif not re.match(r"^(GET|POST|PUT|DELETE|PATCH) \S", ep.group(1)):
+            fail(f, f"endpoint {ep.group(1)!r} does not start with a method")
+        for s in ENDPOINT_SECTIONS:
+            if s not in text:
+                fail(f, f"missing section {s}")
+        if "|---" not in text.replace(" ", ""):
+            fail(f, "no table — **Params** and **Response codes** are one row per part and per "
+                    "status code (CLAUDE.md Style)")
+        if "```" not in text:
+            fail(f, "no recorded response. Every sample request is followed by what it actually "
+                    "answered; a card without one is an index entry")
+    if is_recipe or is_endpoint:
         continue
     scope = re.search(r"^scope:\s*(api|site|project)\s*$", head.group(1), re.M)
     if not scope:
@@ -169,8 +219,34 @@ for f in sorted(CORPUS.rglob("*.md")):
             fail(f, f"placeholder verdict: {v!r}")
         elif len(v) > VERDICT_MAX:
             fail(f, f"verdict is {len(v)} chars, max {VERDICT_MAX} — move the detail to **Teaches**")
-    if not re.search(r"tags:\s*\[[^\]]+\]", head.group(1)):
+    # A matrix card is addressed by its own name, so no cross-cutting tag is a real answer there
+    # and an empty list says so. A finding or a recipe has no such door and needs at least one.
+    tag_m = re.search(r"tags:\s*\[([^\]]*)\]", head.group(1))
+    if not tag_m or (not tag_m.group(1).strip() and not is_type):
         fail(f, "no tags")
+    else:
+        entry_tags = [x.strip() for x in tag_m.group(1).split(",") if x.strip()]
+        for t_ in entry_tags:
+            tag_census[t_].append(f.stem)
+        for t_ in sorted(set(entry_tags) & IMPLIED_TAGS.get(f.parent.name, set())):
+            fail(f, f"tag {t_!r} is implied by every entry in {f.parent.name}/ and so selects "
+                    f"nothing; drop it")
+    eps = re.search(r"endpoints:\s*\[([^\]]*)\]", head.group(1))
+    if f.parent.name in ("findings", "recipes"):
+        if not eps:
+            fail(f, "no endpoints: the calls this entry covers, in the spelling corpus/ENDPOINTS.md "
+                    "uses. It is how an agent holding a call finds this entry")
+        else:
+            for e in (x.strip() for x in eps.group(1).split(",") if x.strip()):
+                if e not in KNOWN_ENDPOINTS:
+                    fail(f, f"endpoint {e!r} has no card in corpus/endpoints/ — reuse the "
+                            f"canonical spelling of an existing one, or add the card")
+    if f.parent.name == "findings":
+        ph = re.search(r"^phase:\s*(\S+)\s*$", head.group(1), re.M)
+        if not ph:
+            fail(f, f"no phase: one of {', '.join(PHASES)}")
+        elif ph.group(1) not in PHASES:
+            fail(f, f"phase {ph.group(1)!r} is not one of {', '.join(PHASES)}")
     if is_type:
         summary = re.search(r"^summary:\s*(.*)$", head.group(1), re.M)
         if not summary or not summary.group(1).strip():
@@ -214,6 +290,11 @@ for f in sorted(CORPUS.rglob("*.md")):
         fail(f, f"**Actual** is {n} lines, max {ACTUAL_MAX} — trim to representative rows")
     if text.count("**Verdict**"):
         fail(f, "verdict repeated in the body; it belongs in the frontmatter only")
+
+for t_, entries in sorted(tag_census.items()):
+    if t_ not in CLASS_TAGS and len(entries) > TAG_MAX:
+        fails.append(f"tag {t_!r} is on {len(entries)} entries, max {TAG_MAX} — a tag that wide is "
+                     f"a group, not a key. Split it or drop it where a section already implies it")
 
 print("\n".join(fails) if fails else "corpus clean")
 sys.exit(1 if fails else 0)
