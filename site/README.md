@@ -190,9 +190,10 @@ The components:
 
 | component | does |
 |---|---|
-| `Sidebar` | the navigation: home, two pages, five groups that open, and the key to the colours |
+| `Sidebar` | the navigation: home, two pages, five groups that open, and the project the overlay was read from; a tooltip on an entry's dots names their levels |
 | `SiteHeader` / `SiteFooter` | the phone's top bar with the menu button, and the footer |
 | `Breadcrumb` | home, the section, the page: on every page but the intro |
+| `CopyButton` | copies its text; the SDS copy stroke, a tooltip, and a ticked circle once copied |
 | `Section` | one band of a page: mono label, headline, lede, slot |
 | `EntryList` | the corpus index as a list of name, verdict, tags, each row marked with what it holds |
 | `EntryDetail` | one subject in full: the API card, then what the overlay measured about the same subject |
@@ -367,7 +368,7 @@ table of contents. A page is read top to bottom. The sidebar is the one fixed el
 | three inks: headings, emphasis and links in `--ink`; paragraphs in `--ink-body`; metadata in `--ink-muted` | `tokens.css` |
 | warm graphite neutrals, dark only, with light values kept in the tokens | `tokens.css` |
 | links underline in `--underline`, a lighter ink, and darken on hover | `app.css` |
-| code slabs are the darkest surface on the page | `--slab` |
+| code boxes sit one step above the page inside a hairline of white at 8%, 12px radius, 14px mono at 1.6 | `--slab`, `--slab-rule`, `--slab-divider` |
 | tables wrap their cells instead of scrolling, so a 300-character error string gets a taller row | `app.css` |
 | the API mark takes the page's ink; only the two local levels carry a hue, amber and green | `--scope-*` |
 | the system UI face and the system mono face, no webfont | `--font-text`, `--font-mono` |

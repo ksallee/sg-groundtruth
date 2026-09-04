@@ -37,11 +37,13 @@
 	/* A link underlines in a lighter ink than its text and darkens on hover. */
 	--underline: light-dark(#c4c3be, #55585e);
 
-	/* Code slabs are the darkest surface on the page, with a rule, so a quoted
-	   payload reads as one object. */
-	--slab: light-dark(#161615, #0b0c0d);
+	/* The code box: one step up from the page, inside a hairline of white at 8%,
+	   so a quoted payload reads as one object. --slab-divider separates a box's
+	   title bar from its body. */
+	--slab: light-dark(#161615, #1a1a1b);
 	--slab-ink: light-dark(#e6e6e3, #d8dadd);
-	--slab-rule: light-dark(#161615, #242528);
+	--slab-rule: light-dark(#161615, rgb(255 255 255 / 0.08));
+	--slab-divider: light-dark(#222221, rgb(255 255 255 / 0.04));
 
 	/* The three levels of truth are the only hues on the site. Everything else
 	   is black and white, so a dot or a mark in one of these is always a scope.
@@ -94,6 +96,8 @@
 	   more to scroll to. --surface is whatever the container sits on; an inset
 	   section reassigns it so the mask matches its own ground. */
 	--scroll-cue: light-dark(rgb(15 15 14 / 0.14), rgb(0 0 0 / 0.6));
+	/* The thumb of a custom scrollbar, drawn only under the pointer. */
+	--scroll-thumb: light-dark(rgb(15 15 14 / 0.25), rgb(255 255 255 / 0.22));
 	--surface: var(--ground);
 
 	/* --- type ------------------------------------------------------------
@@ -189,6 +193,9 @@
 	   strong ease-out, so it answers the pointer at once and settles. */
 	--duration: 150ms;
 	--duration-press: 160ms;
+	/* An exit is shorter than an arrival, so a swap of two glyphs reads as one
+	   motion. */
+	--duration-out: 100ms;
 	--ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
@@ -196,5 +203,6 @@
 	:root {
 		--duration: 0ms;
 		--duration-press: 0ms;
+		--duration-out: 0ms;
 	}
 }

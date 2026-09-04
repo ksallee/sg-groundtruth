@@ -6,25 +6,37 @@
 	// The whole navigation. The name is the way home. Two pages come first,
 	// then five groups that open to list what they hold; the lists come from the
 	// corpus at build time and grow with the reading level exactly as the index
-	// pages do. Every entry carries a dot per level it has content at, and the
-	// foot of the sidebar is the key to the colours.
-	let { nav, hasOverlay = false, hasSite = false, projects = [], open = false, onclose } = $props();
+	// pages do. Every entry carries a dot per level it has content at, named by
+	// a tooltip on the dots, and the foot of the sidebar names the project the
+	// overlay was read from.
+	let { nav, projects = [], open = false, onclose } = $props();
 
 	const path = $derived(page.url.pathname);
 	const here = (href) => path === href || path.startsWith(href + '/');
 
-	// The levels an entry has content at, of the ones the reading level shows.
-	// An entry with none is not listed.
-	function levelsOf(e) {
+	// The levels an entry has content at, of the ones the reading level shows:
+	// one line per level, worded as the tooltip says it, and a project level
+	// names each project. The dots are the distinct levels, so two projects
+	// share one dot. An entry with none is not listed.
+	function linesOf(e) {
 		const out = [];
-		if (e.hasApi) out.push('api');
+		if (e.hasApi) out.push({ level: 'api', word: 'API' });
 		const locals = visible(e.locals ?? []);
-		if (locals.some((l) => l.level === 'site')) out.push('site');
-		if (locals.some((l) => l.level === 'project')) out.push('project');
+		if (locals.some((l) => l.level === 'site')) out.push({ level: 'site', word: 'Site' });
+		for (const p of projects) {
+			if (locals.some((l) => l.level === 'project' && l.project === p.id)) {
+				out.push({ level: 'project', word: p.label });
+			}
+		}
 		return out;
 	}
 	const shown = (items) =>
-		items.map((e) => ({ ...e, levels: levelsOf(e) })).filter((e) => e.levels.length);
+		items
+			.map((e) => {
+				const lines = linesOf(e);
+				return { ...e, lines, levels: [...new Set(lines.map((l) => l.level))] };
+			})
+			.filter((e) => e.lines.length);
 
 	// Filters has one section per data type, so its list is the field types
 	// again, pointing at the anchors.
@@ -59,8 +71,7 @@
 	const current = (href) =>
 		href.includes('#') ? path + page.url.hash === href : path === href;
 
-	const WORD = { api: 'API', site: 'Site', project: 'Project' };
-	const describe = (levels) => levels.map((l) => WORD[l]).join(', ');
+	const describe = (lines) => lines.map((l) => l.word).join(', ');
 </script>
 
 <aside class="sidebar" class:open aria-label="Site">
@@ -107,10 +118,15 @@
 									<a class="subitem" href={e.href} aria-current={current(e.href) ? 'page' : undefined}>
 										{#if e.number}<span class="num">{e.number}</span>{/if}
 										<span class="label">{e.title || e.name}</span>
-										<span class="dots" role="img" aria-label={describe(e.levels)}>
+										<span class="dots" role="img" aria-label={describe(e.lines)}>
 											{#each e.levels as level (level)}
 												<span class="dot" data-scope={level}></span>
 											{/each}
+											<span class="tip" aria-hidden="true">
+												{#each e.lines as line (line.level + line.word)}
+													<span class="line"><span class="dot" data-scope={line.level}></span>{line.word}</span>
+												{/each}
+											</span>
 										</span>
 									</a>
 								</li>
@@ -122,14 +138,10 @@
 		</ul>
 	</nav>
 
-	{#if hasOverlay}
-		<!-- A key to the colours, nothing to choose: a page shows every level it
-		     holds. -->
-		<ul class="key" aria-label="Colours">
-			<li><span class="keydot" data-scope="api"></span>API</li>
-			{#if hasSite}
-				<li><span class="keydot" data-scope="site"></span>Site</li>
-			{/if}
+	{#if projects.length}
+		<!-- The project the overlay was read from, nothing to choose: a page shows
+		     every level it holds. -->
+		<ul class="key" aria-label="Project">
 			{#each projects as p (p.id)}
 				<li><span class="keydot" data-scope="project"></span><span class="label">{p.label}</span></li>
 			{/each}
@@ -341,10 +353,14 @@
 	}
 
 	/* The last dot is centred under the chevron; a second and a third run
-	   leftwards from it. */
+	   leftwards from it. The slot is the full height of the row, so the tooltip
+	   answers a pointer anywhere in it and not only on a dot. */
 	.dots {
+		position: relative;
 		flex: 0 0 var(--slot);
+		align-self: stretch;
 		display: flex;
+		align-items: center;
 		justify-content: flex-end;
 		gap: var(--dot-gap);
 		padding-right: calc((14px - var(--dot)) / 2);
@@ -355,6 +371,45 @@
 		height: var(--dot);
 		border-radius: 50%;
 		background: var(--scope-ink);
+	}
+
+	/* What the dots mean: one line per level, its dot and its word, in the
+	   copy button's tooltip, to the left of the slot. It waits --tip-delay
+	   before showing, so a pointer crossing the tree raises nothing, and goes
+	   at once when the pointer leaves. */
+	.tip {
+		--tip-delay: 400ms;
+		position: absolute;
+		z-index: 1;
+		right: calc(100% + var(--space-2));
+		top: 50%;
+		transform: translate(2px, -50%);
+		display: grid;
+		padding: 0.15rem var(--space-2);
+		border-radius: var(--radius-sm);
+		background: #000;
+		border: var(--border) solid color-mix(in srgb, var(--ink) 10%, transparent);
+		color: #fff;
+		font-size: 0.75rem;
+		line-height: 1.5;
+		white-space: nowrap;
+		pointer-events: none;
+		opacity: 0;
+		transition:
+			opacity 125ms var(--ease-out),
+			transform 125ms var(--ease-out);
+	}
+
+	.dots:hover .tip {
+		opacity: 1;
+		transform: translate(0, -50%);
+		transition-delay: var(--tip-delay);
+	}
+
+	.line {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
 	}
 
 	/* The key sits on the page colour with no rule above it. Instead a fade
