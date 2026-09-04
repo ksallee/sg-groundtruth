@@ -102,7 +102,7 @@ which is gitignored and is never committed or deployed.`;
 
 	<p class="actions">
 		<a class="button" href="/field-types">Start with the field types</a>
-		<a href={REPO}>Read it on GitHub</a>
+		<a class="button ghost" href={REPO}>Read it on GitHub</a>
 	</p>
 </section>
 
@@ -304,6 +304,18 @@ which is gitignored and is never committed or deployed.`;
 
 	.button:active {
 		transform: scale(0.97);
+	}
+
+	/* The same pill with nothing filled in: a hairline for the ink, drawn
+	   inside so the two buttons stand the same height. */
+	.ghost {
+		background: none;
+		color: var(--ink);
+		box-shadow: inset 0 0 0 var(--border) var(--rule-strong);
+	}
+
+	.ghost:hover {
+		background: var(--ground-sunken);
 	}
 
 	/* Things of equal weight, one after another. */
