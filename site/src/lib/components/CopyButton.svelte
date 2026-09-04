@@ -27,14 +27,14 @@
 	onblur={reset}
 >
 	{#if copied}
-		<svg viewBox="0 0 16 16" width="16" height="16" fill="none" aria-hidden="true">
+		<svg viewBox="0 0 16 16" width="14" height="14" fill="none" aria-hidden="true">
 			<g stroke="currentColor" stroke-width="1.23" stroke-linecap="round" stroke-linejoin="round">
 				<rect x="1.49" y="1.49" width="13.01" height="13.01" rx="1.52" />
 				<path d="M4.97 7.95L7.28 10.05L11.5 5.94" />
 			</g>
 		</svg>
 	{:else}
-		<svg viewBox="0 0 16 16" width="16" height="16" fill="none" aria-hidden="true">
+		<svg viewBox="0 0 16 16" width="14" height="14" fill="none" aria-hidden="true">
 			<g stroke="currentColor" stroke-width="1.23" stroke-linecap="round" stroke-linejoin="round">
 				<path
 					d="M5.51 1.47L13.55 1.47A1 1 0 0 1 14.55 2.47L14.55 10.51A1 1 0 0 1 13.55 11.51L5.51 11.51A1 1 0 0 1 4.51 10.51L4.51 2.47A1 1 0 0 1 5.51 1.47Z"
