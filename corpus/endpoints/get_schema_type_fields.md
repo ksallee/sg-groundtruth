@@ -70,4 +70,3 @@ print([k for k, v in f.items() if v["editable"]["value"]])
 - `endpoints/get_schema_type_fields_field`
 - `findings/002_schema`
 - `findings/012_create_version`
-- `findings/007_fill_rates`

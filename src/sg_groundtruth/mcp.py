@@ -16,7 +16,12 @@ import re
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+from .env import repo_root
+
+# Anchored on the corpus, not on this file: installed, the package sits in site-packages with no
+# corpus above it. `corpus_index` reports the miss rather than serving an empty corpus, because an
+# agent cannot tell "nothing probed that" from "no corpus found" in an empty answer.
+ROOT = repo_root("corpus/INDEX.md")
 PROTOCOL = "2025-06-18"
 SUPPORTED = {"2025-06-18", "2025-03-26", "2024-11-05"}
 
@@ -44,6 +49,12 @@ def _front(text):
 def _load(overlay):
     """Every entry, keyed by slug. Later roots do not overwrite earlier ones: a slug that exists at two
     levels is two entries, and the level is part of what an answer has to carry."""
+    if not (ROOT / "corpus" / "INDEX.md").is_file():
+        raise SystemExit(
+            f"no corpus at {ROOT / 'corpus'}. This server reads the corpus from a clone of "
+            "sg-groundtruth; run it from inside one, or set the working directory to it. "
+            "Installing the package does not install the corpus."
+        )
     roots = [("api", ROOT / "corpus")]
     if overlay:
         local = ROOT / "corpus.local"

@@ -1,0 +1,54 @@
+# `bin/verify` runs everything, so no gate is named here and adding one needs no edit to this file.
+#
+# GitHub-hosted, not self-hosted. This repository is public, so anyone can open a pull request, and a
+# `pull_request` workflow runs that pull request's code. On a self-hosted runner that is arbitrary code
+# execution on the machine hosting it, and a runner is not ephemeral, so a compromise persists into every
+# later run. Being the only contributor does not help: the risk is a stranger's fork, not a collaborator.
+# GitHub-hosted minutes are free for public repositories and no gate here needs anything local.
+#
+# No gate needs a credential either. The probes do, and probes are not gates: a probe calls a live Flow PT
+# site, and what it measures is a finding for an agent to write by hand, not a check to pass.
+
+name: Gates
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: gates-${{ github.ref }}
+  # A new commit supersedes the run before it. A label change does not: it fires `labeled`, which would
+  # kill the run `opened` started seconds earlier and print as a failure with no failing step.
+  cancel-in-progress: ${{ github.event_name == 'push' || github.event.action == 'synchronize' }}
+
+permissions:
+  contents: read
+
+jobs:
+  gates:
+    name: Every gate in bin/verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - run: pip install requests
+      - run: npm ci
+        working-directory: site
+
+      - run: bin/verify

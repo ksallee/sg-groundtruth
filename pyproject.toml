@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sg-groundtruth"
+version = "0.1.0"
+description = "Thin Flow Production Tracking REST client, and an MCP server for the recorded-behaviour corpus that documents it"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Kevin Sallee" }]
+keywords = ["shotgrid", "shotgun", "flow-production-tracking", "autodesk", "vfx", "mcp"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Multimedia :: Graphics",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = ["requests>=2.28"]
+
+[project.urls]
+Homepage = "https://github.com/ksallee/sg-groundtruth"
+Source = "https://github.com/ksallee/sg-groundtruth"
+Issues = "https://github.com/ksallee/sg-groundtruth/issues"
+
+[project.scripts]
+sg-groundtruth-mcp = "sg_groundtruth.mcp:main"
+
+# The wheel is the client and the tools, never the corpus. The corpus is read from a clone, because
+# every entry names the probe that produced it and re-running that probe is the point; a corpus
+# frozen into a release is one nobody can check. `mcp.py` says so when it cannot find one.
+[tool.hatch.build.targets.wheel]
+packages = ["src/sg_groundtruth"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/sg_groundtruth", "README.md", "LICENSE"]

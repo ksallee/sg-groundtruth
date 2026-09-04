@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# Every gate, in the order a failure is cheapest to read. The workflow names none of them, so
+# adding one is an edit here and nowhere else.
+#
+# No gate needs a credential. The probes do, and they are not gates: a probe calls a live site and
+# what it measures is a finding to write by hand, not a check to pass.
+#
+# Each gate here exists because something shipped past its absence. The comment on each says what.
+set -uo pipefail
+cd "$(dirname "$0")/.."
+
+fail=0
+run() {
+  local name=$1; shift
+  local out
+  if out=$("$@" 2>&1); then
+    printf '  ok    %s\n' "$name"
+  else
+    printf '  FAIL  %s\n' "$name"
+    printf '%s\n' "$out" | sed 's/^/        /'
+    fail=$((fail + 1))
+  fi
+  if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+    printf '| `%s` | %s |\n' "$name" "$([ $fail -eq 0 ] && echo ok || echo see log)" >> "$GITHUB_STEP_SUMMARY"
+  fi
+}
+
+[ -n "${GITHUB_STEP_SUMMARY:-}" ] && printf '| gate | |\n|---|---|\n' >> "$GITHUB_STEP_SUMMARY"
+
+# The frontmatter contract: scope, measured, endpoints, tags, and the banned register.
+run corpus python probes/check_corpus.py
+
+# INDEX.md is generated and committed. A stale one is the failure the index exists to prevent,
+# since an agent is told to read it first and stop at the one-liner.
+python probes/index.py > /dev/null 2>&1
+run index-current git diff --exit-code --quiet corpus/INDEX.md
+
+# The client is what comfyui-flow-production-tracking installs. A wheel that builds and does not
+# import is the failure that blocks it, and no amount of running from this clone would show it.
+run package-installs bash -c '
+  set -e
+  d=$(mktemp -d)
+  uv build --out-dir "$d/dist" >/dev/null
+  python -m venv "$d/venv"
+  "$d/venv/bin/pip" -q install "$d"/dist/*.whl
+  cd "$d" && "$d/venv/bin/python" -c "
+from sg_groundtruth.client import FPT, FPTError
+from sg_groundtruth.env import load, repo_root
+"
+  rm -rf "$d"'
+
+# The server answered five tools while the site said four. The site derives the number now; this
+# checks the server still answers over the wire at all.
+run mcp-speaks bash -c 'printf "%s\n" "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\"}" |
+  PYTHONPATH=src python -m sg_groundtruth.mcp | python -c "
+import sys, json
+tools = json.loads(sys.stdin.readline())[\"result\"][\"tools\"]
+assert len(tools) >= 5, tools
+"'
+
+# Braces in a <pre> are a Svelte expression, which is why the corpus is rendered with marked and
+# not mdsvex. It is a build error, so the build is the check.
+#
+# Built against the shipped corpus alone, never against whatever overlay is on this machine. A card
+# linking to a `scope: site` entry resolves locally and 500s the deploy, which is what happened to
+# get_schema_type_fields on the first run of this gate.
+run site-builds bash -c 'cd site && PUBLIC_OVERLAY_SOURCE=corpus.absent npm run build --silent'
+run site-types bash -c 'cd site && npx --no-install svelte-check --threshold error'
+
+# Four references pointed at corpus/ENDPOINTS.md, a file that does not exist, two of them inside
+# error messages that fire exactly when a reader is stuck.
+run links bin/check-links
+
+printf '\n%s gate(s) failed\n' "$fail"
+exit "$fail"

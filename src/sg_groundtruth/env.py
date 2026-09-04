@@ -7,7 +7,29 @@ import os
 from pathlib import Path
 
 NAME = ".env.local"
-ROOT = Path(__file__).resolve().parents[2]
+
+# The checkout this file lives in, right whenever the package is used from a clone and wrong the
+# moment it is installed: from site-packages, parents[2] is not a repository.
+_PKG_ROOT = Path(__file__).resolve().parents[2]
+
+
+def repo_root(marker=NAME, start=None):
+    """Walk up from `start` (default: the working directory) for `marker`, then fall back.
+
+    An installed consumer runs from its own tree, not from this one, so the walk is what lets it
+    find its own `.env.local`. A caller that knows better passes `root=` and never reaches here.
+    """
+    d = Path(start or Path.cwd()).resolve()
+    for _ in range(6):
+        if (d / marker).exists():
+            return d
+        if d.parent == d:
+            break
+        d = d.parent
+    return _PKG_ROOT
+
+
+ROOT = repo_root()
 
 
 def load(root=None):
