@@ -55,12 +55,20 @@
 							<ScopeMark level={local.level} project={local.projectLabel} />
 						{/each}
 					{/if}
+					<!-- A card whose calls were not all made and answered must not read
+					     like one that was. The badge is on the row, not only the page. -->
+					{#if entry.coverage && entry.coverage !== 'measured'}
+						<span class="coverage" data-coverage={entry.coverage}>{entry.coverage}</span>
+					{/if}
 				</h3>
 				<p class="verdict">
 					{#each parts(entry.hasApi ? entry.verdict : (lead?.verdict ?? '')) as part, i (i)}{#if part.code}<code
 							>{part.text}</code
 						>{:else}{part.text}{/if}{/each}
 				</p>
+				{#if entry.unmeasured}
+					<p class="unmeasured"><strong>Not measured.</strong> {entry.unmeasured}</p>
+				{/if}
 				{#if showTags}
 					{@const tags = entry.hasApi ? entry.tags : (lead?.tags ?? [])}
 					{#if tags.length}
@@ -142,6 +150,29 @@
 		color: var(--ink-muted);
 		background: none;
 		padding: 0;
+	}
+
+	.coverage {
+		font-size: var(--text-xs);
+		font-family: var(--mono);
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		padding: 0.1em 0.45em;
+		border-radius: 0.25em;
+		border: var(--border) solid currentColor;
+		color: var(--ink-3);
+		vertical-align: 0.15em;
+	}
+
+	.coverage[data-coverage='untested'] {
+		color: var(--warn, var(--ink-2));
+	}
+
+	.unmeasured {
+		font-size: var(--text-sm);
+		color: var(--ink-3);
+		border-left: var(--border) solid var(--rule);
+		padding-left: var(--space-3);
 	}
 
 	.verdict {

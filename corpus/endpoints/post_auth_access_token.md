@@ -1,5 +1,6 @@
 ---
 endpoint: POST /auth/access_token
+coverage: measured
 tags: [auth, token, client]
 scope: api
 measured: site-wide, one token minted

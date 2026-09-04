@@ -1,5 +1,6 @@
 ---
 endpoint: PUT /webhook/hooks/<record_uuid>
+coverage: measured
 tags: [webhook, write, status]
 scope: api
 measured: one hook created and edited in-run

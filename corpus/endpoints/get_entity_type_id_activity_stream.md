@@ -1,5 +1,6 @@
 ---
 endpoint: GET /entity/<type>/<id>/activity_stream
+coverage: measured
 tags: [follow, paging, user, async, trap]
 scope: api
 measured: sample project 1 of 1, sandbox project written

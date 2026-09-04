@@ -125,6 +125,11 @@ function readGroup(source, group) {
 				// covers. Both are retrieval keys rather than content: /findings
 				// groups by the first, /endpoints is built out of the second.
 				phase: meta.phase ?? '',
+				// A card whose calls were not all made and answered says so, and the
+				// site has to repeat it: an entry that reads like the rest while
+				// resting on an unmade call is the one that costs a reader.
+				coverage: meta.coverage ?? 'measured',
+				unmeasured: meta.unmeasured ?? '',
 				endpoints: Array.isArray(meta.endpoints) ? meta.endpoints : [],
 				name: displayName(slug, group.id),
 				// With the number, for a page title and a heading. The list shows
@@ -367,6 +372,8 @@ function summary(s) {
 		phase: s.api?.phase ?? '',
 		endpoints: s.api?.endpoints ?? [],
 		endpoint: s.api?.endpoint ?? '',
+		coverage: s.api?.coverage ?? 'measured',
+		unmeasured: s.api?.unmeasured ?? '',
 		locals: s.locals.map(stub)
 	};
 }
@@ -389,6 +396,8 @@ function detail(s) {
 		phase: s.api?.phase ?? '',
 		endpoints: s.api?.endpoints ?? [],
 		endpoint: s.api?.endpoint ?? '',
+		coverage: s.api?.coverage ?? 'measured',
+		unmeasured: s.api?.unmeasured ?? '',
 		cardLinks: s.api?.cardLinks ?? [],
 		html: s.api?.html ?? '',
 		locals: s.locals.map(({ raw, ...rest }) => rest)

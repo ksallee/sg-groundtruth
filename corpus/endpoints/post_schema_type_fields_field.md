@@ -1,5 +1,6 @@
 ---
 endpoint: POST /schema/<Type>/fields/<field>
+coverage: measured
 tags: [schema, custom-field, discovery]
 scope: api
 measured: sandbox project written, probe 040

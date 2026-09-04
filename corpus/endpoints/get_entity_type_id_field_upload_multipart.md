@@ -1,5 +1,6 @@
 ---
 endpoint: GET /entity/<type>/<id>/<field>/_upload/multipart
+coverage: measured
 tags: [multipart, etag]
 scope: api
 measured: sandbox project written, one Version, all multipart uploads aborted, all rows deleted

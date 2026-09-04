@@ -1,5 +1,6 @@
 ---
 endpoint: PUT /entity/<type>/<id>
+coverage: measured
 tags: [write, silent]
 scope: api
 measured: sandbox project written

@@ -1,5 +1,6 @@
 ---
 endpoint: DELETE /entity/<type>/<id>
+coverage: measured
 tags: [write, destructive]
 scope: api
 measured: sandbox project written

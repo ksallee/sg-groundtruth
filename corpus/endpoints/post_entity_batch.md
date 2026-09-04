@@ -1,5 +1,6 @@
 ---
 endpoint: POST /entity/_batch
+coverage: measured
 tags: [write, batch, create, silent]
 scope: api
 measured: sandbox project written

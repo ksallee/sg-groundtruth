@@ -1,5 +1,6 @@
 ---
 endpoint: PUT /entity/projects/<id>/_update_last_accessed
+coverage: measured
 tags: [project, user, silent]
 scope: api
 measured: sandbox project written

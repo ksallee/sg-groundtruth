@@ -1,5 +1,6 @@
 ---
 endpoint: POST /entity/<type>
+coverage: measured
 tags: [write, create, entity-field, silent]
 scope: api
 measured: sandbox project written

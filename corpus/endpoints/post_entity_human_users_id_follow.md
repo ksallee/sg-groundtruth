@@ -1,5 +1,6 @@
 ---
 endpoint: POST /entity/human_users/<user_id>/follow
+coverage: measured
 tags: [follow, user, header, error-handling, silent, trap]
 scope: api
 measured: sandbox project written

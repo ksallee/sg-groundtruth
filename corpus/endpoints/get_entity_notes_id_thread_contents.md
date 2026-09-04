@@ -1,5 +1,6 @@
 ---
 endpoint: GET /entity/notes/<id>/thread_contents
+coverage: measured
 tags: [note, reply, attachment, user]
 scope: api
 measured: sample project 1 of 1

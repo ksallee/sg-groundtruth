@@ -1,5 +1,6 @@
 ---
 endpoint: GET /webhook/hooks
+coverage: measured
 tags: [webhook, paging, silent]
 scope: api
 measured: site-wide, one listing

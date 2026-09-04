@@ -1,5 +1,6 @@
 ---
 endpoint: GET /entity/human_users/<user_id>/following
+coverage: measured
 tags: [follow, user, paging, project, cost]
 scope: api
 measured: sample project 1 of 1, sandbox project written

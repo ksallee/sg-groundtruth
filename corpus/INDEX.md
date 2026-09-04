@@ -249,6 +249,10 @@ One card per call: what it takes, what it answers, a real response and the edge 
 
 58 of 64 have a finding or recipe behind them as well. A card with none is documented and not yet probed, which is the queue.
 
+59 cards are marked `measured`: every call on them was made and answered. 5 are marked `partial` or `untested` and say on the card what was not reached.
+
+Those 5 are all in the webhook family, and they are blocked on the site rather than on the work: entity events reach no hook on the probed site, so the delivery payload, `X-SG-SIGNATURE` and the batch headers cannot be recorded here (`045_webhooks`). **If you run a site where webhooks deliver, these are the entries to contribute.** A probe and a recorded response is the whole ask.
+
 ### Session
 
 - **`GET /`** — The site's login configuration, answered without a token. Read `user_authentication_method` here before choosing a grant type.  
@@ -428,14 +432,17 @@ One card per call: what it takes, what it answers, a real response and the edge 
 
 ### Webhooks
 
-- **`GET /webhook/deliveries/<record_uuid>`** — A uuid that is not a delivery answers 404 code 104 with `detail` `delivery: <uuid> not found`. No delivery was observed on the probed site, so the call itself is unprobed.  
+- **`GET /webhook/deliveries/<record_uuid>`** **[partial]** — Returns the whole delivery including `request_body`, the payload as sent. `status` is `delivered` even when nothing answered, so read `response_code`, which is 0 when nothing answered.  
   `webhook delivery error-handling`  
+  not measured: Measured against a Webhook_Status_Change delivery to a dead host. request_headers, response_headers, body and a non-zero response_code are unmeasured.  
   also: 045_webhooks (finding)
-- **`PUT /webhook/deliveries/<record_uuid>`** — A uuid that is not a delivery answers 404 code 104 with `detail` `delivery: <uuid> not found`. No delivery was observed on the probed site, so the call itself is unprobed.  
-  `webhook delivery error-handling`  
+- **`PUT /webhook/deliveries/<record_uuid>`** **[partial]** — Answers 200 for an empty body, for a key it does not take, and for a valid acknowledgement that then reads back null. Only the 4096-byte cap is enforced.  
+  `webhook delivery silent trap`  
+  not measured: The acknowledgement never persisted on the probed site, where the webhook subsystem is degraded. Whether that is the API or the site is unresolved.  
   also: 045_webhooks (finding)
-- **`POST /webhook/deliveries/<record_uuid>/redeliver`** — A uuid that is not a delivery answers 404 code 104 with `detail` `delivery: <uuid> not found`. No delivery was observed on the probed site, so the call itself is unprobed.  
-  `webhook delivery error-handling`  
+- **`POST /webhook/deliveries/<record_uuid>/redeliver`** **[partial]** — Answers 204 with no body. On the probed site no second delivery record followed, so 204 reports that the request was accepted and nothing more.  
+  `webhook delivery silent`  
+  not measured: Answers 204 and produced no second delivery on the probed site. Whether it redelivers anywhere is unmeasured.  
   also: 045_webhooks (finding)
 - **`GET /webhook/hooks`** — Lists every hook on the site, not only this script's. `status` takes active or disabled and a value no hook has answers 200 with zero rows rather than 400.  
   `webhook paging silent`  
@@ -443,8 +450,9 @@ One card per call: what it takes, what it answers, a real response and the edge 
 - **`POST /webhook/hooks`** — `url` and `entity_types` are required and the entity type and action are checked. A field name, a project id and a second entity type are all accepted without being checked.  
   `webhook create silent trap token`  
   also: 045_webhooks (finding), 050_webhook_subscriptions (finding)
-- **`GET /webhook/hooks/<hook_id>/deliveries`** — Takes status, entity_type, entity_id, from and acknowledgement as query params and answers 200 with zero rows for any of them. No delivery was observed, so the record shape is unprobed.  
+- **`GET /webhook/hooks/<hook_id>/deliveries`** **[partial]** — Takes status, entity_type, entity_id, from and acknowledgement as query params and answers 200 with zero rows for any of them. No delivery was observed, so the record shape is unprobed.  
   `webhook delivery paging filter`  
+  not measured: Only Webhook_Status_Change deliveries were observed. The record for an entity event, and every field that only an answering consumer fills, are unmeasured.  
   also: 045_webhooks (finding), 011_audit_webhook_subscriptions (recipe)
 - **`GET /webhook/hooks/<record_uuid>`** — Returns the hook without its token. A well-formed uuid naming nothing answers 404 code 104, a segment that is not a uuid answers 404 code 103 with `detail` null.  
   `webhook error-handling`  
@@ -455,8 +463,9 @@ One card per call: what it takes, what it answers, a real response and the edge 
 - **`DELETE /webhook/hooks/<record_uuid>`** — 204 and the hook is gone at once: the hook, its deliveries listing and a second delete all answer 404 immediately after.  
   `webhook destructive`  
   also: 045_webhooks (finding), 050_webhook_subscriptions (finding)
-- **`POST /webhook/hooks/<record_uuid>/test_connection`** — Answers 204 for any uuid, a hook that does not exist included, and confirms nothing about the hook, the endpoint or whether anything was sent.  
+- **`POST /webhook/hooks/<record_uuid>/test_connection`** **[partial]** — Answers 204 for any uuid, a hook that does not exist included, and confirms nothing about the hook, the endpoint or whether anything was sent.  
   `webhook silent trap`  
+  not measured: Answers 204 for any uuid and produced no delivery record on the probed site. What it does on a working site is unmeasured.  
   also: 045_webhooks (finding)
 
 ### Exports
@@ -492,7 +501,7 @@ One card per call: what it takes, what it answers, a real response and the edge 
 - **duration** — duration (field type), Task (entity type), TimeLog (entity type), get_preferences (endpoint)
 - **entity-field** — 004_array_vs_hash (finding), 005_link_usage (finding), 010_status_icons (finding), 012_create_version (finding), 017_filter_operators (finding), 019_create_fields (finding), 024_read_after_write (finding), 048_one_record_beyond_crud (finding), 004_register_published_file (recipe), 007_build_and_reconcile_a_cut (recipe), 009_multi_entity_safely (recipe), 010_status_picker (recipe), entity (field type), entity_type (field type), multi_entity (field type), get_entity_type (endpoint), post_entity_type (endpoint), get_entity_type_id (endpoint), get_entity_type_id_relationships_field (endpoint)
 - **enumeration** — 006_pagination (finding), 050_webhook_subscriptions (finding), PublishedFileType (entity type)
-- **error-handling** — 004_array_vs_hash (finding), 017_filter_operators (finding), 028_loud_and_silent (finding), 030_complex_filters (finding), 039_upload_silent_failures (finding), 040_field_revive (finding), 045_webhooks (finding), 047_site_facts_and_the_working_week (finding), 050_webhook_subscriptions (finding), 002_batch (recipe), 008_delivery_progress (recipe), float (field type), jsonb (field type), serializable (field type), put_preferences_update (endpoint), put_schedule_work_day_rules (endpoint), post_subscription_seat_user_subscriptions (endpoint), put_entity_type_id_unfollow (endpoint), post_entity_human_users_id_follow (endpoint), get_webhook_deliveries_record_uuid (endpoint), put_webhook_deliveries_record_uuid (endpoint), post_webhook_deliveries_record_uuid_redeliver (endpoint), get_webhook_hooks_record_uuid (endpoint), get_exports_page_id_format (endpoint)
+- **error-handling** — 004_array_vs_hash (finding), 017_filter_operators (finding), 028_loud_and_silent (finding), 030_complex_filters (finding), 039_upload_silent_failures (finding), 040_field_revive (finding), 045_webhooks (finding), 047_site_facts_and_the_working_week (finding), 050_webhook_subscriptions (finding), 002_batch (recipe), 008_delivery_progress (recipe), float (field type), jsonb (field type), serializable (field type), put_preferences_update (endpoint), put_schedule_work_day_rules (endpoint), post_subscription_seat_user_subscriptions (endpoint), put_entity_type_id_unfollow (endpoint), post_entity_human_users_id_follow (endpoint), get_webhook_deliveries_record_uuid (endpoint), get_webhook_hooks_record_uuid (endpoint), get_exports_page_id_format (endpoint)
 - **etag** — 044_multipart_upload (finding), post_entity_type_id_field_upload (endpoint), get_entity_type_id_field_upload_multipart (endpoint)
 - **event-log** — 025_event_log (finding), 049_script_events (finding)
 - **fill-rate** — 007_fill_rates (finding), 020_summarize (finding), checkbox (field type), number (field type), percent (field type), summary (field type), get_schema_type_fields (endpoint), post_entity_type_summarize (endpoint)
@@ -529,7 +538,7 @@ One card per call: what it takes, what it answers, a real response and the edge 
 - **sequence** — 022_sequence_on_version (finding), Sequence (entity type)
 - **serializable** — 025_event_log (finding), jsonb (field type), serializable (field type)
 - **shot** — 002_batch (recipe), 005_propagate_status (recipe), 007_build_and_reconcile_a_cut (recipe), Sequence (entity type), Shot (entity type)
-- **silent** — 016_dotted_multi_entity (finding), 017_filter_operators (finding), 019_create_fields (finding), 023_pages (finding), 024_read_after_write (finding), 025_event_log (finding), 026_result_order (finding), 028_loud_and_silent (finding), 030_complex_filters (finding), 039_upload_silent_failures (finding), 040_field_revive (finding), 043_attention (finding), 045_webhooks (finding), 047_site_facts_and_the_working_week (finding), 048_one_record_beyond_crud (finding), 049_script_events (finding), 050_webhook_subscriptions (finding), 002_batch (recipe), 005_propagate_status (recipe), 009_multi_entity_safely (recipe), 011_audit_webhook_subscriptions (recipe), float (field type), multi_entity (field type), password (field type), serializable (field type), url (field type), Playlist (entity type), PublishedFileType (entity type), Reply (entity type), Sequence (entity type), Step (entity type), get_schedule_work_day_rules (endpoint), post_schema_type_fields (endpoint), put_schema_type_fields_field (endpoint), get_entity_type (endpoint), post_entity_type (endpoint), put_entity_type_id (endpoint), post_entity_batch (endpoint), put_entity_projects_id_update_last_accessed (endpoint), post_entity_type_search (endpoint), post_entity_text_search (endpoint), post_transcode_attachment_metadata_id (endpoint), post_links_complete_upload (endpoint), put_links_upload (endpoint), put_entity_type_id_unfollow (endpoint), post_entity_human_users_id_follow (endpoint), get_webhook_hooks (endpoint), post_webhook_hooks (endpoint), post_webhook_hooks_record_uuid_test_connection (endpoint)
+- **silent** — 016_dotted_multi_entity (finding), 017_filter_operators (finding), 019_create_fields (finding), 023_pages (finding), 024_read_after_write (finding), 025_event_log (finding), 026_result_order (finding), 028_loud_and_silent (finding), 030_complex_filters (finding), 039_upload_silent_failures (finding), 040_field_revive (finding), 043_attention (finding), 045_webhooks (finding), 047_site_facts_and_the_working_week (finding), 048_one_record_beyond_crud (finding), 049_script_events (finding), 050_webhook_subscriptions (finding), 002_batch (recipe), 005_propagate_status (recipe), 009_multi_entity_safely (recipe), 011_audit_webhook_subscriptions (recipe), float (field type), multi_entity (field type), password (field type), serializable (field type), url (field type), Playlist (entity type), PublishedFileType (entity type), Reply (entity type), Sequence (entity type), Step (entity type), get_schedule_work_day_rules (endpoint), post_schema_type_fields (endpoint), put_schema_type_fields_field (endpoint), get_entity_type (endpoint), post_entity_type (endpoint), put_entity_type_id (endpoint), post_entity_batch (endpoint), put_entity_projects_id_update_last_accessed (endpoint), post_entity_type_search (endpoint), post_entity_text_search (endpoint), post_transcode_attachment_metadata_id (endpoint), post_links_complete_upload (endpoint), put_links_upload (endpoint), put_entity_type_id_unfollow (endpoint), post_entity_human_users_id_follow (endpoint), put_webhook_deliveries_record_uuid (endpoint), post_webhook_deliveries_record_uuid_redeliver (endpoint), get_webhook_hooks (endpoint), post_webhook_hooks (endpoint), post_webhook_hooks_record_uuid_test_connection (endpoint)
 - **sort** — 026_result_order (finding), 028_loud_and_silent (finding)
 - **status** — 009_status_lists (finding), 010_status_icons (finding), 025_event_log (finding), 005_propagate_status (recipe), 008_delivery_progress (recipe), 010_status_picker (recipe), status_list (field type), get_schema_type_fields_field (endpoint), put_webhook_hooks_record_uuid (endpoint)
 - **step** — pivot_column (field type), Step (entity type)
@@ -539,7 +548,7 @@ One card per call: what it takes, what it answers, a real response and the edge 
 - **timecode** — 007_build_and_reconcile_a_cut (recipe), timecode (field type), Cut (entity type), CutItem (entity type)
 - **token** — 001_auth (finding), 027_auth_permissions (finding), 045_webhooks (finding), post_auth_access_token (endpoint), post_webhook_hooks (endpoint)
 - **transcode** — post_transcode_attachment_metadata_id (endpoint)
-- **trap** — 004_array_vs_hash (finding), 016_dotted_multi_entity (finding), 018_project_listing (finding), 019_create_fields (finding), 023_pages (finding), 024_read_after_write (finding), 025_event_log (finding), 026_result_order (finding), 028_loud_and_silent (finding), 030_complex_filters (finding), 039_upload_silent_failures (finding), 040_field_revive (finding), 043_attention (finding), 045_webhooks (finding), 046_search_without_a_path (finding), 049_script_events (finding), 050_webhook_subscriptions (finding), post_entity_type_id (endpoint), get_entity_type_id_field (endpoint), post_hierarchy_expand (endpoint), post_hierarchy_search (endpoint), get_entity_type_id_activity_stream (endpoint), post_entity_human_users_id_follow (endpoint), post_webhook_hooks (endpoint), post_webhook_hooks_record_uuid_test_connection (endpoint)
+- **trap** — 004_array_vs_hash (finding), 016_dotted_multi_entity (finding), 018_project_listing (finding), 019_create_fields (finding), 023_pages (finding), 024_read_after_write (finding), 025_event_log (finding), 026_result_order (finding), 028_loud_and_silent (finding), 030_complex_filters (finding), 039_upload_silent_failures (finding), 040_field_revive (finding), 043_attention (finding), 045_webhooks (finding), 046_search_without_a_path (finding), 049_script_events (finding), 050_webhook_subscriptions (finding), post_entity_type_id (endpoint), get_entity_type_id_field (endpoint), post_hierarchy_expand (endpoint), post_hierarchy_search (endpoint), get_entity_type_id_activity_stream (endpoint), post_entity_human_users_id_follow (endpoint), put_webhook_deliveries_record_uuid (endpoint), post_webhook_hooks (endpoint), post_webhook_hooks_record_uuid_test_connection (endpoint)
 - **upload** — 013_upload_media (finding), 014_attach_file (finding), 022_sequence_on_version (finding), 024_read_after_write (finding), 039_upload_silent_failures (finding), 044_multipart_upload (finding), 001_publish_version_with_media (recipe), 006_media_round_trip (recipe), 008_delivery_progress (recipe), image (field type), url (field type), Attachment (entity type), get_entity_type_id_field_upload (endpoint), get_entity_type_id_upload (endpoint), post_links_complete_upload (endpoint), put_links_upload (endpoint)
 - **url** — 006_media_round_trip (recipe), url (field type), Attachment (entity type)
 - **user** — 027_auth_permissions (finding), 043_attention (finding), 047_site_facts_and_the_working_week (finding), get_license_info (endpoint), put_schedule_work_day_rules (endpoint), get_subscription_seat_user_subscriptions (endpoint), post_subscription_seat_user_subscriptions (endpoint), put_entity_projects_id_update_last_accessed (endpoint), get_entity_type_id_activity_stream (endpoint), get_entity_type_id_followers (endpoint), put_entity_type_id_unfollow (endpoint), post_entity_human_users_id_follow (endpoint), get_entity_human_users_id_following (endpoint), get_entity_notes_id_thread_contents (endpoint)

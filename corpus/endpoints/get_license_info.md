@@ -1,5 +1,6 @@
 ---
 endpoint: GET /license_info
+coverage: measured
 tags: [discovery, user, read-only]
 scope: api
 measured: site-wide

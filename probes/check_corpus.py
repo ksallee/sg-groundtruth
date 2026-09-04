@@ -193,13 +193,26 @@ for f in sorted(CORPUS.rglob("*.md")):
                     "It is the card's identity and the spelling every other entry has to reuse")
         elif not re.match(r"^(GET|POST|PUT|DELETE|PATCH) \S", ep.group(1)):
             fail(f, f"endpoint {ep.group(1)!r} does not start with a method")
+        # A card that reads like the others but rests on a call nobody completed is the one kind of
+        # entry that costs a reader more than it gives. Say so on the card, in a key the index and
+        # the site can group by, not in a sentence buried under **Edge cases**.
+        cov = re.search(r"^coverage:\s*(measured|partial|untested)\s*$", head.group(1), re.M)
+        if not cov:
+            fail(f, "no coverage: measured, partial or untested. `measured` means every call on the "
+                    "card was made and answered; `partial` and `untested` need an `unmeasured:` "
+                    "line saying what was not reached and why")
+        elif cov.group(1) != "measured":
+            um = re.search(r"^unmeasured:\s*(\S.*?)\s*$", head.group(1), re.M)
+            if not um:
+                fail(f, f"coverage: {cov.group(1)} needs an unmeasured: line naming what was not "
+                        f"reached, so a reader knows which half of the card to trust")
         for s in ENDPOINT_SECTIONS:
             if s not in text:
                 fail(f, f"missing section {s}")
         if "|---" not in text.replace(" ", ""):
             fail(f, "no table — **Params** and **Response codes** are one row per part and per "
                     "status code (CLAUDE.md Style)")
-        if "```" not in text:
+        if "```" not in text and (not cov or cov.group(1) != "untested"):
             fail(f, "no recorded response. Every sample request is followed by what it actually "
                     "answered; a card without one is an index entry")
     if is_recipe or is_endpoint:

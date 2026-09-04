@@ -1,5 +1,6 @@
 ---
 endpoint: POST /entity/_text_search
+coverage: measured
 tags: [query, filter, header, silent]
 scope: api
 measured: sample project 1 of 1, read only

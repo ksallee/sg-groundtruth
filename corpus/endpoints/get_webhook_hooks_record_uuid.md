@@ -1,5 +1,6 @@
 ---
 endpoint: GET /webhook/hooks/<record_uuid>
+coverage: measured
 tags: [webhook, error-handling]
 scope: api
 measured: one hook created and read back in-run

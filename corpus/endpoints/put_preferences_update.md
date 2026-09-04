@@ -1,5 +1,6 @@
 ---
 endpoint: PUT /preferences/update
+coverage: measured
 tags: [custom-entity, write, error-handling, permission]
 scope: api
 measured: site-wide, rejections only

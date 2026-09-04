@@ -1,5 +1,6 @@
 ---
 endpoint: GET /schedule/work_day_rules
+coverage: measured
 tags: [date, discovery, silent, read-only]
 scope: api
 measured: sample project 1 of 1, plus site-wide windows of 14 and 730 days

@@ -1,5 +1,6 @@
 ---
 endpoint: PUT /entity/<type>/<id>/unfollow
+coverage: measured
 tags: [follow, user, silent, error-handling]
 scope: api
 measured: sandbox project written

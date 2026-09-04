@@ -1,5 +1,7 @@
 ---
 endpoint: GET /webhook/hooks/<hook_id>/deliveries
+coverage: partial
+unmeasured: Only Webhook_Status_Change deliveries were observed. The record for an entity event, and every field that only an answering consumer fills, are unmeasured.
 tags: [webhook, delivery, paging, filter]
 scope: api
 measured: called against a hook with no deliveries, and against the one site hook reporting 29
