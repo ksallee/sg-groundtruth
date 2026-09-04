@@ -51,7 +51,8 @@ cards with no operation in the spec: PUT <links.upload>, POST <links.complete_up
   spellings, and has `PUT /schema/<type>/fields/<field>` and `PUT /preferences/update` instead. Probe
   041 measured the `PUT` on a schema field working. Read the spec, not the reference.
 - `servers[0].url` ends in `/api/v1.1`. Every recorded call in this corpus was made against `/api/v1`.
-  Whether the two versions differ is unmeasured.
+  Probe 051 swept 20 read-only calls under both prefixes: the two are the same API, differing only in
+  `api_version` in the root document and the prefix each echoes in its own `links`.
 - The two upload steps with no operation in the spec are correct as they stand: `links.upload` is a
   presigned storage URL and is not a route on this API at all.
 - 191KB is too large to hand an agent. `probes/042_spec_coverage.py` prints the difference between the
