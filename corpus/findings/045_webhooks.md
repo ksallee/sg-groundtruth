@@ -3,6 +3,8 @@ tags: [webhook, silent, trap, create, write, delivery, error-handling, token]
 endpoints: [GET /webhook/hooks, POST /webhook/hooks, GET /webhook/hooks/<record_uuid>, PUT /webhook/hooks/<record_uuid>, DELETE /webhook/hooks/<record_uuid>, POST /webhook/hooks/<record_uuid>/test_connection, GET /webhook/hooks/<hook_id>/deliveries, GET /webhook/deliveries/<record_uuid>, PUT /webhook/deliveries/<record_uuid>, POST /webhook/deliveries/<record_uuid>/redeliver]
 phase: write
 scope: api
+coverage: partial
+unmeasured: No entity event reached a hook on the probed site, so the delivery payload, the `X-SG-SIGNATURE` and `x-sg-event-batch-*` headers, and `batch_deliveries`, are all unrecorded.
 measured: sandbox project written, one Shot created and updated, hooks created and deleted in-run
 verdict: The hook contract validates the url and the entity type, and silently accepts a field name, a project id and an entity-type count it will never honour. test_connection answers 204 for any uuid.
 ---

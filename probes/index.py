@@ -110,7 +110,9 @@ def endpoint_cards():
 
 
 def line(e):
-    return f"- **{e['slug']}** — {e['summary']}  \n  `{' '.join(e['tags'])}`"
+    mark = "" if e.get("coverage", "measured") == "measured" else f" **[{e['coverage']}]**"
+    return (f"- **{e['slug']}**{mark} — {e['summary']}  \n  `{' '.join(e['tags'])}`"
+            + (f"  \n  not measured: {e['unmeasured']}" if e.get("unmeasured") else ""))
 
 
 def main():
