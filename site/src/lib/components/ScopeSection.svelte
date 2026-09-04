@@ -1,32 +1,15 @@
 <script>
 	import ScopeMark from './ScopeMark.svelte';
-	import { OVERLAY_SOURCE_DIR } from '$lib/site.js';
 
-	// One section of an entry page, marked with where it was read from. Every
-	// section of every entry page is one of these once the reading level is
-	// above `api`, so a reader never has to work out which kind they are looking
-	// at from the content.
-	//
-	// The API section sits flush on the page. A local section is inset: its own
-	// ground, its own border and the level's edge texture down its left side. A
-	// measurement of one site can therefore never be mistaken for API behaviour
-	// with the hues removed.
-	let { level = 'api', project = '', dir = '', children } = $props();
-
-	const source = $derived(
-		level === 'project'
-			? `${OVERLAY_SOURCE_DIR}/projects/${dir}/`
-			: level === 'site'
-				? `${OVERLAY_SOURCE_DIR}/site/`
-				: ''
-	);
+	// One section of an entry page: what the API does, what one site configures,
+	// or what one project does. It starts with its badge and then its content,
+	// with no box around it; the API section is drawn exactly like the others.
+	// `id` is the anchor the switch scrolls to.
+	let { level = 'api', project = '', id = '', children } = $props();
 </script>
 
-<section class="scoped" class:inset={level !== 'api'} data-scope={level}>
-	<header>
-		<ScopeMark {level} {project} />
-		{#if source}<code>{source}</code>{/if}
-	</header>
+<section class="scoped" data-scope={level} {id}>
+	<div class="pin"><ScopeMark {level} {project} /></div>
 	{@render children?.()}
 </section>
 
@@ -34,45 +17,43 @@
 	.scoped {
 		display: grid;
 		grid-template-columns: var(--col);
-		gap: var(--space-4);
-		justify-items: start;
+		gap: var(--gap-prose);
 	}
 
-	/* The panel is the ground now, so a .scroll-x inside it masks against this
-	   rather than against the page. */
-	.inset {
-		--surface: var(--scope-quiet);
-		position: relative;
-		background: var(--scope-quiet);
-		border: var(--border) solid var(--rule);
-		border-left: 0;
-		border-radius: var(--radius);
-		padding: var(--space-4) var(--space-5);
-		padding-left: calc(var(--space-5) + var(--scope-edge-width));
+	.scoped[id] {
+		scroll-margin-top: var(--space-4);
 	}
 
-	/* The edge texture, not a colour: solid for the API, dashed for one site,
-	   dotted for one project. It is the signal that survives greyscale. */
-	.inset::before {
-		content: '';
-		position: absolute;
-		inset-block: 0;
-		left: 0;
-		width: var(--scope-edge-width);
-		background-image: var(--scope-edge);
-		border-start-start-radius: var(--radius);
-		border-end-start-radius: var(--radius);
+	/* The badge sits at the head of its section, pins at --pin-top while the
+	   content scrolls under it, and hands over to the next section's badge when
+	   that arrives. The strip below it fades the passing content out: page
+	   colour for --pin-fade-start below the badge, then nothing over --pin-fade.
+	   The strip is also the gap to the section's first block, so nothing moves
+	   when it pins. Every length is a token in tokens.css. */
+	.pin {
+		position: sticky;
+		top: var(--pin-top);
+		z-index: 2;
+		padding-top: var(--pin-pad);
+		padding-bottom: calc(var(--pin-fade-start) + var(--pin-fade));
+		margin-top: calc(-1 * var(--pin-pad));
+		margin-bottom: calc(-1 * var(--gap-prose));
+		background: linear-gradient(
+			to bottom,
+			var(--ground) 0,
+			var(--ground) calc(100% - var(--pin-fade)),
+			transparent 100%
+		);
 	}
 
-	header {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: var(--space-2) var(--space-3);
-	}
+	/* Under the phone's bar rather than behind it. */
+	@media (max-width: 63.99rem) {
+		.pin {
+			top: calc(3.5rem + var(--pin-top));
+		}
 
-	code {
-		font-size: var(--text-xs);
-		color: var(--ink-muted);
+		.scoped[id] {
+			scroll-margin-top: calc(3.5rem + var(--space-4));
+		}
 	}
 </style>

@@ -1,4 +1,5 @@
 <script>
+	import Breadcrumb from '$lib/components/Breadcrumb.svelte';
 	// ROUTE CHOICE: /filters, not /reference/filters. /reference is an index page
 	// over this route, /field-types and /entity-types; it groups them without
 	// owning their URLs, so every reference route stays one flat segment and no
@@ -29,8 +30,9 @@
 	/>
 </svelte:head>
 
-<div class="page">
+<div class="col page">
 	<header>
+		<Breadcrumb trail={[{ label: 'Filters' }]} />
 		<h1>Filters</h1>
 		<p class="lede">
 			The relations each <code>data_type</code> accepts in a filter, and the value to send with each
@@ -59,7 +61,7 @@
 					{/if}
 				</p>
 
-				<div class="scroll-x" tabindex="0">
+				<div class="scroll-x">
 					<table>
 						<thead>
 							<tr>
@@ -131,7 +133,7 @@
 						{/if}
 					</p>
 
-					<div class="scroll-x" tabindex="0">
+					<div class="scroll-x">
 						<table class="matrix">
 							<thead>
 								<tr>
@@ -171,73 +173,64 @@
 
 <style>
 	.page {
-		max-width: var(--wide);
-		margin-inline: auto;
-		padding: var(--space-6) var(--gutter) var(--space-7);
+		padding-block: var(--space-7) 0;
 		display: grid;
 		grid-template-columns: var(--col);
-		gap: var(--space-7);
+		gap: var(--space-8);
 	}
 
 	header {
 		display: grid;
 		grid-template-columns: var(--col);
 		gap: var(--space-3);
-		max-width: var(--measure);
-	}
-
-	h1 {
-		font-size: var(--text-xl);
 	}
 
 	.lede {
-		color: var(--ink-muted);
+		font-size: var(--text-lede);
+		line-height: 1.5;
+		color: var(--ink);
 	}
 
-	.note {
+	.note,
+	.block-note {
 		font-size: var(--text-sm);
 		color: var(--ink-muted);
-		border-left: var(--scope-edge-width) solid var(--rule-strong);
-		padding-left: var(--space-4);
 	}
 
 	.part {
 		display: grid;
 		grid-template-columns: var(--col);
-		gap: var(--space-5);
+		gap: var(--space-6);
 	}
 
 	.part > h2 {
-		font-size: var(--text-lg);
-		border-top: var(--border) solid var(--rule-strong);
-		padding-top: var(--space-4);
+		border-top: var(--border) solid var(--rule);
+		padding-top: var(--space-6);
 	}
 
 	.block {
 		display: grid;
 		grid-template-columns: var(--col);
 		gap: var(--space-3);
-		/* The anchor lands below the header rather than under it. */
-		scroll-margin-top: var(--space-5);
 	}
 
 	/* The data type is what the section is about, so it is the largest thing in
-	   it. At --text-xs uppercase muted it was drawn identically to the column
-	   head below it and was the smallest text on its own page. */
+	   it, set in mono because it is the API's own literal. */
 	h3 {
 		font-family: var(--font-mono);
-		font-size: var(--text-md);
-		font-weight: 600;
-		line-height: var(--leading-tight);
-		color: var(--ink);
+		font-size: var(--text-h3);
+		font-weight: var(--weight-medium);
+		letter-spacing: 0;
 		border-top: var(--border) solid var(--rule);
-		padding-top: var(--space-3);
+		padding-top: var(--space-5);
 	}
 
-	.block-note {
-		font-size: var(--text-sm);
-		color: var(--ink-muted);
-		max-width: var(--measure);
+	h3 a {
+		text-decoration-color: transparent;
+	}
+
+	h3 a:hover {
+		text-decoration-color: currentColor;
 	}
 
 	.jump {
@@ -250,10 +243,13 @@
 		font-size: var(--text-xs);
 	}
 
-	table {
-		border-collapse: collapse;
-		width: 100%;
-		font-size: var(--text-sm);
+	.jump a {
+		color: var(--ink-muted);
+		text-decoration: none;
+	}
+
+	.jump a:hover {
+		color: var(--ink);
 	}
 
 	/* Three columns of prose need a floor, or the value and the matches columns
@@ -263,39 +259,23 @@
 		min-width: 36rem;
 	}
 
-	th,
-	td {
-		text-align: left;
-		vertical-align: top;
-		padding: var(--cell-y) var(--cell-x);
-		line-height: var(--leading-tabular);
-		border-bottom: var(--border) solid var(--rule);
-	}
-
-	thead th {
-		font-family: var(--font-mono);
-		font-size: var(--text-xs);
-		font-weight: 600;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		color: var(--ink-muted);
-		border-bottom-color: var(--rule-strong);
-		white-space: nowrap;
-	}
-
 	tbody th {
 		font-family: var(--font-mono);
-		font-weight: 600;
+		font-size: var(--text-sm);
+		font-weight: var(--weight-medium);
 		white-space: nowrap;
 	}
 
-	tbody tr:last-child th,
-	tbody tr:last-child td {
-		border-bottom: 0;
+	tbody th a {
+		text-decoration-color: transparent;
 	}
 
+	tbody th a:hover {
+		text-decoration-color: currentColor;
+	}
+
+	/* A uuid or a quoted error string is one long token. */
 	.matrix td {
-		/* A uuid or a quoted error string is one long token. */
 		overflow-wrap: anywhere;
 	}
 
@@ -311,13 +291,6 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: var(--space-1) var(--space-2);
-	}
-
-	.ops code {
-		background: var(--ground-sunken);
-		border: var(--border) solid var(--rule);
-		border-radius: var(--radius-sm);
-		padding: 0.1em 0.35em;
 	}
 
 	.empty {

@@ -16,45 +16,103 @@ html {
 body {
 	margin: 0;
 	background: var(--ground);
-	color: var(--ink);
+	color: var(--ink-body);
 	font-family: var(--font-text);
-	font-size: var(--text-base);
-	line-height: var(--leading-normal);
-	/* The corpus is full of long API literals. Without this a phone shrinks
-	   the whole column to fit `sg_ai_generated_from`. */
-	overflow-wrap: break-word;
+	font-size: var(--text-body);
+	line-height: var(--leading-body);
+	letter-spacing: var(--tracking-body);
+	-webkit-font-smoothing: antialiased;
+	/* The corpus is full of long API literals. `anywhere` lets one break inside
+	   a token when nothing else fits, and also keeps that token from widening a
+	   grid track: `break-word` would wrap it but still size the column to it. */
+	overflow-wrap: anywhere;
+}
+
+/* The one column. Every band of every page, header and footer included, is
+   laid out inside it. */
+.col {
+	max-width: calc(var(--column) + 2 * var(--gutter));
+	margin-inline: auto;
+	padding-inline: var(--gutter);
 }
 
 h1,
 h2,
 h3,
 h4 {
-	line-height: var(--leading-tight);
-	text-wrap: balance;
 	margin: 0;
-	font-weight: 600;
+	color: var(--ink);
+	line-height: var(--leading-heading);
+	letter-spacing: var(--tracking-heading);
+	text-wrap: balance;
+}
+
+h1 {
+	font-size: var(--text-h1);
+	font-weight: var(--weight-bold);
+}
+
+h2 {
+	font-size: var(--text-h2);
+	font-weight: var(--weight-medium);
+}
+
+h3 {
+	font-size: var(--text-h3);
+	font-weight: var(--weight-medium);
+	line-height: 1.4;
+	letter-spacing: -0.015em;
+}
+
+h4 {
+	font-size: var(--text-body);
+	font-weight: var(--weight-bold);
 }
 
 p,
 ul,
-ol {
+ol,
+dl,
+figure,
+blockquote {
 	margin: 0;
 }
 
+p {
+	text-wrap: pretty;
+}
+
+strong {
+	font-weight: var(--weight-bold);
+	color: var(--ink);
+}
+
 a {
-	color: var(--accent);
+	color: var(--ink);
+	text-decoration: underline;
+	text-decoration-color: var(--underline);
 	text-decoration-thickness: 1px;
-	text-underline-offset: 0.2em;
+	text-underline-offset: 0.18em;
+	transition:
+		text-decoration-color var(--duration) ease,
+		color var(--duration) ease;
 }
 
 a:hover {
-	text-decoration-thickness: 2px;
+	text-decoration-color: currentColor;
 }
 
 :focus-visible {
-	outline: 2px solid var(--accent);
+	outline: 2px solid var(--ink);
 	outline-offset: 2px;
 	border-radius: var(--radius-sm);
+}
+
+button {
+	font: inherit;
+	letter-spacing: inherit;
+	color: inherit;
+	cursor: pointer;
 }
 
 code,
@@ -64,7 +122,90 @@ kbd {
 }
 
 code {
-	font-size: 0.9em;
+	font-size: 0.875em;
+	letter-spacing: 0;
+}
+
+:not(pre) > code {
+	color: var(--ink);
+	background: var(--ground-sunken);
+	border-radius: var(--radius-sm);
+	padding: 0.1em 0.35em;
+}
+
+/* The slab: a quoted payload, error string or command. Long lines scroll
+   inside it rather than wrapping, because the line breaks carry meaning. */
+pre {
+	margin: 0;
+	background: var(--slab);
+	color: var(--slab-ink);
+	border: var(--border) solid var(--slab-rule);
+	border-radius: var(--radius);
+	padding: var(--space-4) var(--space-5);
+	font-size: var(--text-code);
+	line-height: var(--leading-body);
+	letter-spacing: 0;
+	tab-size: 2;
+	overflow-x: auto;
+}
+
+pre code {
+	font-size: inherit;
+	color: inherit;
+	background: none;
+	padding: 0;
+}
+
+/* Reference tables. One row per input, one column per outcome. Cells wrap, so
+   a table stays inside the column; the cell holding a 300-character error
+   string simply gets taller. One density for every table on the site. */
+table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: var(--text-sm);
+	line-height: var(--leading-tabular);
+}
+
+th,
+td {
+	text-align: left;
+	vertical-align: top;
+	padding: var(--cell-y) var(--cell-x) var(--cell-y) 0;
+	border-bottom: var(--border) solid var(--rule);
+}
+
+th:last-child,
+td:last-child {
+	padding-right: 0;
+}
+
+th {
+	font-size: var(--text-xs);
+	font-weight: var(--weight-medium);
+	letter-spacing: 0;
+	color: var(--ink-muted);
+	border-bottom-color: var(--rule-strong);
+}
+
+tbody th {
+	color: var(--ink);
+}
+
+/* A cell keeps its words whole so a short first column is never squeezed to
+   one letter a line. A table too wide for that scrolls in its wrapper. */
+td {
+	overflow-wrap: break-word;
+}
+
+caption {
+	text-align: left;
+	font-size: var(--text-xs);
+	color: var(--ink-muted);
+}
+
+/* An anchor lands below the phone's bar and the section switch, not under them. */
+[id] {
+	scroll-margin-top: var(--space-8);
 }
 
 hr {
@@ -73,18 +214,16 @@ hr {
 	margin: var(--space-6) 0;
 }
 
-/* Any element that must scroll rather than widen the page: reference tables,
-   payload slabs. Applied by the markdown renderer and by hand. */
+/* Any element that must scroll rather than widen the page. Applied by the
+   markdown renderer to every table, and by hand.
+   A cell clipped at the container edge with nothing saying so is a reader who
+   does not know there is more. Two covers travel with the content and two
+   cues are pinned to the box, so a cue shows only while there is something
+   to scroll to on that side and nothing is drawn when the table already
+   fits. background-attachment does the detection: no script. */
 .scroll-x {
 	overflow-x: auto;
 	max-width: 100%;
-	/* A cell clipped at the container edge with nothing saying so is a reader who
-	   does not know there is more. Two covers travel with the content and two cues
-	   are pinned to the box, so a cue shows only while there is something to
-	   scroll to on that side and nothing is drawn when the table already fits.
-	   background-attachment does the detection: no script, and no scroll-driven
-	   animation that half the engines ignore. Covers are declared first because
-	   the first layer paints on top. */
 	background:
 		linear-gradient(to right, var(--surface), transparent) 0 0 / var(--space-6) 100% no-repeat
 			local,
@@ -96,36 +235,26 @@ hr {
 			no-repeat scroll;
 }
 
-/* One attribute resolves the three provenance variables, so a switch step, a
-   list row, a chip and a detail section carry the identical mark without any
-   of them naming a colour. Global rather than scoped: the attribute is set in
+/* One attribute resolves the provenance variables, so a switch step, a list
+   row, a chip and a detail section carry the identical mark without any of
+   them naming a colour. Global rather than scoped: the attribute is set in
    several components and read by all of them. */
 [data-scope='api'] {
 	--scope-ink: var(--scope-api-ink);
 	--scope-quiet: var(--scope-api-quiet);
-	--scope-edge: var(--scope-api-edge);
+	--scope-rule: var(--scope-api-rule);
 }
 
 [data-scope='site'] {
 	--scope-ink: var(--scope-site-ink);
 	--scope-quiet: var(--scope-site-quiet);
-	--scope-edge: var(--scope-site-edge);
+	--scope-rule: var(--scope-site-rule);
 }
 
 [data-scope='project'] {
 	--scope-ink: var(--scope-project-ink);
 	--scope-quiet: var(--scope-project-quiet);
-	--scope-edge: var(--scope-project-edge);
-}
-
-/* The edge mark itself: a strip of the level's texture, drawn wherever the
-   distinction has to be visible without reading a word. */
-.scope-edge {
-	flex: 0 0 var(--scope-edge-width);
-	align-self: stretch;
-	min-height: 1em;
-	background-image: var(--scope-edge);
-	border-radius: var(--radius-sm);
+	--scope-rule: var(--scope-project-rule);
 }
 
 .visually-hidden {

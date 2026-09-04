@@ -1,4 +1,5 @@
 <script>
+	import Breadcrumb from '$lib/components/Breadcrumb.svelte';
 	import { REPO } from '$lib/site.js';
 	import { countsAt } from '$lib/reading.svelte.js';
 
@@ -43,8 +44,9 @@
 	/>
 </svelte:head>
 
-<div class="page">
+<div class="col page">
 	<header>
+		<Breadcrumb trail={[{ label: 'How it works' }]} />
 		<h1>How it works</h1>
 		<p class="lede">
 			Every entry here is the recorded output of one script asking a live Flow Production Tracking
@@ -54,7 +56,7 @@
 
 	<section>
 		<h2>What you get</h2>
-		<div class="scroll-x" tabindex="0">
+		<div class="scroll-x">
 			<table>
 				<thead>
 					<tr><th>on the site</th><th>answers</th><th>holds</th></tr>
@@ -117,7 +119,7 @@ Open corpus/findings/&lt;entry&gt;.md only when the one-liner falls short.</pre>
 		</p>
 
 		<h3>Grow it as you build</h3>
-		<div class="scroll-x" tabindex="0">
+		<div class="scroll-x">
 			<table>
 				<thead>
 					<tr><th>command</th><th>when</th></tr>
@@ -166,10 +168,10 @@ Open corpus/findings/&lt;entry&gt;.md only when the one-liner falls short.</pre>
 	<section id="scope">
 		<h2>The three levels</h2>
 		<p>
-			Every file declares a <code>scope</code>, and the switch in the header sets which levels a page
-			answers at. Each level adds to the one before it; nothing is removed as it rises.
+			Every file declares a <code>scope</code>. A page shows every level this build holds, each
+			section under its badge, the API first.
 		</p>
-		<div class="scroll-x" tabindex="0">
+		<div class="scroll-x">
 			<table>
 				<thead>
 					<tr><th>level</th><th>true of</th><th>public</th></tr>
@@ -200,9 +202,9 @@ Open corpus/findings/&lt;entry&gt;.md only when the one-liner falls short.</pre>
 			has no site-level answer.
 		</p>
 		<p>
-			Above <code>api</code>, every row and section is marked with the level it holds: a word, an edge
-			texture and a hue. The texture is what survives greyscale, so a measurement of one site is never
-			read as API behaviour. With no overlay nothing is marked and the switch is not drawn.
+			A section or a list row that is not the API alone carries a badge in the level's colour: blue
+			for the API, orange for one site, green for one project. With no overlay there is only the API
+			and nothing is marked.
 		</p>
 	</section>
 
@@ -252,132 +254,94 @@ Open corpus/findings/&lt;entry&gt;.md only when the one-liner falls short.</pre>
 			<a href="{REPO}/blob/main/site/RESEARCH-mcp.md">RESEARCH-mcp.md</a>. Nothing was installed and
 			no agent was measured using one, so treat these as source verification rather than as a test.
 		</p>
-		<ul class="integrations">
-			{#each integrations as it (it.href)}
-				<li>
-					<h3><a href={it.href}>{it.name}</a></h3>
-					<p>{it.note}</p>
-				</li>
-			{/each}
-		</ul>
+		{#if integrations.length}
+			<ul class="integrations">
+				{#each integrations as it (it.href)}
+					<li>
+						<h3><a href={it.href}>{it.name}</a></h3>
+						<p>{it.note}</p>
+					</li>
+				{/each}
+			</ul>
+		{/if}
 	</section>
 </div>
 
 <style>
 	.page {
-		max-width: var(--wide);
-		margin-inline: auto;
-		padding: var(--space-6) var(--gutter) var(--space-7);
+		padding-block: var(--space-7) 0;
 		display: grid;
 		grid-template-columns: var(--col);
-		gap: var(--space-6);
+		gap: var(--space-7);
 	}
 
 	header {
 		display: grid;
 		grid-template-columns: var(--col);
 		gap: var(--space-3);
-		max-width: var(--measure);
 	}
 
-	h1 {
-		font-size: var(--text-xl);
+	.lede {
+		font-size: var(--text-lede);
+		line-height: 1.5;
+		color: var(--ink);
 	}
 
 	section {
 		display: grid;
 		grid-template-columns: var(--col);
-		gap: var(--space-4);
+		gap: var(--gap-prose);
+		padding-top: var(--space-6);
 		border-top: var(--border) solid var(--rule);
-		padding-top: var(--space-5);
 	}
 
 	h2 {
-		font-size: var(--text-lg);
-		max-width: var(--measure);
+		margin-bottom: var(--space-1);
 	}
 
 	h3 {
-		font-size: var(--text-md);
-		max-width: var(--measure);
-		margin-top: var(--space-2);
-	}
-
-	p {
-		max-width: var(--measure);
-		color: var(--ink-muted);
-	}
-
-	.lede {
-		font-size: var(--text-md);
-	}
-
-	pre {
-		margin: 0;
-		background: var(--slab);
-		color: var(--slab-ink);
-		border-radius: var(--radius);
-		padding: var(--space-4);
-		font-size: var(--text-sm);
-		line-height: 1.5;
-		overflow-x: auto;
-	}
-
-	table {
-		border-collapse: collapse;
-		font-size: var(--text-sm);
-		width: max-content;
-		min-width: 100%;
-	}
-
-	th,
-	td {
-		text-align: left;
-		vertical-align: top;
-		padding: var(--cell-y) var(--cell-x);
-		line-height: var(--leading-tabular);
-		border-bottom: var(--border) solid var(--rule);
-		max-width: 34ch;
-	}
-
-	th {
-		font-family: var(--font-mono);
-		font-size: var(--text-xs);
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		color: var(--ink-muted);
-		border-bottom-color: var(--rule-strong);
-		white-space: nowrap;
+		font-size: var(--text-body);
+		font-weight: var(--weight-bold);
+		margin-top: var(--space-3);
 	}
 
 	.note {
 		font-size: var(--text-sm);
-		border-left: var(--scope-edge-width) solid var(--rule-strong);
-		padding-left: var(--space-4);
+		color: var(--ink-muted);
+	}
+
+	/* The first column names the thing; the second explains it. The name keeps
+	   one line so the table reads as a list of names. */
+	td:first-child {
+		white-space: nowrap;
 	}
 
 	.integrations {
 		list-style: none;
 		padding: 0;
 		display: grid;
+		grid-template-columns: var(--col);
 		gap: var(--space-5);
-		grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+		margin-top: var(--space-2);
 	}
 
 	.integrations li {
 		display: grid;
 		grid-template-columns: var(--col);
 		gap: var(--space-2);
-		align-content: start;
-		border-top: var(--border-bar) solid var(--rule-strong);
-		padding-top: var(--space-3);
 	}
 
 	.integrations h3 {
+		font-size: var(--text-h3);
+		font-weight: var(--weight-medium);
 		margin-top: 0;
 	}
 
-	.integrations p {
-		font-size: var(--text-sm);
+	.integrations h3 a {
+		text-decoration-color: transparent;
+	}
+
+	.integrations h3 a:hover {
+		text-decoration-color: currentColor;
 	}
 </style>

@@ -1,4 +1,5 @@
 <script>
+	import Breadcrumb from '$lib/components/Breadcrumb.svelte';
 	import EntryList from '$lib/components/EntryList.svelte';
 
 	let { data } = $props();
@@ -12,8 +13,9 @@
 	/>
 </svelte:head>
 
-<div class="page">
+<div class="col page">
 	<header>
+		<Breadcrumb trail={[{ label: 'Recipes' }]} />
 		<h1>Recipes</h1>
 		<p class="lede">
 			A recipe records one call that ran, the response it returned, and the errors hit on the way to
@@ -26,26 +28,21 @@
 
 <style>
 	.page {
-		max-width: var(--wide);
-		margin-inline: auto;
-		padding: var(--space-6) var(--gutter) var(--space-7);
+		padding-block: var(--space-7) 0;
 		display: grid;
 		grid-template-columns: var(--col);
-		gap: var(--space-5);
+		gap: var(--space-6);
 	}
 
 	header {
 		display: grid;
 		grid-template-columns: var(--col);
 		gap: var(--space-3);
-		max-width: var(--measure);
-	}
-
-	h1 {
-		font-size: var(--text-xl);
 	}
 
 	.lede {
-		color: var(--ink-muted);
+		font-size: var(--text-lede);
+		line-height: 1.5;
+		color: var(--ink);
 	}
 </style>

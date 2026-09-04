@@ -9,9 +9,4 @@
 	<meta name="description" content={data.entry.verdict} />
 </svelte:head>
 
-<EntryDetail
-	entry={data.entry}
-	kicker="Field type"
-	backHref="/field-types"
-	backLabel="All field types"
-/>
+<EntryDetail entry={data.entry} section={{ label: 'Field types', href: '/field-types' }} />

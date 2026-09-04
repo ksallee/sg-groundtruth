@@ -45,14 +45,26 @@ which is gitignored and is never committed or deployed.`;
 		copyTimer = setTimeout(() => (copied = false), 2000);
 	}
 
-	// The four sections, in the order a reader meets them. Counts come from the
+	// The sections, in the order a reader meets them. Counts come from the
 	// corpus, so a group that grows says so without an edit here.
 	const sections = $derived([
 		{
-			href: '/reference',
-			title: 'Reference',
-			count: `${counts.fieldTypes} data types, ${counts.entityTypes} entity types`,
-			note: 'Field types, entity types and filters. Complete, and addressed by name.'
+			href: '/field-types',
+			title: 'Field types',
+			count: `${counts.fieldTypes} data types`,
+			note: 'One card per data_type: what it reads, writes and clears as, and what filters it.'
+		},
+		{
+			href: '/entity-types',
+			title: 'Entity types',
+			count: `${counts.entityTypes} entity types`,
+			note: 'One card per schema name: identity, the create contract, every link field, the status field.'
+		},
+		{
+			href: '/filters',
+			title: 'Filters',
+			count: '',
+			note: 'Every relation each data type accepts and the value to send with it, generated from the field-type cards.'
 		},
 		{
 			href: '/recipes',
@@ -83,20 +95,18 @@ which is gitignored and is never committed or deployed.`;
 	/>
 </svelte:head>
 
-<section class="hero">
-	<div class="inner">
-		<h1>Recorded behaviour of the Flow Production Tracking REST API.</h1>
-		<p class="lede">
-			The REST documentation is incomplete and in places wrong. Each entry here is the output of a
-			probe run against a live site, published in the words the API used. The probes are in the
-			repository and run against any site.
-		</p>
+<section class="col hero">
+	<h1>Recorded behaviour of the Flow Production Tracking REST API.</h1>
+	<p class="lede">
+		The REST documentation is incomplete and in places wrong. Each entry here is the output of a
+		probe run against a live site, published in the words the API used. The probes are in the
+		repository and run against any site.
+	</p>
 
-		<p class="actions">
-			<a class="button" href="/reference">The reference</a>
-			<a href={REPO}>Read it on GitHub</a>
-		</p>
-	</div>
+	<p class="actions">
+		<a class="button" href="/field-types">Start with the field types</a>
+		<a href={REPO}>Read it on GitHub</a>
+	</p>
 </section>
 
 <Section
@@ -112,7 +122,7 @@ which is gitignored and is never committed or deployed.`;
 		<pre>{SETUP_PROMPT}</pre>
 	</figure>
 
-	<p class="body">
+	<p>
 		<a href="/how-it-works#overlay">What the local corpus is</a>, which files are picked up, and
 		where each one renders.
 	</p>
@@ -126,8 +136,8 @@ which is gitignored and is never committed or deployed.`;
 	title="The failures are silent, so an agent cannot correct them."
 	lede="A 400 names the legal set and an agent recovers from it. A 200 that ignored what you sent tells it nothing. Each row is a published finding."
 >
-	<div class="scroll-x" tabindex="0">
-		<table class="traps">
+	<div class="scroll-x">
+		<table>
 			<thead>
 				<tr><th>you do this</th><th>you get</th><th>what happened</th></tr>
 			</thead>
@@ -170,15 +180,11 @@ which is gitignored and is never committed or deployed.`;
 			</tbody>
 		</table>
 	</div>
-
 </Section>
 
-<Section
-	label="What it does"
-	title="Four uses."
->
-	<div class="scroll-x" tabindex="0">
-		<table class="traps">
+<Section label="What it does" title="Four uses.">
+	<div class="scroll-x">
+		<table>
 			<thead>
 				<tr><th>use</th><th>how</th></tr>
 			</thead>
@@ -207,10 +213,10 @@ which is gitignored and is never committed or deployed.`;
 	</div>
 </Section>
 
-<!-- Five flat facts, one line each. The privacy one leads, because it is the
-     fact a reader most needs and it is stated nowhere else. -->
+<!-- Three flat facts, one each. The privacy one leads, because it is the fact
+     a reader most needs and it is stated nowhere else. -->
 <Section label="What it is" title="Three things worth knowing before you run it.">
-	<ul class="facts">
+	<ul class="items">
 		<li>
 			<h3>Your site's data never leaves it</h3>
 			<p>
@@ -219,8 +225,9 @@ which is gitignored and is never committed or deployed.`;
 			</p>
 		</li>
 		<li>
-			<h3>One reading level, set once</h3>
-			<p>The API, your site, or one project in it. Every page answers at that level.</p>
+			<h3>Every level on one page</h3>
+			<p>The API, your site and your projects, each section under its badge, on the pages that already
+				cover the subject.</p>
 		</li>
 		<li>
 			<h3>Read-only by default</h3>
@@ -232,12 +239,12 @@ which is gitignored and is never committed or deployed.`;
 	</ul>
 
 	{#if PERMISSIONS_CAVEAT}
-		<p class="body">{PERMISSIONS_CAVEAT}</p>
+		<p class="caveat">{PERMISSIONS_CAVEAT}</p>
 	{/if}
 </Section>
 
-<Section label="The site" title="Four sections.">
-	<ul class="sections">
+<Section label="The site" title="What is on it.">
+	<ul class="items">
 		{#each sections as item (item.href)}
 			<li>
 				<h3><a href={item.href}>{item.title}</a></h3>
@@ -251,47 +258,8 @@ which is gitignored and is never committed or deployed.`;
 </Section>
 
 <style>
-	/* The one table on this page. Reads the same density tokens as every other
-	   table on the site, so it cannot drift from Prose or from /filters. */
-	.traps {
-		border-collapse: collapse;
-		width: max-content;
-		min-width: 100%;
-		font-size: var(--text-sm);
-	}
-
-	.traps th,
-	.traps td {
-		text-align: left;
-		vertical-align: top;
-		padding: var(--cell-y) var(--cell-x);
-		line-height: var(--leading-tabular);
-		border-bottom: var(--border) solid var(--rule);
-	}
-
-	.traps thead th {
-		font-family: var(--font-mono);
-		font-size: var(--text-xs);
-		font-weight: 600;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		color: var(--ink-muted);
-		border-bottom-color: var(--rule-strong);
-		white-space: nowrap;
-	}
-
-	.traps tbody tr:last-child td {
-		border-bottom: 0;
-	}
-
 	.hero {
-		padding-block: var(--space-8) var(--space-7);
-	}
-
-	.hero .inner {
-		max-width: var(--wide);
-		margin-inline: auto;
-		padding-inline: var(--gutter);
+		padding-block: var(--space-8) var(--space-5);
 		display: grid;
 		grid-template-columns: var(--col);
 		gap: var(--space-5);
@@ -299,96 +267,88 @@ which is gitignored and is never committed or deployed.`;
 
 	h1 {
 		font-size: var(--text-display);
-		max-width: 20ch;
-		letter-spacing: -0.02em;
+		line-height: var(--leading-tight);
+		letter-spacing: var(--tracking-display);
 	}
 
 	.lede {
-		font-size: var(--text-md);
-		color: var(--ink-muted);
-		max-width: var(--measure);
+		font-size: var(--text-lede);
+		line-height: 1.5;
+		color: var(--ink);
 	}
 
 	.actions {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: var(--space-4);
+		gap: var(--space-5);
+		font-size: var(--text-sm);
+		margin-top: var(--space-2);
 	}
 
 	.button {
-		display: inline-block;
+		display: inline-flex;
+		align-items: center;
+		min-height: 2.5rem;
+		padding: 0 var(--space-5);
 		background: var(--ink);
 		color: var(--ground);
+		border-radius: var(--radius-pill);
 		text-decoration: none;
-		border-radius: var(--radius);
-		padding: var(--space-2) var(--space-4);
-		font-weight: 600;
+		font-weight: var(--weight-medium);
+		transition:
+			background var(--duration) ease,
+			transform var(--duration-press) var(--ease-out);
 	}
 
 	.button:hover {
-		background: var(--accent);
+		background: var(--ink-soft);
 	}
 
-	.body {
-		color: var(--ink-muted);
-		max-width: var(--measure);
+	.button:active {
+		transform: scale(0.97);
 	}
 
-	/* Things of equal weight, so columns of equal width rather than a list that
-	   implies an order. */
-	.sections,
-	.facts {
+	/* Things of equal weight, one after another. */
+	.items {
 		list-style: none;
 		padding: 0;
 		display: grid;
+		grid-template-columns: var(--col);
 		gap: var(--space-5);
-		grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
 	}
 
-	.sections li,
-	.facts li {
+	.items li {
 		display: grid;
 		grid-template-columns: var(--col);
 		gap: var(--space-2);
-		align-content: start;
-		border-top: var(--border-bar) solid var(--rule-strong);
-		padding-top: var(--space-3);
 	}
 
-	.sections h3,
-	.facts h3 {
-		font-size: var(--text-md);
+	.items h3 a {
+		text-decoration-color: transparent;
 	}
 
-	.sections p,
-	.facts p {
-		color: var(--ink-muted);
-		font-size: var(--text-sm);
+	.items h3 a:hover {
+		text-decoration-color: currentColor;
 	}
 
-	.sections {
-		grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
-	}
-
-	/* Five short facts, so a narrower column than the bands above. */
-	.facts {
-		grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
-	}
-
-	.sections .count {
+	.count {
 		font-family: var(--font-mono);
 		font-size: var(--text-xs);
+		color: var(--ink-muted);
+	}
+
+	.caveat {
+		font-size: var(--text-sm);
+		color: var(--ink-muted);
 	}
 
 	/* The prompt is meant to be selected whole, so it scrolls inside its own box
 	   rather than wrapping: a wrapped command line is a command that fails when
 	   it is pasted back. */
 	.prompt {
-		margin: 0;
-		max-width: var(--measure-wide);
 		border: var(--border) solid var(--rule);
-		border-radius: var(--radius);
+		border-radius: var(--radius-lg);
 		overflow: hidden;
 	}
 
@@ -397,40 +357,40 @@ which is gitignored and is never committed or deployed.`;
 		align-items: center;
 		justify-content: space-between;
 		gap: var(--space-4);
-		padding: var(--space-2) var(--space-3);
+		padding: var(--space-2) var(--space-3) var(--space-2) var(--space-5);
 		background: var(--ground-raised);
 		border-bottom: var(--border) solid var(--rule);
 		font-family: var(--font-mono);
 		font-size: var(--text-xs);
-		letter-spacing: 0.12em;
-		text-transform: uppercase;
 		color: var(--ink-muted);
 	}
 
 	.prompt button {
-		font: inherit;
-		letter-spacing: inherit;
-		text-transform: inherit;
+		font-family: var(--font-text);
+		font-size: var(--text-xs);
+		font-weight: var(--weight-medium);
+		letter-spacing: var(--tracking-body);
 		color: var(--ink);
 		background: var(--ground);
 		border: var(--border) solid var(--rule-strong);
-		border-radius: var(--radius-sm);
+		border-radius: var(--radius-pill);
 		padding: var(--space-1) var(--space-3);
-		cursor: pointer;
+		min-width: 4.5rem;
+		transition:
+			border-color var(--duration) ease,
+			transform var(--duration-press) var(--ease-out);
 	}
 
 	.prompt button:hover {
-		border-color: var(--accent);
-		color: var(--accent);
+		border-color: var(--ink-muted);
+	}
+
+	.prompt button:active {
+		transform: scale(0.97);
 	}
 
 	.prompt pre {
-		margin: 0;
-		background: var(--slab);
-		color: var(--slab-ink);
-		padding: var(--space-4);
-		font-size: var(--text-sm);
-		line-height: 1.6;
-		overflow-x: auto;
+		border: 0;
+		border-radius: 0;
 	}
 </style>

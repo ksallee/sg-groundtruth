@@ -1,51 +1,50 @@
 <script>
-	// One band of the page: a mono label, an optional headline and lede, then
-	// whatever the caller puts inside. Every landing-page section is one of these
-	// so the vertical rhythm is decided in one place.
-	let { label = '', title = '', lede = '', wide = false, children } = $props();
+	// One band of the landing page: a small mono label, a headline and a lede,
+	// then whatever the caller puts inside. Every section is one of these so
+	// the vertical rhythm is decided in one place. `literal` sets the title in
+	// mono, for a title that is an API literal.
+	let { label = '', title = '', lede = '', literal = false, children } = $props();
 </script>
 
-<section class="section">
-	<div class="inner" class:wide>
-		{#if label}<p class="label">{label}</p>{/if}
-		{#if title}<h2>{title}</h2>{/if}
-		{#if lede}<p class="lede">{lede}</p>{/if}
-		{@render children?.()}
-	</div>
+<section class="col section">
+	{#if label || title || lede}
+		<header>
+			{#if label}<p class="label">{label}</p>{/if}
+			{#if title}<h2 class:literal>{title}</h2>{/if}
+			{#if lede}<p class="lede">{lede}</p>{/if}
+		</header>
+	{/if}
+	{@render children?.()}
 </section>
 
 <style>
 	.section {
-		padding-block: var(--space-7);
-		border-top: var(--border) solid var(--rule);
-	}
-
-	.inner {
-		max-width: var(--wide);
-		margin-inline: auto;
-		padding-inline: var(--gutter);
+		padding-top: var(--space-8);
 		display: grid;
 		grid-template-columns: var(--col);
-		gap: var(--space-4);
+		gap: var(--space-6);
+	}
+
+	header {
+		display: grid;
+		grid-template-columns: var(--col);
+		gap: var(--space-3);
 	}
 
 	.label {
 		font-family: var(--font-mono);
 		font-size: var(--text-xs);
-		font-weight: 600;
-		letter-spacing: 0.14em;
-		text-transform: uppercase;
 		color: var(--ink-muted);
 	}
 
-	h2 {
-		font-size: var(--text-xl);
-		max-width: var(--measure);
+	h2.literal {
+		font-family: var(--font-mono);
+		letter-spacing: 0;
 	}
 
 	.lede {
-		font-size: var(--text-md);
-		color: var(--ink-muted);
-		max-width: var(--measure);
+		font-size: var(--text-lede);
+		line-height: 1.5;
+		color: var(--ink);
 	}
 </style>

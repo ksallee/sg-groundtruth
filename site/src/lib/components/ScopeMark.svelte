@@ -1,39 +1,28 @@
 <script>
-	// The one mark that separates the three kinds of information. It names its
-	// level in words, draws the level's edge texture beside the word, and takes
-	// the level's hue. Colour is the third signal, never the only one.
-	//
-	// The same component is the flag on a list row, the head of a detail section
-	// and the swatch on the reading-level switch, so the three cannot drift.
+	// The badge that says which level a thing was read at: API, the site, or a
+	// project by name, in the level's colour. The same badge heads a section on
+	// an entry page, sits on a list row and fills the switch at the top of a
+	// page, so the three cannot drift.
 	let { level = 'api', project = '', as = 'span' } = $props();
 
 	const word = $derived(
-		level === 'project' ? project || 'One project' : level === 'site' ? 'This site' : 'The API'
+		level === 'project' ? project || 'Project' : level === 'site' ? 'Site' : 'API'
 	);
 </script>
 
-<svelte:element this={as} class="mark" data-scope={level}>
-	<span class="scope-edge" aria-hidden="true"></span>
-	<span class="word">{word}</span>
-</svelte:element>
+<svelte:element this={as} class="badge" data-scope={level}>{word}</svelte:element>
 
 <style>
-	.mark {
-		display: inline-flex;
-		align-items: stretch;
-		gap: var(--space-2);
-		background: var(--scope-quiet);
+	.badge {
+		display: inline-block;
+		padding: 0.1em 0.6em;
 		border-radius: var(--radius-sm);
-		padding: 0 var(--space-2) 0 0;
-		font-family: var(--font-mono);
-		font-size: var(--text-xs);
-		font-weight: 600;
-		letter-spacing: 0.02em;
+		background: var(--scope-quiet);
 		color: var(--scope-ink);
+		font-size: var(--text-sm);
+		font-weight: 400;
+		line-height: 1.6;
+		letter-spacing: 0;
 		white-space: nowrap;
-	}
-
-	.word {
-		padding-block: 0.15em;
 	}
 </style>

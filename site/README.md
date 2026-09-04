@@ -2,7 +2,8 @@
 
 The public documentation site for the corpus. SvelteKit, prerendered to static HTML.
 
-First draft. Layout and content are settled; the visual design is a placeholder meant to be replaced.
+Layout and content are settled. The visual design is on its second pass: one reading column, no
+sidebars, three levels of ink. See "The look" below.
 
 ## Run it
 
@@ -148,55 +149,21 @@ numbers, the real display names and the real vocabularies, and `corpus.local/` i
 
 ### The reading level
 
-One global choice, set once in the header and applied to every page. It is depth on the pages a reader is
-already on, not a destination and not a filter. Each level adds rows to the lists and sections to the entry
-pages; nothing is removed as it rises. Every count on the site answers at the level in force, the landing
-page included, so raising it visibly grows the corpus.
+There is nothing to choose. A page shows every level the build holds, the API first, then the site, then
+each project, each as a section under its badge. A public build has no overlay and shows the API alone.
+Every count on the site answers at the deepest level the build holds.
 
-| level | on the page |
-|---|---|
-| API | the shipped corpus; the default, and the only level a public build has |
-| Site | that, plus what one Flow PT site configures |
-| Project | both of those, plus one project or every project the overlay holds |
+### The badge
 
-Stored in `localStorage` under `sg-groundtruth.reading-level`, as `api`, `site`, `project:<id>` or
-`project:*` for every project at once. Every read
-and write is wrapped in try/catch, so a browser that throws or holds nothing renders at `api`. A remembered
-level this build cannot show, a project that has since been removed, falls back to `api` rather than leaving
-the switch pointing at nothing. The value is read once per page load; after that the switch on screen is the
-truth, so a failed write cannot revert a choice on the next navigation.
+A section or a list row that is not the API alone carries a badge: the level's word on the level's colour.
+Blue is the API, orange is one site, green is one project, and these three are the only hues on the site.
+The sidebar carries the same colours as a dot beside every entry and as a key at its foot. A page with more
+than one section has a list at the far right of the page, one row per section with its dot, that scrolls to
+a section and follows the scroll. Each section's badge pins to the top of the viewport while its content
+scrolls under it, over a fade `--pin-fade` tall, and hands over to the next section's badge.
 
-The switch only offers the levels the overlay can show. With site content but no projects there is
-no project control; with projects but no site content there is no `Site` step; with one project the control
-is that project's name rather than a menu, because the union of one project is that project; with no overlay
-the switch is not rendered at all. There is no disabled state and no level that yields nothing.
-
-Every page is prerendered at the `api` level, so local material appears on hydration. Nothing that is hidden
-at the current level is ever removed from the page's data: the overlay is local by construction, and the
-data it puts in a page is the same data a public build does not have.
-
-### The mark
-
-Above the `api` level, every list row and every section of an entry page carries a mark saying which of the
-three it is. The mark is three signals at once, and the hue is the one that matters least.
-
-| signal | API | Site | Project |
-|---|---|---|---|
-| word | `The API` | `This site` | the project's name |
-| edge texture | solid | dashed | dotted |
-| ground | flush on the page | inset panel | inset panel |
-
-The texture is what survives greyscale, a monochrome printout and a reader who cannot separate the hues, and
-the word is what survives everything. A local-only row is inset in the list exactly as a local section is
-inset on an entry page, so the two read as one signal rather than two conventions. Everything is declared in
-`tokens.css` under `--scope-*`, resolved by one `[data-scope]` rule in `app.css`, and drawn by `ScopeMark`,
-`ScopeSection` and `ScopeLegend`. Restyling the distinction is an edit to those nine token lines.
-
-At the `api` level nothing is marked and no legend is drawn: every row on the page is the same kind of
-thing, so the distinction has nothing to distinguish. A public build is always in that state.
-
-With more than one project selected, each mark names its project and each section names the directory it was
-read from, so a reader can tell which project every piece came from.
+Everything is declared in `tokens.css` under `--scope-*`, resolved by one `[data-scope]` rule in `app.css`,
+and drawn by `ScopeMark` and `ScopeSection`.
 
 ## Which files are design surface
 
@@ -216,22 +183,22 @@ it styles every rendered corpus body, so a change there lands on every entry pag
 | `src/routes/**/+page.svelte` | page composition and copy |
 
 Every component reads tokens. Nothing hardcodes a colour or a length, so the whole look changes from
-`tokens.css` alone. Light and dark come from one `light-dark()` declaration per colour and follow
-`prefers-color-scheme`. There is no theme toggle and no theme script.
+`tokens.css` alone. The site is dark only: `color-scheme` is pinned to `dark` on the root, so every
+`light-dark()` resolves to its second value. The light values stay in the tokens for the day that changes.
 
 The components:
 
 | component | does |
 |---|---|
-| `SiteHeader` / `SiteFooter` | the shell |
+| `Sidebar` | the navigation: home, two pages, five groups that open, and the key to the colours |
+| `SiteHeader` / `SiteFooter` | the phone's top bar with the menu button, and the footer |
+| `Breadcrumb` | home, the section, the page: on every page but the intro |
 | `Section` | one band of a page: mono label, headline, lede, slot |
 | `EntryList` | the corpus index as a list of name, verdict, tags, each row marked with what it holds |
 | `EntryDetail` | one subject in full: the API card, then what the overlay measured about the same subject |
 | `Prose` | rendered corpus markdown, and all the table and code-slab styling |
-| `ScopeMark` | the mark itself: a word, an edge texture and a hue. The one place the three are drawn |
-| `ScopeSection` | one section of an entry page, marked. Local sections are inset, the API section is flush |
-| `ScopeLegend` | says what the marks mean, where they first appear on a page |
-| `ReadingLevel` | the global level switch; rendered only when the build read an overlay |
+| `ScopeMark` | the badge: the level's word on the level's colour |
+| `ScopeSection` | one section of an entry page, under its badge |
 
 Three accents, one per level: `--accent` for a shipped fact or a link, `--accent-local` for one site,
 `--accent-project` for one project. Nothing rests on the hue alone: see **The mark** above.
@@ -244,29 +211,25 @@ Leave these alone unless the pipeline itself is the problem.
 |---|---|
 | `src/lib/content/sources.js` | the seam: the three content roots and the scope rules |
 | `src/lib/content/corpus.js` | reads, parses frontmatter, renders markdown, merges the overlay |
-| `src/lib/reading.svelte.js` | the reading level: what is stored, what is restored, what is shown |
+| `src/lib/reading.svelte.js` | the reading level: the deepest the build holds, and what that shows |
 | `src/lib/site.js` | repo URL, the overlay directory a reader is told to create, and the one this build read |
 | `src/lib/content/filters.js` | the operator vocabulary read out of each field-type card, and the families it groups them into |
 | `svelte.config.js`, `vite.config.js`, `vercel.json` | build and deploy |
 
 ## Routes
 
-The site has four sections, and the navigation carries one entry each.
+The navigation is a sidebar on the left. Two entries are pages, Intro and How it works. Five open to
+list what they hold: field types, entity types, filters, recipes, findings. The name at the top is home.
 
 | section | route | is |
 |---|---|---|
-| Reference | `/reference` | the three groups that are complete and addressed by name: field types, entity types, filters |
 | Recipes | `/recipes` | a task and the calls that perform it, which is a different kind of thing from a reference card |
 | Findings | `/findings` | what was learned, question by question, chronological, later entries correcting earlier ones |
 | How it works | `/how-it-works` | the probes, the scope field, the overlay contract, the reading level |
 
-`/reference` is an index over three routes it does not own. `/field-types`, `/entity-types` and `/filters`
-stay one flat segment each, so grouping them cost no link a move.
-
 | route | on it |
 |---|---|
-| `/` | the hero, five facts about what this is, the setup prompt, and links to the four sections |
-| `/reference` | the three reference groups, each with what it is and what it answers |
+| `/` | the hero, the setup prompt, why it exists, what it does, three facts, and links to every section |
 | `/field-types` | every data type with verdicts and tags |
 | `/field-types/[slug]` | one reference card in full |
 | `/entity-types` | every entity type with verdicts and tags |
@@ -387,15 +350,34 @@ JSON payloads in prose as well as in code spans. Seven corpus files already carr
 fence. Under mdsvex any one of them breaks the build, and the corpus is edited by probes rather than by a
 person watching the site. `marked` renders a string to a string and cannot be broken by content.
 
+## The look
+
+One column, `--column` wide (700px), and nothing on any page is wider than it: header, content and footer
+all sit in it, and a table or a slab that needs more room scrolls inside itself. There is no sidebar and no
+table of contents. A page is read top to bottom. The sidebar is the one fixed element.
+
+| decision | where |
+|---|---|
+| body text is 17px on a 1.6 line, tracked -1% | `--text-body`, `--leading-body`, `--tracking-body` |
+| three inks: headings, emphasis and links in `--ink`; paragraphs in `--ink-body`; metadata in `--ink-muted` | `tokens.css` |
+| warm graphite neutrals, dark only, with light values kept in the tokens | `tokens.css` |
+| links underline in `--underline`, a lighter ink, and darken on hover | `app.css` |
+| code slabs are the darkest surface on the page | `--slab` |
+| tables wrap their cells instead of scrolling, so a 300-character error string gets a taller row | `app.css` |
+| the API mark takes the page's ink; only the two local levels carry a hue, amber and green | `--scope-*` |
+| the system UI face and the system mono face, no webfont | `--font-text`, `--font-mono` |
+
+**The corpus marks its sections with bold, not headings.** `**Read**`, `**Write**`, `**Clear**`,
+`**Filter**`, `**Traps**` open a paragraph on a field-type card; `**Type**`, `**Identity**`, `**Create**`,
+`**Links**`, `**Status**` on an entity type; `**Q**`, `**Endpoint**`, `**Actual**`, `**Teaches**` on a
+finding. `Prose.svelte` sets `p > strong:first-child` on its own line with a section's worth of air above
+it, so they read as heads. The markdown is untouched.
+
 ## Left undecided
 
 - **No syntax highlighting.** Code blocks hold JSON, Python, HTTP and raw Ruby error strings, often in one
   block. Picking one language per block is a content decision, and a highlighter is a dependency and a
   colour system of its own. Slabs are monospace on a dark ground and nothing more.
-- **The corpus marks its sections with bold, not headings.** `**Read**`, `**Write**`, `**Clear**`,
-  `**Filter**`, `**Traps**` open a paragraph. They cannot be styled as real section heads without either
-  editing the corpus to use `###` or pattern-matching bold-leading paragraphs. Left as plain bold. Noted in
-  `Prose.svelte`.
 - **The cited examples sit at the foot of `/findings`.** They are evidence for a reader who has already
   decided, and they belong beside the entries that recorded them rather than on the landing page. The MCP
   integrations sit on `/how-it-works`, under `#mcp`: they answer a question a reader already has rather than

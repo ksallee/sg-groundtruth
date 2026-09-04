@@ -67,22 +67,12 @@
 </table>
 
 <style>
-	.statuses {
-		border-collapse: collapse;
-		width: 100%;
-		font-size: var(--text-sm);
-	}
-
 	caption {
-		text-align: left;
-		color: var(--ink-muted);
-		font-size: var(--text-xs);
+		caption-side: top;
 		padding-bottom: var(--space-2);
 	}
 
 	td {
-		padding: var(--space-1) var(--space-3) var(--space-1) 0;
-		border-bottom: 1px solid var(--rule);
 		vertical-align: middle;
 	}
 
@@ -117,7 +107,7 @@
 		padding-inline: var(--space-2);
 		font-family: var(--font-mono);
 		font-size: var(--text-xs);
-		color: oklch(0.3 0 0);
+		color: #2b2b2a;
 	}
 
 	.chip.empty {
@@ -127,12 +117,15 @@
 
 	.name {
 		width: 100%;
+		color: var(--ink);
 	}
 
 	.name code {
-		font-family: var(--font-mono);
 		font-size: var(--text-xs);
 		color: var(--ink-muted);
+		background: none;
+		padding: 0;
+		margin-inline-start: var(--space-1);
 	}
 
 	.flag {

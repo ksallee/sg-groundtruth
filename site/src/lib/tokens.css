@@ -1,85 +1,76 @@
 /* ===========================================================================
-   DESIGN SURFACE. Every colour, spacing step, font stack, radius and duration
-   on the site is declared here. Change the look by changing this file; no
-   component hardcodes a value.
+   DESIGN SURFACE. Every colour, spacing step, font stack, radius, width and
+   duration on the site is declared here. Change the look by changing this
+   file; no component hardcodes a value.
 
-   Light and dark come from one declaration each, via light-dark(). The page
-   follows prefers-color-scheme and ships no theme script and no toggle.
+   The site is dark only: color-scheme is pinned to dark, so every
+   light-dark() below resolves to its second value. The first values stay in
+   place for the day a light scheme is wanted; flipping the pin brings it back.
+
+   One column, three inks. Everything on every page sits in a single reading
+   column, --column wide. Text is set in three levels of ink: headings,
+   emphasis and links take the full ink; paragraphs step down one; metadata
+   steps down again. That gap between the levels is what lets a bold word read
+   as a heading without a change of size.
    =========================================================================== */
 
 :root {
-	color-scheme: light dark;
+	color-scheme: dark;
 
 	/* --- colour ----------------------------------------------------------
-	   Neutrals sit at zero chroma so the accents are the only hues on the
-	   page. Three accents exist, one per level of truth: --accent is a link
-	   or a shipped fact, --accent-local marks content measured on one site,
-	   --accent-project marks content measured on one project inside it.
-	   Meaning never rests on colour alone; each band is also labelled and
-	   boxed.
+	   Near-black with a trace of blue, and neutrals stepped off it. No hue is used for
+	   decoration. The two hues on the site mean something: amber is content
+	   measured on one site, green is content measured on one project. The
+	   API, which is the page's own voice, is set in ink. */
+	--ground: light-dark(#fdfdfc, #111112);
+	--ground-raised: light-dark(#ffffff, #18191b);
+	--ground-sunken: light-dark(#f3f3f1, #1e1f22);
 
-	   The three are tuned to the same contrast on the ground, 6.4 in light
-	   and 9.4 in dark, so no level reads as louder than another. They
-	   therefore resolve to one grey in greyscale. The word and the edge
-	   texture below are the signals that carry. */
-	--ground: light-dark(oklch(0.98 0 0), oklch(0.235 0 0));
+	--ink: light-dark(#0f0f0e, #f5f6f7);
+	--ink-soft: light-dark(#2e2e2c, #dcdde0);
+	--ink-body: light-dark(#4b4b48, #cfd1d4);
+	--ink-muted: light-dark(#85857f, #898c92);
 
-	/* CHANGED. Dark was 0.17, which is #0f0f0f and left the slab nowhere
-	   below it. At 0.235 the four dark surfaces are four visible steps. */
-	--ground-raised: light-dark(oklch(1 0 0), oklch(0.285 0 0));
+	--rule: light-dark(#e9e9e6, #242528);
+	--rule-strong: light-dark(#d6d5d1, #34353a);
 
-	/* CHANGED. Light was 0.955, 3% off the ground and invisible. */
-	--ground-sunken: light-dark(oklch(0.945 0 0), oklch(0.195 0 0));
+	/* A link underlines in a lighter ink than its text and darkens on hover. */
+	--underline: light-dark(#c4c3be, #55585e);
 
-	--ink: light-dark(oklch(0.22 0 0), oklch(0.94 0 0));
-	--ink-muted: light-dark(oklch(0.475 0 0), oklch(0.72 0 0));
+	/* Code slabs are the darkest surface on the page, with a rule, so a quoted
+	   payload reads as one object. */
+	--slab: light-dark(#161615, #0b0c0d);
+	--slab-ink: light-dark(#e6e6e3, #d8dadd);
+	--slab-rule: light-dark(#161615, #242528);
 
-	--rule: light-dark(oklch(0.885 0 0), oklch(0.36 0 0));
-	--rule-strong: light-dark(oklch(0.76 0 0), oklch(0.48 0 0));
+	/* The three levels of truth are the only hues on the site. Everything else
+	   is black and white, so a dot or a mark in one of these is always a scope.
+	   Bright, and tuned per scheme. */
+	--accent-api: light-dark(#007aff, #0a84ff);
+	--accent-api-quiet: light-dark(#e9f2ff, #13233a);
+	--accent-api-rule: light-dark(#b8d3ff, #1f3c68);
 
-	/* CHANGED. Retuned from 0.45/0.78 to sit at 6.37 and 9.44 against the
-	   ground, matching the two accents below inside 1%. */
-	--accent: light-dark(oklch(0.475 0.17 255), oklch(0.825 0.13 255));
-	--accent-quiet: light-dark(oklch(0.955 0.022 255), oklch(0.3 0.045 255));
+	--accent-local: light-dark(#ff9500, #ff9f0a);
+	--accent-local-quiet: light-dark(#fff4e3, #332409);
+	--accent-local-rule: light-dark(#ffd699, #5a3f10);
 
-	/* Site-specific content. Warm against the cool accent, so a reader can
-	   tell a measurement from a rule at a glance. 6.39 and 9.39. */
-	/* Stock status icons are dark artwork on transparency, drawn for a light
-	   interface. They are the vendor's bitmaps and cannot be recoloured, so the
-	   chip behind them stays light in both themes: inverting the page would
-	   erase the icon. The one fixed surface on the site, and it is fixed for a
-	   reason rather than by omission. */
-	--icon-chip: oklch(0.94 0 0);
-	--icon-chip-rule: oklch(0.86 0 0);
-
-	--accent-local: light-dark(oklch(0.48 0.13 62), oklch(0.82 0.12 72));
-	--accent-local-quiet: light-dark(oklch(0.965 0.025 70), oklch(0.31 0.04 62));
-
-	/* Project-specific content, one level narrower again. A third hue, so the
-	   three levels of truth are three colours. Every band that uses it is also
-	   labelled and boxed, so nothing rests on the hue alone. 6.43 and 9.36. */
-	--accent-project: light-dark(oklch(0.458 0.11 155), oklch(0.8 0.12 155));
-	--accent-project-quiet: light-dark(oklch(0.955 0.03 158), oklch(0.3 0.04 155));
+	--accent-project: light-dark(#34c759, #30d158);
+	--accent-project-quiet: light-dark(#e7f8ec, #0f2f18);
+	--accent-project-rule: light-dark(#a6e6b6, #1e5a2f);
 
 	/* --- provenance ------------------------------------------------------
 	   Three kinds of information share every list and every entry page, and
-	   these nine lines are the whole distinction between them. Restyle it
-	   here and it changes on the switch, on a list row, on a chip and on a
-	   detail section at once.
-
-	   A mark is three signals at once: a word, an edge texture and a hue.
-	   The texture is the one that survives greyscale, a monochrome printout
-	   and a reader who cannot separate the hues. Solid for the API, dashed
-	   for one site, dotted for one project: coarser as the claim narrows.
-
-	   UNCHANGED. The nine lines below are the load-bearing part of the
-	   design and this proposal does not touch them. */
-	--scope-api-ink: var(--accent);
-	--scope-api-quiet: var(--accent-quiet);
-	--scope-api-edge: linear-gradient(var(--accent), var(--accent));
+	   these lines are the whole distinction between them. Restyle it here and
+	   it changes on the switch, on a list row, on a chip and on a detail
+	   section at once. A mark is a badge: the level's word on the level's
+	   colour. */
+	--scope-api-ink: var(--accent-api);
+	--scope-api-quiet: var(--accent-api-quiet);
+	--scope-api-rule: var(--accent-api-rule);
 
 	--scope-site-ink: var(--accent-local);
 	--scope-site-quiet: var(--accent-local-quiet);
+	--scope-site-rule: var(--accent-local-rule);
 	--scope-site-edge: repeating-linear-gradient(
 		var(--accent-local) 0 7px,
 		transparent 7px 12px
@@ -87,125 +78,123 @@
 
 	--scope-project-ink: var(--accent-project);
 	--scope-project-quiet: var(--accent-project-quiet);
+	--scope-project-rule: var(--accent-project-rule);
 	--scope-project-edge: repeating-linear-gradient(
 		var(--accent-project) 0 2px,
 		transparent 2px 6px
 	);
 
-	/* The width of every edge mark, so a chip and a section agree. The
-	   verdict rail on an entry page is the same bar and reads this too. */
-	--scope-edge-width: 3px;
+	/* Stock status icons are the vendor's dark bitmaps on transparency, drawn
+	   for a light interface and not recolourable, so the chip behind them stays
+	   light in both schemes. The one fixed surface on the site. */
+	--icon-chip: #ededeb;
+	--icon-chip-rule: #d6d5d1;
 
-	/* Code slabs are the darkest surface in both schemes, so quoted API
-	   payloads read as one object at any brightness.
-	   CHANGED. Dark was 0.12 against a 0.14 sunken ground, a 2% step that
-	   was not a step. It follows the ground up and keeps its distance. */
-	--slab: light-dark(oklch(0.21 0 0), oklch(0.155 0 0));
-	--slab-ink: light-dark(oklch(0.93 0 0), oklch(0.9 0 0));
-
-	/* The cue on a container that scrolls sideways. Drawn only while there is
-	   more to scroll to; see `.scroll-x` in app.css. */
-	--scroll-cue: light-dark(oklch(0.22 0 0 / 0.16), oklch(0 0 0 / 0.55));
-
-	/* Whatever a container is currently sitting on. `.scroll-x` masks its own
-	   edges with this, so anything that changes the ground under it, an inset
-	   local section above all, reassigns it rather than the mask going wrong. */
+	/* The cue on a container that scrolls sideways, drawn only while there is
+	   more to scroll to. --surface is whatever the container sits on; an inset
+	   section reassigns it so the mask matches its own ground. */
+	--scroll-cue: light-dark(rgb(15 15 14 / 0.14), rgb(0 0 0 / 0.6));
 	--surface: var(--ground);
 
 	/* --- type ------------------------------------------------------------
-	   A system sans sets prose and a monospace sets everything the API said.
-	   The corpus is a record of what an API answered, and the two registers
-	   are already in the content: a sentence a person wrote, and a string the
-	   API returned. The mono carries that distinction on its own.
-
-	   A serif was tried here for the prose half and was too loud against
-	   pages that are 40 to 60% literals. Swapping in a licensed pair is these
-	   two lines plus an @font-face block, which cannot live in this file. */
+	   No webfonts. The corpus is mostly API literals, so the mono stack does
+	   much of the work and the system UI face carries the prose. Swapping in a
+	   licensed pair means editing these two lines and adding @font-face. */
 	--font-text: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
 	--font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Segoe UI Mono', 'Roboto Mono', Menlo,
 		Consolas, monospace;
 
-	/* CHANGED. Seven steps. --text-base to --text-md widens from 1.13 to
-	   1.19, because a list row's name and its verdict were 2px apart and
-	   read as one block. */
-	--text-xs: 0.75rem;
-	--text-sm: 0.875rem;
-	--text-base: 1rem;
-	--text-md: 1.1875rem;
-	--text-lg: 1.5rem;
-	--text-xl: clamp(1.75rem, 1.15rem + 2.4vw, 2.5rem);
-	--text-display: clamp(2.5rem, 1.5rem + 4.6vw, 4.25rem);
+	--text-xs: 0.8125rem; /* 13px  labels, tags, table heads, marks */
+	--text-sm: 0.9375rem; /* 15px  nav, meta, index verdicts, table cells */
+	--text-body: 1.0625rem; /* 17px  every paragraph */
+	--text-lede: 1.125rem; /* 18px  the one line that introduces a page */
+	--text-code: 0.875rem; /* 14px  slabs */
+	--text-h3: 1.25rem; /* 20px */
+	--text-h2: 1.625rem; /* 26px */
+	--text-h1: 2rem; /* 32px */
+	--text-display: clamp(2rem, 1.5rem + 1.6vw, 2.5rem); /* 32px to 40px */
 
-	/* CHANGED. Four, up from two. Heads and table cells both wrap and
-	   neither wants 1.62. */
-	--leading-tight: 1.12;
-	--leading-snug: 1.35;
-	--leading-normal: 1.62;
-	--leading-tabular: 1.45;
+	--weight-medium: 500;
+	--weight-bold: 600;
+
+	--leading-tight: 1.1;
+	--leading-heading: 1.25;
+	--leading-body: 1.6;
+	--leading-tabular: 1.5;
+
+	--tracking-body: -0.01em;
+	--tracking-heading: -0.02em;
+	--tracking-display: -0.025em;
 
 	/* --- space -----------------------------------------------------------
-	   One scale, used for every margin, padding and gap.
-	   CHANGED. Steps 1 to 5 hold. 6, 7 and 8 grow, because a band on / and
-	   /reference is separated by one hairline and the type above it is now
-	   larger. */
+	   One scale, used for every margin, padding and gap. --gap-prose is the
+	   distance between two blocks inside a body of text. A table cell reads
+	   --cell-y and --cell-x, so every table on the site has one density. */
 	--space-1: 0.25rem;
 	--space-2: 0.5rem;
 	--space-3: 0.75rem;
 	--space-4: 1rem;
 	--space-5: 1.5rem;
-	--space-6: 2.5rem;
-	--space-7: 4rem;
-	--space-8: 6.5rem;
-
-	/* --- density ---------------------------------------------------------
-	   NEW. A table row is 2 * --cell-y + --leading-tabular * --text-sm, so
-	   34px. It was 46px on /filters and 37px in Prose, two densities on one
-	   site. Table density is one line here rather than a value in two
-	   components. */
-	--cell-y: 0.4375rem;
+	--space-6: 2rem;
+	--space-7: 3rem;
+	--space-8: 4rem;
+	--space-9: 6rem;
+	--gap-prose: 1.25rem;
+	/* The pinned section badge and the strip under it. Move these to taste.
+	   --pin-top         where the badge stops when it pins, from the top of the viewport
+	   --pin-pad         page colour above the badge while pinned
+	   --pin-fade-start  page colour below the badge before the fade begins
+	   --pin-fade        the fade itself, page colour to nothing
+	   The gap from the badge to the section's first block is --pin-fade-start
+	   plus --pin-fade. */
+	--pin-top: 0px;
+	--pin-pad: 0.75rem;
+	--pin-fade-start: 0.5rem;
+	--pin-fade: 2.5rem;
+	/* The same fade, upside down, where the sidebar's tree meets the colour key
+	   at its foot: nothing at the top, page colour at the key. */
+	--key-fade: 2.5rem;
+	/* And once more along the bottom edge of the main area: content dissolves
+	   as it leaves the screen. */
+	--main-fade: 3rem;
+	--cell-y: 0.5rem;
 	--cell-x: 0.75rem;
 
-	/* --- shape -----------------------------------------------------------
-	   CHANGED. Square. An inset panel behind a textured left edge reads as a
-	   margin note at 0 and as a card at 4px. The three names stay, so
-	   rounding the site is still one line. */
-	--radius-sm: 0px;
-	--radius: 0px;
-	--radius-lg: 0px;
-
-	/* NEW. --border-bar names the 2px top rule over a card in a grid, which
-	   routes/+page.svelte hardcodes today. */
+	/* --- shape ----------------------------------------------------------- */
+	--radius-sm: 4px;
+	--radius: 8px;
+	--radius-lg: 12px;
+	--radius-pill: 999px;
 	--border: 1px;
-	--border-bar: 2px;
+
+	/* The sidebar is the page's own ground, with no rule between them, so it
+	   floats at the left rather than boxing the column in. */
+	--sidebar: var(--ground);
+	--sidebar-hover: var(--ground-sunken);
+	--sidebar-active: light-dark(#e9e9e6, #222326);
+	--sidebar-width: 16rem;
+	--text-menu: 0.875rem; /* 14px  every sidebar row */
 
 	/* --- measure ---------------------------------------------------------
-	   Three widths. --measure is the reading column. --measure-wide is what a
-	   reference table or a payload slab may spill out to before it starts
-	   scrolling inside itself. --wide is the page shell.
-
-	   The first two are capped at 100% because they are wider than a 390px
-	   phone: without the cap a reference card widens the page instead of
-	   scrolling inside its own container.
-
-	   CHANGED. --wide 78rem to 72rem, because a 1248px shell held a 600px
-	   column and left 690px of every prose page empty at 1440px. --measure
-	   stays at 64ch, which is right for the sans. */
-	--measure: min(100%, 64ch);
-	--measure-wide: min(100%, 60rem);
-	--wide: 72rem;
-	--gutter: clamp(var(--space-4), 4vw, var(--space-6));
-
-	/* The single column every stacked layout on the site declares. A grid's
-	   default `auto` track is sized by its widest child's max-content, so one
-	   long table cell widens the whole page and the percentages above have
-	   nothing definite to resolve against. Stated here, used everywhere. */
+	   The reading column, and the space either side of it on a small screen.
+	   Nothing on the site is wider than the column. A table or a slab that
+	   needs more room scrolls inside itself. --col is the one track every
+	   stacked grid declares, so a long literal can never widen a page. */
+	--column: 43.75rem;
+	--gutter: clamp(1.25rem, 5vw, 2rem);
 	--col: minmax(0, 1fr);
 
-	--duration: 120ms;
+	/* --- motion ----------------------------------------------------------
+	   Colour changes use the browser's ease. Anything that moves uses a
+	   strong ease-out, so it answers the pointer at once and settles. */
+	--duration: 150ms;
+	--duration-press: 160ms;
+	--ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
 	:root {
 		--duration: 0ms;
+		--duration-press: 0ms;
 	}
 }

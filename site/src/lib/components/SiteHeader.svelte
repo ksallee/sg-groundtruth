@@ -1,80 +1,60 @@
 <script>
 	import { NAME } from '$lib/site.js';
-	import ReadingLevel from './ReadingLevel.svelte';
 
-	// The overlay facts come from the layout load. The reading level switch
-	// exists only when a local overlay was found at build time, so a public build
-	// carries no control that does nothing. The overlay has no nav entry: it is
-	// depth on the four sections, not a fifth one.
-	let { hasOverlay = false, hasSite = false, projects = [] } = $props();
+	// The bar a phone gets: the name, which is the way home, and the button that
+	// opens the sidebar as a drawer. On a desktop the sidebar is always in view
+	// and this bar is not drawn.
+	let { onmenu } = $props();
 </script>
 
-<header>
-	<div class="bar">
-		<a class="mark" href="/">{NAME}</a>
-		<nav aria-label="Sections">
-			<a href="/reference">Reference</a>
-			<a href="/recipes">Recipes</a>
-			<a href="/findings">Findings</a>
-			<a href="/how-it-works">How it works</a>
-		</nav>
-		{#if hasOverlay}
-			<ReadingLevel {hasSite} {projects} />
-		{/if}
-	</div>
+<header class="bar">
+	<button type="button" class="menu" onclick={onmenu} aria-label="Open menu">
+		<svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true">
+			<path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.5" />
+		</svg>
+	</button>
+	<a class="mark" href="/">{NAME}</a>
 </header>
 
 <style>
-	header {
-		border-bottom: var(--border) solid var(--rule);
-		background: var(--ground);
-		position: sticky;
-		top: 0;
-		z-index: 10;
+	.bar {
+		display: none;
 	}
 
-	/* The bar wraps to three rows on a phone and stands 120px tall, which is 14%
-	   of the viewport held on every scroll. The height comes from wrapping, so
-	   it cannot be capped with a length. Below 40rem it scrolls away instead. */
-	@media (max-width: 40rem) {
-		header {
-			position: static;
+	@media (max-width: 63.99rem) {
+		.bar {
+			position: sticky;
+			top: 0;
+			z-index: 10;
+			display: flex;
+			align-items: center;
+			gap: var(--space-2);
+			min-height: 3.5rem;
+			padding-inline: var(--gutter);
+			background: var(--ground);
+			border-bottom: var(--border) solid var(--rule);
+			font-size: var(--text-sm);
 		}
 	}
 
-	.bar {
-		max-width: var(--wide);
-		margin-inline: auto;
-		padding: var(--space-3) var(--gutter);
-		display: flex;
-		flex-wrap: wrap;
-		align-items: baseline;
-		gap: var(--space-3) var(--space-5);
+	.menu {
+		border: 0;
+		background: none;
+		color: var(--ink);
+		padding: var(--space-2);
+		margin-left: calc(-1 * var(--space-2));
+		border-radius: 6px;
+		display: grid;
+		place-items: center;
+	}
+
+	.menu:hover {
+		background: var(--ground-sunken);
 	}
 
 	.mark {
-		font-family: var(--font-mono);
-		font-size: var(--text-base);
-		font-weight: 600;
+		font-weight: var(--weight-bold);
 		color: var(--ink);
 		text-decoration: none;
-		margin-right: auto;
-	}
-
-	nav {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--space-2) var(--space-4);
-		font-size: var(--text-sm);
-	}
-
-	nav a {
-		color: var(--ink-muted);
-		text-decoration: none;
-	}
-
-	nav a:hover {
-		color: var(--ink);
-		text-decoration: underline;
 	}
 </style>

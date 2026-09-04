@@ -19,21 +19,16 @@
 	<meta name="description" content={data.entry.verdict} />
 </svelte:head>
 
-<EntryDetail
-	entry={data.entry}
-	kicker="Entity type"
-	backHref="/entity-types"
-	backLabel="All entity types"
-/>
+<EntryDetail entry={data.entry} section={{ label: 'Entity types', href: '/entity-types' }} />
 
 {#if st}
-	<section class="statuses">
+	<section class="col statuses">
 		<h2>Statuses this type can take</h2>
 		<StatusTable
 			codes={st.usable}
 			hidden={st.hidden}
 			caption={st.hidden.length
-				? `${st.usable.length} usable — ${st.valid.length} valid minus ${st.hidden.length} hidden on this project. Default ${st.default}.`
+				? `${st.usable.length} usable: ${st.valid.length} valid minus ${st.hidden.length} hidden on this project. Default ${st.default}.`
 				: `${st.usable.length} values. Default ${st.default}.`}
 		/>
 	</section>
@@ -41,13 +36,9 @@
 
 <style>
 	.statuses {
-		max-width: var(--measure);
-		margin-inline: auto;
-		padding-block: var(--space-6);
-	}
-
-	h2 {
-		font-size: var(--text-lg);
-		margin-block-end: var(--space-3);
+		padding-top: var(--space-8);
+		display: grid;
+		grid-template-columns: var(--col);
+		gap: var(--space-4);
 	}
 </style>
