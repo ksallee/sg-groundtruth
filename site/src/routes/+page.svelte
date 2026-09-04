@@ -61,6 +61,12 @@ which is gitignored and is never committed or deployed.`;
 			note: 'One card per schema name: identity, the create contract, every link field, the status field.'
 		},
 		{
+			href: '/endpoints',
+			title: 'Endpoints',
+			count: `${counts.endpoints} calls`,
+			note: 'One card per REST call: what it takes, what it answers, a real response, and the edge cases.'
+		},
+		{
 			href: '/filters',
 			title: 'Filters',
 			count: '',
@@ -76,7 +82,7 @@ which is gitignored and is never committed or deployed.`;
 			href: '/findings',
 			title: 'Findings',
 			count: `${counts.findings} published`,
-			note: 'One question each, chronological, with later entries correcting earlier ones.'
+			note: 'One question each, grouped by the phase of a session it bites in.'
 		},
 		{
 			href: '/how-it-works',

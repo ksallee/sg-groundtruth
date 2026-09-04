@@ -1,5 +1,6 @@
 <script>
 	import ScopeMark from './ScopeMark.svelte';
+	import { parts } from '$lib/text.js';
 	import { visible } from '$lib/reading.svelte.js';
 
 	// The corpus index, as a list. One row is a name, its one-line verdict and
@@ -26,7 +27,8 @@
 	// A field type, or an entity type with no display title, is named by the
 	// API's own literal and is set in mono, exactly as the API spells it.
 	const literal = (entry) =>
-		!entry.title && (entry.group === 'field_types' || entry.group === 'entity_types');
+		entry.group === 'endpoints' ||
+		(!entry.title && (entry.group === 'field_types' || entry.group === 'entity_types'));
 
 	const nameOf = (entry) => entry.title || entry.name || entry.fullName.replace(/^\d+\s+/, '');
 </script>
@@ -54,7 +56,11 @@
 						{/each}
 					{/if}
 				</h3>
-				<p class="verdict">{entry.hasApi ? entry.verdict : (lead?.verdict ?? '')}</p>
+				<p class="verdict">
+					{#each parts(entry.hasApi ? entry.verdict : (lead?.verdict ?? '')) as part, i (i)}{#if part.code}<code
+							>{part.text}</code
+						>{:else}{part.text}{/if}{/each}
+				</p>
 				{#if showTags}
 					{@const tags = entry.hasApi ? entry.tags : (lead?.tags ?? [])}
 					{#if tags.length}

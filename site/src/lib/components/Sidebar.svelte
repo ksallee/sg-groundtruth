@@ -36,6 +36,7 @@
 			href: '/entity-types',
 			items: shown(nav.entityTypes)
 		},
+		{ id: 'endpoints', label: 'Endpoints', href: '/endpoints', items: shown(nav.endpoints) },
 		{
 			id: 'filters',
 			label: 'Filters',
@@ -58,6 +59,18 @@
 
 	const current = (href) =>
 		href.includes('#') ? path + page.url.hash === href : path === href;
+
+	// An endpoint card is named by its call, `POST /entity/_batch`. The verb is a
+	// badge and the path is the label, which is the shape every API reference
+	// uses and the only thing keeping four rows that end in `/fields/<field>`
+	// apart from one another.
+	const VERB = /^(GET|POST|PUT|DELETE|PATCH)\s+/;
+	const verbOf = (name) => (VERB.exec(name) ?? [])[1] ?? '';
+	// A path has no spaces, so a wrap breaks wherever it runs out of room and
+	// `/follow` becomes `follo` and `w`. A zero-width space after each separator
+	// offers the line breaker somewhere better; `overflow-wrap` still catches a
+	// single segment too long for the column.
+	const pathOf = (name) => name.replace(VERB, '').replace(/([/.])/g, '$1\u200B');
 
 	const WORD = { api: 'API', site: 'Site', project: 'Project' };
 	const describe = (levels) => levels.map((l) => WORD[l]).join(', ');
@@ -106,7 +119,14 @@
 								<li>
 									<a class="subitem" href={e.href} aria-current={current(e.href) ? 'page' : undefined}>
 										{#if e.number}<span class="num">{e.number}</span>{/if}
-										<span class="label">{e.title || e.name}</span>
+										{#if verbOf(e.title || e.name)}
+											<span class="verb" data-verb={verbOf(e.title || e.name)}
+												>{verbOf(e.title || e.name)}</span
+											>
+											<span class="label mono">{pathOf(e.title || e.name)}</span>
+										{:else}
+											<span class="label">{e.title || e.name}</span>
+										{/if}
 										<span class="dots" role="img" aria-label={describe(e.levels)}>
 											{#each e.levels as level (level)}
 												<span class="dot" data-scope={level}></span>
@@ -338,6 +358,50 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+
+	/* A path is an API literal, so it is set in mono at 12px. Most sit on one line
+	   at this width. The eleven that do not, `/entity/<type>/<id>/<field>/_upload/
+	   multipart_abort` among them, wrap onto a second rather than truncate: an
+	   endpoint is told apart by its tail, so an ellipsis on the right turns
+	   `_upload/multipart` and `_upload/multipart_abort` into the same row. Fitting
+	   the longest on one line needs a 32rem sidebar, which is more than a third of
+	   the viewport for navigation. */
+	.label.mono {
+		font-family: var(--font-mono);
+		font-size: 0.75rem;
+		white-space: normal;
+		overflow: visible;
+		overflow-wrap: anywhere;
+	}
+
+	/* The verb, as every API reference draws it: short, uppercase, in its own
+	   colour, and never competing with the path for width. */
+	.verb {
+		flex: 0 0 auto;
+		width: 2.75rem;
+		font-family: var(--font-mono);
+		font-size: 0.6875rem;
+		font-weight: var(--weight-medium);
+		letter-spacing: 0.02em;
+		text-align: right;
+		color: var(--verb-get);
+	}
+
+	.verb[data-verb='POST'] {
+		color: var(--verb-post);
+	}
+
+	.verb[data-verb='PUT'] {
+		color: var(--verb-put);
+	}
+
+	.verb[data-verb='DELETE'] {
+		color: var(--verb-delete);
+	}
+
+	.verb[data-verb='PATCH'] {
+		color: var(--verb-patch);
 	}
 
 	/* The last dot is centred under the chevron; a second and a third run
