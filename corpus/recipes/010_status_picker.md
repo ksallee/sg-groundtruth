@@ -1,6 +1,7 @@
 ---
 intent: List the statuses a project actually offers, each with the label, colour and icon needed to draw it
-tags: [status, icon, colour, schema, list-field, entity-field, dotted-field, project, cache, trap, recipe]
+tags: [status, icon, colour, schema, list-field, entity-field, dotted-field, project, cache]
+endpoints: [GET /schema/<Type>/fields/<field>, POST /entity/<type>/_search]
 scope: api
 measured: the first 3 sample projects, read only
 ---

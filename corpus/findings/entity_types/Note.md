@@ -1,5 +1,5 @@
 ---
-tags: [entity-type, note, create, multi-entity, entity-field, attachment, status, jsonb, trap]
+tags: [attachment, jsonb, destructive, note]
 scope: api
 measured: first sample project read, sandbox project written
 summary: A comment about something, with a subject, a body and a thread of replies.

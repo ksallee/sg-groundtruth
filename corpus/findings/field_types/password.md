@@ -1,5 +1,5 @@
 ---
-tags: [field-type, password, filter, operator, schema, dotted-field, inspector, trap]
+tags: [dotted-field, inspector, silent, read-only]
 scope: api
 measured: site-wide plus the first sample project, read only; no password is ever sent
 summary: An account credential, which reads back as a constant mask and is never returned.

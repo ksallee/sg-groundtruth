@@ -1,8 +1,10 @@
 ---
 tags: [write, upload, media, attachment, version, async]
+endpoints: [GET /entity/<type>/<id>/<field>/_upload, PUT <links.upload>, POST <links.complete_upload>]
+phase: upload
 scope: api
 measured: unrecorded, one existing Version whose project the probe never names
-verdict: Media upload is three calls: GET {field}/_upload for the presigned links, PUT the bytes to links.upload, POST links.complete_upload with upload_info and upload_data.
+verdict: Media upload is three calls: GET `{field}/_upload`, PUT the bytes, POST `links.complete_upload`. Transcoding is async: poll until the field stops reading `/images/status/transient/`.
 ---
 
 # 013_upload_media

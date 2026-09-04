@@ -47,6 +47,8 @@ the finding, where a reader can see what was cut, not at the point of capture.
 ```markdown
 ---
 tags: [reuse an existing tag from corpus/INDEX.md; singular, lowercase]
+endpoints: [every call this covers, spelled as its card in corpus/endpoints/ spells it]
+phase: auth|protocol|schema|read|filter|write|upload|observe|render
 scope: api|site|project
 measured: where the evidence was taken. Copy the line `_lib.emit` prints
 verdict: One sentence, 200 chars max. The actionable rule, not the story.
@@ -102,7 +104,7 @@ one for that data type (probe 017). Do that first; it is cheaper and more comple
 
 ```markdown
 ---
-tags: [field-type, …; reuse tags from corpus/INDEX.md]
+tags: [reuse tags from corpus/INDEX.md; may be empty]
 scope: api|site|project
 measured: where the evidence was taken. Copy the line `_lib.emit` prints
 verdict: One sentence, 200 chars max. The thing that surprises someone assuming this type behaves like text.
@@ -144,6 +146,49 @@ what it matches. Include the negative control that returns 0.
 
 120 lines max: a reference card, not a transcript. `check_corpus.py` enforces it.
 
+## Frontmatter
+
+One key per line and a value that never wraps. `probes/check_corpus.py` and the site both read this
+block with a line regex rather than a YAML parser, so a wrapped value is silently half-read.
+
+**Tags select or they are noise.** Two rules, both enforced:
+
+| drop it when | because |
+|---|---|
+| every entry in the group carries it | `filter` on a field-type card, where each has a **Filter** section |
+| it restates the entry's own name and no other entry uses it | `percent` on `percent.md` |
+
+A tag shared with other entries stays on the card that defines it: `list-field` belongs on `list.md`.
+An empty list is a real answer on a field-type or entity-type card, which is addressed by its name.
+Two tags carry a class rather than a subject: `silent` for a 2xx that did not carry out the request,
+`destructive` for a successful call that removes data the caller never named.
+
+## Endpoints
+
+`corpus/endpoints/<slug>.md` is one card per call, named by `endpoint:`, which is the canonical
+spelling. `probes/check_corpus.py` rejects an `endpoints:` value no card is named by, so a probe
+covering a call with no card writes the card first.
+
+Required sections, and what belongs in each:
+
+| section | holds |
+|---|---|
+| `**Params**` | one row per part of the request: path segments, required and optional parameters, headers |
+| `**Sample requests**` | each call runnable against `src/sg_groundtruth/client.py`, followed by what it actually answered. Several, when the failures teach as much as the success |
+| `**Response codes**` | one row per status code, with the error string verbatim |
+| `**Edge cases**` | what bites on this call: a missing parameter, a wrong header, an id that is not there |
+| `**Links**` | the related endpoints, field types and entity types, as backticked paths |
+
+A request without its response is an index entry. Pair them.
+
+The card does **not** restate a finding. Every finding and recipe names its `endpoints:`, and their
+verdicts are joined onto the card by `probes/index.py` and by the site. Writing the quirk in both
+places is how the two drift.
+
+A card with no finding behind it lists as *no finding yet*. That is deliberate: writing the card for a
+call the official documentation advertises, before anything has measured it, is how the queue gets
+written down.
+
 ## Register
 
 The corpus is public documentation and competes with the official docs. Read the **Style** section of
@@ -164,7 +209,7 @@ beginning "On the probed site, ...". What a stock field is called and how the ty
 
 ```markdown
 ---
-tags: [entity-type, …; reuse tags from corpus/INDEX.md]
+tags: [reuse tags from corpus/INDEX.md; may be empty]
 scope: api
 measured: where the evidence was taken. Copy the line `_lib.emit` prints
 verdict: One sentence, 200 chars max. The thing a client gets wrong about this type.

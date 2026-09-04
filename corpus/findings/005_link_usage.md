@@ -1,5 +1,7 @@
 ---
 tags: [version, link, inspector, entity-field, paging]
+endpoints: [GET /entity/<type>]
+phase: read
 scope: site
 measured: one sample project, its 100 most recent Versions
 verdict: On the sample project every Version links through `entity` (99% Shot, 1% Asset) and only 1% through `sg_task`, so measure link usage per site rather than hardcoding Task-linking.

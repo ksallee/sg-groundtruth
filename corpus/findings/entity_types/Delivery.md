@@ -1,5 +1,5 @@
 ---
-tags: [entity-type, delivery, version, published-file, reply, attachment, create, multi-entity, entity-field, status, list-field, filter, trap]
+tags: [version, published-file, reply, attachment, list-field, filter, delivery]
 scope: api
 measured: sandbox project; Delivery holds 0 rows site-wide, so every row here was created by the probe
 summary: A row grouping Versions, published files and attachments, addressed to people.

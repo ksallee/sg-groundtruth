@@ -1,5 +1,6 @@
 <script>
 	import Prose from './Prose.svelte';
+	import { parts } from '$lib/text.js';
 	import ScopeSection from './ScopeSection.svelte';
 	import Breadcrumb from './Breadcrumb.svelte';
 	import { REPO } from '$lib/site.js';
@@ -104,7 +105,10 @@
 		{/if}
 
 		{#if entry.hasApi}
-			<p class="verdict">{entry.verdict}</p>
+			<p class="verdict">
+				{#each parts(entry.verdict) as part, i (i)}{#if part.code}<code>{part.text}</code
+					>{:else}{part.text}{/if}{/each}
+			</p>
 		{:else if locals.length}
 			<p class="absent">
 				The published corpus has no entry for this. Everything below was measured locally.
@@ -135,7 +139,10 @@
 			project={local.projectLabel}
 			id={anchor(local)}
 		>
-			<p class="local-verdict">{local.verdict}</p>
+			<p class="local-verdict">
+				{#each parts(local.verdict) as part, i (i)}{#if part.code}<code>{part.text}</code
+					>{:else}{part.text}{/if}{/each}
+			</p>
 			<Prose html={local.html} tone={local.level} />
 		</ScopeSection>
 	{/each}

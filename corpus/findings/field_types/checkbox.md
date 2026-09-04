@@ -1,5 +1,5 @@
 ---
-tags: [field-type, checkbox, filter, operator, fill-rate, inspector, trap]
+tags: [fill-rate, inspector]
 scope: api
 measured: first sample project, 100 newest Versions; 3 rows written in the sandbox project
 summary: A boolean.

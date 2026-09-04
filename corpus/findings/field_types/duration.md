@@ -1,9 +1,9 @@
 ---
-tags: [field-type, duration, number, write, filter, operator, schema, trap]
+tags: [number, duration]
 scope: api
 measured: first sample project, 500 Tasks; 4 rows written in the sandbox project
 summary: A length of time, stored as a whole number of minutes.
-verdict: A duration is a bare integer of minutes and no schema property names the unit, but `GET /preferences` returns `hours_per_day` and `duration_units`, so a client can render hours or days.
+verdict: A duration is a bare integer of minutes and the unit is on the site: `GET /preferences` gives `hours_per_day` and `duration_units`. A Float truncates toward zero at 200, so round before writing.
 ---
 
 # duration

@@ -1,5 +1,7 @@
 ---
-tags: [schema, write, custom-field, provenance, entity-field, trap]
+tags: [schema, write, custom-field, provenance, entity-field, trap, silent]
+endpoints: [POST /schema/<Type>/fields, DELETE /schema/<Type>/fields/<field>, GET /schema/<Type>/fields]
+phase: schema
 scope: api
 measured: site-wide, custom fields created on the Version schema and deleted
 verdict: Custom fields are creatable over REST, but you pass a display name and a duplicate silently becomes <name>_1: an idempotent ensure() must read /schema first, never POST-and-hope.

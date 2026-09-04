@@ -1,6 +1,7 @@
 ---
 intent: Apply many creates, updates and deletes in one atomic call, and match the results back to the requests
-tags: [write, batch, create, version, shot, error-handling, trap, recipe]
+tags: [write, batch, create, version, shot, error-handling, silent]
+endpoints: [POST /entity/_batch]
 scope: api
 measured: sandbox project, every row created and deleted
 ---

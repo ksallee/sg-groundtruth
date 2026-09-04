@@ -1,5 +1,7 @@
 ---
 tags: [write, project, create, schema]
+endpoints: [GET /schema/<Type>/fields, GET /entity/<type>, POST /entity/<type>]
+phase: write
 scope: api
 measured: site-wide, one Project created (the sandbox project itself)
 verdict: A script user can create a Project with nothing but {"name": ...}, at 201, but the response echoes only 6 attributes, so read the project back if you need anything else.

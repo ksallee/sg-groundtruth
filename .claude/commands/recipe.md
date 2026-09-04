@@ -9,10 +9,13 @@ Task: $ARGUMENTS
 3. Run it, then write `corpus/recipes/NNN_slug.md` by hand — intent, the exact call, the actual response,
    and every gotcha hit on the way. The gotchas are the point; a call that worked first time teaches a
    model nothing it did not know.
-4. Carry a `measured:` key, from the line `_lib.emit` prints. A recipe demonstrated on three rows the
+4. Carry an `endpoints:` key listing every call the recipe makes, in the spelling
+   `corpus/ENDPOINTS.md` uses. It is how an agent holding a call finds this recipe, and
+   `probes/check_corpus.py` rejects any other spelling.
+5. Carry a `measured:` key, from the line `_lib.emit` prints. A recipe demonstrated on three rows the
    probe made in the sandbox is weaker evidence than one run against a real show, and the reader deciding
    whether to trust it cannot tell the two apart otherwise.
-5. Redact by the rules in `.claude/commands/probe.md`. A recipe is executable, so a mangled filename or
+6. Redact by the rules in `.claude/commands/probe.md`. A recipe is executable, so a mangled filename or
    MIME type is worse here than anywhere else in the corpus.
-6. `python probes/check_corpus.py` then `python probes/index.py`.
-7. Report the intent and one gotcha. Nothing else.
+7. `python probes/check_corpus.py` then `python probes/index.py`.
+8. Report the intent and one gotcha. Nothing else.

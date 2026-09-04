@@ -1,5 +1,7 @@
 ---
 tags: [schema, custom-entity, discovery]
+endpoints: [GET /schema]
+phase: schema
 scope: api
 measured: site-wide, /schema and the 99 CustomEntity slots
 verdict: Presence in /schema is the enablement test for a custom entity: a slot absent from the listing 404s. Slot numbers are non-contiguous and site-specific, so read name.value and never hardcode one.

@@ -1,5 +1,5 @@
 ---
-tags: [field-type, list-field, filter, operator, schema, write, trap]
+tags: [list-field]
 scope: api
 measured: first sample project read, sandbox project written
 summary: A single choice from a fixed set of strings.

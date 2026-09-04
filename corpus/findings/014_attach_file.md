@@ -1,5 +1,7 @@
 ---
 tags: [write, upload, attachment, provenance, version, multi-entity, filter, header]
+endpoints: [GET /entity/<type>/<id>/_upload, PUT <links.upload>, POST <links.complete_upload>, POST /entity/<type>/_search]
+phase: upload
 scope: api
 measured: unrecorded, one existing Version whose project the probe never names
 verdict: Leave the field out of the _upload path and the file is stored as an Attachment on attachment_links; read it back with POST /entity/attachments/_search, never flat filter[].

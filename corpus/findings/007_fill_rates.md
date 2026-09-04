@@ -1,5 +1,7 @@
 ---
 tags: [version, inspector, schema, fill-rate]
+endpoints: [GET /schema/<Type>/fields, GET /entity/<type>]
+phase: read
 scope: site
 measured: one sample project, its 100 most recent Versions over 71 schema fields
 verdict: On the sample project 30 of 71 Version fields are populated. Rank by fill rate, but drop checkbox, summary and computed fields first: False and 0 are not null and read as 100% filled.

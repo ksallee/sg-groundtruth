@@ -1,5 +1,5 @@
 ---
-tags: [entity-type, sequence, shot, write, create, entity-field, multi-entity, status, dotted-field, trap]
+tags: [shot, write, dotted-field, silent, sequence]
 scope: api
 measured: first sample project read, sandbox project written
 summary: A group of Shots, and each Shot sits in exactly one of them.

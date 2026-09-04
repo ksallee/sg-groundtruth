@@ -1,5 +1,5 @@
 ---
-tags: [field-type, text, filter, operator, write, trap]
+tags: []
 scope: api
 measured: first sample project read, sandbox project written
 summary: A string of free text, of any length.

@@ -14,7 +14,7 @@ const slim = (e) => ({
 });
 
 export function load() {
-	const { hasOverlay, hasSite, projects, counts, fieldTypes, entityTypes, recipes, findings } =
+	const { hasOverlay, hasSite, projects, counts, fieldTypes, entityTypes, recipes, findings, endpoints } =
 		index();
 	return {
 		hasOverlay,
@@ -24,6 +24,7 @@ export function load() {
 		nav: {
 			fieldTypes: fieldTypes.map(slim),
 			entityTypes: entityTypes.map(slim),
+			endpoints: endpoints.map(slim),
 			recipes: recipes.map(slim),
 			findings: findings.map(slim)
 		}

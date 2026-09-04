@@ -1,5 +1,5 @@
 ---
-tags: [field-type, serializable, write, filter, operator, schema, error-handling, trap]
+tags: [error-handling, silent, serializable, read-only]
 scope: api
 measured: first sample project read, Tasks written in the sandbox project
 summary: A structured blob stored on the row, which no filter can reach.

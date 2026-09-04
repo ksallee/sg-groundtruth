@@ -1,5 +1,5 @@
 ---
-tags: [entity-type, version, create, entity-field, media, status, link]
+tags: [media, link, version]
 scope: api
 measured: first sample project read, sandbox project written
 summary: A reviewable piece of media, usually hanging off a Shot or an Asset.

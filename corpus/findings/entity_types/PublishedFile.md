@@ -1,5 +1,5 @@
 ---
-tags: [entity-type, published-file, create, path, storage, entity-field, multi-entity, dependency, status, trap]
+tags: [path, storage, dependency, published-file]
 scope: api
 measured: first sample project read, sandbox project written
 summary: A file on disk registered against a project, with its path resolved per platform.

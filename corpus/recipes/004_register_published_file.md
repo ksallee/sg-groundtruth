@@ -1,6 +1,7 @@
 ---
 intent: Register the next PublishedFile without overwriting the last one, and write a path the server resolves for every platform
-tags: [write, published-file, path, storage, version, create, entity-field, trap, recipe]
+tags: [write, published-file, path, storage, version, create, entity-field]
+endpoints: [GET /entity/<type>, POST /entity/<type>, POST /entity/<type>/_search, PUT /entity/<type>/<id>]
 scope: api
 measured: first sample project read, sandbox project written
 ---

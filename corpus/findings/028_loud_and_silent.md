@@ -1,5 +1,7 @@
 ---
-tags: [query, filter, sort, write, operator, error-handling, trap]
+tags: [query, filter, sort, write, operator, error-handling, trap, silent]
+endpoints: [POST /entity/<type>/_search, POST /entity/<type>/_summarize, GET /entity/<type>, GET /schema/<Type>, PUT /entity/<type>/<id>, POST /entity/_batch]
+phase: protocol
 scope: api
 measured: first sample project, read only
 verdict: A 400 is trustworthy and usually names the legal set, but a 200 proves nothing: an unknown field, sort key or query param is a no-op, and a batch can return an id for a row it never made.

@@ -22,9 +22,11 @@
 			that produced it and quotes the status code and error string verbatim.
 		</p>
 		<p>
-			Findings are chronological and question-shaped, and some correct an earlier one. The
-			<a href="/field-types">field types</a>, <a href="/entity-types">entity types</a> and
-			<a href="/filters">filters</a> are the other half: complete, and addressed by name.
+			They are grouped by the phase of a session they bite in, which is the order a client meets
+			them. The number is still the probe that produced it. The
+			<a href="/field-types">field types</a>, <a href="/entity-types">entity types</a>,
+			<a href="/endpoints">endpoints</a> and <a href="/filters">filters</a> are the other half:
+			complete, and addressed by name.
 		</p>
 		<p class="scope">
 			Only findings marked <code>scope: api</code> are published here. A finding that measures one
@@ -33,7 +35,14 @@
 		</p>
 	</header>
 
-	<EntryList entries={data.findings} />
+	{#each data.phases as phase (phase.id)}
+		<section class="phase">
+			<h2 id={phase.id}>
+				{phase.title}{#if phase.note}<span class="phase-note">{phase.note}</span>{/if}
+			</h2>
+			<EntryList entries={phase.entries} />
+		</section>
+	{/each}
 
 	{#if data.recipes.length}
 		<p class="onward">
@@ -69,6 +78,25 @@
 </div>
 
 <style>
+	.phase {
+		display: grid;
+		grid-template-columns: var(--col);
+		gap: var(--space-4);
+	}
+
+	.phase > h2 {
+		border-top: var(--border) solid var(--rule);
+		padding-top: var(--space-5);
+	}
+
+	.phase-note {
+		margin-left: var(--space-3);
+		font-family: var(--font-text);
+		font-size: var(--text-sm);
+		font-weight: var(--weight-regular, 400);
+		color: var(--ink-muted);
+	}
+
 	.page {
 		padding-block: var(--space-7) 0;
 		display: grid;

@@ -1,5 +1,7 @@
 ---
-tags: [media, attachment, upload, error-handling, trap, note]
+tags: [media, attachment, upload, error-handling, trap, note, silent]
+endpoints: [GET /entity/<type>/<id>/_upload, PUT <links.upload>, POST <links.complete_upload>]
+phase: upload
 scope: api
 measured: sandbox project written, one Note and two Attachments, all deleted
 verdict: complete_upload returns 201 and creates an Attachment even when the bytes were never PUT, and file_size is null on a good upload too, so only fetching the stored file proves it exists.

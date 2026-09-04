@@ -1,5 +1,5 @@
 ---
-tags: [field-type, timecode, number, media, write, filter, operator, schema, summary, trap]
+tags: [number, media, summary, timecode]
 scope: api
 measured: first sample project read, sandbox project written
 summary: A position in a timeline.

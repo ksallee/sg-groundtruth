@@ -1,5 +1,7 @@
 ---
-tags: [query, filter, operator, dotted-field, entity-field, error-handling]
+tags: [query, filter, operator, dotted-field, entity-field, error-handling, silent]
+endpoints: [POST /entity/<type>/_search]
+phase: filter
 scope: api
 measured: first sample project, 5 Shots and their Versions
 verdict: is/is_not/contains/not_contains/starts_with/ends_with/in/not_in all work, on text fields and through dotted paths; an unknown operator 400s on all 21 data types, naming the valid list on 16.

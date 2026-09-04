@@ -1,5 +1,7 @@
 ---
 tags: [paging, query, enumeration]
+endpoints: [GET /entity/<type>, POST /entity/<type>/_search, POST /entity/<type>/_summarize]
+phase: read
 scope: api
 measured: first sample project, Versions in pages of 100
 verdict: links.next is emitted on every page forever, including zero-row ones, so stop paging when data is empty and never on a missing next.

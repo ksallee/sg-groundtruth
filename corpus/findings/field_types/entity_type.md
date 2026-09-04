@@ -1,5 +1,5 @@
 ---
-tags: [field-type, entity-field, schema, write, filter, operator, custom-entity, trap]
+tags: [entity-field, custom-entity]
 scope: api
 measured: site-wide for Step, first sample project read, sandbox project written
 summary: The name of an entity type, held as a string rather than as a link.

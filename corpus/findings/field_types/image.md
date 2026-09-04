@@ -1,9 +1,9 @@
 ---
-tags: [field-type, image, media, upload, filter, operator, write, async, trap]
+tags: [media, upload, async, destructive, image]
 scope: api
 measured: first sample project, 100 Versions; rows written in the sandbox project
 summary: A thumbnail for the row, set by uploading a file.
-verdict: An image field cannot be assigned - every value but null 400s, one of them "not yet supported in API" - only the upload dance sets it, and clearing image also clears filmstrip_image.
+verdict: Only the upload dance sets an image: every value but null 400s, and clearing it also clears `filmstrip_image`. The value is a presigned URL re-signed per read, so store the row id, never the string.
 ---
 
 # image

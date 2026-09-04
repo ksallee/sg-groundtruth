@@ -134,5 +134,8 @@ export const GROUPS = [
 		base: '/entity-types',
 		title: 'Entity types'
 	},
-	{ id: 'recipes', dir: 'recipes', base: '/recipes', title: 'Recipes' }
+	{ id: 'recipes', dir: 'recipes', base: '/recipes', title: 'Recipes' },
+	// One card per REST call, named by the call. `endpoint:` is the identity; the
+	// slug is only a filename, so the card is titled by what it is about.
+	{ id: 'endpoints', dir: 'endpoints', base: '/endpoints', title: 'Endpoints' }
 ];

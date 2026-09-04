@@ -1,9 +1,9 @@
 ---
-tags: [field-type, entity-field, write, filter, operator, dotted-field, trap]
+tags: [dotted-field, entity-field]
 scope: api
 measured: first sample project read, sandbox project written
 summary: A link to one row of another type.
-verdict: An entity link is a {type,id} hash under relationships, cleared only by null; valid_types is advisory on most fields and binding on a few, with nothing in the schema telling the two apart.
+verdict: An entity link is a {type,id} hash under `relationships`, cleared only by null. Enforce `valid_types` yourself: it binds on a few fields, is ignored on most, and nothing in the schema marks which.
 ---
 
 # entity

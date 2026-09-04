@@ -1,5 +1,5 @@
 ---
-tags: [entity-type, time-log, task, duration, create, entity-field, trap]
+tags: [task, duration]
 scope: api
 measured: first sample project read, sandbox project written
 summary: Hours logged against a Task by one person on one day.

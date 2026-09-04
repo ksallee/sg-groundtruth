@@ -1,4 +1,4 @@
-import { index } from '$lib/content/corpus.js';
+import { findingsByPhase, index } from '$lib/content/corpus.js';
 
 // The cited examples at the foot of the page. Each states a behaviour and cites
 // the entry that measured it. Slugs are resolved against the corpus at build
@@ -49,5 +49,11 @@ export function load() {
 		return found ? { ...ex, href: found.href, cite: found.name } : null;
 	}).filter(Boolean);
 
-	return { findings: data.findings, recipes: data.recipes, counts: data.counts, examples };
+	return {
+		phases: findingsByPhase(data.findings),
+		findings: data.findings,
+		recipes: data.recipes,
+		counts: data.counts,
+		examples
+	};
 }

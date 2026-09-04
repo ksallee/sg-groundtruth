@@ -37,7 +37,18 @@ it. `claude mcp list` should show `sg-groundtruth ... ✔ Connected`.
 | `corpus_index` | every entry's slug, verdict and tags. Filter by `tag` or `group`. Call this first |
 | `corpus_entry` | one entry in full, by slug, with its `scope` and `measured` line |
 | `corpus_search` | entries mentioning every word given, returned as one-liners |
+| `corpus_endpoint` | the whole card for one call. Pass the endpoint in any spelling |
 | `filter_operators` | the relations the API accepts per data type, as the API printed them. Omit `data_type` for all 24 |
+
+`corpus_endpoint` normalises before matching, so an agent asks with the call it is actually about to
+make. `POST /entity/shots/_search`, `PUT /entity/versions/53` and a full site URL all resolve to the
+same card. It returns the card in full: the request contract, every status code with its error string,
+a recorded response, the edge cases, a runnable sample, and the verdict of every finding that measured
+the call. Omit `endpoint` for the list, where a row reading `NOT PROBED` is a card no finding stands
+behind, which is the queue rather than a gap in the tool.
+
+`corpus_index` also takes `phase`, one of `auth`, `protocol`, `schema`, `read`, `filter`, `write`,
+`upload`, `observe`, `render`. That is the part of a session a finding bites in.
 
 `filter_operators` with no argument is the call to make before building anything that filters. It is 24
 lines and it is the difference between offering an operator that works and one that returns 400, or
@@ -62,6 +73,7 @@ The two answer different questions and neither replaces the other.
 |---|---|
 | "list Shots where status is ip" | the Flow PT server. It holds the credential and makes the call |
 | "which operators does a `date` field accept" | this one. It holds what the API answered when asked |
+| "what does `POST /entity/shots/_search` do" | this one. `corpus_endpoint` |
 | "why did my filter return every row" | this one |
 
 Tell the agent which is which, or it will use whichever it happens to reach first:
@@ -76,6 +88,7 @@ Tell the agent which is which, or it will use whichever it happens to reach firs
 | | |
 |---|---|
 | This server, driven over stdio through initialize, tools/list and tools/call | tested |
+| `corpus_endpoint` path normalisation, every canonical endpoint resolving to itself | tested, 23 of 23 |
 | Its `filter_operators` output against the corpus's own field-type cards | tested, 24 of 24 agree |
 | Scope filtering, that no `site` or `project` entry is served without `--overlay` | tested |
 | Running it beside a third-party Flow PT MCP server in one agent session | **not tested** |

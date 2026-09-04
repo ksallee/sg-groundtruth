@@ -1,6 +1,7 @@
 ---
 intent: Write a Cut and its CutItems from an edit, read the timeline back, and reconcile a second edit against the Cut already there
-tags: [write, cut, timecode, version, shot, batch, filter, entity-field, multi-entity, trap, recipe]
+tags: [write, cut, timecode, version, shot, batch, filter, entity-field, multi-entity]
+endpoints: [POST /entity/<type>, GET /entity/<type>/<id>, POST /entity/<type>/_search, POST /entity/_batch]
 scope: api
 measured: sandbox project; Cut and CutItem hold 0 rows site-wide, so every row was created here
 ---

@@ -1,5 +1,5 @@
 ---
-tags: [field-type, pivot-column, step, schema, filter, operator, inspector, trap]
+tags: [step, inspector, pivot-column, read-only]
 scope: api
 measured: first sample project read, sandbox project written
 summary: A per-step rollup the web interface draws, with no value over REST.

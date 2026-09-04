@@ -1,5 +1,5 @@
 ---
-tags: [field-type, float, write, filter, operator, error-handling, trap]
+tags: [error-handling, silent]
 scope: api
 measured: first sample project read, 3 rows written in the sandbox project
 summary: A decimal number.

@@ -13,7 +13,44 @@ Derive only from public Flow PT REST docs and this repo's own probes.
 
 `corpus/findings/`: how the API behaves. Produced by probes.
 `corpus/recipes/`: a verified call and its real response. Produced by probes.
+`corpus/endpoints/`: one card per REST call. What it takes, every status code it answers with, a real
+response, the edge cases that live on the call. Produced by probes.
 `corpus/INDEX.md`: generated. Read this first, always. Open an entry only when its one-liner falls short.
+
+**Four ways in, one per thing a caller already knows.** An agent about to make a call holds the call, the
+entity type, the field's `data_type` and the task. Three of those had a door and the fourth did not:
+findings were addressed by probe number, which is the order the probes ran in and nothing a caller knows.
+
+| you know | key | lives in |
+|---|---|---|
+| the call | `endpoint:` on the card, `endpoints:` on every finding and recipe | `corpus/endpoints/<slug>.md` |
+| the entity type | the file name | `findings/entity_types/<Type>.md` |
+| the `data_type` | the file name | `findings/field_types/<type>.md` |
+| the task | `intent:` | `corpus/recipes/` |
+
+Findings also carry `phase:` (`auth`, `protocol`, `schema`, `read`, `filter`, `write`, `upload`,
+`observe`, `render`), the part of a session the finding bites in. The index and the site group by it, so
+the listing itself teaches the shape of a session. The number stays the probe that produced it.
+
+An endpoint card holds what is true of the **call**: the request contract, the status codes, a recorded
+response, and the edge cases that belong to the call rather than to a data type or an entity type. It
+never restates a finding. The verdict of every entry naming that endpoint is joined onto the card by the
+index and the site, so the quirks are on the page without being written twice.
+
+`endpoint:` is the card's identity and the canonical spelling. `check_corpus.py` rejects an `endpoints:`
+value no card is named by, so the two cannot drift, and a card is the unit a docs sweep adds: write the
+card for a call the official documentation advertises and it lists with *no finding yet*, which is the
+queue.
+
+**Tags select or they are noise.** `trap` was on 61 of 81 entries once, and following it returned the
+corpus. Two rules, both enforced: drop a tag every entry in the group already carries (`filter` on a
+field-type card, which has a **Filter** section), and drop one that restates the entry's own name unless
+another entry shares it (`percent` on `percent.md`, but `list-field` stays on `list.md`). An empty tag
+list is a real answer on a matrix card. No subject tag may exceed 25 entries.
+
+`silent`, `destructive` and `trap` are class tags: they name what kind of failure an entry is rather than
+what it is about, so they are meant to span and the cap does not apply. `silent` is a 2xx that did not
+carry out the request. `destructive` is a successful call that removes data the caller never named.
 
 Every finding carries a `scope`. There are three levels, and the probes are what proved they are distinct:
 
@@ -68,8 +105,10 @@ The REST docs are incomplete and sometimes wrong. Probe, record, then code again
 - Read-only by default. Writes require `--write`.
 - **A probe leaves no trace.** Anything it creates, it deletes before it exits. Use `_lib.Created`, which
   deletes in reverse order on the way out. Rows that outlive a run become data the next probe measures.
-  Schema fields are the exception: a deleted field name is never freed (`docs/quirks.md`), so never create
-  one to test with.
+  Schema fields are the exception: `DELETE` retires one and the name stays taken, so a probe cannot
+  clean up after itself there. Test on a stock field the site already has. Where a probe must create
+  one, name it `sg_zzprobe_<nnn>_*`: only emptying the Trash page in the web interface frees the name,
+  and the prefix is what tells the operator doing that which fields are litter.
 - **A probe prints; it never writes the corpus.** The agent running it judges what is identifying and
   writes the finding by hand. `_lib.scrub` handles only what a string replace can do safely: site URL,
   script name, key, home directory, emails, tokens, presigned URLs. Names are judgment; see
@@ -78,7 +117,10 @@ The REST docs are incomplete and sometimes wrong. Probe, record, then code again
 - Every probe that produces a usable call also records a recipe
 - `python probes/check_corpus.py` then `python probes/index.py` after any probe
 - Tags drive retrieval, so the vocabulary must not drift. Reuse an existing tag from `corpus/INDEX.md` or add
-  one deliberately. Singular, lowercase: `version`, not `versions` or `Version`.
+  one deliberately. Singular, lowercase: `version`, not `versions` or `Version`. The two selection rules
+  above are enforced, and so is the 25-entry cap.
+- Every finding and recipe names its `endpoints:`. A call `corpus/ENDPOINTS.md` does not list is a section
+  to add there first.
 - Code cites entries: `# probe 004`
 
 Schema-writing probes use `sg_zzprobe_<nnn>_*`. See `docs/quirks.md`.
@@ -113,7 +155,9 @@ slot numbers, display names and vocabularies are the entire point of it. `probes
 ## The corpus over MCP
 
 `python -m sg_groundtruth.mcp` serves the corpus to an agent: stdio, JSON-RPC, standard library only, no
-dependency. Four tools, `scope: api` alone unless given `--overlay`. `docs/mcp.md` carries registration,
+dependency. Five tools, `scope: api` alone unless given `--overlay`. `corpus_endpoint` takes the call the
+agent is about to make in any spelling, normalises `POST /entity/shots/_search` to
+`POST /entity/<type>/_search`, and answers with the purpose, a sample and every entry behind it. `docs/mcp.md` carries registration,
 the tool list and what has and has not been tested. It answers what the API does; a Flow PT MCP server
 calls the API, and an agent holding both has to be told which is which.
 

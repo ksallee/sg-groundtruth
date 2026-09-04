@@ -236,6 +236,44 @@ td {
 	overflow-wrap: break-word;
 }
 
+/* The filter matrix, marked in src/lib/content/corpus.js. Its three columns want
+   three different things: an operator is one token and should never wrap, a value
+   is an API literal and should not break mid-literal, and `matches` is prose that
+   can wrap but still needs a floor. Left to itself the widest `matches` cell takes
+   the width and squeezes the two columns a reader scans first; given the rules
+   below and nothing else, a 155-character error string squeezes `matches` instead.
+   So the table is also allowed to outgrow the column and scroll in its wrapper,
+   which is what `.scroll-x` is there for. It only does so when the three floors do
+   not fit, which on this corpus is two cards of nineteen. */
+.matrix {
+	width: auto;
+	min-width: 100%;
+}
+
+.matrix th:first-child,
+.matrix td:first-child {
+	width: 1%;
+	white-space: nowrap;
+}
+
+.matrix td:nth-child(2) {
+	min-width: 18ch;
+}
+
+.matrix td:nth-child(2) code {
+	white-space: nowrap;
+}
+
+.matrix td:nth-child(3) {
+	min-width: 28ch;
+}
+
+/* A literal is 13px here rather than 15px, which is enough to keep most of the
+   nineteen matrices inside the column without scrolling at all. */
+.matrix code {
+	font-size: var(--text-xs);
+}
+
 caption {
 	text-align: left;
 	font-size: var(--text-xs);

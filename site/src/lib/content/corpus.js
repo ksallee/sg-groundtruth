@@ -54,16 +54,43 @@ function wrapTables(html) {
 		.replace(/<\/table>/g, '</table></div>');
 }
 
+// The filter matrix is the one table on the site whose columns are a contract:
+// `probes/check_corpus.py` fails a field-type card whose **Filter** table is not
+// headed | operator | value | matches |. Marking it here lets the stylesheet give
+// the first two columns a floor, because `matches` is prose and on `date_time` it
+// runs 155 characters against a 17-character operator, taking the width with it.
+function markMatrix(html) {
+	return html.replace(
+		/<table>\s*<thead>\s*<tr>\s*<th>operator<\/th>\s*<th>value<\/th>\s*<th>matches<\/th>/g,
+		'<table class="matrix"><thead><tr><th>operator</th><th>value</th><th>matches</th>'
+	);
+}
+
 // The page renders its own <h1> from the entry name, so drop the body's.
 function stripLeadingH1(body) {
 	return body.replace(/^\s*#\s+.*\n+/, '');
 }
 
+// wrapTables first: it matches a bare `<table>`, so marking the matrix before it
+// runs leaves that one table outside its own scroll container, and a table that
+// outgrows the column then widens the page instead of scrolling inside it.
 function render(body) {
-	return wrapTables(marked.parse(stripLeadingH1(body)));
+	return markMatrix(wrapTables(marked.parse(stripLeadingH1(body))));
 }
 
 // --- reading ---------------------------------------------------------------
+
+// An endpoint card ends in a list of backticked corpus paths. They are pulled
+// out and rendered as real links beside the ones the `endpoints:` join produces,
+// so the card body never holds a second, differently-shaped link list.
+function splitLinks(body) {
+	const at = body.indexOf('**Links**');
+	if (at === -1) return { body, links: [] };
+	return {
+		body: body.slice(0, at),
+		links: [...body.slice(at).matchAll(/^-\s+`([^`]+)`\s*$/gm)].map((m) => m[1])
+	};
+}
 
 function readGroup(source, group) {
 	const dir = path.join(source.root, group.dir);
@@ -71,11 +98,12 @@ function readGroup(source, group) {
 
 	return fs
 		.readdirSync(dir)
-		.filter((f) => f.endsWith('.md'))
+		.filter((f) => f.endsWith('.md') && f !== 'README.md')
 		.sort()
 		.map((file) => {
 			const slug = file.replace(/\.md$/, '');
 			const { meta, body } = parseFrontmatter(fs.readFileSync(path.join(dir, file), 'utf8'));
+			const split = group.id === 'endpoints' ? splitLinks(body) : { body, links: [] };
 			return {
 				slug,
 				group: group.id,
@@ -86,17 +114,26 @@ function readGroup(source, group) {
 				// What a person calls this. `CustomEntity19` is what a client
 				// addresses; `Lenses` is what someone recognises. Absent on every
 				// shipped card, which is why the slug is still the fallback.
-				title: meta.title ?? '',
+				// An endpoint card is titled by the call, which is its identity. The
+				// slug under it is a filename and nothing addresses it.
+				title: meta.title ?? meta.endpoint ?? '',
+				endpoint: meta.endpoint ?? '',
 				// `verdict` on a finding, `intent` on a recipe. One line either way.
 				verdict: meta.verdict ?? meta.intent ?? '',
 				tags: Array.isArray(meta.tags) ? meta.tags : [],
+				// The phase of a session a finding bites in, and the calls it
+				// covers. Both are retrieval keys rather than content: /findings
+				// groups by the first, /endpoints is built out of the second.
+				phase: meta.phase ?? '',
+				endpoints: Array.isArray(meta.endpoints) ? meta.endpoints : [],
 				name: displayName(slug, group.id),
 				// With the number, for a page title and a heading. The list shows
 				// the number in its own column, so it uses `name` and `number`.
 				fullName: [numberOf(slug), displayName(slug, group.id)].filter(Boolean).join(' '),
 				number: numberOf(slug),
 				href: `${group.base}/${slug}`,
-				html: render(body),
+				html: render(split.body),
+				cardLinks: split.links,
 				// The markdown as written. /filters reads the operator vocabulary
 				// and the value matrix back out of it. Stripped before anything
 				// reaches a page, so it never doubles a payload.
@@ -158,7 +195,8 @@ const COUNT_KEY = {
 	findings: 'findings',
 	field_types: 'fieldTypes',
 	entity_types: 'entityTypes',
-	recipes: 'recipes'
+	recipes: 'recipes',
+	endpoints: 'endpoints'
 };
 
 function subject(groupId, slug, api) {
@@ -177,6 +215,24 @@ function subject(groupId, slug, api) {
 		api,
 		locals: []
 	};
+}
+
+// A list a person scans is ordered by what they can see. An entity type's slug is
+// `CustomEntity19` and its label is `Lenses`; `CustomEntity` sorts before `Cut`,
+// so ordering by slug files every custom entity in the middle of the Cs under a
+// name that is nowhere on the page. Only that group has a label distinct from its
+// slug, and only that group is reordered: a finding and a recipe are numbered, and
+// the number is the order. Endpoints are regrouped later, by family.
+const SORT_BY_LABEL = new Set(['entity_types']);
+const label = (s) => s.title || s.name || s.slug;
+
+function sorter(groupId) {
+	if (!SORT_BY_LABEL.has(groupId)) return (a, b) => a.slug.localeCompare(b.slug);
+	// The slug breaks the tie, so two types sharing a display name keep a stable
+	// order rather than swapping between builds.
+	return (a, b) =>
+		label(a).localeCompare(label(b), 'en', { sensitivity: 'base' }) ||
+		a.slug.localeCompare(b.slug);
 }
 
 // --- the public API used by routes ------------------------------------------
@@ -232,7 +288,7 @@ function build() {
 		for (const s of bySlug.values()) {
 			s.title = s.api?.title || s.locals.find((l) => l.title)?.title || '';
 		}
-		subjects[group.id] = [...bySlug.values()].sort((a, b) => a.slug.localeCompare(b.slug));
+		subjects[group.id] = [...bySlug.values()].sort(sorter(group.id));
 	}
 
 	const hasSite = local.some((e) => e.level === 'site');
@@ -308,6 +364,9 @@ function summary(s) {
 		hasApi: Boolean(s.api),
 		verdict: s.api?.verdict ?? '',
 		tags: s.api?.tags ?? [],
+		phase: s.api?.phase ?? '',
+		endpoints: s.api?.endpoints ?? [],
+		endpoint: s.api?.endpoint ?? '',
 		locals: s.locals.map(stub)
 	};
 }
@@ -327,6 +386,10 @@ function detail(s) {
 		hasApi: Boolean(s.api),
 		verdict: s.api?.verdict ?? '',
 		tags: s.api?.tags ?? [],
+		phase: s.api?.phase ?? '',
+		endpoints: s.api?.endpoints ?? [],
+		endpoint: s.api?.endpoint ?? '',
+		cardLinks: s.api?.cardLinks ?? [],
 		html: s.api?.html ?? '',
 		locals: s.locals.map(({ raw, ...rest }) => rest)
 	};
@@ -339,6 +402,7 @@ export function index() {
 		fieldTypes: data.subjects.field_types.map(summary),
 		entityTypes: data.subjects.entity_types.map(summary),
 		recipes: data.subjects.recipes.map(summary),
+		endpoints: endpointOrder(data.subjects.endpoints.map(summary)),
 		hasSite: data.hasSite,
 		projects: data.projects,
 		hasOverlay: data.hasOverlay,
@@ -368,4 +432,173 @@ export function filterTypes() {
 // build has no local-only subject and prerenders the shipped set exactly.
 export function slugs(groupId) {
 	return all().subjects[groupId].map((s) => s.slug);
+}
+
+
+// --- the phase axis ---------------------------------------------------------
+// Findings were numbered by when the probe ran, which is nothing a caller knows.
+// `phase:` is the part of a session the finding bites in, and this is the order
+// a client meets them, so the listing itself teaches the shape of a session.
+// `probes/index.py` groups corpus/INDEX.md the same way and by the same names.
+
+export const PHASES = [
+	{ id: 'auth', title: 'Auth', note: 'getting a token, and what it is' },
+	{ id: 'protocol', title: 'Protocol', note: 'headers, and what a status code is worth' },
+	{ id: 'schema', title: 'Schema', note: 'what the site has, and adding to it' },
+	{ id: 'read', title: 'Read', note: 'getting rows back' },
+	{ id: 'filter', title: 'Filter', note: 'selecting the rows you want' },
+	{ id: 'write', title: 'Write', note: 'creating and updating' },
+	{ id: 'upload', title: 'Upload', note: 'getting bytes in and out' },
+	{ id: 'observe', title: 'Observe', note: 'what changed' },
+	{ id: 'render', title: 'Render', note: 'showing it to a person' }
+];
+
+// A finding with no phase, or one this list does not name, is still listed: it
+// falls to the end under its own heading rather than dropping out of the page.
+export function findingsByPhase(findings) {
+	const named = new Set(PHASES.map((p) => p.id));
+	const groups = PHASES.map((p) => ({ ...p, entries: findings.filter((f) => f.phase === p.id) }))
+		.filter((g) => g.entries.length);
+	const rest = findings.filter((f) => !named.has(f.phase));
+	if (rest.length) groups.push({ id: 'unphased', title: 'Unphased', note: '', entries: rest });
+	return groups;
+}
+
+// --- the endpoint axis ------------------------------------------------------
+// An agent about to make a call holds the call. Every card is named by one, and
+// every finding and recipe names the calls it covers in that same spelling, so
+// the join here cannot half-match. `probes/check_corpus.py` rejects any other
+// spelling, which is what keeps this from silently going empty.
+
+// Endpoints are grouped by the resource they act on, in the order a client meets
+// them, and the family is derived from the path rather than declared on the card.
+// A hand-kept list was fine at 23 endpoints and wrong at 54: a card the list did
+// not name fell off the end of it silently. `probes/index.py` holds the same rules
+// for `corpus/INDEX.md`, so the site and the index group the same way.
+export const FAMILIES = [
+	'Session',
+	'Site',
+	'Schema',
+	'Records',
+	'Search',
+	'Media',
+	'Attention',
+	'Webhooks',
+	'Exports',
+	'Other'
+];
+
+const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
+const SITE_PREFIXES = ['/spec.', '/preferences', '/license_info', '/schedule/', '/subscription_seat/'];
+const ATTENTION = ['follow', 'activity_stream', 'thread_contents'];
+
+const pathOf = (endpoint) => endpoint.slice(endpoint.indexOf(' ') + 1);
+
+// Order matters here: a path can match more than one rule, and the first wins.
+// `/entity/<type>/_search` is Search before it is Records.
+export function family(endpoint) {
+	const path = pathOf(endpoint);
+	if (path === '/' || path.startsWith('/auth/')) return 'Session';
+	if (SITE_PREFIXES.some((p) => path.startsWith(p))) return 'Site';
+	if (path.startsWith('/schema')) return 'Schema';
+	if (path.includes('_search') || path.includes('_summarize') || path.startsWith('/hierarchy/'))
+		return 'Search';
+	if (path.includes('_upload') || path.startsWith('<links.') || path.startsWith('/transcode/'))
+		return 'Media';
+	if (ATTENTION.some((k) => path.includes(k))) return 'Attention';
+	if (path.startsWith('/webhook')) return 'Webhooks';
+	if (path.startsWith('/exports/')) return 'Exports';
+	if (path.startsWith('/entity')) return 'Records';
+	return 'Other';
+}
+
+function endpointOrder(rows) {
+	return [...rows].sort((a, b) => {
+		const fa = FAMILIES.indexOf(family(a.endpoint)) - FAMILIES.indexOf(family(b.endpoint));
+		if (fa !== 0) return fa;
+		const pa = pathOf(a.endpoint);
+		const pb = pathOf(b.endpoint);
+		if (pa !== pb) return pa < pb ? -1 : 1;
+		return METHODS.indexOf(a.endpoint.split(' ')[0]) - METHODS.indexOf(b.endpoint.split(' ')[0]);
+	});
+}
+
+// A grouped copy of the ordered list, for the index page. The sidebar takes the
+// flat one: adjacency already carries the grouping in a narrow column.
+export function endpointsByFamily(rows) {
+	return FAMILIES.map((id) => ({
+		id,
+		entries: rows.filter((e) => family(e.endpoint) === id)
+	})).filter((g) => g.entries.length);
+}
+
+// One link list per card, from two sources that cannot be one.
+//
+// The card's own `**Links**` names what no join can derive: the sibling endpoint,
+// the field-type card that governs the value. The `endpoints:` join names every
+// finding and recipe that measured this call, and cannot drift because nothing
+// maintains it by hand. Merged, de-duplicated, and grouped by where each lives,
+// which is what tells a reader what kind of thing they are about to open.
+//
+// Names only. The one-liner is on the other side of the link, and repeating it
+// here is the index a second time.
+const LINK_GROUPS = [
+	{ id: 'endpoints', label: 'Endpoints' },
+	{ id: 'field_types', label: 'Field types' },
+	{ id: 'entity_types', label: 'Entity types' },
+	{ id: 'findings', label: 'Findings' },
+	{ id: 'recipes', label: 'Recipes' }
+];
+
+export function linksFor(card) {
+	const data = all();
+	const paths = [
+		...card.cardLinks,
+		// `findings/007_fill_rates` measures one site and is not published, so a
+		// card citing it resolves to nothing and is dropped rather than dead-linked.
+		...[...data.shipped.findings, ...data.shipped.recipes]
+			.filter((e) => e.endpoints.includes(card.endpoint))
+			.map((e) => `${e.group}/${e.slug}`)
+	];
+
+	const seen = new Set();
+	const out = LINK_GROUPS.map((g) => ({ ...g, items: [] }));
+	for (const ref of paths) {
+		if (seen.has(ref) || ref === `endpoints/${card.slug}`) continue;
+		seen.add(ref);
+		const slash = ref.indexOf('/');
+		const groupId = ref.slice(0, slash);
+		const slug = ref.slice(slash + 1);
+		const bucket = out.find((g) => g.id === groupId);
+		const found = data.subjects[groupId]?.find((s) => s.slug === slug);
+		// A published card can only cite something published. A typo, or a citation
+		// of a `scope: site` entry this build excludes, fails here rather than
+		// rendering a link to a page that was never built.
+		if (!bucket || !found) {
+			throw new Error(
+				`[corpus] endpoints/${card.slug}.md links to "${ref}", which is not a published ` +
+					`entry. Fix the path, or drop the link if the target measures one site.`
+			);
+		}
+		bucket.items.push({ name: found.title || found.fullName, href: found.href });
+	}
+	return out.filter((g) => g.items.length);
+}
+
+// Throws, naming the file, if an entry spells an endpoint no card is named by.
+// That fails the build rather than rendering a section with nothing under it.
+export function checkEndpoints() {
+	const data = all();
+	const known = new Set(data.shipped.endpoints.map((e) => e.endpoint));
+	for (const card of [...data.shipped.findings, ...data.shipped.recipes]) {
+		for (const e of card.endpoints) {
+			if (!known.has(e)) {
+				throw new Error(
+					`[corpus] ${card.group}/${card.slug}.md names endpoint "${e}", which no card in ` +
+						`corpus/endpoints/ is named by. Reuse the canonical spelling or add the card.`
+				);
+			}
+		}
+	}
+	return data.shipped.endpoints.length;
 }

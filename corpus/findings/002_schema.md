@@ -1,5 +1,7 @@
 ---
 tags: [schema, cost, discovery]
+endpoints: [GET /schema, GET /schema/<Type>, GET /schema/<Type>/fields, GET /schema/<Type>/fields/<field>, GET /preferences]
+phase: schema
 scope: api
 measured: first sample project, schema reads only
 verdict: Fetch /schema once for the type list, then /schema/<Type>/fields only for types you actually need: it is the expensive call (48KB, ~330ms each) and must never be looped over all types.

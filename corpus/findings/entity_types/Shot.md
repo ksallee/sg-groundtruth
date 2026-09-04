@@ -1,9 +1,9 @@
 ---
-tags: [entity-type, shot, create, entity-field, multi-entity, status, pivot-column, trap]
+tags: [pivot-column, shot]
 scope: api
 measured: first sample project read, sandbox project written
 summary: One shot of a show, holding the Tasks and Versions made for it.
-verdict: Shot is addressed at /entity/shots and needs only project on create: code is flagged mandatory yet optional, and an omitted code becomes the server-invented "New Shot <id>".
+verdict: A Shot needs only `project` on create, and `code` is flagged mandatory, is optional and is not unique: an omitted one becomes "New Shot <id>" and a re-run duplicates rows. Send `code`, key on `id`.
 ---
 
 # Shot

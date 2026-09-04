@@ -35,8 +35,20 @@ Which directory the overlay is read from is `PUBLIC_OVERLAY_SOURCE`, defaulting 
 public deploy sets `corpus.example`, a committed copy reviewed by hand, so the deployed site has something
 to show above the `api` level. `docs/example-overlay.md` carries the mechanism and the review it needs.
 
-`corpus/findings/`, `corpus/findings/field_types/`, `corpus/findings/entity_types/` and `corpus/recipes/`
-each become a route. Frontmatter supplies the one-line verdict and the tags; the body is rendered to HTML at
+`/filters` is the one derived route with no directory behind it: it is built from the field-type cards and
+throws at build time, naming the file, if a card records an operator its matrix never exercises.
+
+`/endpoints` is a group like the others, reading `corpus/endpoints/`. Each card's page also renders the
+verdict of every finding and recipe whose `endpoints:` names that call, joined by `measuredBy`. That join
+is checked by `checkEndpoints`, which throws when an entry spells an endpoint no card is named by, so a
+broken join fails the build rather than rendering a page that quietly lists less.
+
+`/findings` groups by the `phase:` key rather than by number, in the order a client meets them. `PHASES` in
+`src/lib/content/corpus.js` is that order, and `probes/index.py` holds the same list for `corpus/INDEX.md`.
+
+`corpus/findings/`, `corpus/findings/field_types/`, `corpus/findings/entity_types/`, `corpus/recipes/`
+and `corpus/endpoints/` each become a route. A `README.md` in one of those directories documents the
+directory and is never read as an entry. Frontmatter supplies the one-line verdict and the tags; the body is rendered to HTML at
 build time. A group is declared once, in `GROUPS` in `src/lib/content/sources.js`; adding one there gives the
 overlay the matching directory for free.
 

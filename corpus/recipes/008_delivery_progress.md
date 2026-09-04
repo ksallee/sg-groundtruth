@@ -1,6 +1,7 @@
 ---
 intent: Keep a Delivery honest about what a long transfer is doing, including when it is cancelled and when it crashes
-tags: [write, delivery, status, list-field, reply, upload, attachment, version, error-handling, trap, recipe]
+tags: [write, delivery, status, list-field, reply, upload, attachment, version, error-handling]
+endpoints: [POST /entity/<type>, PUT /entity/<type>/<id>, GET /schema/<Type>/fields/<field>, GET /entity/<type>/<id>/_upload, PUT <links.upload>, POST <links.complete_upload>]
 scope: api
 measured: sandbox project; Delivery holds 0 rows site-wide, so every row was created here
 ---

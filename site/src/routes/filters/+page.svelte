@@ -1,5 +1,6 @@
 <script>
 	import Breadcrumb from '$lib/components/Breadcrumb.svelte';
+	import { parts } from '$lib/text.js';
 	// ROUTE CHOICE: /filters, not /reference/filters. /reference is an index page
 	// over this route, /field-types and /entity-types; it groups them without
 	// owning their URLs, so every reference route stays one flat segment and no
@@ -10,13 +11,6 @@
 	// "What do I send to this operator" is a lookup and reads down one type, so
 	// it gets a section each, with an anchor to link to and no control to open.
 	let { data } = $props();
-
-	// Every cell in the corpus writes API literals in backticks. Split rather
-	// than render HTML: this file is the only place that needs it, and it takes
-	// no dependency.
-	function parts(text) {
-		return text.split('`').map((t, i) => ({ text: t, code: i % 2 === 1 }));
-	}
 
 	const rows = $derived(data.types.reduce((n, t) => n + t.rows.length, 0));
 	const gaps = $derived(data.types.reduce((n, t) => n + t.rows.filter((r) => r.gap).length, 0));

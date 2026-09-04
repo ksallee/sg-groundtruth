@@ -21,6 +21,8 @@ PROTOCOL = "2025-06-18"
 SUPPORTED = {"2025-06-18", "2025-03-26", "2024-11-05"}
 
 FRONT_RE = re.compile(r"\A---\n(.*?)\n---\n", re.S)
+ENDPOINT_DIR = ROOT / "corpus" / "endpoints"
+SAMPLE_RE = re.compile(r"```python\n(.*?)```", re.S)
 # Both quote forms the cards use, because three types quote the raw JSON body with the quotes still
 # escaped. See the site's filter page for why this pattern is one and not two.
 RELATIONS_RE = re.compile(r"Valid relations:\s*\[(.*?)\]", re.S)
@@ -58,7 +60,10 @@ def _load(overlay):
                 continue
             text = f.read_text()
             fm = _front(text)
-            if not fm.get("verdict"):
+            # A recipe's one-liner is its `intent`, the same key the index and the site read it
+            # under. Requiring `verdict` here dropped all ten of them without saying so.
+            summary = fm.get("verdict") or fm.get("intent")
+            if not summary:
                 continue
             if level == "api" and fm.get("scope") != "api":
                 continue  # a site or project measurement never ships as general behaviour
@@ -70,8 +75,11 @@ def _load(overlay):
                     "scope": fm.get("scope", ""),
                     "project": fm.get("project", ""),
                     "measured": fm.get("measured", ""),
-                    "verdict": fm["verdict"],
+                    "verdict": summary,
                     "tags": [t.strip() for t in fm.get("tags", "").strip("[]").split(",") if t.strip()],
+                    "phase": fm.get("phase", ""),
+                    "endpoints": [x.strip() for x in
+                                  fm.get("endpoints", "").strip("[]").split(",") if x.strip()],
                     "title": fm.get("title", ""),
                     "path": str(f.relative_to(ROOT)),
                     "body": text,
@@ -82,7 +90,63 @@ def _load(overlay):
 
 def _line(e):
     where = "" if e["level"] == "api" else f"  [{e['project'] or e['level']}]"
-    return f"- {e['slug']} ({e['group']}) — {e['verdict']}{where}\n  tags: {' '.join(e['tags'])}"
+    phase = f"  phase: {e['phase']}" if e["phase"] else ""
+    return (f"- {e['slug']} ({e['group']}) — {e['verdict']}{where}\n"
+            f"  tags: {' '.join(e['tags'])}{phase}")
+
+
+def _endpoint_sections():
+    """One card per call. The body is the request contract, the answers and a real response."""
+    out = []
+    for f in sorted(ENDPOINT_DIR.glob("*.md")):
+        if f.name == "README.md":
+            continue
+        text = f.read_text()
+        fm = _front(text)
+        if not fm.get("endpoint"):
+            continue
+        sample = SAMPLE_RE.search(text)
+        out.append({
+            "endpoint": fm["endpoint"],
+            "does": fm.get("verdict", ""),
+            "sample": sample.group(1).rstrip() if sample else "",
+            "body": text,
+            "slug": f.stem,
+        })
+    return out
+
+
+def _canonical(path):
+    """A caller holds a real path. The corpus is written against one spelling of it.
+
+    `POST /entity/shots/_search` and `POST /entity/versions/_search` are the same endpoint; so are
+    `PUT /entity/versions/53` and `PUT /entity/versions/{id}`. Normalise before matching, or an
+    agent asking about its own call finds nothing and concludes the corpus is silent.
+    """
+    parts = path.strip().split()
+    method = parts[0].upper() if parts and parts[0].isalpha() else ""
+    p = re.sub(r"^https?://[^/]+", "", parts[-1] if parts else "").split("?")[0]
+    p = re.sub(r"^/api/v\d+", "", p)
+    if not p.startswith("/"):
+        return f"{method} {p}".strip()          # PUT <links.upload> and its kind
+    out = []
+    for s in p.strip("/").split("/") if p.strip("/") else []:
+        prev = out[-1] if out else ""
+        if prev == "schema":
+            out.append("<Type>")
+        elif prev == "fields":
+            out.append("<field>")
+        elif prev == "entity" and s != "_batch":
+            out.append("<type>")
+        elif prev == "<type>" and s not in ("_search", "_summarize"):
+            out.append("<id>")
+        elif prev == "<id>" and s != "_upload":
+            out.append("<field>")
+        elif prev == "<Type>" and s != "fields":
+            out.append("<field>")
+        else:
+            out.append(s)
+    return f"{method} /{'/'.join(out)}".strip()
 
 
 TOOLS = [
@@ -96,6 +160,11 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "tag": {"type": "string", "description": "Only entries carrying this tag."},
+                "phase": {
+                    "type": "string",
+                    "description": ("The part of a session a finding bites in: auth, protocol, schema, "
+                                    "read, filter, write, upload, observe, render."),
+                },
                 "group": {
                     "type": "string",
                     "description": "findings, field_types, entity_types or recipes.",
@@ -122,6 +191,25 @@ TOOLS = [
             "type": "object",
             "properties": {"query": {"type": "string"}},
             "required": ["query"],
+        },
+    },
+    {
+        "name": "corpus_endpoint",
+        "description": (
+            "What the corpus records about one REST call. Pass the endpoint you are about to make, in "
+            "any spelling: POST /entity/shots/_search, PUT /entity/versions/53 and the canonical form "
+            "all resolve to the same card. Returns the purpose, a runnable sample and every entry that "
+            "measured it. Omit endpoint for the whole list, where an endpoint with no entries is one "
+            "nothing has probed yet."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "endpoint": {
+                    "type": "string",
+                    "description": "e.g. 'POST /entity/versions/_search' or '/schema/Version/fields'.",
+                }
+            },
         },
     },
     {
@@ -168,6 +256,8 @@ def _call(name, args, entries):
             rows = [e for e in rows if args["tag"] in e["tags"]]
         if args.get("group"):
             rows = [e for e in rows if e["group"] == args["group"]]
+        if args.get("phase"):
+            rows = [e for e in rows if e["phase"] == args["phase"]]
         if not rows:
             return "No entry matches. Call corpus_index with no arguments to see the vocabulary."
         return f"{len(rows)} entries.\n\n" + "\n".join(_line(e) for e in rows)
@@ -191,6 +281,45 @@ def _call(name, args, entries):
         if not hits:
             return f"Nothing matches {args['query']!r}."
         return f"{len(hits)} entries.\n\n" + "\n".join(_line(e) for e in hits)
+
+    if name == "corpus_endpoint":
+        sections = _endpoint_sections()
+        behind = {s["endpoint"]: [e for e in entries if s["endpoint"] in e["endpoints"]]
+                  for s in sections}
+        asked = (args.get("endpoint") or "").strip()
+        if not asked:
+            probed = sum(1 for s in sections if behind[s["endpoint"]])
+            rows = [f"- {s['endpoint']} — {s['does']}\n  "
+                    + (", ".join(e["slug"] for e in behind[s["endpoint"]])
+                       or "NOT PROBED: nothing in the corpus measures this")
+                    for s in sections]
+            return (f"{probed} of {len(sections)} endpoints have an entry behind them.\n\n"
+                    + "\n".join(rows))
+
+        want = _canonical(asked)
+        hit = next((s for s in sections if s["endpoint"] == want), None)
+        if hit is None:
+            # No method given, or a path the normaliser did not reach. Match on the path alone.
+            tail = want.split(" ", 1)[-1]
+            near = [s for s in sections if s["endpoint"].split(" ", 1)[-1] == tail]
+            if len(near) == 1:
+                hit = near[0]
+            elif near:
+                return (f"{asked!r} normalises to {want!r}, which matches several methods:\n"
+                        + "\n".join(f"- {s['endpoint']} — {s['does']}" for s in near))
+        if hit is None:
+            return (f"{asked!r} normalises to {want!r}, which is not in corpus/ENDPOINTS.md. Call "
+                    f"corpus_endpoint with no argument for the list. An absent endpoint means nothing "
+                    f"here has probed it, not that the API lacks it.")
+
+        rows = behind[hit["endpoint"]]
+        out = [f"corpus/endpoints/{hit['slug']}.md", "", hit["body"].rstrip(), ""]
+        if rows:
+            out += ["", "**What else measured this call**", ""]
+            out += [f"- {e['slug']} ({e['group']}) — {e['verdict']}" for e in rows]
+        else:
+            out += ["", "No finding or recipe measures this call beyond the card."]
+        return "\n".join(out)
 
     if name == "filter_operators":
         got = _operators(entries, args.get("data_type"))

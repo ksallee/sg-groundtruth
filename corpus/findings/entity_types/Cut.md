@@ -1,5 +1,5 @@
 ---
-tags: [entity-type, cut, timecode, create, entity-field, multi-entity, status, list-field, schema, trap]
+tags: [timecode, list-field, cut]
 scope: api
 measured: sandbox project; Cut holds 0 rows site-wide, so every row here was created by the probe
 summary: An edit of a sequence or a reel, holding the clips that make it up.

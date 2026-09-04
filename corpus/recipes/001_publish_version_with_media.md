@@ -1,6 +1,7 @@
 ---
 intent: Publish a generated image to Flow PT as a Version, with provenance and the workflow attached
-tags: [write, version, upload, attachment, provenance, recipe]
+tags: [write, version, upload, attachment, provenance]
+endpoints: [POST /entity/<type>, GET /entity/<type>/<id>/<field>/_upload, GET /entity/<type>/<id>/_upload, PUT <links.upload>, POST <links.complete_upload>]
 scope: api
 measured: sandbox project, one Version created and deleted
 ---

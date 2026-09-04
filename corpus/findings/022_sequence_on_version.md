@@ -1,5 +1,7 @@
 ---
 tags: [version, media, upload, sequence, path, attachment, write]
+endpoints: [GET /entity/<type>/<id>/<field>/_upload, POST <links.complete_upload>]
+phase: upload
 scope: api
 measured: sandbox project, one Version created and deleted
 verdict: sg_uploaded_movie is single-valued, and replacing it leaves sg_uploaded_movie_mp4 describing the old file while status reads 1. A sequence belongs in sg_path_to_frames.

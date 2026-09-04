@@ -1,5 +1,7 @@
 ---
 tags: [auth, token, permission, user, client]
+endpoints: [POST /auth/access_token, GET /, GET /entity/<type>]
+phase: auth
 scope: api
 measured: site-wide, the caller's own token and the permission listings
 verdict: The token endpoint also accepts password and session_token, not authorization_code; the bearer is a signed token whose user claim names the caller and the row holding its permission rule set.
