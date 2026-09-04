@@ -64,6 +64,11 @@ claude`;
 						check a claim.</td>
 				</tr>
 				<tr>
+					<td>Your code</td>
+					<td><code>FPT</code> is the client every probe here uses, so what the corpus records is
+						what it does. <a href="/how-it-works#client">Call the API with it</a>.</td>
+				</tr>
+				<tr>
 					<td>Your site</td>
 					<td>Live data about your entity types, the fields in use, your status vocabularies and
 						your projects.</td>
