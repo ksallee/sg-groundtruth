@@ -5,6 +5,8 @@ __pycache__/
 .schema-cache/
 *.local.json
 .DS_Store
+.idea/
+.vscode/
 corpus.local/
 .playwright-mcp/
 node_modules/

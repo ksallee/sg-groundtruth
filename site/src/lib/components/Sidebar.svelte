@@ -522,7 +522,12 @@
 		background: var(--scope-ink);
 	}
 
-	/* The tooltip, in the copy button's look: black, 12px, a hairline of ink.
+	/* The tooltip, in the copy button's look. It was #000 on a #111112 sidebar,
+	   painted darker than its own ground, and read as a hole rather than a
+	   layer. It is the lightest surface the theme has, with the strong rule for
+	   an edge and the one drop shadow on the site to lift it.
+	   Never set `color-scheme` here: it resolves light-dark() the other way and
+	   hands back the black-on-black this replaced.
 	   Its text starts above the text it names, --space-1 up, and it rises into
 	   place. */
 	.tip {
@@ -531,9 +536,10 @@
 		display: grid;
 		padding: 0.275rem var(--space-2);
 		border-radius: var(--radius-sm);
-		background: #000;
-		border: var(--border) solid color-mix(in srgb, var(--ink) 10%, transparent);
-		color: #fff;
+		background: var(--ground-sunken);
+		border: var(--border) solid var(--rule-strong);
+		box-shadow: var(--shadow-raised);
+		color: var(--ink);
 		font-size: 0.75rem;
 		line-height: 1.5;
 		white-space: nowrap;

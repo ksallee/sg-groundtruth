@@ -13,10 +13,10 @@ Needs playwright, which this repo does not depend on:
 
     uv run --with playwright --python 3.11 python site/tools/shot.py /
 
---overlay rebuilds with PUBLIC_OVERLAY_SOURCE pointed at that directory, which is how the reading
-levels are exercised: `corpus/` alone renders the API level, `corpus.example` or a `corpus.local`
-with several projects renders the marked sections. Without it the existing build is served as it
-stands. Either way the server is a `vite preview` on a free port, so two agents never collide.
+The site is rebuilt first, so a screenshot always shows the working tree; --no-build serves what is
+already in site/build. --overlay sets PUBLIC_OVERLAY_SOURCE for that build, which is how the reading
+levels are exercised: without an overlay only the API level renders, and the site and project tiers
+have nothing to draw. The server is a `vite preview` on a free port, so two agents never collide.
 
 Exit status is the number of paths that did not answer 200, so it works in a pipeline.
 """
@@ -42,8 +42,9 @@ def free_port(start=4300):
 
 
 def build(overlay):
-    """Rebuild only when asked to change the reading level; a build is 2s but not free."""
-    env = {**os.environ, "PUBLIC_OVERLAY_SOURCE": overlay}
+    """Always, unless --no-build. The tool exists to look at a change just made, and serving the
+    previous build returns a byte-identical screenshot with nothing to say it is stale."""
+    env = {**os.environ} if not overlay else {**os.environ, "PUBLIC_OVERLAY_SOURCE": overlay}
     r = subprocess.run(["npx", "vite", "build", "--logLevel", "error"],
                        cwd=SITE, env=env, capture_output=True, text=True)
     if r.returncode:
@@ -73,7 +74,8 @@ def main():
     ap.add_argument("--width", type=int, default=1280)
     ap.add_argument("--height", type=int, default=900)
     ap.add_argument("--full", action="store_true", help="whole page, not just the viewport")
-    ap.add_argument("--overlay", default="", help="PUBLIC_OVERLAY_SOURCE to rebuild with")
+    ap.add_argument("--overlay", default="", help="PUBLIC_OVERLAY_SOURCE to build with")
+    ap.add_argument("--no-build", action="store_true", help="serve the existing build as it stands")
     ap.add_argument("--js", default="", help="file with an async body run before each shot; - for stdin")
     a = ap.parse_args()
 
@@ -84,7 +86,7 @@ def main():
     if a.js:
         js = sys.stdin.read() if a.js == "-" else Path(a.js).read_text()
 
-    if a.overlay:
+    if not a.no_build:
         build(a.overlay)
 
     port = free_port()

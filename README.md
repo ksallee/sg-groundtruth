@@ -107,8 +107,8 @@ sandbox named in `.env.local`.
 | `docs/` | MCP registration, the example overlay, unverified operator claims |
 | `corpus.local/` | your own site, written by the setup command. Gitignored |
 
-## Licensing
+## Licence
 
-Nothing AGPL enters this repository, at any depth. It is derived only from the public Flow PT REST
-documentation and this repository's own probes, so that studio legal can say yes without reading
-anything.
+[MIT](LICENSE). Nothing AGPL enters this repository, at any depth. It is derived only from the public
+Flow PT REST documentation and this repository's own probes, so that studio legal can say yes without
+reading anything.

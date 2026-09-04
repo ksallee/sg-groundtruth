@@ -103,9 +103,10 @@
 		transform: translate(2px, -50%);
 		padding: 0.15rem var(--space-2);
 		border-radius: var(--radius-sm);
-		background: #000;
-		border: var(--border) solid color-mix(in srgb, var(--ink) 10%, transparent);
-		color: #fff;
+		background: var(--ground-sunken);
+		border: var(--border) solid var(--rule-strong);
+		box-shadow: var(--shadow-raised);
+		color: var(--ink);
 		font-size: 0.75rem;
 		line-height: 1.5;
 		letter-spacing: var(--tracking-body);
