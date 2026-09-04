@@ -78,16 +78,41 @@
 	// apart from one another.
 	const VERB = /^(GET|POST|PUT|DELETE|PATCH)\s+/;
 	const verbOf = (name) => (VERB.exec(name) ?? [])[1] ?? '';
-	// A path has no spaces, so a wrap breaks wherever it runs out of room and
-	// `/follow` becomes `follo` and `w`. A zero-width space after each separator
-	// offers the line breaker somewhere better; `overflow-wrap` still catches a
-	// single segment too long for the column.
-	const pathOf = (name) => name.replace(VERB, '').replace(/([/.])/g, '$1\u200B');
+	// The badge is one width for every verb, so the paths line up; DELETE is
+	// the one word that would not fit it.
+	const short = (verb) => (verb === 'DELETE' ? 'DEL' : verb);
+	// A path stays on one line and truncates in the middle: its last TAIL
+	// characters never give way and the rest ellipsizes from the right, since a
+	// row is told apart by its tail.
+	const TAIL = 8;
 
 	const describe = (lines) => lines.map((l) => l.word).join(', ');
+
+	// Every tooltip in the tree waits this long on a hover, so a pointer
+	// crossing it raises nothing.
+	const TIP_DELAY = 400;
+
+	// A path the ellipsis has cut shows itself in full after that wait, in
+	// place over the cut text and running past the sidebar's edge, which is
+	// why it is fixed to the viewport rather than laid out in the row. It goes
+	// the moment the pointer leaves or the tree scrolls.
+	let full = $state(null);
+	let timer;
+	function reveal(row, path) {
+		const stem = row.querySelector('.stem');
+		if (!stem || stem.scrollWidth <= stem.clientWidth) return;
+		timer = setTimeout(() => {
+			const r = stem.getBoundingClientRect();
+			full = { text: path, x: r.left, y: r.top + r.height / 2 };
+		}, TIP_DELAY);
+	}
+	function conceal() {
+		clearTimeout(timer);
+		full = null;
+	}
 </script>
 
-<aside class="sidebar" class:open aria-label="Site">
+<aside class="sidebar" class:open aria-label="Site" style:--tip-delay="{TIP_DELAY}ms">
 	<div class="head">
 		<a class="mark" href="/">{NAME}</a>
 		<button type="button" class="close" onclick={onclose} aria-label="Close menu">
@@ -97,7 +122,7 @@
 		</button>
 	</div>
 
-	<nav aria-label="Sections">
+	<nav aria-label="Sections" onscroll={conceal}>
 		<ul class="menu">
 			<li>
 				<a class="item" href="/" aria-current={path === '/' ? 'page' : undefined}>Intro</a>
@@ -127,16 +152,28 @@
 					{#if isOpen(g)}
 						<ul class="sub" id="sub-{g.id}">
 							{#each g.items as e (e.slug)}
+								{@const name = e.title || e.name}
+								{@const verb = verbOf(name)}
+								{@const path = verb ? name.replace(VERB, '') : ''}
 								<li>
-									<a class="subitem" href={e.href} aria-current={current(e.href) ? 'page' : undefined}>
+									<a
+										class="subitem"
+										class:call={verb}
+										href={e.href}
+										aria-current={current(e.href) ? 'page' : undefined}
+										onpointerenter={(ev) => reveal(ev.currentTarget, path)}
+										onpointerleave={conceal}
+									>
 										{#if e.number}<span class="num">{e.number}</span>{/if}
-										{#if verbOf(e.title || e.name)}
-											<span class="verb" data-verb={verbOf(e.title || e.name)}
-												>{verbOf(e.title || e.name)}</span
+										{#if verb}
+											<span class="verb" data-verb={verb}>{short(verb)}</span>
+											<span class="label mono"
+												><span class="stem">{path.slice(0, -TAIL)}</span><span class="tail"
+													>{path.slice(-TAIL)}</span
+												></span
 											>
-											<span class="label mono">{pathOf(e.title || e.name)}</span>
 										{:else}
-											<span class="label">{e.title || e.name}</span>
+											<span class="label">{name}</span>
 										{/if}
 										<span class="dots" role="img" aria-label={describe(e.lines)}>
 											{#each e.levels as level (level)}
@@ -166,6 +203,10 @@
 				<li><span class="keydot" data-scope="project"></span><span class="label">{p.label}</span></li>
 			{/each}
 		</ul>
+	{/if}
+
+	{#if full}
+		<span class="full" style:left="{full.x}px" style:top="{full.y}px" aria-hidden="true">{full.text}</span>
 	{/if}
 </aside>
 
@@ -358,6 +399,12 @@
 		color: var(--ink);
 	}
 
+	/* A row that opens with a badge sets it nearer the line the list hangs
+	   from than a word would sit. */
+	.subitem.call {
+		padding-left: var(--space-1);
+	}
+
 	.num {
 		flex: 0 0 auto;
 		color: var(--ink-muted);
@@ -372,48 +419,62 @@
 		white-space: nowrap;
 	}
 
-	/* A path is an API literal, so it is set in mono at 12px. Most sit on one line
-	   at this width. The eleven that do not, `/entity/<type>/<id>/<field>/_upload/
-	   multipart_abort` among them, wrap onto a second rather than truncate: an
-	   endpoint is told apart by its tail, so an ellipsis on the right turns
-	   `_upload/multipart` and `_upload/multipart_abort` into the same row. Fitting
-	   the longest on one line needs a 32rem sidebar, which is more than a third of
-	   the viewport for navigation. */
+	/* A path is an API literal, set in mono at 12px, on one line. The stem
+	   gives way and ellipsizes; the tail, the last TAIL characters, never does,
+	   so `_upload/multipart` and `_upload/multipart_abort` stay two rows. */
 	.label.mono {
+		display: flex;
 		font-family: var(--font-mono);
 		font-size: 0.75rem;
-		white-space: normal;
-		overflow: visible;
-		overflow-wrap: anywhere;
 	}
 
-	/* The verb, as every API reference draws it: short, uppercase, in its own
-	   colour, and never competing with the path for width. */
-	.verb {
+	.stem {
+		flex: 0 1 auto;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.tail {
 		flex: 0 0 auto;
-		width: 2.75rem;
+		white-space: nowrap;
+	}
+
+	/* The verb, as every API reference draws it: a badge in the verb's colour,
+	   one width for all so the paths line up, and the word in ink so the colour
+	   is the badge's alone. */
+	.verb {
+		--verb: var(--verb-get);
+		flex: 0 0 auto;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 2.5rem;
+		height: 1.125rem;
+		border-radius: var(--radius-sm);
+		background: color-mix(in srgb, var(--verb) 14%, transparent);
+		color: var(--ink);
 		font-family: var(--font-mono);
 		font-size: 0.6875rem;
 		font-weight: var(--weight-medium);
 		letter-spacing: 0.02em;
-		text-align: right;
-		color: var(--verb-get);
 	}
 
 	.verb[data-verb='POST'] {
-		color: var(--verb-post);
+		--verb: var(--verb-post);
 	}
 
 	.verb[data-verb='PUT'] {
-		color: var(--verb-put);
+		--verb: var(--verb-put);
 	}
 
 	.verb[data-verb='DELETE'] {
-		color: var(--verb-delete);
+		--verb: var(--verb-delete);
 	}
 
 	.verb[data-verb='PATCH'] {
-		color: var(--verb-patch);
+		--verb: var(--verb-patch);
 	}
 
 	/* The last dot is centred under the chevron; a second and a third run
@@ -437,19 +498,11 @@
 		background: var(--scope-ink);
 	}
 
-	/* What the dots mean: one line per level, its dot and its word, in the
-	   copy button's tooltip, to the left of the slot. It waits --tip-delay
-	   before showing, so a pointer crossing the tree raises nothing, and goes
-	   at once when the pointer leaves. */
-	.tip {
-		--tip-delay: 400ms;
-		position: absolute;
-		z-index: 1;
-		right: calc(100% + var(--space-2));
-		top: 50%;
-		transform: translate(2px, -50%);
-		display: grid;
-		padding: 0.15rem var(--space-2);
+	/* The two tooltips share the copy button's look: black, 12px, a hairline of
+	   ink. */
+	.tip,
+	.full {
+		padding: 0.275rem var(--space-2);
 		border-radius: var(--radius-sm);
 		background: #000;
 		border: var(--border) solid color-mix(in srgb, var(--ink) 10%, transparent);
@@ -458,6 +511,18 @@
 		line-height: 1.5;
 		white-space: nowrap;
 		pointer-events: none;
+	}
+
+	/* What the dots mean: one line per level, its dot and its word, to the
+	   left of the slot. It waits --tip-delay before showing and goes at once
+	   when the pointer leaves. */
+	.tip {
+		position: absolute;
+		z-index: 1;
+		right: calc(100% + var(--space-2));
+		top: 50%;
+		transform: translate(2px, -50%);
+		display: grid;
 		opacity: 0;
 		transition:
 			opacity 125ms var(--ease-out),
@@ -474,6 +539,23 @@
 		display: flex;
 		align-items: center;
 		gap: var(--space-2);
+	}
+
+	/* The full path sits over the cut one, its text starting where the cut
+	   text starts. */
+	.full {
+		position: fixed;
+		z-index: 40;
+		transform: translate(calc(-1 * var(--space-2) - var(--border)), -50%);
+		font-family: var(--font-mono);
+		animation: reveal 125ms var(--ease-out);
+	}
+
+	@keyframes reveal {
+		from {
+			opacity: 0;
+			translate: 2px 0;
+		}
 	}
 
 	/* The key sits on the page colour with no rule above it. Instead a fade
