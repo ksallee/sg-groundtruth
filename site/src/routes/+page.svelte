@@ -80,7 +80,7 @@ claude`;
 <Section
 	id="start"
 	title="Start here"
-	lede="Four commands. The last one measures your site and rebuilds these pages with your own entities, fields, status vocabularies and projects in them."
+	lede="Four commands. The last one asks what you want run, then measures your site and rebuilds these pages with your own entities, fields, status vocabularies and projects in them."
 >
 	<figure class="prompt">
 		<figcaption>

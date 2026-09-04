@@ -128,8 +128,8 @@ The REST docs are incomplete and sometimes wrong. Probe, record, then code again
 - Tags drive retrieval, so the vocabulary must not drift. Reuse an existing tag from `corpus/INDEX.md` or add
   one deliberately. Singular, lowercase: `version`, not `versions` or `Version`. The two selection rules
   above are enforced, and so is the 25-entry cap.
-- Every finding and recipe names its `endpoints:`. A call `corpus/ENDPOINTS.md` does not list is a section
-  to add there first.
+- Every finding and recipe names its `endpoints:`. A call with no card in `corpus/endpoints/` is a card to
+  write there first.
 - Code cites entries: `# probe 004`
 
 Schema-writing probes use `sg_zzprobe_<nnn>_*`. See `docs/quirks.md`.
