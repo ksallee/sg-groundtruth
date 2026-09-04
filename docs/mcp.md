@@ -3,7 +3,7 @@
 An MCP server for Flow Production Tracking lets an agent call the API. This one answers what the API
 does when you call it, which is a different question, and the reason to mount both.
 
-    python -m sg_groundtruth.mcp
+    PYTHONPATH=src python -m sg_groundtruth.mcp
 
 Standard library only, stdio, JSON-RPC 2.0. No dependency, so mounting it costs nothing beyond the clone.
 
@@ -12,10 +12,12 @@ Standard library only, stdio, JSON-RPC 2.0. No dependency, so mounting it costs 
 Claude Code:
 
     claude mcp add sg-groundtruth --scope user \
+      -e PYTHONPATH=/path/to/sg-groundtruth/src \
       -- python -m sg_groundtruth.mcp
 
-Run that from the repository, or give an absolute interpreter and set `PYTHONPATH` to `<repo>/src`. Any
-client that speaks stdio MCP works the same way. In a `mcp.json`:
+`PYTHONPATH` is not optional. The package is not installed, so without it `python -m sg_groundtruth.mcp`
+raises `ModuleNotFoundError: No module named 'sg_groundtruth'` from any directory except `src/` itself.
+Any client that speaks stdio MCP works the same way. In a `mcp.json`:
 
     {
       "mcpServers": {
@@ -60,7 +62,7 @@ Only `scope: api` entries, the ones true of any Flow PT site. A `site` or `proje
 of one installation, and an agent that cannot tell the two apart will state a local vocabulary as general
 behaviour.
 
-    python -m sg_groundtruth.mcp --overlay
+    PYTHONPATH=src python -m sg_groundtruth.mcp --overlay
 
 opts into the local ones, which is the same decision the reading level makes on the site. On the probed
 site that takes 67 entries to 108. Use it when the agent is working against that site and nowhere else.

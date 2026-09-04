@@ -164,22 +164,6 @@
 	--cell-y: 0.5rem;
 	--cell-x: 0.75rem;
 
-	/* --- HTTP methods ------------------------------------------------------
-	   The OpenAPI specification defines no colours for these. The mapping is the
-	   Swagger UI convention that Redoc, Stoplight and most API references follow,
-	   so a reader arrives already knowing it: GET blue, POST green, PUT orange,
-	   DELETE red, PATCH teal. The hues are this site's own system-colour family
-	   rather than Swagger's, which are too saturated for this ground.
-
-	   They repeat the scope-dot hues on the same row. A dot says which reading
-	   level a card has, a badge says which verb it answers to, and the shapes
-	   tell the two apart. */
-	--verb-get: light-dark(#007aff, #0a84ff);
-	--verb-post: light-dark(#248a3d, #30d158);
-	--verb-put: light-dark(#b25000, #ff9f0a);
-	--verb-delete: light-dark(#d70015, #ff453a);
-	--verb-patch: light-dark(#0071a4, #40c8e0);
-
 	/* --- shape ----------------------------------------------------------- */
 	--radius-sm: 4px;
 	--radius: 8px;

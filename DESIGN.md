@@ -83,6 +83,9 @@ to build, and `marked` to render the corpus markdown (not `mdsvex`, which compil
 component and so breaks on the `{type, id}` braces the corpus is full of). `agent-ui-annotation` draws a
 feedback toolbar on the dev server alone, mounted behind `import.meta.env.DEV`, so no build carries it.
 
+`site/tools/shot.py` screenshots built pages headless. Playwright is not a dependency of anything: it is
+supplied per run by `uv run --with playwright`, so a clone builds and serves the site without it.
+
 ## Licence
 
 Permissive, when it goes public. The whole positioning against AGPL tooling in this industry depends on studio

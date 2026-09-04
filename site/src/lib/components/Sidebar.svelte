@@ -1,7 +1,7 @@
 <script>
 	import { page } from '$app/state';
 	import { NAME } from '$lib/site.js';
-	import { visible } from '$lib/reading.svelte.js';
+	import { reading, visible } from '$lib/reading.svelte.js';
 
 	// The whole navigation. The name is the way home. Two pages come first,
 	// then five groups that open to list what they hold; the lists come from the
@@ -41,13 +41,13 @@
 	// Filters has one section per data type, so its list is the field types
 	// again, pointing at the anchors.
 	const groups = $derived([
-		{ id: 'field-types', label: 'Field types', href: '/field-types', items: shown(nav.fieldTypes) },
 		{
 			id: 'entity-types',
 			label: 'Entity types',
 			href: '/entity-types',
 			items: shown(nav.entityTypes)
 		},
+		{ id: 'field-types', label: 'Field types', href: '/field-types', items: shown(nav.fieldTypes) },
 		{ id: 'endpoints', label: 'Endpoints', href: '/endpoints', items: shown(nav.endpoints) },
 		{
 			id: 'filters',
@@ -78,13 +78,51 @@
 	// apart from one another.
 	const VERB = /^(GET|POST|PUT|DELETE|PATCH)\s+/;
 	const verbOf = (name) => (VERB.exec(name) ?? [])[1] ?? '';
-	// A path has no spaces, so a wrap breaks wherever it runs out of room and
-	// `/follow` becomes `follo` and `w`. A zero-width space after each separator
-	// offers the line breaker somewhere better; `overflow-wrap` still catches a
-	// single segment too long for the column.
-	const pathOf = (name) => name.replace(VERB, '').replace(/([/.])/g, '$1\u200B');
+	// The badge is one width for every verb, so the paths line up; DELETE is
+	// the one word that would not fit it.
+	const short = (verb) => (verb === 'DELETE' ? 'DEL' : verb);
+	// A path stays on one line and truncates in the middle: its last TAIL
+	// characters never give way and the rest ellipsizes from the right, since a
+	// row is told apart by its tail.
+	const TAIL = 8;
 
 	const describe = (lines) => lines.map((l) => l.word).join(', ');
+
+	// One tooltip for the tree, above whatever asked for it. Fixed to the
+	// viewport, so it can hang past the sidebar's edge and the scrolling nav
+	// never clips it. It waits TIP_DELAY on a hover, so a pointer crossing the
+	// tree raises nothing, and goes the moment the pointer leaves or the tree
+	// scrolls. Two things ask for it, and one state means they never show at
+	// once: the dots name their levels, centred above the dots; a path the
+	// ellipsis has cut shows in full, its text starting above the cut text.
+	const TIP_DELAY = 400;
+	let tip = $state(null);
+	let timer;
+	function raise(build) {
+		clearTimeout(timer);
+		timer = setTimeout(() => (tip = build()), TIP_DELAY);
+	}
+	function lower() {
+		clearTimeout(timer);
+		tip = null;
+	}
+	function nameLevels(dots, lines) {
+		raise(() => {
+			// The dots themselves, not the row-tall slot around them.
+			const ds = dots.querySelectorAll('.dot');
+			const a = ds[0].getBoundingClientRect();
+			const b = ds[ds.length - 1].getBoundingClientRect();
+			return { lines, x: (a.left + b.right) / 2, y: a.top, centred: true };
+		});
+	}
+	function revealPath(label, text) {
+		const stem = label.querySelector('.stem');
+		if (stem.scrollWidth <= stem.clientWidth) return;
+		raise(() => {
+			const r = stem.getBoundingClientRect();
+			return { text, x: r.left, y: r.top, centred: false };
+		});
+	}
 </script>
 
 <aside class="sidebar" class:open aria-label="Site">
@@ -97,7 +135,7 @@
 		</button>
 	</div>
 
-	<nav aria-label="Sections">
+	<nav aria-label="Sections" onscroll={lower}>
 		<ul class="menu">
 			<li>
 				<a class="item" href="/" aria-current={path === '/' ? 'page' : undefined}>Intro</a>
@@ -127,26 +165,41 @@
 					{#if isOpen(g)}
 						<ul class="sub" id="sub-{g.id}">
 							{#each g.items as e (e.slug)}
+								{@const name = e.title || e.name}
+								{@const verb = verbOf(name)}
+								{@const path = verb ? name.replace(VERB, '') : ''}
 								<li>
-									<a class="subitem" href={e.href} aria-current={current(e.href) ? 'page' : undefined}>
+									<a
+										class="subitem"
+										class:call={verb}
+										href={e.href}
+										aria-current={current(e.href) ? 'page' : undefined}
+									>
 										{#if e.number}<span class="num">{e.number}</span>{/if}
-										{#if verbOf(e.title || e.name)}
-											<span class="verb" data-verb={verbOf(e.title || e.name)}
-												>{verbOf(e.title || e.name)}</span
+										{#if verb}
+											<span class="verb">{short(verb)}</span>
+											<!-- svelte-ignore a11y_no_static_element_interactions -->
+											<span
+												class="label mono"
+												onpointerenter={(ev) => revealPath(ev.currentTarget, path)}
+												onpointerleave={lower}
+												><span class="stem">{path.slice(0, -TAIL)}</span><span class="tail"
+													>{path.slice(-TAIL)}</span
+												></span
 											>
-											<span class="label mono">{pathOf(e.title || e.name)}</span>
 										{:else}
-											<span class="label">{e.title || e.name}</span>
+											<span class="label">{name}</span>
 										{/if}
-										<span class="dots" role="img" aria-label={describe(e.lines)}>
+										<span
+											class="dots"
+											role="img"
+											aria-label={describe(e.lines)}
+											onpointerenter={(ev) => nameLevels(ev.currentTarget, e.lines)}
+											onpointerleave={lower}
+										>
 											{#each e.levels as level (level)}
 												<span class="dot" data-scope={level}></span>
 											{/each}
-											<span class="tip" aria-hidden="true">
-												{#each e.lines as line (line.level + line.word)}
-													<span class="line"><span class="dot" data-scope={line.level}></span>{line.word}</span>
-												{/each}
-											</span>
 										</span>
 									</a>
 								</li>
@@ -158,14 +211,45 @@
 		</ul>
 	</nav>
 
-	{#if projects.length}
-		<!-- The project the overlay was read from, nothing to choose: a page shows
-		     every level it holds. -->
-		<ul class="key" aria-label="Project">
-			{#each projects as p (p.id)}
-				<li><span class="keydot" data-scope="project"></span><span class="label">{p.label}</span></li>
-			{/each}
-		</ul>
+	{#if projects.length > 1}
+		<!-- Several projects in the overlay, read one at a time. Everything
+		     downstream reads `reading.project`, so choosing here filters the dots
+		     beside every entry, the sections on an entry page and the counts. -->
+		<p class="key">
+			<span class="keydot" data-scope="project"></span>
+			<select bind:value={reading.project} aria-label="Project">
+				{#each projects as p (p.id)}
+					<option value={p.id}>{p.label}</option>
+				{/each}
+			</select>
+			<svg class="chev down" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+				<path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" fill="none" />
+			</svg>
+		</p>
+	{:else if projects.length}
+		<!-- One project: the name of the one the overlay was read from. -->
+		<p class="key">
+			<span class="keydot" data-scope="project"></span><span class="label">{projects[0].label}</span>
+		</p>
+	{/if}
+
+	{#if tip}
+		<span
+			class="tip"
+			class:centred={tip.centred}
+			class:mono={tip.text}
+			style:left="{tip.x}px"
+			style:top="{tip.y}px"
+			aria-hidden="true"
+		>
+			{#if tip.text}
+				{tip.text}
+			{:else}
+				{#each tip.lines as line (line.level + line.word)}
+					<span class="line"><span class="dot" data-scope={line.level}></span>{line.word}</span>
+				{/each}
+			{/if}
+		</span>
 	{/if}
 </aside>
 
@@ -358,6 +442,12 @@
 		color: var(--ink);
 	}
 
+	/* A row that opens with a badge sets it nearer the line the list hangs
+	   from than a word would sit. */
+	.subitem.call {
+		padding-left: var(--space-1);
+	}
+
 	.num {
 		flex: 0 0 auto;
 		color: var(--ink-muted);
@@ -372,55 +462,50 @@
 		white-space: nowrap;
 	}
 
-	/* A path is an API literal, so it is set in mono at 12px. Most sit on one line
-	   at this width. The eleven that do not, `/entity/<type>/<id>/<field>/_upload/
-	   multipart_abort` among them, wrap onto a second rather than truncate: an
-	   endpoint is told apart by its tail, so an ellipsis on the right turns
-	   `_upload/multipart` and `_upload/multipart_abort` into the same row. Fitting
-	   the longest on one line needs a 32rem sidebar, which is more than a third of
-	   the viewport for navigation. */
+	/* A path is an API literal, set in mono at 12px, on one line. The stem
+	   gives way and ellipsizes; the tail, the last TAIL characters, never does,
+	   so `_upload/multipart` and `_upload/multipart_abort` stay two rows. */
 	.label.mono {
+		display: flex;
 		font-family: var(--font-mono);
 		font-size: 0.75rem;
-		white-space: normal;
-		overflow: visible;
-		overflow-wrap: anywhere;
 	}
 
-	/* The verb, as every API reference draws it: short, uppercase, in its own
-	   colour, and never competing with the path for width. */
+	.stem {
+		flex: 0 1 auto;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.tail {
+		flex: 0 0 auto;
+		white-space: nowrap;
+	}
+
+	/* The verb: a neutral badge, one width for all so the paths line up, and
+	   quieter than the path, so the scope dots keep the row's only colour. */
 	.verb {
 		flex: 0 0 auto;
-		width: 2.75rem;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 2.5rem;
+		height: 1.125rem;
+		border-radius: var(--radius-sm);
+		background: color-mix(in srgb, var(--ink) 4%, transparent);
+		color: var(--ink-muted);
 		font-family: var(--font-mono);
 		font-size: 0.6875rem;
 		font-weight: var(--weight-medium);
 		letter-spacing: 0.02em;
-		text-align: right;
-		color: var(--verb-get);
-	}
-
-	.verb[data-verb='POST'] {
-		color: var(--verb-post);
-	}
-
-	.verb[data-verb='PUT'] {
-		color: var(--verb-put);
-	}
-
-	.verb[data-verb='DELETE'] {
-		color: var(--verb-delete);
-	}
-
-	.verb[data-verb='PATCH'] {
-		color: var(--verb-patch);
 	}
 
 	/* The last dot is centred under the chevron; a second and a third run
 	   leftwards from it. The slot is the full height of the row, so the tooltip
 	   answers a pointer anywhere in it and not only on a dot. */
 	.dots {
-		position: relative;
 		flex: 0 0 var(--slot);
 		align-self: stretch;
 		display: flex;
@@ -437,19 +522,14 @@
 		background: var(--scope-ink);
 	}
 
-	/* What the dots mean: one line per level, its dot and its word, in the
-	   copy button's tooltip, to the left of the slot. It waits --tip-delay
-	   before showing, so a pointer crossing the tree raises nothing, and goes
-	   at once when the pointer leaves. */
+	/* The tooltip, in the copy button's look: black, 12px, a hairline of ink.
+	   Its text starts above the text it names, --space-1 up, and it rises into
+	   place. */
 	.tip {
-		--tip-delay: 400ms;
-		position: absolute;
-		z-index: 1;
-		right: calc(100% + var(--space-2));
-		top: 50%;
-		transform: translate(2px, -50%);
+		position: fixed;
+		z-index: 40;
 		display: grid;
-		padding: 0.15rem var(--space-2);
+		padding: 0.275rem var(--space-2);
 		border-radius: var(--radius-sm);
 		background: #000;
 		border: var(--border) solid color-mix(in srgb, var(--ink) 10%, transparent);
@@ -458,22 +538,31 @@
 		line-height: 1.5;
 		white-space: nowrap;
 		pointer-events: none;
-		opacity: 0;
-		transition:
-			opacity 125ms var(--ease-out),
-			transform 125ms var(--ease-out);
+		transform: translate(calc(-1 * var(--space-2) - var(--border)), calc(-100% - var(--space-1)));
+		animation: rise 125ms var(--ease-out);
 	}
 
-	.dots:hover .tip {
-		opacity: 1;
-		transform: translate(0, -50%);
-		transition-delay: var(--tip-delay);
+	/* Centred above the dots. It may hang past the sidebar's edge, which is
+	   what fixing it to the viewport is for. */
+	.tip.centred {
+		transform: translate(-50%, calc(-100% - var(--space-1)));
+	}
+
+	.tip.mono {
+		font-family: var(--font-mono);
 	}
 
 	.line {
 		display: flex;
 		align-items: center;
 		gap: var(--space-2);
+	}
+
+	@keyframes rise {
+		from {
+			opacity: 0;
+			translate: 0 2px;
+		}
 	}
 
 	/* The key sits on the page colour with no rule above it. Instead a fade
@@ -485,8 +574,6 @@
 		padding: var(--space-2) var(--space-2) 0;
 		margin: 0;
 		background: var(--sidebar);
-		display: grid;
-		gap: var(--space-1);
 		color: var(--ink-muted);
 	}
 
@@ -501,11 +588,44 @@
 		pointer-events: none;
 	}
 
-	.key li {
+	.key {
 		display: flex;
 		align-items: center;
 		gap: var(--space-2);
 		min-width: 0;
+		padding-bottom: var(--space-2);
+	}
+
+	/* The picker is the label, not a control drawn on top of one: the sidebar's
+	   own type and colour, the chrome removed, and the full width so a long
+	   project name has the room the static line had. */
+	.key select {
+		flex: 1 1 auto;
+		min-width: 0;
+		appearance: none;
+		border: 0;
+		padding: 0;
+		background: none;
+		color: inherit;
+		font: inherit;
+		cursor: pointer;
+	}
+
+	.key:has(select):hover {
+		color: var(--ink);
+	}
+
+	/* The group chevron, turned to point down: the same mark the tree uses for
+	   a thing that opens, so the picker reads as one. */
+	.chev.down {
+		flex: 0 0 auto;
+		transform: rotate(90deg);
+	}
+
+	.key select:focus-visible {
+		outline: var(--border) solid var(--rule-strong);
+		outline-offset: var(--space-1);
+		border-radius: var(--radius-sm);
 	}
 
 	.keydot {

@@ -1,15 +1,7 @@
 <script>
 	import Section from '$lib/components/Section.svelte';
 	import CopyButton from '$lib/components/CopyButton.svelte';
-	import { REPO } from '$lib/site.js';
-	import { countsAt } from '$lib/reading.svelte.js';
-
-	let { data } = $props();
-
-	// The counts answer at the reading level in force, so choosing Site or a
-	// project grows the corpus on the front page rather than only on the pages
-	// behind it. A public build has one level and one set of numbers.
-	const counts = $derived(countsAt(data.counts));
+	import { OVERLAY_DIR, REPO } from '$lib/site.js';
 
 	// Written from finding 027. The API is the same for every caller; what it
 	// returns is filtered by permission, and every entry here was measured by a
@@ -19,69 +11,21 @@
 		+ 'every caller, but what it returns is filtered by permission, so a lower-permission '
 		+ 'account may see fewer rows and fewer fields than an entry records.';
 
-	// Handed to an agent verbatim, so every command in it is one the repository
-	// has. The two site-scope probe slugs never appear in it: those are what the
-	// deploy check greps the build for.
-	const SETUP_PROMPT = `Clone ${REPO} and set it up to document my Flow Production Tracking site.
+	// Two blocks, in the order they run, because the clone cannot be part of what
+	// the agent is asked to do. /sg-groundtruth-setup is one of the repository's
+	// own commands and is registered when a session starts, so an agent told to
+	// clone the repository mid-session never gains it.
+	const INSTALL = `# the corpus, the probes that produced it, and the setup command
+git clone ${REPO}
+cd sg-groundtruth
 
-1. git clone ${REPO} && cd sg-groundtruth
-2. Run /sg-groundtruth-setup and follow it. If your agent has no slash commands,
-   read .claude/commands/sg-groundtruth-setup.md and follow that instead.
+# start your agent from inside the clone, so it loads the repository's commands
+claude`;
 
-It checks the toolchain before it asks me for a credential, asks for the five values it
-needs and says what each is for, proves them with two read-only probes, writes the docs
-for my own site and projects, and serves them on localhost.
-
-Everything is read-only. No probe writes anything without --write, and the only project
-one may write into is the sandbox I name. My site's data is written to corpus.local/,
-which is gitignored and is never committed or deployed.`;
-
-	// The sections, in the order a reader meets them. Counts come from the
-	// corpus, so a group that grows says so without an edit here.
-	const sections = $derived([
-		{
-			href: '/field-types',
-			title: 'Field types',
-			count: `${counts.fieldTypes} data types`,
-			note: 'One card per data_type: what it reads, writes and clears as, and what filters it.'
-		},
-		{
-			href: '/entity-types',
-			title: 'Entity types',
-			count: `${counts.entityTypes} entity types`,
-			note: 'One card per schema name: identity, the create contract, every link field, the status field.'
-		},
-		{
-			href: '/endpoints',
-			title: 'Endpoints',
-			count: `${counts.endpoints} calls`,
-			note: 'One card per REST call: what it takes, what it answers, a real response, and the edge cases.'
-		},
-		{
-			href: '/filters',
-			title: 'Filters',
-			count: '',
-			note: 'Every relation each data type accepts and the value to send with it, generated from the field-type cards.'
-		},
-		{
-			href: '/recipes',
-			title: 'Recipes',
-			count: `${counts.recipes} ${counts.recipes === 1 ? 'recipe' : 'recipes'}`,
-			note: 'A task, the calls that perform it, the response each returned, and the errors hit on the way.'
-		},
-		{
-			href: '/findings',
-			title: 'Findings',
-			count: `${counts.findings} published`,
-			note: 'One question each, grouped by the phase of a session it bites in.'
-		},
-		{
-			href: '/how-it-works',
-			title: 'How it works',
-			count: '',
-			note: 'The probes, the scope field, the local overlay, and the reading level.'
-		}
-	]);
+	// Handed to the agent verbatim, and it is one the repository has. The two
+	// site-scope probe slugs never appear on this page: those are what the deploy
+	// check greps the build for.
+	const SETUP_PROMPT = '/sg-groundtruth-setup';
 </script>
 
 <svelte:head>
@@ -95,163 +39,104 @@ which is gitignored and is never committed or deployed.`;
 <section class="col hero">
 	<h1>Recorded behaviour of the Flow Production Tracking REST API.</h1>
 	<p class="lede">
-		The REST documentation is incomplete and in places wrong. Each entry here is the output of a
-		probe run against a live site, published in the words the API used. The probes are in the
-		repository and run against any site.
+		The REST documentation is incomplete and in places wrong. Every entry here is what a live site
+		answered when a script asked it. The scripts are in the repository and run against any site.
 	</p>
 
 	<p class="actions">
-		<a class="button" href="/field-types">Start with the field types</a>
-		<a href={REPO}>Read it on GitHub</a>
+		<a class="button" href="/how-it-works">How it works</a>
+		<a class="button ghost" href={REPO}>Read it on GitHub</a>
 	</p>
 </section>
 
+<Section title="Who is it for">
+	<div class="scroll-x">
+		<table class="who">
+			<tbody>
+				<tr>
+					<td>You</td>
+					<td>Every entry is a page on this site.
+						<a href="/entity-types">Start with the entity types</a>.</td>
+				</tr>
+				<tr>
+					<td>Your agent</td>
+					<td>Given proper instructions, it has a ground truth to refer to and probes it can run to
+						check a claim.</td>
+				</tr>
+				<tr>
+					<td>Your site</td>
+					<td>Live data about your entity types, the fields in use, your status vocabularies and
+						your projects.</td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+	<p>
+		<a href="/recipes">Recipes</a> are a call and the response it returned. The corpus has them.
+		<code>/sg-groundtruth-adopt</code> writes new ones from code you already have.
+	</p>
+</Section>
+
 <Section
-	label="Start here"
-	title="Setup Ground Truth on your Flow Production Tracking site."
-	lede="Hand this to an agent with a terminal. It clones the repository, runs the read-only probes against your Flow PT site, and rebuilds this documentation with your own entities, fields, status vocabularies and projects in it."
+	id="start"
+	title="Start here"
+	lede="Four commands. The last one measures your site and rebuilds these pages with your own entities, fields, status vocabularies and projects in them."
 >
 	<figure class="prompt">
 		<figcaption>
-			<span>Setup prompt</span>
+			<span>In a terminal</span>
+			<CopyButton text={INSTALL} />
+		</figcaption>
+		<pre>{INSTALL}</pre>
+	</figure>
+
+	<figure class="prompt">
+		<figcaption>
+			<span>Then, in the agent</span>
 			<CopyButton text={SETUP_PROMPT} />
 		</figcaption>
 		<pre>{SETUP_PROMPT}</pre>
 	</figure>
 
-	<p>
-		<a href="/how-it-works#overlay">What the local corpus is</a>, which files are picked up, and
-		where each one renders.
+	<p class="caveat">
+		Read-only. Nothing is written without <code>--write</code>, and what it measures stays in
+		<code>{OVERLAY_DIR}/</code>, which is gitignored.
+		<a href="/how-it-works#setup">What the command does, step by step</a>.
 	</p>
 </Section>
 
-<!-- The argument for the thing, made with the corpus's own findings. Every row
-     is cited, because the claim is that these failures are silent and a reader
-     has no reason to take that on trust. -->
+<!-- Three rows, each a published finding. The table is the argument, so nothing
+     above it argues: the lede states the fact and stops. -->
 <Section
-	label="Why it exists"
-	title="The failures are silent, so an agent cannot correct them."
-	lede="A 400 names the legal set and an agent recovers from it. A 200 that ignored what you sent tells it nothing. Each row is a published finding."
+	title="Why it exists"
+	lede="Some Flow PT API calls fail silently. They answer 200 and do not do what you asked. They are documented here."
 >
 	<div class="scroll-x">
 		<table>
 			<thead>
-				<tr><th>you do this</th><th>you get</th><th>what happened</th></tr>
+				<tr><th>you do this</th><th>this happens</th></tr>
 			</thead>
 			<tbody>
 				<tr>
-					<td>Filter on a misspelled field</td>
-					<td><code>400</code></td>
-					<td>Caught, and the error names the legal set. This is the good case <a href="/findings/028_loud_and_silent">028</a></td>
-				</tr>
-				<tr>
-					<td>Sort on that same misspelled field</td>
-					<td><code>200</code></td>
-					<td>Ignored. Rows come back id ascending and nothing says so <a href="/findings/026_result_order">026</a></td>
-				</tr>
-				<tr>
-					<td>Read a dotted path through a <code>multi_entity</code> field</td>
-					<td><code>200</code></td>
-					<td>The key is absent from <code>attributes</code>. Filtering that same path works <a href="/findings/016_dotted_multi_entity">016</a></td>
-				</tr>
-				<tr>
-					<td>Send <code>?fields</code> on a write</td>
-					<td><code>200</code></td>
-					<td>Ignored. Re-read the row if you need a dotted path <a href="/findings/024_read_after_write">024</a></td>
+					<td>Sort on a misspelled field</td>
+					<td><code>200</code>. The sort is ignored, rows come back id ascending, and nothing says
+						so <a href="/findings/026_result_order">026</a></td>
 				</tr>
 				<tr>
 					<td>Page until <code>links.next</code> is absent</td>
-					<td>a <code>next</code>, always</td>
-					<td>It is emitted forever, on zero-row pages too. Stop when <code>data</code> is empty <a href="/findings/006_pagination">006</a></td>
-				</tr>
-				<tr>
-					<td>Create a field whose display name is taken</td>
-					<td><code>201</code></td>
-					<td>You got <code>&lt;name&gt;_1</code>. Read <code>/schema</code> first, never post and hope <a href="/findings/019_create_fields">019</a></td>
+					<td>It is never absent. It is emitted on zero-row pages too. Stop when <code>data</code>
+						is empty <a href="/findings/006_pagination">006</a></td>
 				</tr>
 				<tr>
 					<td>Create rows in a batch</td>
-					<td>an id per row</td>
-					<td>A batch can return an id for a row it never made <a href="/findings/028_loud_and_silent">028</a></td>
+					<td>You get an id per row. A batch can return an id for a row it never made
+						<a href="/findings/028_loud_and_silent">028</a></td>
 				</tr>
 			</tbody>
 		</table>
 	</div>
-</Section>
 
-<Section label="What it does" title="Four uses.">
-	<div class="scroll-x">
-		<table>
-			<thead>
-				<tr><th>use</th><th>how</th></tr>
-			</thead>
-			<tbody>
-				<tr>
-					<td>Point an agent at it</td>
-					<td>It reads recorded behaviour rather than documentation. Each entry names the probe that
-						produced it, so a claim it doubts, it re-runs.</td>
-				</tr>
-				<tr>
-					<td>Feed it code you have</td>
-					<td><code>/sg-groundtruth-adopt</code> reads a codebase that calls this API and turns each
-						distinct call into a recipe, each retry loop and swallowed error into a probe.</td>
-				</tr>
-				<tr>
-					<td>Answer a new question</td>
-					<td><code>/probe</code> asks it against your own site and records what came back.</td>
-				</tr>
-				<tr>
-					<td>Cover your own site</td>
-					<td>Your custom entities, field names, status vocabularies and projects, on these same
-						pages.</td>
-				</tr>
-			</tbody>
-		</table>
-	</div>
-</Section>
-
-<!-- Three flat facts, one each. The privacy one leads, because it is the fact
-     a reader most needs and it is stated nowhere else. -->
-<Section label="What it is" title="Three things worth knowing before you run it.">
-	<ul class="items">
-		<li>
-			<h3>Your site's data never leaves it</h3>
-			<p>
-				The files describing your site are written to <code>corpus.local/</code>, which is gitignored
-				and never deployed. Nothing is sent anywhere, including to whoever maintains this.
-			</p>
-		</li>
-		<li>
-			<h3>Every level on one page</h3>
-			<p>The API, your site and your projects, each section under its badge, on the pages that already
-				cover the subject.</p>
-		</li>
-		<li>
-			<h3>Read-only by default</h3>
-			<p>
-				A probe changes nothing without <code>--write</code>, and deletes anything it creates before
-				it exits.
-			</p>
-		</li>
-	</ul>
-
-	{#if PERMISSIONS_CAVEAT}
-		<p class="caveat">{PERMISSIONS_CAVEAT}</p>
-	{/if}
-</Section>
-
-<Section label="The site" title="What is on it.">
-	<ul class="items">
-		{#each sections as item (item.href)}
-			<li>
-				<h3><a href={item.href}>{item.title}</a></h3>
-				{#if item.count}
-					<p class="count">{item.count}</p>
-				{/if}
-				<p>{item.note}</p>
-			</li>
-		{/each}
-	</ul>
+	<p class="caveat">{PERMISSIONS_CAVEAT}</p>
 </Section>
 
 <style>
@@ -306,38 +191,27 @@ which is gitignored and is never committed or deployed.`;
 		transform: scale(0.97);
 	}
 
-	/* Things of equal weight, one after another. */
-	.items {
-		list-style: none;
-		padding: 0;
-		display: grid;
-		grid-template-columns: var(--col);
-		gap: var(--space-5);
+	/* The same pill with nothing filled in: a hairline for the ink, drawn
+	   inside so the two buttons stand the same height. */
+	.ghost {
+		background: none;
+		color: var(--ink);
+		box-shadow: inset 0 0 0 var(--border) var(--rule-strong);
 	}
 
-	.items li {
-		display: grid;
-		grid-template-columns: var(--col);
-		gap: var(--space-2);
+	.ghost:hover {
+		background: var(--ground-sunken);
 	}
-
-	.items h3 a {
-		text-decoration-color: transparent;
-	}
-
-	.items h3 a:hover {
-		text-decoration-color: currentColor;
-	}
-
-	.count {
-		font-family: var(--font-mono);
-		font-size: var(--text-xs);
-		color: var(--ink-muted);
-	}
-
 	.caveat {
 		font-size: var(--text-sm);
 		color: var(--ink-muted);
+	}
+
+	/* The first column names who, the second says what they get, so the name
+	   keeps one line and the table reads as a list of names. Scoped: the failures
+	   table below has a first column that must be free to wrap. */
+	.who td:first-child {
+		white-space: nowrap;
 	}
 
 	/* The prompt is meant to be selected whole, so it scrolls inside its own box

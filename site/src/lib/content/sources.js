@@ -75,7 +75,8 @@ function findRepoRoot() {
 	);
 }
 
-const repoRoot = findRepoRoot();
+export const REPO_ROOT = findRepoRoot();
+const repoRoot = REPO_ROOT;
 
 const overlayRoot = path.join(repoRoot, OVERLAY_SOURCE_DIR);
 
