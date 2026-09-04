@@ -14,7 +14,8 @@ verdict: `url` and `entity_types` are required and the entity type and action ar
 |---|---|
 | `Content-Type` | `application/json` only. The vendor array type answers 415 |
 | `url` | required. The host must resolve and must not be internal |
-| `entity_types` | required. `{"<Type>": {"create"\|"update"\|"delete": [<field>, ...]}}` |
+| `entity_types` | one mode. `{"<Type>": {"create"\|"update"\|"delete"\|"revive": [<field>, ...]}}` |
+| `event_type` | the other mode. One custom event as a string, e.g. `Shotgun_User_Login` |
 | `projects` | optional. Omitted means the whole site |
 | `token` | optional. Signs the delivery. Never returned; `is_token_set` reports it |
 | `name`, `description`, `validate_ssl_cert`, `batch_deliveries` | optional |
@@ -41,7 +42,8 @@ r = c.post("/webhook/hooks", json={
 | status | when |
 |---|---|
 | 201 | created, `status` `active` |
-| 400 | `url` or `entity_types` missing, url unroutable, entity type or action unknown |
+| 400 | `url` missing, url unroutable, entity type or action unknown |
+| 400 | neither `entity_types` nor `event_type`, **and also** both of them together |
 | 415 | `Content-Type: application/vnd+shotgun.api3_array+json` |
 
 **Edge cases**
@@ -54,6 +56,10 @@ r = c.post("/webhook/hooks", json={
   fire on it.
 - Two entity types in one hook answer 201.
 - A `projects` id that does not exist answers 201 and is stored.
+- `entity_types` and `event_type` are mutually exclusive and share one error message, so
+  `entity_types either entity types or event type is required` also means "you sent both".
+- An entity type the guide excludes from webhooks, `ApiUser` and `EventLogEntry` among them, is
+  accepted at 201 (`050_webhook_subscriptions`).
 
 **Links**
 

@@ -83,9 +83,6 @@ DELETE -> 204, then GET 404, deliveries 404, DELETE again 404
   open question; until it is answered do not read this as evidence the API never delivers.
 - Because nothing was delivered, `X-SG-SIGNATURE`, the payload, the `x-sg-event-batch-*` headers,
   `batch_deliveries`, and `GET|PUT /webhook/deliveries/<record_uuid>` and `redeliver` are all unprobed.
-- **Two subscription modes exist and only one is probed.** The 400 for an empty body names them:
-  `entity_types either entity types or event type is required`. Everything here uses `entity_types`.
-  The `event_type` mode, which the guide lists 39 custom values for, from `Shotgun_User_Login` to
-  `Shotgun_ActionMenuItem_Triggered`, is untried.
-- The guide names a fourth lifecycle action, `revive`, alongside `create`, `update` and `delete`, and
-  excludes ApiUser, EventLogEntry and connection entities from webhooks entirely. Neither is probed.
+- Everything here uses `entity_types`. The second subscription mode the 400 names, `event_type`, the
+  fourth lifecycle action `revive`, and the entity families the guide excludes are all measured in
+  `050_webhook_subscriptions`.
