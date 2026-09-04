@@ -6,7 +6,7 @@ operator's overlay present, so every row and mark the three reading levels draw 
 
 ## Rules taken from the sibling project
 
-`~/dev/css-fun-experiments` states its design rules in `DESIGN.md` and `docs/roles/DESIGNER.md`. Which ones
+`~/dev/css-fun-experiments` states its design rules in its own `DESIGN.md` and `docs/roles/DESIGNER.md`, neither of them here. Which ones
 bind here:
 
 | rule | applied |
@@ -459,11 +459,11 @@ Five entries. Four are one line each. Everything else in this proposal lands fro
 
 | # | file | change | why a token cannot do it |
 |---|---|---|---|
-| 1 | `src/lib/components/Prose.svelte`, `src/routes/filters/+page.svelte` | `th`/`td` padding reads `var(--cell-y) var(--cell-x)` and `line-height: var(--leading-tabular)` | Both files name `var(--space-3)` today. Density is a decision made once, and it cannot be one until one token holds it |
-| 2 | `src/lib/components/Prose.svelte`, `src/routes/filters/+page.svelte` | The section head (`Prose` `h2`, `filters` `h3`) reads `--text-md` in `--ink`, not `--text-xs` uppercase muted. In `Prose`, add `p > strong:first-child` styled as a run-in mono label | Both name `var(--text-xs)` explicitly. Raising `--text-xs` would also raise every tag, chip and table head. The run-in rule needs a selector, not a value. This also settles "the corpus marks its sections with bold" in `site/README.md` |
-| 3 | `src/app.css` | `.scroll-x` gains a right-edge `mask-image` fade | A cell clipped mid-token with no affordance is a reader who does not know there is more. `.scroll-x` is already in `app.css` and the fade width can read `--space-6` |
-| 4 | `src/lib/components/SiteHeader.svelte` | Below 640px, the bar is not sticky, or the reading level shares a row with the nav | 120px of sticky chrome on an 844px phone is 14% of the viewport, held on every scroll. Height comes from wrapping, not from a length |
-| 5 | `src/lib/components/EntryDetail.svelte`, `src/routes/filters/+page.svelte`, `src/routes/+page.svelte` | The three hardcoded `3px`/`2px` bars read `var(--scope-edge-width)` and `var(--border-bar)` | `site/README.md` says nothing hardcodes a length. Three files do. The verdict rail is the API scope edge and should be drawn by the same token |
+| 1 | `site/src/lib/components/Prose.svelte`, `site/src/routes/filters/+page.svelte` | `th`/`td` padding reads `var(--cell-y) var(--cell-x)` and `line-height: var(--leading-tabular)` | Both files name `var(--space-3)` today. Density is a decision made once, and it cannot be one until one token holds it |
+| 2 | `site/src/lib/components/Prose.svelte`, `site/src/routes/filters/+page.svelte` | The section head (`Prose` `h2`, `filters` `h3`) reads `--text-md` in `--ink`, not `--text-xs` uppercase muted. In `Prose`, add `p > strong:first-child` styled as a run-in mono label | Both name `var(--text-xs)` explicitly. Raising `--text-xs` would also raise every tag, chip and table head. The run-in rule needs a selector, not a value. This also settles "the corpus marks its sections with bold" in `site/README.md` |
+| 3 | `site/src/app.css` | `.scroll-x` gains a right-edge `mask-image` fade | A cell clipped mid-token with no affordance is a reader who does not know there is more. `.scroll-x` is already in `app.css` and the fade width can read `--space-6` |
+| 4 | `site/src/lib/components/SiteHeader.svelte` | Below 640px, the bar is not sticky, or the reading level shares a row with the nav | 120px of sticky chrome on an 844px phone is 14% of the viewport, held on every scroll. Height comes from wrapping, not from a length |
+| 5 | `site/src/lib/components/EntryDetail.svelte`, `site/src/routes/filters/+page.svelte`, `site/src/routes/+page.svelte` | The three hardcoded `3px`/`2px` bars read `var(--scope-edge-width)` and `var(--border-bar)` | `site/README.md` says nothing hardcodes a length. Three files do. The verdict rail is the API scope edge and should be drawn by the same token |
 
 Entry 6, if the operator later wants one render on every platform: an `@font-face` block for Source Serif 4
 and IBM Plex Mono, in `app.css` or a `fonts.css` beside it, with woff2 in `static/`. Both are OFL 1.1.

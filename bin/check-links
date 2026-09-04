@@ -1,0 +1,71 @@
+#!/usr/bin/env python3
+"""Every repository path named in prose, and every internal link in the built site.
+
+Two failures this catches, both of which shipped:
+
+  corpus/ENDPOINTS.md   named in four places, including the message check_corpus.py prints when
+                        `endpoints:` is missing and the one the MCP server returns when a call does
+                        not resolve. Both fire exactly when a reader is stuck.
+  /how-it-works#use     an anchor that stopped existing when the section holding it was split.
+
+Paths inside angle brackets are templates (`probes/NNN_slug.py`) and are skipped. The site half runs
+only when site/build exists, so a checkout with no build still passes the prose half.
+"""
+import re
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+PROSE = ["README.md", "CLAUDE.md", "DESIGN.md", "PLAN.md"]
+PROSE_DIRS = [".claude/commands", "docs"]
+# A path in a sentence that names another repository is that repository's path. The sentence has to
+# say so; this is the list of the ones that do.
+FOREIGN = {"docs/roles/DESIGNER.md"}
+PATH_RE = re.compile(r"`((?:probes|corpus|corpus\.local|docs|site|src|bin|\.claude)/[A-Za-z0-9_./<>-]+)`")
+HREF_RE = re.compile(r'href="(/[^"#]*)(#[^"]*)?"')
+ANCHOR_RE = re.compile(r'href="(#[^"]+)"')
+
+bad = []
+
+
+def files():
+    for f in PROSE:
+        p = ROOT / f
+        if p.is_file():
+            yield p
+    for d in PROSE_DIRS:
+        yield from sorted((ROOT / d).glob("*.md"))
+
+
+for f in files():
+    for m in PATH_RE.finditer(f.read_text()):
+        ref = m.group(1)
+        # `probes/NNN_slug.py` and `corpus/findings/<entry>.md` are templates, not paths.
+        if "<" in ref or ">" in ref or "NNN" in ref or ref.endswith("/") or ref in FOREIGN:
+            continue
+        if not (ROOT / ref).exists():
+            bad.append(f"{f.relative_to(ROOT)}: `{ref}` does not exist")
+
+build = ROOT / "site" / "build"
+if build.is_dir():
+    for page in sorted(build.rglob("*.html")):
+        text = page.read_text()
+        rel = page.relative_to(build)
+        for href, frag in HREF_RE.findall(text):
+            target = build / href.strip("/")
+            hit = target.with_suffix(".html") if target.suffix != ".html" else target
+            if not (hit.is_file() or (target / "index.html").is_file() or href == "/"):
+                bad.append(f"{rel}: {href} is not a page")
+                continue
+            if frag:
+                page_text = (hit if hit.is_file() else target / "index.html").read_text()
+                if f'id="{frag[1:]}"' not in page_text:
+                    bad.append(f"{rel}: {href}{frag} has no such id")
+        for frag in ANCHOR_RE.findall(text):
+            if f'id="{frag[1:]}"' not in text:
+                bad.append(f"{rel}: {frag} has no such id on its own page")
+
+for line in bad:
+    print(line, file=sys.stderr)
+print(f"{len(bad)} broken reference(s)")
+sys.exit(1 if bad else 0)

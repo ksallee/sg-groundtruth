@@ -12,6 +12,8 @@ corpus.local/
 node_modules/
 .svelte-kit/
 site/build/
+dist/
+*.egg-info/
 
 # No longer written: the default lives in site/vite.config.js so a fresh clone builds unconfigured.
 site/.env

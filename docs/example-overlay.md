@@ -34,10 +34,11 @@ that stays true: what is public is what somebody read and committed, never what 
 `ScopeSection` quotes the second under every local section, because that is a provenance claim and the
 example build would otherwise name a directory its content did not come from.
 
-`PUBLIC_OVERLAY_SOURCE` is a `$env/static/public` variable, so it is substituted at build time and reaches
-the client. `site/.env` sets the default and is committed. `site/vercel.json` sets `corpus.example` under
-`build.env`, so the switch lives in the repository rather than in the Vercel dashboard, matching how
-`ignoreCommand` and the production branch are already handled.
+`PUBLIC_OVERLAY_SOURCE` is read by `site/vite.config.js`, which substitutes it into the bundle as
+`__OVERLAY_SOURCE__`. The default lives in that file, so a fresh clone builds with no `.env` of any kind
+and an absent variable cannot break the build. `site/vercel.json` sets `corpus.example` under `build.env`,
+so the switch lives in the repository rather than in the Vercel dashboard, matching how `ignoreCommand`
+and the production branch are already handled.
 
 ## Rebuilding the example
 
