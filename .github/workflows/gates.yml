@@ -4,7 +4,9 @@
 # `pull_request` workflow runs that pull request's code. On a self-hosted runner that is arbitrary code
 # execution on the machine hosting it, and a runner is not ephemeral, so a compromise persists into every
 # later run. Being the only contributor does not help: the risk is a stranger's fork, not a collaborator.
-# GitHub-hosted minutes are free for public repositories and no gate here needs anything local.
+# GitHub-hosted minutes are free and unmetered for public repositories on standard runners, which
+# ubuntu-latest is, so this bills nothing. Larger runners bill even on a public repository; do not
+# reach for one here. No gate needs anything local either.
 #
 # No gate needs a credential either. The probes do, and probes are not gates: a probe calls a live Flow PT
 # site, and what it measures is a finding for an agent to write by hand, not a check to pass.

@@ -1,0 +1,56 @@
+# Publish to PyPI when a GitHub release is published. Nothing else triggers it: a tag alone does not,
+# so a mistyped tag costs nothing and the release notes are written before anything ships.
+#
+# No token anywhere. PyPI Trusted Publishing exchanges this workflow's OIDC identity for a short-lived
+# upload token, which is why `id-token: write` is here and no secret is. It has to be configured once
+# on PyPI, under the project's Publishing settings:
+#
+#   owner              ksallee
+#   repository         sg-groundtruth
+#   workflow           release.yml
+#   environment        pypi
+#
+# The `pypi` environment is the second half of that: with it set, only a run in that environment can
+# claim the identity, so a workflow added by a pull request cannot publish.
+#
+# The version published is `[project].version` in pyproject.toml. PyPI refuses a version it already
+# has, so bump it in the same commit as the release, and never re-point a tag at new code.
+
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  pypi:
+    name: Build and publish to PyPI
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      # The gates already build and install the wheel on every push. This builds it again from the
+      # tagged tree, because that is the tree being published and no other run has seen it.
+      - run: uv build
+
+      - name: The wheel imports before anyone can install it
+        run: |
+          python -m venv /tmp/v
+          /tmp/v/bin/pip -q install dist/*.whl
+          cd /tmp && /tmp/v/bin/python -c "
+          from sg_groundtruth.client import FPT, FPTError
+          from sg_groundtruth.env import load, repo_root
+          print('ok')
+          "
+
+      - uses: pypa/gh-action-pypi-publish@release/v1
