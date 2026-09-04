@@ -74,7 +74,7 @@
 	}
 
 	.copy.copied {
-		color: var(--accent-project);
+		color: var(--ink);
 	}
 
 	/* The arriving glyph waits out the leaving one's exit. */
