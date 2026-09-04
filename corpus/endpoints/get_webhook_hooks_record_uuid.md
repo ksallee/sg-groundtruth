@@ -41,8 +41,9 @@ r = c.get(f"/webhook/hooks/{uuid}")
 
 - `entity_types` is returned with its action keys reordered. Compare it as a mapping, not as text.
 - The token is never returned. `is_token_set` is the only readable fact about it.
-- `num_deliveries` is a lifetime counter and the deliveries listing keeps seven days, so the two
-  disagree by design: on the probed site one hook reports 29 and returns zero delivery records.
+- `num_deliveries` does not track the deliveries listing. On the probed site one hook reports 29 with
+  zero records, and a hook with two records reports 0. What the counter counts is unmeasured; it does
+  not count `Webhook_Status_Change` deliveries.
 
 **Links**
 

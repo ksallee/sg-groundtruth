@@ -45,10 +45,11 @@ r = c.get(f"/webhook/hooks/{uuid}/deliveries", params={"status": "failed"})
   zeros rather than being absent when there is nothing to measure.
 - **The record shape is unprobed.** No delivery was observed on the probed site, so the keys of a
   delivery, its response code and its timing fields are unknown here.
-- **Delivery records are purged after seven days; `num_deliveries` is not.** On the probed site a hook
-  reporting `num_deliveries: 29` returns zero delivery records. The counter is the lifetime total and
-  the listing is a seven-day window, so a hook that last fired eight days ago looks identical to one
-  that has never fired. Read `num_deliveries` to answer "has this ever worked".
+- **`num_deliveries` and this listing disagree in both directions, and what the counter counts is
+  unmeasured.** On the probed site one hook reports `num_deliveries: 29` and returns zero records,
+  and a hook that returns two records reports `num_deliveries: 0`. The guide says records are kept
+  seven days, which explains the first case and not the second. Neither field alone answers "has this
+  hook ever delivered"; read both.
 
 **Links**
 
