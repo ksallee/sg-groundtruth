@@ -1,5 +1,5 @@
 ---
-tags: [field-type, date, filter, operator, write, trap]
+tags: [date]
 scope: api
 measured: first sample project read, 2 rows written in the sandbox project
 summary: A calendar date, with no time of day.

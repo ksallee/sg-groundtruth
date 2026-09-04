@@ -1,5 +1,5 @@
 ---
-tags: [field-type, percent, number, write, filter, operator, fill-rate, trap]
+tags: [number, fill-rate]
 scope: api
 measured: all sample projects read, 5 rows written in the sandbox project
 summary: A percentage, held as a whole number on a 0 to 100 scale.

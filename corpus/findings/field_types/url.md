@@ -1,9 +1,9 @@
 ---
-tags: [field-type, url, media, upload, attachment, version, filter, operator, write, trap]
+tags: [media, upload, attachment, version, silent, url]
 scope: api
 measured: first sample project read, sandbox project written
 summary: A link to a file or a web address, returned as an object rather than a string.
-verdict: A url field supports no filter relation at all and sort on it is accepted and ignored, so "which Versions have media" can only be answered by paging rows and testing the value.
+verdict: The value is a presigned link re-minted on every read and expiring on `X-Amz-Expires`, so persist the Attachment id and re-read. No filter relation exists at all, and sort is a 200 no-op.
 ---
 
 # url

@@ -1,5 +1,5 @@
 ---
-tags: [field-type, number, write, filter, operator, fill-rate, trap]
+tags: [fill-rate, number]
 scope: api
 measured: first sample project read, 4 rows written in the sandbox project
 summary: A whole number.

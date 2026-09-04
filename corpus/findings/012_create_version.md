@@ -1,5 +1,7 @@
 ---
 tags: [write, version, create, entity-field]
+endpoints: [POST /entity/<type>, GET /schema/<Type>/fields]
+phase: write
 scope: api
 measured: sandbox project, Versions and Shots created and deleted
 verdict: The schema's mandatory flags are not the create contract: on every project-scoped type measured, `project` is required and the identity field is optional, server-generated and not unique.

@@ -1,5 +1,5 @@
 ---
-tags: [field-type, date-time, filter, operator, write, trap]
+tags: [date]
 scope: api
 measured: first sample project read, one Version written in the sandbox project
 summary: A moment in time, stored and returned in UTC.

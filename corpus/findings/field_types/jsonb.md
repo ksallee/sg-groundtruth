@@ -1,5 +1,5 @@
 ---
-tags: [field-type, jsonb, serializable, write, filter, operator, schema, error-handling, trap]
+tags: [serializable, error-handling, jsonb]
 scope: api
 measured: first sample project read, Notes written in the sandbox project
 summary: Arbitrary JSON stored on the row, which the server can filter on.

@@ -1,5 +1,7 @@
 ---
-tags: [schema, custom-field, create, error-handling, trap, discovery]
+tags: [schema, custom-field, create, error-handling, trap, discovery, silent]
+endpoints: [POST /schema/<Type>/fields, POST /schema/<Type>/fields/<field>, PUT /schema/<Type>/fields/<field>, DELETE /schema/<Type>/fields/<field>]
+phase: schema
 scope: api
 measured: site-wide, two field names created, trashed, revived and re-trashed on Version; both spent forever
 verdict: A trashed field is revived by POST /schema/<Type>/fields/<name> with {"revive": true} at 204, but it returns at its original data_type, and a PUT changing data_type is a 200 that does nothing.

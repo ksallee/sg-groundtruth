@@ -1,5 +1,5 @@
 ---
-tags: [entity-type, project, schema, filter, trap]
+tags: [filter, project]
 scope: api
 measured: site-wide plus the first sample project; nothing written
 summary: A show, the scope almost every other type is filtered by.

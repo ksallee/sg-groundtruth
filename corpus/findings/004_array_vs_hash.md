@@ -1,5 +1,7 @@
 ---
 tags: [query, header, entity-field, error-handling, trap]
+endpoints: [GET /entity/<type>, POST /entity/<type>/_search]
+phase: protocol
 scope: api
 measured: first sample project, Versions
 verdict: api3_array/api3_hash are a POST _search request Content-Type, not a GET Accept header: as Accept they 406, and entity fields are returned under relationships either way.

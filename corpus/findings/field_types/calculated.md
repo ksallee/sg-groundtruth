@@ -1,5 +1,5 @@
 ---
-tags: [field-type, calculated, filter, operator, schema, inspector, trap]
+tags: [inspector, read-only]
 scope: api
 measured: first sample project read, one throwaway Task in the sandbox project
 summary: A value the server works out from a formula over other fields on the row.

@@ -1,6 +1,7 @@
 ---
 intent: Resolve a query field's value, and run the rows a saved Page shows
-tags: [query, filter, summary, page, schema, operator, dotted-field, trap, recipe]
+tags: [query, filter, summary, page, schema, operator, dotted-field]
+endpoints: [GET /entity/<type>/<id>, POST /entity/<type>/_search, POST /entity/<type>/_summarize, GET /schema/<Type>/fields/<field>]
 scope: api
 measured: all sample projects, read only
 ---

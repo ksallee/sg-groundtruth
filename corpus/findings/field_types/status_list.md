@@ -1,5 +1,5 @@
 ---
-tags: [field-type, status, list-field, filter, operator, write, schema, trap]
+tags: [status, list-field]
 scope: api
 measured: first sample project read, sandbox project written
 summary: A workflow status, held as a short code from a per-type vocabulary.

@@ -1,5 +1,5 @@
 ---
-tags: [entity-type, attachment, upload, media, url, multi-entity, create, status, trap]
+tags: [upload, media, url, attachment]
 scope: api
 measured: first sample project read, sandbox project written
 summary: A file held on the site, linked to the rows it belongs to.

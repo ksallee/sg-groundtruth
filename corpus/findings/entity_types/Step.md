@@ -1,5 +1,5 @@
 ---
-tags: [entity-type, step, task, entity-field, schema, filter, query, trap]
+tags: [task, filter, query, silent, step]
 scope: api
 measured: site-wide plus the first sample project; read only
 summary: A pipeline step, shared by every project on the site.

@@ -1,5 +1,5 @@
 ---
-tags: [field-type, multi-entity, entity-field, write, filter, operator, dotted-field, trap]
+tags: [entity-field, dotted-field, silent, destructive, multi-entity]
 scope: api
 measured: first sample project read, sandbox project written
 summary: A link to many rows of another type.

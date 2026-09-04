@@ -1,5 +1,7 @@
 ---
 tags: [query, inspector, fill-rate, schema, cost, list-field]
+endpoints: [POST /entity/<type>/_summarize]
+phase: filter
 scope: api
 measured: 3 sample projects, Versions
 verdict: _summarize needs the same vendor Content-Type as _search, and one `grouping` call returns a field's distinct-value count and its empty count. At ~300ms a field, rank a shortlist, never scan.

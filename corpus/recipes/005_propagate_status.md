@@ -1,6 +1,7 @@
 ---
 intent: Roll a status up from a parent's Tasks and Versions onto the parent, without racing a concurrent write
-tags: [write, status, task, version, shot, schema, batch, filter, trap, recipe]
+tags: [write, status, task, version, shot, schema, batch, filter, silent]
+endpoints: [GET /entity/<type>/<id>, GET /schema/<Type>/fields/<field>, POST /entity/<type>/_search, POST /entity/_batch]
 scope: api
 measured: first sample project read, sandbox project written
 ---

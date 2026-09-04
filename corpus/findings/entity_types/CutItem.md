@@ -1,5 +1,5 @@
 ---
-tags: [entity-type, cut, timecode, create, entity-field, filter, operator, dotted-field, schema, trap]
+tags: [cut, timecode, filter, operator, dotted-field]
 scope: api
 measured: sandbox project; CutItem holds 0 rows site-wide, so every row here was created by the probe
 summary: One clip in a Cut, with its position in the edit and in its source.

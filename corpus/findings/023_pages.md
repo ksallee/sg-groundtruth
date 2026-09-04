@@ -1,5 +1,7 @@
 ---
-tags: [page, query, filter, schema, project, inspector, trap]
+tags: [page, query, filter, schema, project, inspector, trap, silent]
+endpoints: [GET /entity/<type>, POST /entity/<type>/_search, GET /schema/<Type>/fields]
+phase: read
 scope: api
 measured: first sample project, plus the site-wide Page and PageSetting listings
 verdict: A page's layout is the PageSetting row whose user is null; settings_json reads back as decoded JSON and body/list_content settings.columns is the column list. Every filter on it is ignored.

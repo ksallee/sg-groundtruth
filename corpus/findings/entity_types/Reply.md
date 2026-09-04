@@ -1,5 +1,5 @@
 ---
-tags: [entity-type, reply, note, create, entity-field, query, filter, trap]
+tags: [note, query, filter, silent, destructive, reply]
 scope: api
 measured: first sample project read, sandbox project written
 summary: One message in a thread, hanging off almost any row and not only off a Note.

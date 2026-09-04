@@ -1,5 +1,5 @@
 ---
-tags: [field-type, summary, schema, fill-rate, inspector, filter, trap]
+tags: [fill-rate, inspector, summary, read-only]
 scope: api
 measured: first sample project read, one Version written in the sandbox project
 summary: A count or aggregate the server computes from related rows.

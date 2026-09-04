@@ -1,6 +1,7 @@
 ---
 intent: Add to and remove from a multi_entity field without destroying the links you did not mean to touch
-tags: [write, multi-entity, entity-field, playlist, note, version, filter, trap, recipe]
+tags: [write, multi-entity, entity-field, playlist, note, version, filter, silent, destructive]
+endpoints: [GET /entity/<type>/<id>, PUT /entity/<type>/<id>, POST /entity/<type>/_search]
 scope: api
 measured: all sample projects read, sandbox project written
 ---

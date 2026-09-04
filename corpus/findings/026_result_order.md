@@ -1,5 +1,7 @@
 ---
-tags: [query, sort, paging, filter, dotted-field, trap]
+tags: [query, sort, paging, filter, dotted-field, trap, silent]
+endpoints: [GET /entity/<type>, POST /entity/<type>/_search]
+phase: read
 scope: api
 measured: first sample project, Versions
 verdict: Rows come back id ascending unless you sort; ["id", "in", [...]] discards the order of the list, and an unsortable or unknown sort field is a silent 200 no-op where the same name in a filter 400s.

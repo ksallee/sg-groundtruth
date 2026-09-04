@@ -1,5 +1,7 @@
 ---
 tags: [status, icon, cache, colour, entity-field]
+endpoints: [GET /entity/<type>]
+phase: render
 scope: api
 measured: site-wide, the Status and Icon listings
 verdict: Status.icon is an entity link under relationships; display_type picks one of three renderings, and stock icons are absent from the API but reachable via the sprite in the site's own stylesheet.

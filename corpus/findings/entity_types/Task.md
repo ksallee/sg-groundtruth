@@ -1,5 +1,5 @@
 ---
-tags: [entity-type, task, create, dependency, duration, status, entity-field, trap]
+tags: [dependency, duration, task]
 scope: api
 measured: first sample project read, sandbox project written
 summary: A unit of work on a Shot or an Asset, at one pipeline step.

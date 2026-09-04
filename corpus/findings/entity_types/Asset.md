@@ -1,5 +1,5 @@
 ---
-tags: [entity-type, asset, create, entity-field, multi-entity, list-field, status, trap]
+tags: [list-field]
 scope: api
 measured: first sample project read, sandbox project written
 summary: A thing that appears in shots, such as a character, a prop or an environment.

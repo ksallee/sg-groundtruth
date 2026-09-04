@@ -1,8 +1,10 @@
 ---
 tags: [auth, client, token]
+endpoints: [POST /auth/access_token, GET /entity/<type>]
+phase: auth
 scope: api
 measured: site-wide, one token call and a 3-row project listing
-verdict: client_credentials works and returns a 600s bearer token; a refresh_token comes back but re-authing is simpler and costs one call.
+verdict: Send the token request as `application/x-www-form-urlencoded`: `application/json` is 400 Invalid JSON body. client_credentials returns a 600s bearer, so ignore the refresh_token and re-auth.
 ---
 
 # 001_auth

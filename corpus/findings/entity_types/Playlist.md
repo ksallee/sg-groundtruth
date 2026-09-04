@@ -1,5 +1,5 @@
 ---
-tags: [entity-type, playlist, version, create, multi-entity, entity-field, trap]
+tags: [version, silent, playlist]
 scope: api
 measured: first sample project read, sandbox project written
 summary: An ordered set of Versions to review together.

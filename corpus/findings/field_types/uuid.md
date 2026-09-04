@@ -1,5 +1,5 @@
 ---
-tags: [field-type, uuid, filter, operator, write, schema, trap]
+tags: [read-only]
 scope: api
 measured: site-wide; no uuid field is writable, so no row was written
 summary: An identifier the server generates for the row and never lets a client write.

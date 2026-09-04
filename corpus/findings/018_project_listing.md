@@ -1,5 +1,7 @@
 ---
 tags: [project, query, filter, inspector, list-field, trap]
+endpoints: [GET /entity/<type>, POST /entity/<type>/_search]
+phase: read
 scope: api
 measured: site-wide, all 22 projects
 verdict: sg_status is not a liveness filter and is null on 15 of 22 projects; is_template, is_demo and archived are the discriminators, so pick the ones your list wants - is_demo hides the demo show.

@@ -1,5 +1,5 @@
 ---
-tags: [entity-type, published-file, enumeration, schema, filter, create, trap]
+tags: [published-file, enumeration, filter, silent]
 scope: api
 measured: site-wide plus the first sample project; read only
 summary: The kind of a published file, named once for the whole site.
