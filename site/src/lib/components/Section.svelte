@@ -3,10 +3,10 @@
 	// then whatever the caller puts inside. Every section is one of these so
 	// the vertical rhythm is decided in one place. `literal` sets the title in
 	// mono, for a title that is an API literal.
-	let { label = '', title = '', lede = '', literal = false, children } = $props();
+	let { id = undefined, label = '', title = '', lede = '', literal = false, children } = $props();
 </script>
 
-<section class="col section">
+<section {id} class="col section">
 	{#if label || title || lede}
 		<header>
 			{#if label}<p class="label">{label}</p>{/if}

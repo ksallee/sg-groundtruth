@@ -41,13 +41,13 @@
 	// Filters has one section per data type, so its list is the field types
 	// again, pointing at the anchors.
 	const groups = $derived([
-		{ id: 'field-types', label: 'Field types', href: '/field-types', items: shown(nav.fieldTypes) },
 		{
 			id: 'entity-types',
 			label: 'Entity types',
 			href: '/entity-types',
 			items: shown(nav.entityTypes)
 		},
+		{ id: 'field-types', label: 'Field types', href: '/field-types', items: shown(nav.fieldTypes) },
 		{ id: 'endpoints', label: 'Endpoints', href: '/endpoints', items: shown(nav.endpoints) },
 		{
 			id: 'filters',
