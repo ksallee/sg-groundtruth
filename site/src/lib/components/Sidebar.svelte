@@ -88,31 +88,44 @@
 
 	const describe = (lines) => lines.map((l) => l.word).join(', ');
 
-	// Every tooltip in the tree waits this long on a hover, so a pointer
-	// crossing it raises nothing.
+	// One tooltip for the tree, above whatever asked for it. Fixed to the
+	// viewport, so it can hang past the sidebar's edge and the scrolling nav
+	// never clips it. It waits TIP_DELAY on a hover, so a pointer crossing the
+	// tree raises nothing, and goes the moment the pointer leaves or the tree
+	// scrolls. Two things ask for it, and one state means they never show at
+	// once: the dots name their levels, centred above the dots; a path the
+	// ellipsis has cut shows in full, its text starting above the cut text.
 	const TIP_DELAY = 400;
-
-	// A path the ellipsis has cut shows itself in full after that wait, in
-	// place over the cut text and running past the sidebar's edge, which is
-	// why it is fixed to the viewport rather than laid out in the row. It goes
-	// the moment the pointer leaves or the tree scrolls.
-	let full = $state(null);
+	let tip = $state(null);
 	let timer;
-	function reveal(row, path) {
-		const stem = row.querySelector('.stem');
-		if (!stem || stem.scrollWidth <= stem.clientWidth) return;
-		timer = setTimeout(() => {
-			const r = stem.getBoundingClientRect();
-			full = { text: path, x: r.left, y: r.top + r.height / 2 };
-		}, TIP_DELAY);
-	}
-	function conceal() {
+	function raise(build) {
 		clearTimeout(timer);
-		full = null;
+		timer = setTimeout(() => (tip = build()), TIP_DELAY);
+	}
+	function lower() {
+		clearTimeout(timer);
+		tip = null;
+	}
+	function nameLevels(dots, lines) {
+		raise(() => {
+			// The dots themselves, not the row-tall slot around them.
+			const ds = dots.querySelectorAll('.dot');
+			const a = ds[0].getBoundingClientRect();
+			const b = ds[ds.length - 1].getBoundingClientRect();
+			return { lines, x: (a.left + b.right) / 2, y: a.top, centred: true };
+		});
+	}
+	function revealPath(label, text) {
+		const stem = label.querySelector('.stem');
+		if (stem.scrollWidth <= stem.clientWidth) return;
+		raise(() => {
+			const r = stem.getBoundingClientRect();
+			return { text, x: r.left, y: r.top, centred: false };
+		});
 	}
 </script>
 
-<aside class="sidebar" class:open aria-label="Site" style:--tip-delay="{TIP_DELAY}ms">
+<aside class="sidebar" class:open aria-label="Site">
 	<div class="head">
 		<a class="mark" href="/">{NAME}</a>
 		<button type="button" class="close" onclick={onclose} aria-label="Close menu">
@@ -122,7 +135,7 @@
 		</button>
 	</div>
 
-	<nav aria-label="Sections" onscroll={conceal}>
+	<nav aria-label="Sections" onscroll={lower}>
 		<ul class="menu">
 			<li>
 				<a class="item" href="/" aria-current={path === '/' ? 'page' : undefined}>Intro</a>
@@ -161,13 +174,15 @@
 										class:call={verb}
 										href={e.href}
 										aria-current={current(e.href) ? 'page' : undefined}
-										onpointerenter={(ev) => reveal(ev.currentTarget, path)}
-										onpointerleave={conceal}
 									>
 										{#if e.number}<span class="num">{e.number}</span>{/if}
 										{#if verb}
-											<span class="verb" data-verb={verb}>{short(verb)}</span>
-											<span class="label mono"
+											<span class="verb">{short(verb)}</span>
+											<!-- svelte-ignore a11y_no_static_element_interactions -->
+											<span
+												class="label mono"
+												onpointerenter={(ev) => revealPath(ev.currentTarget, path)}
+												onpointerleave={lower}
 												><span class="stem">{path.slice(0, -TAIL)}</span><span class="tail"
 													>{path.slice(-TAIL)}</span
 												></span
@@ -175,15 +190,16 @@
 										{:else}
 											<span class="label">{name}</span>
 										{/if}
-										<span class="dots" role="img" aria-label={describe(e.lines)}>
+										<span
+											class="dots"
+											role="img"
+											aria-label={describe(e.lines)}
+											onpointerenter={(ev) => nameLevels(ev.currentTarget, e.lines)}
+											onpointerleave={lower}
+										>
 											{#each e.levels as level (level)}
 												<span class="dot" data-scope={level}></span>
 											{/each}
-											<span class="tip" aria-hidden="true">
-												{#each e.lines as line (line.level + line.word)}
-													<span class="line"><span class="dot" data-scope={line.level}></span>{line.word}</span>
-												{/each}
-											</span>
 										</span>
 									</a>
 								</li>
@@ -205,8 +221,23 @@
 		</ul>
 	{/if}
 
-	{#if full}
-		<span class="full" style:left="{full.x}px" style:top="{full.y}px" aria-hidden="true">{full.text}</span>
+	{#if tip}
+		<span
+			class="tip"
+			class:centred={tip.centred}
+			class:mono={tip.text}
+			style:left="{tip.x}px"
+			style:top="{tip.y}px"
+			aria-hidden="true"
+		>
+			{#if tip.text}
+				{tip.text}
+			{:else}
+				{#each tip.lines as line (line.level + line.word)}
+					<span class="line"><span class="dot" data-scope={line.level}></span>{line.word}</span>
+				{/each}
+			{/if}
+		</span>
 	{/if}
 </aside>
 
@@ -441,11 +472,9 @@
 		white-space: nowrap;
 	}
 
-	/* The verb, as every API reference draws it: a badge in the verb's colour,
-	   one width for all so the paths line up, and the word in ink so the colour
-	   is the badge's alone. */
+	/* The verb: a neutral badge, one width for all so the paths line up, and
+	   quieter than the path, so the scope dots keep the row's only colour. */
 	.verb {
-		--verb: var(--verb-get);
 		flex: 0 0 auto;
 		display: inline-flex;
 		align-items: center;
@@ -453,35 +482,18 @@
 		width: 2.5rem;
 		height: 1.125rem;
 		border-radius: var(--radius-sm);
-		background: color-mix(in srgb, var(--verb) 14%, transparent);
-		color: var(--ink);
+		background: color-mix(in srgb, var(--ink) 4%, transparent);
+		color: var(--ink-muted);
 		font-family: var(--font-mono);
 		font-size: 0.6875rem;
 		font-weight: var(--weight-medium);
 		letter-spacing: 0.02em;
 	}
 
-	.verb[data-verb='POST'] {
-		--verb: var(--verb-post);
-	}
-
-	.verb[data-verb='PUT'] {
-		--verb: var(--verb-put);
-	}
-
-	.verb[data-verb='DELETE'] {
-		--verb: var(--verb-delete);
-	}
-
-	.verb[data-verb='PATCH'] {
-		--verb: var(--verb-patch);
-	}
-
 	/* The last dot is centred under the chevron; a second and a third run
 	   leftwards from it. The slot is the full height of the row, so the tooltip
 	   answers a pointer anywhere in it and not only on a dot. */
 	.dots {
-		position: relative;
 		flex: 0 0 var(--slot);
 		align-self: stretch;
 		display: flex;
@@ -498,10 +510,13 @@
 		background: var(--scope-ink);
 	}
 
-	/* The two tooltips share the copy button's look: black, 12px, a hairline of
-	   ink. */
-	.tip,
-	.full {
+	/* The tooltip, in the copy button's look: black, 12px, a hairline of ink.
+	   Its text starts above the text it names, --space-1 up, and it rises into
+	   place. */
+	.tip {
+		position: fixed;
+		z-index: 40;
+		display: grid;
 		padding: 0.275rem var(--space-2);
 		border-radius: var(--radius-sm);
 		background: #000;
@@ -511,28 +526,18 @@
 		line-height: 1.5;
 		white-space: nowrap;
 		pointer-events: none;
+		transform: translate(calc(-1 * var(--space-2) - var(--border)), calc(-100% - var(--space-1)));
+		animation: rise 125ms var(--ease-out);
 	}
 
-	/* What the dots mean: one line per level, its dot and its word, to the
-	   left of the slot. It waits --tip-delay before showing and goes at once
-	   when the pointer leaves. */
-	.tip {
-		position: absolute;
-		z-index: 1;
-		right: calc(100% + var(--space-2));
-		top: 50%;
-		transform: translate(2px, -50%);
-		display: grid;
-		opacity: 0;
-		transition:
-			opacity 125ms var(--ease-out),
-			transform 125ms var(--ease-out);
+	/* Centred above the dots. It may hang past the sidebar's edge, which is
+	   what fixing it to the viewport is for. */
+	.tip.centred {
+		transform: translate(-50%, calc(-100% - var(--space-1)));
 	}
 
-	.dots:hover .tip {
-		opacity: 1;
-		transform: translate(0, -50%);
-		transition-delay: var(--tip-delay);
+	.tip.mono {
+		font-family: var(--font-mono);
 	}
 
 	.line {
@@ -541,20 +546,10 @@
 		gap: var(--space-2);
 	}
 
-	/* The full path sits over the cut one, its text starting where the cut
-	   text starts. */
-	.full {
-		position: fixed;
-		z-index: 40;
-		transform: translate(calc(-1 * var(--space-2) - var(--border)), -50%);
-		font-family: var(--font-mono);
-		animation: reveal 125ms var(--ease-out);
-	}
-
-	@keyframes reveal {
+	@keyframes rise {
 		from {
 			opacity: 0;
-			translate: 2px 0;
+			translate: 0 2px;
 		}
 	}
 
