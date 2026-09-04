@@ -60,7 +60,11 @@ assert len(tools) >= 5, tools
 
 # Braces in a <pre> are a Svelte expression, which is why the corpus is rendered with marked and
 # not mdsvex. It is a build error, so the build is the check.
-run site-builds bash -c 'cd site && npm run build --silent'
+#
+# Built against the shipped corpus alone, never against whatever overlay is on this machine. A card
+# linking to a `scope: site` entry resolves locally and 500s the deploy, which is what happened to
+# get_schema_type_fields on the first run of this gate.
+run site-builds bash -c 'cd site && PUBLIC_OVERLAY_SOURCE=corpus.absent npm run build --silent'
 run site-types bash -c 'cd site && npx --no-install svelte-check --threshold error'
 
 # Four references pointed at corpus/ENDPOINTS.md, a file that does not exist, two of them inside
