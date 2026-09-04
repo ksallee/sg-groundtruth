@@ -29,8 +29,6 @@
 <div class="shell">
 	<Sidebar
 		nav={data.nav}
-		hasOverlay={data.hasOverlay}
-		hasSite={data.hasSite}
 		projects={data.projects}
 		open={menuOpen}
 		onclose={() => (menuOpen = false)}

@@ -190,7 +190,7 @@ The components:
 
 | component | does |
 |---|---|
-| `Sidebar` | the navigation: home, two pages, five groups that open, and the key to the colours |
+| `Sidebar` | the navigation: home, two pages, five groups that open, and the project the overlay was read from; a tooltip on an entry's dots names their levels |
 | `SiteHeader` / `SiteFooter` | the phone's top bar with the menu button, and the footer |
 | `Breadcrumb` | home, the section, the page: on every page but the intro |
 | `CopyButton` | copies its text; the SDS copy stroke, a tooltip, and a ticked circle once copied |
