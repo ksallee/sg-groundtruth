@@ -122,6 +122,26 @@ Open an entry only when its one-liner falls short.</pre>
 		</p>
 	</section>
 
+	<section id="client">
+		<h2>Call the API with it</h2>
+		<p>
+			<code>FPT</code> is the client every probe here uses, so the corpus was measured through it.
+			It holds a bearer, re-authenticates when it expires, and raises <code>FPTError</code> on a
+			non-2xx with the body intact.
+		</p>
+		<pre>from sg_groundtruth.client import FPT
+
+fpt = FPT.from_env()                  # FPT_API_SITE_URL, _SCRIPT_NAME, _API_KEY
+page = fpt.get("/entity/versions")    # the parsed body: data, links</pre>
+		<p class="note">
+			75 lines, <code>requests</code> and nothing else. <code>get</code>, <code>post</code>,
+			<code>put</code> and <code>delete</code> take a path and pass every other keyword to
+			<code>requests</code>, so <code>params</code>, <code>json</code> and <code>files</code> work
+			as they do there. It is not on PyPI yet, so a consumer outside this repository needs the clone
+			on its path.
+		</p>
+	</section>
+
 	<section id="setup">
 		<h2>Put your own site in it</h2>
 		<p>
