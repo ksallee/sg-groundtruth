@@ -48,6 +48,13 @@ Where provenance lands is the operator's mapping, not a project default. See DES
 
 **The write path is proven end to end.** The node can be built.
 
+Endpoint surface, recorded per call rather than per question:
+
+- [x] 041 endpoint surface: every call's request contract, status codes and real response.
+      Read-only by default; `--write` covers create, update, delete, batch and the three upload steps
+      in the sandbox. The four schema-writing endpoints are deliberately absent, because a deleted
+      field name is never freed, and their recorded output is in 019 and 040.
+
 ## Phase 1 — inspector  *(done)*
 
 - [x] `src/sg_groundtruth/schema.py`: fetch, cache, digest, query CLI
