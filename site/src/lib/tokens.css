@@ -22,26 +22,26 @@
 	   decoration. The two hues on the site mean something: amber is content
 	   measured on one site, green is content measured on one project. The
 	   API, which is the page's own voice, is set in ink. */
-	--ground: light-dark(#fdfdfc, #08090a);
-	--ground-raised: light-dark(#ffffff, #101114);
-	--ground-sunken: light-dark(#f3f3f1, #16181c);
+	--ground: light-dark(#fdfdfc, #111112);
+	--ground-raised: light-dark(#ffffff, #18191b);
+	--ground-sunken: light-dark(#f3f3f1, #1e1f22);
 
 	--ink: light-dark(#0f0f0e, #f5f6f7);
 	--ink-soft: light-dark(#2e2e2c, #dcdde0);
 	--ink-body: light-dark(#4b4b48, #cfd1d4);
 	--ink-muted: light-dark(#85857f, #898c92);
 
-	--rule: light-dark(#e9e9e6, #1c1e23);
-	--rule-strong: light-dark(#d6d5d1, #2b2e34);
+	--rule: light-dark(#e9e9e6, #242528);
+	--rule-strong: light-dark(#d6d5d1, #34353a);
 
 	/* A link underlines in a lighter ink than its text and darkens on hover. */
 	--underline: light-dark(#c4c3be, #55585e);
 
-	/* Code slabs sit one step off the page, with a rule, so a quoted payload
-	   reads as one object. */
-	--slab: light-dark(#161615, #0e1013);
+	/* Code slabs are the darkest surface on the page, with a rule, so a quoted
+	   payload reads as one object. */
+	--slab: light-dark(#161615, #0b0c0d);
 	--slab-ink: light-dark(#e6e6e3, #d8dadd);
-	--slab-rule: light-dark(#161615, #1c1e23);
+	--slab-rule: light-dark(#161615, #242528);
 
 	/* The three levels of truth are the only hues on the site. Everything else
 	   is black and white, so a dot or a mark in one of these is always a scope.
@@ -171,7 +171,7 @@
 	   floats at the left rather than boxing the column in. */
 	--sidebar: var(--ground);
 	--sidebar-hover: var(--ground-sunken);
-	--sidebar-active: light-dark(#e9e9e6, #1a1c21);
+	--sidebar-active: light-dark(#e9e9e6, #222326);
 	--sidebar-width: 16rem;
 	--text-menu: 0.875rem; /* 14px  every sidebar row */
 
