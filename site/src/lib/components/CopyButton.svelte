@@ -83,12 +83,13 @@
 		right: calc(100% + var(--space-2));
 		top: 50%;
 		transform: translate(2px, -50%);
-		padding: 0.1rem var(--space-2);
+		padding: 0.15rem var(--space-2);
 		border-radius: var(--radius-sm);
-		background: var(--ink);
-		color: var(--ground);
-		font-size: var(--text-xs);
-		line-height: 1.6;
+		background: #000;
+		border: var(--border) solid color-mix(in srgb, var(--ink) 10%, transparent);
+		color: #fff;
+		font-size: 0.75rem;
+		line-height: 1.5;
 		letter-spacing: var(--tracking-body);
 		white-space: nowrap;
 		pointer-events: none;
