@@ -432,7 +432,7 @@ Those 5 are all in the webhook family, and they are blocked on the site rather t
 
 ### Webhooks
 
-- **`GET /webhook/deliveries/<record_uuid>`** **[partial]** — Returns the whole delivery including `request_body`, the payload as sent. `status` is `delivered` even when nothing answered, so read `response_code`, which is 0 when nothing answered.  
+- **`GET /webhook/deliveries/<record_uuid>`** **[partial]** — Returns one delivery record with ten keys. `status` is `delivered` even when nothing answered, so read `response_code`, which is 0 when no response was received.  
   `webhook delivery error-handling`  
   not measured: Measured against a Webhook_Status_Change delivery to a dead host. request_headers, response_headers, body and a non-zero response_code are unmeasured.  
   also: 045_webhooks (finding)
