@@ -341,7 +341,12 @@ Verify after the first deploy that a push to a non-`prod` branch shows as skippe
 
 ## Dependencies
 
-Five build dependencies and one runtime one.
+Five build dependencies and one runtime one, plus one that exists for the dev server alone.
+
+`agent-ui-annotation` draws a feedback toolbar on the dev server: click an element, write a note, copy every
+note as one prompt for an agent. It is a custom element with `lit` as its only dependency, so the earlier
+React toolbar's `react` and `react-dom` are gone. It is mounted from `src/lib/dev/annotation.js` behind
+`import.meta.env.DEV`, so no build carries it.
 
 `marked` renders the corpus markdown. `mdsvex` is the conventional SvelteKit choice and was the obvious
 first pick, but it compiles markdown as a Svelte component, which makes `{` and `}` in the source into

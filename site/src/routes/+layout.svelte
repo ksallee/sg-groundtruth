@@ -16,6 +16,11 @@
 	// with no overlay has nothing to restore.
 	$effect(() => restore(data));
 	afterNavigate(() => (menuOpen = false));
+
+	// The annotation toolbar, dev server only. See src/lib/dev/annotation.js.
+	$effect(() => {
+		if (import.meta.env.DEV) import('$lib/dev/annotation.js').then((m) => m.mount());
+	});
 </script>
 
 <svelte:window onkeydown={(e) => e.key === 'Escape' && (menuOpen = false)} />
