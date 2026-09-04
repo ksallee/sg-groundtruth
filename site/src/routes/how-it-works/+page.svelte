@@ -139,11 +139,12 @@ claude</pre>
 					<tr><th>step</th><th>what happens</th></tr>
 				</thead>
 				<tbody>
-					<tr><td>1</td><td>Checks the toolchain</td></tr>
-					<tr><td>2</td><td>Asks for five values, and says what each is for</td></tr>
-					<tr><td>3</td><td>Proves them with two read-only probes</td></tr>
-					<tr><td>4</td><td>Writes your site's documentation to <code>{data.overlayDir}/</code></td></tr>
-					<tr><td>5</td><td>Serves it on localhost</td></tr>
+					<tr><td>1</td><td>Asks what you want run. It measures nothing silently</td></tr>
+					<tr><td>2</td><td>Checks the toolchain</td></tr>
+					<tr><td>3</td><td>Asks for five values, and says what each is for</td></tr>
+					<tr><td>4</td><td>Proves them with two read-only probes</td></tr>
+					<tr><td>5</td><td>Writes your site's documentation to <code>{data.overlayDir}/</code></td></tr>
+					<tr><td>6</td><td>Serves it on localhost, then hands you the four commands above</td></tr>
 				</tbody>
 			</table>
 		</div>

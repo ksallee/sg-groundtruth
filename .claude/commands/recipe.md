@@ -10,7 +10,8 @@ Task: $ARGUMENTS
    and every gotcha hit on the way. The gotchas are the point; a call that worked first time teaches a
    model nothing it did not know.
 4. Carry an `endpoints:` key listing every call the recipe makes, in the spelling
-   `corpus/ENDPOINTS.md` uses. It is how an agent holding a call finds this recipe, and
+   the cards in `corpus/endpoints/` are named by. It is how an agent holding a call finds this
+   recipe, and
    `probes/check_corpus.py` rejects any other spelling.
 5. Carry a `measured:` key, from the line `_lib.emit` prints. A recipe demonstrated on three rows the
    probe made in the sandbox is weaker evidence than one run against a real show, and the reader deciding

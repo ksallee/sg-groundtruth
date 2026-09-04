@@ -69,8 +69,10 @@ does not**, so a project dropped from `FPT_PROBE_SAMPLE_PROJECTS` stays on disk 
 
     cd site && npm install && npm run dev
 
-Open `http://localhost:5173`. Point at the reading level switch in the header: it is the whole payoff of
-the previous step, and it is not rendered at all when the overlay is empty.
+Open `http://localhost:5173`. Point at the foot of the sidebar, which names the project the overlay was
+read from, and at the badges beside every section their site now has. That is the payoff of the previous
+step, and none of it is rendered when the overlay is empty. With two or more projects the foot is a
+picker and the corpus is read one project at a time.
 
 ## 8. Hand them the list, and stop
 

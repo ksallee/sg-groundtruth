@@ -308,7 +308,7 @@ def _call(name, args, entries):
                 return (f"{asked!r} normalises to {want!r}, which matches several methods:\n"
                         + "\n".join(f"- {s['endpoint']} — {s['does']}" for s in near))
         if hit is None:
-            return (f"{asked!r} normalises to {want!r}, which is not in corpus/ENDPOINTS.md. Call "
+            return (f"{asked!r} normalises to {want!r}, which has no card in corpus/endpoints/. Call "
                     f"corpus_endpoint with no argument for the list. An absent endpoint means nothing "
                     f"here has probed it, not that the API lacks it.")
 

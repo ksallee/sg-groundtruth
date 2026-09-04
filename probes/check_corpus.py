@@ -251,8 +251,8 @@ for f in sorted(CORPUS.rglob("*.md")):
     eps = re.search(r"endpoints:\s*\[([^\]]*)\]", head.group(1))
     if f.parent.name in ("findings", "recipes"):
         if not eps:
-            fail(f, "no endpoints: the calls this entry covers, in the spelling corpus/ENDPOINTS.md "
-                    "uses. It is how an agent holding a call finds this entry")
+            fail(f, "no endpoints: the calls this entry covers, in the spelling the cards in "
+                    "corpus/endpoints/ are named by. It is how an agent holding a call finds this entry")
         else:
             for e in (x.strip() for x in eps.group(1).split(",") if x.strip()):
                 if e not in KNOWN_ENDPOINTS:
