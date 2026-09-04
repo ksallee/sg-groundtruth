@@ -96,6 +96,8 @@
 	   more to scroll to. --surface is whatever the container sits on; an inset
 	   section reassigns it so the mask matches its own ground. */
 	--scroll-cue: light-dark(rgb(15 15 14 / 0.14), rgb(0 0 0 / 0.6));
+	/* The thumb of a custom scrollbar, drawn only under the pointer. */
+	--scroll-thumb: light-dark(rgb(15 15 14 / 0.25), rgb(255 255 255 / 0.22));
 	--surface: var(--ground);
 
 	/* --- type ------------------------------------------------------------
