@@ -4,6 +4,9 @@ import time
 
 import requests
 
+# The site's OpenAPI document advertises /api/v1.1 and never mentions /api/v1. They are the
+# same API: same 62 operations, same bodies, and links echo whichever prefix you called.
+# /api/v1 stays because every finding in the corpus was measured on it. Probe 051.
 API = "/api/v1"
 
 

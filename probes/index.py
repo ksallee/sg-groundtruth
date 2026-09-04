@@ -145,6 +145,10 @@ def main():
         "**Findings** are how the API behaves, grouped by the phase of a session they bite in. "
         "**Recipes** are a verified call and its real response.", "",
         "`silent` is the tag to follow when a call returned 2xx and did nothing.", "",
+        "Every measurement here was taken against **`/api/v1`**. The site's own OpenAPI document "
+        "advertises `/api/v1.1` instead; the two are the same API, differing only in `api_version` "
+        "in the root document and the prefix each echoes in its own `links` (`051_api_version`).",
+        "",
         "## Findings", "",
     ]
     for phase, blurb in PHASES.items():
