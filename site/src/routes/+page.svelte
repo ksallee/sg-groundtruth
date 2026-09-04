@@ -42,6 +42,11 @@ claude`;
 		The REST documentation is incomplete and in places wrong. Every entry here is what a live site
 		answered when a script asked it. The scripts are in the repository and run against any site.
 	</p>
+
+	<p class="actions">
+		<a class="button" href="/how-it-works">How it works</a>
+		<a class="button ghost" href={REPO}>Read it on GitHub</a>
+	</p>
 </section>
 
 <Section title="Who is it for">
@@ -131,11 +136,6 @@ claude`;
 		</table>
 	</div>
 
-	<p>
-		<a href="/how-it-works">How it works</a>: the probes, the three scopes, the local overlay, and
-		mounting the corpus over MCP.
-	</p>
-
 	<p class="caveat">{PERMISSIONS_CAVEAT}</p>
 </Section>
 
@@ -159,6 +159,49 @@ claude`;
 		color: var(--ink);
 	}
 
+	.actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-5);
+		font-size: var(--text-sm);
+		margin-top: var(--space-2);
+	}
+
+	.button {
+		display: inline-flex;
+		align-items: center;
+		min-height: 2.5rem;
+		padding: 0 var(--space-5);
+		background: var(--ink);
+		color: var(--ground);
+		border-radius: var(--radius-pill);
+		text-decoration: none;
+		font-weight: var(--weight-medium);
+		transition:
+			background var(--duration) ease,
+			transform var(--duration-press) var(--ease-out);
+	}
+
+	.button:hover {
+		background: var(--ink-soft);
+	}
+
+	.button:active {
+		transform: scale(0.97);
+	}
+
+	/* The same pill with nothing filled in: a hairline for the ink, drawn
+	   inside so the two buttons stand the same height. */
+	.ghost {
+		background: none;
+		color: var(--ink);
+		box-shadow: inset 0 0 0 var(--border) var(--rule-strong);
+	}
+
+	.ghost:hover {
+		background: var(--ground-sunken);
+	}
 	.caveat {
 		font-size: var(--text-sm);
 		color: var(--ink-muted);
