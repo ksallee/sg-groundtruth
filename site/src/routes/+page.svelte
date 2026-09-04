@@ -1,5 +1,6 @@
 <script>
 	import Section from '$lib/components/Section.svelte';
+	import CopyButton from '$lib/components/CopyButton.svelte';
 	import { REPO } from '$lib/site.js';
 	import { countsAt } from '$lib/reading.svelte.js';
 
@@ -34,16 +35,6 @@ for my own site and projects, and serves them on localhost.
 Everything is read-only. No probe writes anything without --write, and the only project
 one may write into is the sandbox I name. My site's data is written to corpus.local/,
 which is gitignored and is never committed or deployed.`;
-
-	let copied = $state(false);
-	let copyTimer;
-
-	async function copyPrompt() {
-		await navigator.clipboard.writeText(SETUP_PROMPT);
-		copied = true;
-		clearTimeout(copyTimer);
-		copyTimer = setTimeout(() => (copied = false), 2000);
-	}
 
 	// The sections, in the order a reader meets them. Counts come from the
 	// corpus, so a group that grows says so without an edit here.
@@ -117,7 +108,7 @@ which is gitignored and is never committed or deployed.`;
 	<figure class="prompt">
 		<figcaption>
 			<span>Setup prompt</span>
-			<button type="button" onclick={copyPrompt}>{copied ? 'Copied' : 'Copy'}</button>
+			<CopyButton text={SETUP_PROMPT} />
 		</figcaption>
 		<pre>{SETUP_PROMPT}</pre>
 	</figure>
@@ -357,36 +348,12 @@ which is gitignored and is never committed or deployed.`;
 		align-items: center;
 		justify-content: space-between;
 		gap: var(--space-4);
-		padding: var(--space-2) var(--space-3) var(--space-2) var(--space-5);
+		padding: var(--space-1) var(--space-2) var(--space-1) var(--space-5);
 		background: var(--ground-raised);
 		border-bottom: var(--border) solid var(--rule);
 		font-family: var(--font-mono);
 		font-size: var(--text-xs);
 		color: var(--ink-muted);
-	}
-
-	.prompt button {
-		font-family: var(--font-text);
-		font-size: var(--text-xs);
-		font-weight: var(--weight-medium);
-		letter-spacing: var(--tracking-body);
-		color: var(--ink);
-		background: var(--ground);
-		border: var(--border) solid var(--rule-strong);
-		border-radius: var(--radius-pill);
-		padding: var(--space-1) var(--space-3);
-		min-width: 4.5rem;
-		transition:
-			border-color var(--duration) ease,
-			transform var(--duration-press) var(--ease-out);
-	}
-
-	.prompt button:hover {
-		border-color: var(--ink-muted);
-	}
-
-	.prompt button:active {
-		transform: scale(0.97);
 	}
 
 	.prompt pre {
