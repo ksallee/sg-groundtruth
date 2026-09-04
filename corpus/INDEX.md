@@ -15,6 +15,8 @@ Four ways in, one per thing you already know before you call:
 
 `silent` is the tag to follow when a call returned 2xx and did nothing.
 
+Every measurement here was taken against **`/api/v1`**. The site's own OpenAPI document advertises `/api/v1.1` instead; the two are the same API, differing only in `api_version` in the root document and the prefix each echoes in its own `links` (`051_api_version`).
+
 ## Findings
 
 ### auth — getting a token, and what it is
@@ -30,6 +32,8 @@ Four ways in, one per thing you already know before you call:
   `query header entity-field error-handling trap`
 - **028_loud_and_silent** — A 400 is trustworthy and usually names the legal set, but a 200 proves nothing: an unknown field, sort key or query param is a no-op, and a batch can return an id for a row it never made.  
   `query filter sort write operator error-handling trap silent`
+- **051_api_version** — /api/v1 and /api/v1.1 are the same API. Across 20 read-only calls the only difference is api_version in the root document and the prefix each echoes in its own links. Any other segment is 404.  
+  `discovery client paging protocol`
 
 ### schema — what the site has, and adding to it
 
@@ -249,7 +253,7 @@ One card per call: what it takes, what it answers, a real response and the edge 
 
 - **`GET /`** — The site's login configuration, answered without a token. Read `user_authentication_method` here before choosing a grant type.  
   `auth discovery`  
-  also: 027_auth_permissions (finding)
+  also: 027_auth_permissions (finding), 051_api_version (finding)
 - **`POST /auth/access_token`** — Form-encode it. `application/json` is 415 naming the one legal type, and the 600s bearer is cheaper to re-mint than the refresh_token is to use.  
   `auth token client`  
   also: 001_auth (finding), 027_auth_permissions (finding)
@@ -273,7 +277,7 @@ One card per call: what it takes, what it answers, a real response and the edge 
   also: 047_site_facts_and_the_working_week (finding)
 - **`GET /spec.<format>`** — The site publishes its own OpenAPI v3 document, `json` or `yaml`, and it lists 62 operations where this corpus covers 23. The suffix is required and any other 406s.  
   `schema discovery cost`  
-  also: 042_spec_coverage (finding)
+  also: 042_spec_coverage (finding), 051_api_version (finding)
 - **`GET /subscription_seat/user_subscriptions`** — Returns a bare hash of user id to subscription string with no `data` and no `links`, holding only some HumanUser rows, and a `null` value means the user has no subscription rather than no such user.  
   `discovery user read-only`  
   also: 047_site_facts_and_the_working_week (finding)
@@ -312,7 +316,7 @@ One card per call: what it takes, what it answers, a real response and the edge 
 
 - **`GET /entity/<type>`** — Pages rows. An entity field is returned under `relationships` and never `attributes`, an unknown `fields` name is dropped at 200, and `links.next` is emitted on empty pages forever.  
   `query paging filter entity-field silent`  
-  also: 001_auth (finding), 003_query (finding), 004_array_vs_hash (finding), 005_link_usage (finding), 006_pagination (finding), 007_fill_rates (finding), 010_status_icons (finding), 011_create_project (finding), 016_dotted_multi_entity (finding), 018_project_listing (finding), 023_pages (finding), 026_result_order (finding), 027_auth_permissions (finding), 028_loud_and_silent (finding), 030_complex_filters (finding), 004_register_published_file (recipe)
+  also: 001_auth (finding), 003_query (finding), 004_array_vs_hash (finding), 005_link_usage (finding), 006_pagination (finding), 007_fill_rates (finding), 010_status_icons (finding), 011_create_project (finding), 016_dotted_multi_entity (finding), 018_project_listing (finding), 023_pages (finding), 026_result_order (finding), 027_auth_permissions (finding), 028_loud_and_silent (finding), 030_complex_filters (finding), 051_api_version (finding), 004_register_published_file (recipe)
 - **`POST /entity/<type>`** — `project` is the requirement on every project-scoped type and the identity field is not, whatever the schema says. `?fields` is ignored, and the 201 returns the whole record.  
   `write create entity-field silent`  
   also: 011_create_project (finding), 012_create_version (finding), 024_read_after_write (finding), 025_event_log (finding), 049_script_events (finding), 001_publish_version_with_media (recipe), 004_register_published_file (recipe), 007_build_and_reconcile_a_cut (recipe), 008_delivery_progress (recipe)
@@ -472,7 +476,7 @@ One card per call: what it takes, what it answers, a real response and the edge 
 - **auth** — 001_auth (finding), 027_auth_permissions (finding), 049_script_events (finding), get_root (endpoint), post_auth_access_token (endpoint)
 - **batch** — 024_read_after_write (finding), 002_batch (recipe), 005_propagate_status (recipe), 007_build_and_reconcile_a_cut (recipe), post_entity_batch (endpoint)
 - **cache** — 010_status_icons (finding), 010_status_picker (recipe)
-- **client** — 001_auth (finding), 027_auth_permissions (finding), post_auth_access_token (endpoint)
+- **client** — 001_auth (finding), 027_auth_permissions (finding), 051_api_version (finding), post_auth_access_token (endpoint)
 - **colour** — 010_status_icons (finding), 010_status_picker (recipe), color (field type)
 - **cost** — 002_schema (finding), 020_summarize (finding), 042_spec_coverage (finding), 048_one_record_beyond_crud (finding), get_spec_format (endpoint), get_schema (endpoint), get_schema_type_fields (endpoint), get_entity_type_id_relationships_field (endpoint), post_entity_type_summarize (endpoint), get_entity_human_users_id_following (endpoint)
 - **create** — 011_create_project (finding), 012_create_version (finding), 024_read_after_write (finding), 025_event_log (finding), 040_field_revive (finding), 045_webhooks (finding), 050_webhook_subscriptions (finding), 002_batch (recipe), 004_register_published_file (recipe), post_schema_type_fields (endpoint), post_entity_type (endpoint), post_entity_batch (endpoint), post_webhook_hooks (endpoint)
@@ -483,7 +487,7 @@ One card per call: what it takes, what it answers, a real response and the edge 
 - **delivery** — 045_webhooks (finding), 008_delivery_progress (recipe), Delivery (entity type), get_webhook_deliveries_record_uuid (endpoint), put_webhook_deliveries_record_uuid (endpoint), post_webhook_deliveries_record_uuid_redeliver (endpoint), get_webhook_hooks_hook_id_deliveries (endpoint)
 - **dependency** — PublishedFile (entity type), Task (entity type)
 - **destructive** — 009_multi_entity_safely (recipe), image (field type), multi_entity (field type), Note (entity type), Reply (entity type), post_schema_type_fields (endpoint), delete_schema_type_fields_field (endpoint), delete_entity_type_id (endpoint), delete_webhook_hooks_record_uuid (endpoint)
-- **discovery** — 002_schema (finding), 008_custom_entities (finding), 040_field_revive (finding), 042_spec_coverage (finding), 047_site_facts_and_the_working_week (finding), 048_one_record_beyond_crud (finding), get_root (endpoint), get_license_info (endpoint), get_preferences (endpoint), get_schedule_work_day_rules (endpoint), get_spec_format (endpoint), get_subscription_seat_user_subscriptions (endpoint), post_subscription_seat_user_subscriptions (endpoint), get_schema (endpoint), get_schema_type (endpoint), get_schema_type_fields (endpoint), post_schema_type_fields_field (endpoint)
+- **discovery** — 002_schema (finding), 008_custom_entities (finding), 040_field_revive (finding), 042_spec_coverage (finding), 047_site_facts_and_the_working_week (finding), 048_one_record_beyond_crud (finding), 051_api_version (finding), get_root (endpoint), get_license_info (endpoint), get_preferences (endpoint), get_schedule_work_day_rules (endpoint), get_spec_format (endpoint), get_subscription_seat_user_subscriptions (endpoint), post_subscription_seat_user_subscriptions (endpoint), get_schema (endpoint), get_schema_type (endpoint), get_schema_type_fields (endpoint), post_schema_type_fields_field (endpoint)
 - **dotted-field** — 003_query (finding), 016_dotted_multi_entity (finding), 017_filter_operators (finding), 026_result_order (finding), 003_query_fields_and_pages (recipe), 010_status_picker (recipe), entity (field type), multi_entity (field type), password (field type), CutItem (entity type), Sequence (entity type)
 - **duration** — duration (field type), Task (entity type), TimeLog (entity type), get_preferences (endpoint)
 - **entity-field** — 004_array_vs_hash (finding), 005_link_usage (finding), 010_status_icons (finding), 012_create_version (finding), 017_filter_operators (finding), 019_create_fields (finding), 024_read_after_write (finding), 048_one_record_beyond_crud (finding), 004_register_published_file (recipe), 007_build_and_reconcile_a_cut (recipe), 009_multi_entity_safely (recipe), 010_status_picker (recipe), entity (field type), entity_type (field type), multi_entity (field type), get_entity_type (endpoint), post_entity_type (endpoint), get_entity_type_id (endpoint), get_entity_type_id_relationships_field (endpoint)
@@ -509,12 +513,13 @@ One card per call: what it takes, what it answers, a real response and the edge 
 - **observe** — 049_script_events (finding)
 - **operator** — 017_filter_operators (finding), 025_event_log (finding), 028_loud_and_silent (finding), 030_complex_filters (finding), 003_query_fields_and_pages (recipe), CutItem (entity type), post_entity_type_search (endpoint)
 - **page** — 023_pages (finding), 030_complex_filters (finding), 048_one_record_beyond_crud (finding), 003_query_fields_and_pages (recipe), get_exports_page_id_format (endpoint), get_exports_page_id_layout_format (endpoint)
-- **paging** — 003_query (finding), 005_link_usage (finding), 006_pagination (finding), 016_dotted_multi_entity (finding), 025_event_log (finding), 026_result_order (finding), 043_attention (finding), get_entity_type (endpoint), post_entity_type_search (endpoint), get_entity_type_id_activity_stream (endpoint), get_entity_type_id_followers (endpoint), get_entity_human_users_id_following (endpoint), get_webhook_hooks (endpoint), get_webhook_hooks_hook_id_deliveries (endpoint)
+- **paging** — 003_query (finding), 005_link_usage (finding), 006_pagination (finding), 016_dotted_multi_entity (finding), 025_event_log (finding), 026_result_order (finding), 043_attention (finding), 051_api_version (finding), get_entity_type (endpoint), post_entity_type_search (endpoint), get_entity_type_id_activity_stream (endpoint), get_entity_type_id_followers (endpoint), get_entity_human_users_id_following (endpoint), get_webhook_hooks (endpoint), get_webhook_hooks_hook_id_deliveries (endpoint)
 - **path** — 021_media_resolution (finding), 022_sequence_on_version (finding), 004_register_published_file (recipe), PublishedFile (entity type)
 - **permission** — 027_auth_permissions (finding), 049_script_events (finding), 011_audit_webhook_subscriptions (recipe), put_preferences_update (endpoint)
 - **pivot-column** — pivot_column (field type), Shot (entity type)
 - **playlist** — 009_multi_entity_safely (recipe), Playlist (entity type)
 - **project** — 011_create_project (finding), 018_project_listing (finding), 023_pages (finding), 046_search_without_a_path (finding), 010_status_picker (recipe), Project (entity type), put_schedule_work_day_rules (endpoint), put_entity_projects_id_update_last_accessed (endpoint), post_hierarchy_expand (endpoint), post_hierarchy_search (endpoint), get_entity_human_users_id_following (endpoint)
+- **protocol** — 051_api_version (finding)
 - **provenance** — 014_attach_file (finding), 019_create_fields (finding), 001_publish_version_with_media (recipe), get_entity_type_id_upload (endpoint)
 - **published-file** — 021_media_resolution (finding), 004_register_published_file (recipe), Delivery (entity type), PublishedFile (entity type), PublishedFileType (entity type)
 - **query** — 003_query (finding), 004_array_vs_hash (finding), 006_pagination (finding), 016_dotted_multi_entity (finding), 017_filter_operators (finding), 018_project_listing (finding), 020_summarize (finding), 021_media_resolution (finding), 023_pages (finding), 025_event_log (finding), 026_result_order (finding), 028_loud_and_silent (finding), 030_complex_filters (finding), 046_search_without_a_path (finding), 003_query_fields_and_pages (recipe), Reply (entity type), Step (entity type), get_entity_type (endpoint), get_entity_type_id (endpoint), post_entity_type_search (endpoint), post_entity_type_summarize (endpoint), post_entity_text_search (endpoint), post_hierarchy_expand (endpoint), post_hierarchy_search (endpoint)
