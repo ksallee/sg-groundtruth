@@ -140,7 +140,7 @@ pre {
 	background: var(--slab);
 	color: var(--slab-ink);
 	border: var(--border) solid var(--slab-rule);
-	border-radius: var(--radius);
+	border-radius: var(--radius-lg);
 	padding: var(--space-4) var(--space-5);
 	font-size: var(--text-code);
 	line-height: var(--leading-body);
@@ -154,6 +154,45 @@ pre code {
 	color: inherit;
 	background: none;
 	padding: 0;
+}
+
+/* Sideways scrolling, in a code box or a table wrapper, shows a thin rounded
+   thumb on no track, and only while the pointer is over it. */
+pre,
+.scroll-x {
+	scrollbar-width: thin;
+	scrollbar-color: transparent transparent;
+}
+
+pre:hover,
+pre:focus-within,
+.scroll-x:hover,
+.scroll-x:focus-within {
+	scrollbar-color: var(--scroll-thumb) transparent;
+}
+
+pre::-webkit-scrollbar,
+.scroll-x::-webkit-scrollbar {
+	height: 6px;
+	width: 6px;
+}
+
+pre::-webkit-scrollbar-track,
+.scroll-x::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+pre::-webkit-scrollbar-thumb,
+.scroll-x::-webkit-scrollbar-thumb {
+	background: transparent;
+	border-radius: 999px;
+}
+
+pre:hover::-webkit-scrollbar-thumb,
+pre:focus-within::-webkit-scrollbar-thumb,
+.scroll-x:hover::-webkit-scrollbar-thumb,
+.scroll-x:focus-within::-webkit-scrollbar-thumb {
+	background: var(--scroll-thumb);
 }
 
 /* Reference tables. One row per input, one column per outcome. Cells wrap, so
