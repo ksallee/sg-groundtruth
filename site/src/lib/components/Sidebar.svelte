@@ -115,12 +115,18 @@
 			return { lines, x: (a.left + b.right) / 2, y: a.top, centred: true };
 		});
 	}
-	function revealPath(label, text) {
+	// A cut path in full, with its verb: two rows can share a path and differ
+	// only by the verb, so the path alone does not say which row is being read.
+	// The verb is spelled out here even though the badge abbreviates DELETE.
+	// Aligned to the badge, not to the path, so the tooltip is the same line as
+	// the row directly above it.
+	function revealPath(label, text, verb) {
 		const stem = label.querySelector('.stem');
 		if (stem.scrollWidth <= stem.clientWidth) return;
 		raise(() => {
-			const r = stem.getBoundingClientRect();
-			return { text, x: r.left, y: r.top, centred: false };
+			const badge = label.parentElement.querySelector('.verb');
+			const r = (badge ?? stem).getBoundingClientRect();
+			return { text, verb, x: r.left, y: r.top, centred: false };
 		});
 	}
 </script>
@@ -181,7 +187,7 @@
 											<!-- svelte-ignore a11y_no_static_element_interactions -->
 											<span
 												class="label mono"
-												onpointerenter={(ev) => revealPath(ev.currentTarget, path)}
+												onpointerenter={(ev) => revealPath(ev.currentTarget, path, verb)}
 												onpointerleave={lower}
 												><span class="stem">{path.slice(0, -TAIL)}</span><span class="tail"
 													>{path.slice(-TAIL)}</span
@@ -243,7 +249,9 @@
 			aria-hidden="true"
 		>
 			{#if tip.text}
-				{tip.text}
+				<span class="line"
+					>{#if tip.verb}<span class="verb">{tip.verb}</span>{/if}{tip.text}</span
+				>
 			{:else}
 				{#each tip.lines as line (line.level + line.word)}
 					<span class="line"><span class="dot" data-scope={line.level}></span>{line.word}</span>
@@ -544,18 +552,30 @@
 		line-height: 1.5;
 		white-space: nowrap;
 		pointer-events: none;
-		transform: translate(calc(-1 * var(--space-2) - var(--border)), calc(-100% - var(--space-1)));
+		transform: translate(calc(-1 * var(--space-2) - var(--border)), calc(-100% - var(--space-2)));
 		animation: rise 125ms var(--ease-out);
 	}
 
 	/* Centred above the dots. It may hang past the sidebar's edge, which is
 	   what fixing it to the viewport is for. */
 	.tip.centred {
-		transform: translate(-50%, calc(-100% - var(--space-1)));
+		transform: translate(-50%, calc(-100% - var(--space-2)));
 	}
 
 	.tip.mono {
 		font-family: var(--font-mono);
+	}
+
+	/* The row's badge is one fixed width so the paths line up under each other.
+	   Here there is one line and the verb is spelled out, so it takes the width
+	   of its own word. */
+	.tip .verb {
+		width: auto;
+		height: auto;
+		padding: 0 0.4em;
+		margin-right: var(--space-2);
+		background: color-mix(in srgb, var(--ink) 8%, transparent);
+		color: var(--ink-muted);
 	}
 
 	.line {
