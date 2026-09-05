@@ -1,11 +1,16 @@
 <script>
 	import Breadcrumb from '$lib/components/Breadcrumb.svelte';
-	import { REPO } from '$lib/site.js';
+	import { ORIGIN, REPO } from '$lib/site.js';
 	import { countsAt } from '$lib/reading.svelte.js';
 
 	let { data } = $props();
 
 	const counts = $derived(countsAt(data.counts));
+
+	// Both sizes are measured at build time, so neither can be edited into
+	// agreement with a stale claim. Rounded here because a reader deciding
+	// between two files is comparing orders of magnitude.
+	const kb = (bytes) => Math.round(bytes / 1024);
 
 	// Third-party integrations. Rendered only when this array has entries; empty
 	// is the shipped state. Fill it from site/RESEARCH-mcp.md when that research
@@ -104,7 +109,52 @@
 		<pre>Read sg-groundtruth/corpus/INDEX.md first.
 Open an entry only when its one-liner falls short.</pre>
 		<p class="note">
-			67 KB, generated. One line per entry: name, verdict, tags. The corpus behind it is much larger.
+			{kb(data.indexBytes)} KB, generated. One line per entry: name, verdict, tags. The corpus behind
+			it is much larger.
+		</p>
+	</section>
+
+	<section id="fetch">
+		<h2>Fetch it</h2>
+		<p>
+			Or do not clone at all. Every page here has a markdown twin at its own URL with
+			<code>.md</code> appended, and <a href="/llms.txt"><code>/llms.txt</code></a> is every published
+			entry in one file.
+		</p>
+		<pre>Read {ORIGIN}/llms.txt first.
+Fetch an entry's .md only when its one-liner falls short.</pre>
+		<div class="scroll-x">
+			<table>
+				<thead>
+					<tr><th>url</th><th>is</th></tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td><a href="/llms.txt"><code>/llms.txt</code></a></td>
+						<td>
+							{kb(data.llmsBytes)} KB. Every entry, one line each: its name, its verdict, and the URL
+							of its markdown
+						</td>
+					</tr>
+					<tr>
+						<td><a href="/findings.md"><code>/findings.md</code></a></td>
+						<td>One section, under the grouping its page draws</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="/findings/026_result_order.md"><code>/findings/026_result_order.md</code></a>
+						</td>
+						<td>One entry, which is <code>corpus/findings/026_result_order.md</code> byte for byte</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		<p class="note">
+			The frontmatter is on a twin because it is what a client selects on: <code>scope</code>,
+			<code>phase</code>, <code>endpoints</code>, <code>tags</code>, <code>coverage</code>. A twin is
+			the shipped file and never the merged one, so it is the <code>api</code> level whatever the
+			reading level on the page says. <a href="/sitemap.xml"><code>/sitemap.xml</code></a> lists the
+			rendered pages.
 		</p>
 	</section>
 
