@@ -22,3 +22,7 @@ export const OVERLAY_DIR = 'corpus.local';
 // Substituted by Vite. Declared in vite.config.js, which carries the default, so no .env
 // file is needed and an absent variable cannot break a fresh clone.
 export const OVERLAY_SOURCE_DIR = __OVERLAY_SOURCE__;
+
+// The canonical origin. A sitemap and an llms.txt carry absolute URLs, because
+// a client is as likely to have been handed the file as to have fetched it.
+export const ORIGIN = 'https://sg-groundtruth.vercel.app';
