@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sg-groundtruth"
-version = "0.1.0"
+version = "0.1.1"
 description = "Thin Flow Production Tracking REST client, and an MCP server for the recorded-behaviour corpus that documents it"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -24,7 +24,7 @@ classifiers = [
 dependencies = ["requests>=2.28"]
 
 [project.urls]
-Homepage = "https://github.com/ksallee/sg-groundtruth"
+Homepage = "https://sg-groundtruth.vercel.app"
 Source = "https://github.com/ksallee/sg-groundtruth"
 Issues = "https://github.com/ksallee/sg-groundtruth/issues"
 
