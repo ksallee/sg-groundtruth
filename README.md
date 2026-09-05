@@ -2,6 +2,9 @@
 
 Recorded behaviour of the Flow Production Tracking REST API.
 
+**[sg-groundtruth.vercel.app](https://sg-groundtruth.vercel.app)** renders every entry on this page, and
+`pip install sg-groundtruth` gets the client that measured them.
+
 The REST documentation is incomplete and in places wrong. Every entry here is what a live Flow PT site
 answered when a probe asked it one question: the status code, the error string, the response shape, in
 the words the API used. The 51 probes that produced it are in this repository and run against any site.
@@ -43,6 +46,25 @@ nothing. Each row is a published finding.
 | Page until `links.next` is absent | It is never absent. It is emitted on zero-row pages too. Stop when `data` is empty |
 | Create rows in a batch | You get an id per row. A batch can return an id for a row it never made |
 | Create a field whose display name is taken | `201`. You got `<name>_1` |
+
+## Call the API with it
+
+    pip install sg-groundtruth
+
+`FPT` is the client every probe here calls the API through, so what the corpus records is what it does.
+75 lines, `requests` and nothing else.
+
+```python
+from sg_groundtruth.client import FPT
+
+fpt = FPT.from_env()                  # FPT_API_SITE_URL, _SCRIPT_NAME, _API_KEY
+page = fpt.get("/entity/versions")    # the parsed body: data, links
+```
+
+`get`, `post`, `put` and `delete` take a path and pass every other keyword to `requests`, so `params`,
+`json` and `files` work as they do there. A non-2xx raises `FPTError` with the body intact.
+
+The wheel is the client and the tools, never the corpus: clone the repository for that.
 
 ## Mount it over MCP
 

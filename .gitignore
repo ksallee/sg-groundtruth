@@ -26,3 +26,4 @@ site/.env
 # deploy fetches its own copy from the env vars set on Vercel.
 site/static/status-sprite.png
 site/src/lib/content/status-icons.json
+.vercel
