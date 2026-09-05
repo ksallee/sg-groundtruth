@@ -16,7 +16,9 @@ name: Gates
 on:
   pull_request:
   push:
-    branches: [main]
+    # main is what the site deploys from and what a clone gets. `dev` is where the work happens, and
+    # gating it means a push there is checked without waiting for a pull request to open.
+    branches: [main, dev]
 
 concurrency:
   group: gates-${{ github.ref }}
