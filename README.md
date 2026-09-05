@@ -107,6 +107,16 @@ sandbox named in `.env.local`.
 | `docs/` | MCP registration, the example overlay, unverified operator claims |
 | `corpus.local/` | your own site, written by the setup command. Gitignored |
 
+## Branches
+
+| branch | |
+|---|---|
+| `dev` | where work lands. Branch from it, and open the pull request against it |
+| `main` | what a clone gets and what the site deploys from. `dev` merges here when it is ready |
+
+A release to PyPI is a published GitHub release, cut from `main`, and only when the package itself
+changed. The corpus changes far more often than the client does.
+
 ## Licence
 
 [MIT](LICENSE). Nothing AGPL enters this repository, at any depth. It is derived only from the public
