@@ -193,9 +193,17 @@ it styles every rendered corpus body, so a change there lands on every entry pag
 | `src/app.css` | base element styles, reads tokens and declares no values |
 | `src/lib/components/*.svelte` | one concern each, styles scoped in the component |
 | `src/routes/**/+page.svelte` | page composition and copy |
+| `static/favicon.svg` | the mark, and the one place a colour is written outside `tokens.css` |
 
 Every component reads tokens. Nothing hardcodes a colour or a length, so the whole look changes from
-`tokens.css` alone. The site is dark only: `color-scheme` is pinned to `dark` on the root, so every
+`tokens.css` alone. `static/favicon.svg` is the exception, and has to be: a favicon is fetched as its
+own document, with no stylesheet and no custom properties, so the three accents are written into it. It
+is the sidebar's dot row, one dot per reading level in `api`, `site`, `project` order, at the same 6px:4px
+dot-to-gap ratio `Sidebar.svelte` draws, and it changes when those three accents do.
+
+`static/apple-touch-icon.png` is that file at 180px, flattened, for the one place an SVG is not accepted.
+It is a committed binary rather than a build step because the site has no rasteriser and adding one for a
+1 KB file is not worth a dependency. Regenerate it by rendering `favicon.svg` at 180 by 180. The site is dark only: `color-scheme` is pinned to `dark` on the root, so every
 `light-dark()` resolves to its second value. The light values stay in the tokens for the day that changes.
 
 The components:
