@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- The sidebar's own dot row: one dot per reading level an entry has content
+       at, api then site then project, at the 6px:4px dot-to-gap ratio Sidebar
+       draws. Square with no radius, flat, and the three accents are the only
+       hue on it, which are the theme's rules. -->
+  <rect width="32" height="32" fill="#111112"/>
+  <circle cx="5.23" cy="16" r="3.23" fill="#0a84ff"/>
+  <circle cx="16" cy="16" r="3.23" fill="#ff9f0a"/>
+  <circle cx="26.77" cy="16" r="3.23" fill="#30d158"/>
+</svg>
