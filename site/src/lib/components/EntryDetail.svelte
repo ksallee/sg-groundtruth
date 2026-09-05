@@ -11,8 +11,11 @@
 	// under its badge. A subject the published corpus has no card for renders
 	// the local sections alone.
 	//
-	// `section` is the group the entry belongs to, for the breadcrumb.
-	let { entry, section } = $props();
+	// `section` is the group the entry belongs to, for the breadcrumb. `children`
+	// is whatever that group adds under the header and nothing else has: the
+	// report status block is the only one today, and this component stays unaware
+	// of what it is.
+	let { entry, section, children } = $props();
 
 	const locals = $derived(visible(entry.locals ?? []));
 
@@ -127,6 +130,8 @@
 			{/if}
 		</ul>
 	</header>
+
+	{@render children?.()}
 
 	{#if entry.hasApi}
 		<ScopeSection level="api" id="scope-api">

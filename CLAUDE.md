@@ -15,6 +15,8 @@ Derive only from public Flow PT REST docs and this repo's own probes.
 `corpus/recipes/`: a verified call and its real response. Produced by probes.
 `corpus/endpoints/`: one card per REST call. What it takes, every status code it answers with, a real
 response, the edge cases that live on the call. Produced by probes.
+`corpus/reports/`: behaviour that should change, written for the team that owns the API. Written by hand
+from findings, never by a probe.
 `corpus/INDEX.md`: generated. Read this first, always. Open an entry only when its one-liner falls short.
 
 **Four ways in, one per thing a caller already knows.** An agent about to make a call holds the call, the
@@ -31,6 +33,21 @@ findings were addressed by probe number, which is the order the probes ran in an
 Findings also carry `phase:` (`auth`, `protocol`, `schema`, `read`, `filter`, `write`, `upload`,
 `observe`, `render`), the part of a session the finding bites in. The index and the site group by it, so
 the listing itself teaches the shape of a session. The number stays the probe that produced it.
+
+A report is the one entry addressed to someone other than a caller. A finding records what the API does
+and ends in a line telling a caller what to do about it; a report states what the caller had a right to
+expect, what happened, a `curl` transcript anyone can run, what it costs, and the change that would fix
+it. Those are two audiences, and a `verdict:` issues no rule the measurement does not hold, so a proposal
+has nowhere to sit on a finding.
+
+A report never restates its evidence. `evidence:` names the entries that measured it, as real paths under
+`corpus/`, and `check_corpus.py` checks each file exists. `confirmed:` is the date the behaviour was last
+seen, which is what makes the group the re-probe queue after a Flow PT release. `status:` is
+`unreported` until someone files it, and anything past that needs a `ticket:` naming the vendor's own
+reference. Sections: **Expected**, **Actual**, **Reproduce**, **Impact**, **Proposed change**.
+
+The `silent`, `destructive` and `trap` entries are candidates, not a queue: an unknown query parameter
+being ignored is a design choice. Three reports a reader can act on beat fifty they have to triage.
 
 An endpoint card holds what is true of the **call**: the request contract, the status codes, a recorded
 response, and the edge cases that belong to the call rather than to a data type or an entity type. It

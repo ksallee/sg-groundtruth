@@ -42,6 +42,16 @@ ENTITY_SECTIONS = ("**Type**", "**Identity**", "**Create**", "**Links**", "**Sta
 # here: they are the verdicts of the entries that name this endpoint, rendered under the card.
 ENDPOINT_SECTIONS = ("**Params**", "**Sample requests**", "**Response codes**", "**Edge cases**",
                      "**Links**")
+# A report is written for the team that owns the API, not for a caller working around it, so it
+# answers what a finding deliberately does not: what was expected, what it costs, and the change
+# that would fix it. It never restates its evidence; `evidence:` names the entries that hold the
+# calls and the error strings.
+REPORT_SECTIONS = ("**Expected**", "**Actual**", "**Reproduce**", "**Impact**",
+                   "**Proposed change**")
+REPORT_KINDS = ("api", "docs")
+# `unreported` is the shipped state. Anything past it names the vendor's own reference, so a status
+# nobody can chase is not a status.
+REPORT_STATUSES = ("unreported", "reported", "acknowledged", "fixed", "wontfix")
 # Cap the prose, not the file. A card with forty rows of table is doing its job; forty
 # lines of paragraph is not. Counting both the same penalised measured cases exactly as
 # much as waffle, and nine of the first twenty-four cards ended up pinned to the ceiling.
@@ -157,6 +167,56 @@ def check_register(f, text):
             fail(f, f"ALL-CAPS emphasis {w!r} — capitals are for API literals only (CLAUDE.md Style)")
 
 
+def check_report(f, head, text):
+    """A report against the API. Its evidence has to exist and its repro has to be runnable."""
+    for key, allowed in (("kind", REPORT_KINDS), ("status", REPORT_STATUSES)):
+        m = re.search(rf"^{key}:\s*(\S+)\s*$", head, re.M)
+        if not m:
+            fail(f, f"no {key}: one of {', '.join(allowed)}")
+        elif m.group(1) not in allowed:
+            fail(f, f"{key} {m.group(1)!r} is not one of {', '.join(allowed)}")
+        elif key == "status" and m.group(1) != "unreported" and not re.search(
+                r"^ticket:\s*\S", head, re.M):
+            fail(f, f"status: {m.group(1)} needs a ticket: naming the vendor's own reference. A "
+                    f"status nobody can chase is not a status")
+    # The date the behaviour was last seen, which is what makes this list the re-probe queue after
+    # a Flow PT release. A report with no date is a claim about a moving target.
+    if not re.search(r"^confirmed:\s*\d{4}-\d{2}-\d{2}\s*$", head, re.M):
+        fail(f, "no confirmed: YYYY-MM-DD, the last date the behaviour was observed")
+    summary = re.search(r"^summary:\s*(.+)$", head, re.M)
+    if not summary or not summary.group(1).strip():
+        fail(f, "no summary: one line saying what the API does that it should not")
+    elif len(summary.group(1).strip()) > VERDICT_MAX:
+        fail(f, f"summary is {len(summary.group(1).strip())} chars, max {VERDICT_MAX}")
+    ev = re.search(r"evidence:\s*\[([^\]]*)\]", head)
+    if not ev or not ev.group(1).strip():
+        fail(f, "no evidence: the corpus entries that measured this, as paths without the .md, "
+                "e.g. `findings/026_result_order`. A report never restates them")
+    else:
+        for e in (x.strip() for x in ev.group(1).split(",") if x.strip()):
+            if not (CORPUS / f"{e}.md").exists():
+                fail(f, f"evidence {e!r} is not a file: corpus/{e}.md does not exist")
+    # The same join every finding and recipe makes, so a report reaches the card for the call it
+    # is about and cannot spell one no card is named by.
+    eps = re.search(r"endpoints:\s*\[([^\]]*)\]", head)
+    if not eps or not eps.group(1).strip():
+        fail(f, "no endpoints: the calls this report is about, in the spelling the cards in "
+                "corpus/endpoints/ are named by")
+    else:
+        for e in (x.strip() for x in eps.group(1).split(",") if x.strip()):
+            if e not in KNOWN_ENDPOINTS:
+                fail(f, f"endpoint {e!r} has no card in corpus/endpoints/")
+    for s_ in REPORT_SECTIONS:
+        if s_ not in text:
+            fail(f, f"missing section {s_}")
+    # Someone without this repository has to be able to run it, so the transcript is curl against
+    # $SITE and $TOKEN rather than a probe.
+    repro = re.search(r"\*\*Reproduce\*\*.*?(?=^\*\*|\Z)", text, re.M | re.S)
+    if repro and "curl" not in repro.group(0):
+        fail(f, "**Reproduce** has no curl. A report someone cannot run without this repository "
+                "is a claim")
+
+
 for root in (EXAMPLE, EXPERIMENTS):
     if not root.is_dir():
         continue
@@ -172,7 +232,8 @@ for f in sorted(CORPUS.rglob("*.md")):
     is_type = f.parent.name in ("field_types", "entity_types")
     is_recipe = f.parent.name == "recipes"
     is_endpoint = f.parent.name == "endpoints" and f.name != "README.md"
-    if (not is_type and not is_recipe and not is_endpoint
+    is_report = f.parent.name == "reports" and f.name != "README.md"
+    if (not is_type and not is_recipe and not is_endpoint and not is_report
             and (f.parent.name != "findings" or not f.stem[:1].isdigit())):
         continue
     head = re.match(r"---\n(.*?)\n---", text, re.S)
@@ -219,6 +280,9 @@ for f in sorted(CORPUS.rglob("*.md")):
         if "```" not in text and (not cov or cov.group(1) != "untested"):
             fail(f, "no recorded response. Every sample request is followed by what it actually "
                     "answered; a card without one is an index entry")
+    if is_report:
+        check_report(f, head.group(1), text)
+        continue
     if is_recipe or is_endpoint:
         continue
     scope = re.search(r"^scope:\s*(api|site|project)\s*$", head.group(1), re.M)

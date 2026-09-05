@@ -12,6 +12,7 @@ CORPUS = ROOT / "corpus"
 FINDINGS = CORPUS / "findings"
 RECIPES = CORPUS / "recipes"
 ENDPOINTS = CORPUS / "endpoints"
+REPORTS = CORPUS / "reports"
 
 # The order a client meets them, so the listing itself teaches the shape of a session.
 PHASES = {
@@ -44,6 +45,12 @@ def parse(f, summary_key):
         "phase": one("phase"),
         "coverage": one("coverage") or "measured",
         "unmeasured": one("unmeasured"),
+        # A report alone carries these. Empty everywhere else, and read by nothing else.
+        "kind": one("kind"),
+        "status": one("status"),
+        "ticket": one("ticket"),
+        "confirmed": one("confirmed"),
+        "evidence": lst("evidence"),
         "summary": summary.group(1).strip() if summary else "—",
     }
 
@@ -122,9 +129,10 @@ def main():
     types = collect(FINDINGS / "field_types", "verdict", "*.md")
     entities = collect(FINDINGS / "entity_types", "verdict", "*.md")
     endpoints = endpoint_cards()
+    reports = collect(REPORTS, "summary")
     everything = [("finding", findings), ("recipe", recipes),
                   ("field type", types), ("entity type", entities),
-                  ("endpoint", endpoints)]
+                  ("endpoint", endpoints), ("report", reports)]
 
     by_tag = defaultdict(list)
     by_endpoint = defaultdict(list)
@@ -149,6 +157,9 @@ def main():
         "**Findings** are how the API behaves, grouped by the phase of a session they bite in. "
         "**Recipes** are a verified call and its real response.", "",
         "`silent` is the tag to follow when a call returned 2xx and did nothing.", "",
+        "**Reports** are the subset that should change, written for the team that owns the API: "
+        "what was expected, what happened, how to reproduce it, and the proposed fix. They are also "
+        "the re-probe queue, because each one dates the last time the behaviour was seen.", "",
         "Every measurement here was taken against **`/api/v1`**. The site's own OpenAPI document "
         "advertises `/api/v1.1` instead; the two are the same API, differing only in `api_version` "
         "in the root document and the prefix each echoes in its own `links` (`051_api_version`).",
@@ -172,6 +183,17 @@ def main():
     out += [line(e) for e in entities] or ["- none yet"]
     out += ["", "## Recipes", ""]
     out += [line(e) for e in recipes] or ["- none yet"]
+
+    out += ["", "## Reports", "",
+            "Behaviour that should change, addressed to the team that owns the API. Each names the "
+            "entries that measured it, states what was expected, and proposes the fix. "
+            "`reports/<slug>`.", ""]
+    for e in reports:
+        chased = f", {e['ticket']}" if e["ticket"] else ""
+        out.append(f"- **{e['slug']}** [{e['kind']}, {e['status']}{chased}] — {e['summary']}  \n"
+                   f"  evidence: {', '.join(e['evidence'])}, confirmed {e['confirmed']}")
+    if not reports:
+        out.append("- none yet")
 
     eps = endpoints
     known = {e["endpoint"] for e in eps}
@@ -214,8 +236,8 @@ def main():
 
     (CORPUS / "INDEX.md").write_text("\n".join(out) + "\n")
     print(f"indexed {len(findings)} findings, {len(types)} field types, {len(entities)} entity "
-          f"types, {len(recipes)} recipes, {len(eps)} endpoints, {len(by_tag)} tags, "
-          f"{covered}/{len(eps)} endpoints with a finding behind them")
+          f"types, {len(recipes)} recipes, {len(eps)} endpoints, {len(reports)} reports, "
+          f"{len(by_tag)} tags, {covered}/{len(eps)} endpoints with a finding behind them")
 
 
 if __name__ == "__main__":

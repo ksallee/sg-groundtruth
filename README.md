@@ -40,6 +40,7 @@ The rendered page costs eleven bytes of markup per byte of finding. The twin cos
 | `findings/field_types/` | 24 cards, one per `data_type`: what it reads, writes and clears as, and what filters it |
 | `findings/` | 40 questions, each answered by one probe, grouped by the phase of a session they bite in |
 | `recipes/` | 11 tasks, each with the calls that perform it, the real response, and the errors hit on the way |
+| `reports/` | 9 behaviours that should change, written for the team that owns the API: expected, actual, a runnable repro, and the proposed fix |
 | `INDEX.md` | generated. Read this first |
 
 Four ways in, one per thing a caller already knows before making a call: the call itself, the entity
