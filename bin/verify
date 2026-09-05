@@ -70,7 +70,7 @@ run site-types bash -c 'cd site && npx --no-install svelte-check --threshold err
 # The generated half of the machine door is linked from no page, so check-links cannot see it and an
 # agent fetching /llms.txt would get the 404 page and conclude the corpus is not on the site.
 run site-doors bash -c 'cd site/build && for f in llms.txt robots.txt sitemap.xml findings.md \
-  field-types.md entity-types.md recipes.md endpoints.md; do
+  field-types.md entity-types.md recipes.md reports.md endpoints.md; do
     [ -s "$f" ] || { echo "missing or empty: $f"; exit 1; }
   done'
 

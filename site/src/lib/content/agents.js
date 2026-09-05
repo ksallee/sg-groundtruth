@@ -39,6 +39,7 @@ function group(segment) {
 		'field-types': data.fieldTypes,
 		'entity-types': data.entityTypes,
 		recipes: data.recipes,
+		reports: data.reports,
 		endpoints: data.endpoints
 	};
 	if (!found || !byKey[segment]) throw new Error(`[agents] no group behind /${segment}`);
