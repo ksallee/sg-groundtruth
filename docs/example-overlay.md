@@ -37,8 +37,13 @@ example build would otherwise name a directory its content did not come from.
 `PUBLIC_OVERLAY_SOURCE` is read by `site/vite.config.js`, which substitutes it into the bundle as
 `__OVERLAY_SOURCE__`. The default lives in that file, so a fresh clone builds with no `.env` of any kind
 and an absent variable cannot break the build. `site/vercel.json` sets `corpus.example` under `build.env`,
-so the switch lives in the repository rather than in the Vercel dashboard, matching how `ignoreCommand`
-and the production branch are already handled.
+so the switch lives in the repository rather than in the Vercel dashboard.
+
+`ignoreCommand` is what decides whether a push builds at all, and its exit codes read backwards: **1
+builds, 0 skips**. It builds on `main` and skips every other ref, so a branch and a pull request produce
+a skipped deployment and no site. The repository is public, so a fork can open a pull request; the skip
+is what stops that publishing anything. `git.deploymentEnabled` names `main` as well, which is
+redundant and is there to be read.
 
 ## Rebuilding the example
 
