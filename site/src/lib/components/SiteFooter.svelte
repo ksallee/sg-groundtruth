@@ -14,6 +14,9 @@
 			<li><a href={REPO}>GitHub</a></li>
 			<li><a href="{REPO}/tree/main/corpus">The corpus</a></li>
 			<li><a href="/how-it-works">How it works</a></li>
+			<!-- Every entry as markdown, one line each. On every page because the
+			     client that wants it did not arrive at the front door. -->
+			<li><a href="/llms.txt">llms.txt</a></li>
 			<li>MIT, intended</li>
 		</ul>
 

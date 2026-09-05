@@ -20,17 +20,6 @@
 	// each local section carries its own verdict and the header carries none.
 	const tags = $derived(entry.hasApi ? entry.tags : (locals[0]?.tags ?? []));
 
-	// One directory per group, mirroring corpus/. Kept as a lookup rather than a
-	// chain of ternaries so a new group is one line.
-	const SOURCE_DIR = {
-		recipes: 'corpus/recipes',
-		field_types: 'corpus/findings/field_types',
-		entity_types: 'corpus/findings/entity_types',
-		findings: 'corpus/findings'
-	};
-
-	const sourcePath = $derived(`${SOURCE_DIR[entry.group] ?? 'corpus/findings'}/${entry.slug}.md`);
-
 	// A field type, or an entity type with no display title, is named by the
 	// API's own literal, so the heading is set in mono, exactly as the API
 	// spells it. The number is in the breadcrumb, so the heading is the name.
@@ -131,7 +120,10 @@
 				<li class="tag">{tag}</li>
 			{/each}
 			{#if entry.hasApi}
-				<li class="src"><a href="{REPO}/blob/main/{sourcePath}">Source markdown</a></li>
+				<!-- The same file twice: this URL for a client that wants the bytes,
+				     the repository for a person who wants the probe beside them. -->
+				<li class="src"><a href={entry.md}>Markdown</a></li>
+				<li class="src"><a href="{REPO}/blob/main/{entry.source}">Source</a></li>
 			{/if}
 		</ul>
 	</header>
@@ -292,6 +284,12 @@
 
 	.src {
 		margin-left: auto;
+	}
+
+	/* The first source link takes the free space and the second follows it. Two
+	   auto margins in one flex row split the space between them instead. */
+	.src + .src {
+		margin-left: 0;
 	}
 
 	.src a {

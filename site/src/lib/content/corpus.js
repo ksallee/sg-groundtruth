@@ -12,6 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { marked } from 'marked';
 import { SHIPPED, SITE, GROUPS, projectSources } from './sources.js';
+import { sourcePath, twinHref } from './markdown.js';
 import { filterCards, filterMatrix } from './filters.js';
 
 // --- frontmatter -----------------------------------------------------------
@@ -397,6 +398,11 @@ function detail(s) {
 		coverage: s.api?.coverage ?? 'measured',
 		unmeasured: s.api?.unmeasured ?? '',
 		cardLinks: s.api?.cardLinks ?? [],
+		// Where the shipped file is, in the clone and on the site. Computed from
+		// GROUPS rather than from a map beside the markup, which is how the
+		// endpoint cards came to link at `corpus/findings/<slug>.md`.
+		source: s.api ? sourcePath(s.group, s.slug) : '',
+		md: s.api ? twinHref(s.group, s.slug) : '',
 		html: s.api?.html ?? '',
 		locals: s.locals.map(({ raw, ...rest }) => rest)
 	};

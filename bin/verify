@@ -67,6 +67,13 @@ assert len(tools) >= 5, tools
 run site-builds bash -c 'cd site && PUBLIC_OVERLAY_SOURCE=corpus.absent npm run build --silent'
 run site-types bash -c 'cd site && npx --no-install svelte-check --threshold error'
 
+# The generated half of the machine door is linked from no page, so check-links cannot see it and an
+# agent fetching /llms.txt would get the 404 page and conclude the corpus is not on the site.
+run site-doors bash -c 'cd site/build && for f in llms.txt robots.txt sitemap.xml findings.md \
+  field-types.md entity-types.md recipes.md endpoints.md; do
+    [ -s "$f" ] || { echo "missing or empty: $f"; exit 1; }
+  done'
+
 # Four references pointed at corpus/ENDPOINTS.md, a file that does not exist, two of them inside
 # error messages that fire exactly when a reader is stuck.
 run links bin/check-links

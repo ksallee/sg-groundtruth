@@ -227,6 +227,8 @@ Leave these alone unless the pipeline itself is the problem.
 | `src/lib/reading.svelte.js` | the reading level: the deepest the build holds, and what that shows |
 | `src/lib/site.js` | repo URL, the overlay directory a reader is told to create, and the one this build read |
 | `src/lib/content/filters.js` | the operator vocabulary read out of each field-type card, and the families it groups them into |
+| `src/lib/content/markdown.js` | the shipped file behind an entry, verbatim, and the `.md` URL it is served at |
+| `src/lib/content/agents.js` | `llms.txt`, the section twins, the sitemap and robots |
 | `svelte.config.js`, `vite.config.js`, `vercel.json` | build and deploy |
 
 ## Routes
@@ -257,6 +259,34 @@ list what they hold: field types, entity types, filters, recipes, findings. The 
 
 The overlay has no route of its own and adds no nav entry. Only the reading level switch appears when the
 build read one.
+
+### The machine door
+
+A client that fetches rather than reads gets markdown. The rendered page is eleven bytes of markup per
+byte of finding, and the only markdown link used to be a GitHub blob URL, which is another HTML page a
+client has to know how to rewrite.
+
+| route | is |
+|---|---|
+| `/llms.txt` | every published entry, one line each: name, the URL of its markdown, its verdict, and its coverage where it is not `measured`. The four doors and what each frontmatter key selects are above the list |
+| `/[section].md` | one section's rows, under the grouping its page draws: findings by phase, endpoints by family |
+| `/<section>/[slug].md` | `corpus/<dir>/<slug>.md` byte for byte, frontmatter included |
+| `/sitemap.xml` | every rendered page, and no twin |
+| `/robots.txt` | allow everything, and where the sitemap is |
+
+Every one of them is prerendered, so a twin is a file in `build/` and no server runs to answer for it.
+
+The frontmatter stays on a twin because it is the retrieval key: `scope`, `phase`, `endpoints`, `tags`
+and `coverage` are what a client selects on, and a body without them is less than the repository holds.
+
+`src/lib/content/markdown.js` reads the files and owns the `.md` URL of an entry. `agents.js` builds the
+four generated routes on top of it and `corpus.js`. The group directory is written down once, in
+`GROUPS` in `sources.js`: a second copy beside the markup is what put a dead
+`corpus/findings/get_root.md` behind every endpoint card's source link.
+
+One route file per group, three lines each, rather than a root `[section]/[slug].md`. A static
+`findings/[slug]` outranks a dynamic `[section]`, so the shared route would hand `/findings/x.md` to the
+HTML page as a slug ending in `.md`.
 
 An entity-type card sets its own sections (`**Type**`, `**Identity**`, `**Create**`, `**Links**`,
 `**Status**`, `**Traps**`) and they are not the field-type ones. `EntryDetail` renders whatever the markdown
@@ -336,21 +366,22 @@ relation is accepted." in both parts.
 
 ## Deployment
 
-Public deploys go to Vercel from the `prod` branch only.
+Public deploys go to Vercel from `main` only. Work branches off `dev`, merges into `dev`, and reaches
+`main` when it is agreed: see **Branches** in the repository README.
 
-`vercel.json` enforces that in two ways: `git.deploymentEnabled` disables `main`, and `ignoreCommand`
-exits non-zero (build) only when `VERCEL_GIT_COMMIT_REF` is `prod`, and exits zero (skip) for every other
-branch. A push to any branch but `prod` produces no deployment.
+`vercel.json` enforces that with `ignoreCommand`, which exits non-zero (build) only when
+`VERCEL_GIT_COMMIT_REF` is `main` and exits zero (skip) for every other branch. `git.deploymentEnabled`
+lists `main` alone for the same reason, so a push to `dev` produces no deployment and `dev` is QA'd
+locally with `npm run build && npm run preview`.
 
 Still to be set in the Vercel dashboard, because it cannot be expressed in the repository:
 
 - **Root Directory** must be `site`. Without it Vercel builds the repository root and finds no app.
-- **Production Branch** must be `prod`. Vercel treats the repository's default branch as production
-  otherwise, and `ignoreCommand` would then skip every build with nothing ever promoted.
+- **Production Branch** must be `main`.
 - Connect the Git repository, and leave preview deployments on. `ignoreCommand` is what suppresses them,
   which keeps one mechanism rather than two.
 
-Verify after the first deploy that a push to a non-`prod` branch shows as skipped rather than built.
+Verify after a deploy that a push to a non-`main` branch shows as skipped rather than built.
 
 ## Dependencies
 
@@ -416,8 +447,16 @@ it, so they read as heads. The markdown is untouched.
   copy, and it is the only prose on the page that a card does not supply.
 - **No search and no tag index.** Tags render but do not link. At the corpus's current size browsing works;
   past a hundred entries it will not.
-- **No `llms.txt` and no per-page raw markdown link.** Every page is prerendered static HTML and each entry
-  links to its source markdown on GitHub, which covers the machine reader for now.
+- **A twin is the shipped file, not the rendered page.** `/findings/026_result_order.md` is
+  `corpus/findings/026_result_order.md` byte for byte, so an overlay a build merges into the HTML is
+  absent from the markdown. One name, one set of bytes, wherever it is read from. A twin exists only
+  where a shipped file does: a local-only subject has a page and no `.md`.
+- **`/llms.txt` is the whole index, not a table of contents.** 44 KB, one line per entry with its
+  verdict and the URL of its markdown, which is one fetch rather than a crawl. The section twins carry
+  the same rows under the grouping their pages draw, for a client that already knows which section it
+  wants.
+- **The sitemap lists the rendered pages and never the twins.** A sitemap addresses a reader and
+  `llms.txt` addresses a client; listing both spellings of one page asks a crawler to fetch it twice.
 - **Typography is system faces.** `--font-text` and `--font-mono` are one line each in `tokens.css`.
 - **Every stacked grid declares `grid-template-columns: var(--col)`.** A grid's default `auto` track is
   sized by its widest child's max-content, so one long table cell widened the whole page instead of
