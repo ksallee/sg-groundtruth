@@ -3,6 +3,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "build",
   "framework": "sveltekit",
+  "cleanUrls": true,
   "git": {
     "deploymentEnabled": {
       "main": true

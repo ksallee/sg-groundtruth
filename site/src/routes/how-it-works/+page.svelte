@@ -129,6 +129,7 @@ Open an entry only when its one-liner falls short.</pre>
 			It holds a bearer, re-authenticates when it expires, and raises <code>FPTError</code> on a
 			non-2xx with the body intact.
 		</p>
+		<pre>pip install sg-groundtruth</pre>
 		<pre>from sg_groundtruth.client import FPT
 
 fpt = FPT.from_env()                  # FPT_API_SITE_URL, _SCRIPT_NAME, _API_KEY
@@ -137,8 +138,8 @@ page = fpt.get("/entity/versions")    # the parsed body: data, links</pre>
 			75 lines, <code>requests</code> and nothing else. <code>get</code>, <code>post</code>,
 			<code>put</code> and <code>delete</code> take a path and pass every other keyword to
 			<code>requests</code>, so <code>params</code>, <code>json</code> and <code>files</code> work
-			as they do there. It is not on PyPI yet, so a consumer outside this repository needs the clone
-			on its path.
+			as they do there. The wheel is the client and the tools, never the corpus: that is read from a
+			clone, because every entry names the probe that produced it and re-running it is the point.
 		</p>
 	</section>
 
