@@ -54,3 +54,8 @@ export function readEntry(groupId, slug) {
 	const file = path.join(SHIPPED.root, found.dir, `${slug}.md`);
 	return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null;
 }
+
+// `corpus/INDEX.md` and `/llms.txt` are both quoted by size on /how-it-works,
+// where the reader is deciding which to point an agent at. A number written into
+// prose is a number that drifts; this one is the file.
+export const indexBytes = () => fs.statSync(path.join(SHIPPED.root, 'INDEX.md')).size;
