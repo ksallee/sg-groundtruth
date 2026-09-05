@@ -53,7 +53,9 @@ if build.is_dir():
         rel = page.relative_to(build)
         for href, frag in HREF_RE.findall(text):
             target = build / href.strip("/")
-            hit = target.with_suffix(".html") if target.suffix != ".html" else target
+            # A href with an extension names a file: the `.md` twin of a page,
+            # or llms.txt. One without names a page, which is `<href>.html`.
+            hit = target if target.suffix else target.with_suffix(".html")
             if not (hit.is_file() or (target / "index.html").is_file() or href == "/"):
                 bad.append(f"{rel}: {href} is not a page")
                 continue

@@ -21,6 +21,16 @@ Then give an agent one line:
 `corpus/INDEX.md` is generated: 67 KB, one line per entry with its verdict and its tags. The corpus
 behind it is much larger, and an agent that loads all of it spends its context on the first call.
 
+An agent with no clone fetches the same files off the site. `.md` appended to any entry or section URL
+returns the markdown that page was built from, frontmatter included, and `/llms.txt` is one line per
+entry with its verdict and the URL of its markdown.
+
+    https://sg-groundtruth.vercel.app/llms.txt                      44 KB, every entry, one line each
+    https://sg-groundtruth.vercel.app/findings.md                   one section
+    https://sg-groundtruth.vercel.app/findings/026_result_order.md  4 KB, the file itself
+
+The rendered page costs eleven bytes of markup per byte of finding. The twin costs none.
+
 ## What is in `corpus/`
 
 | directory | holds |
