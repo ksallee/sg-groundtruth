@@ -15,6 +15,8 @@ Four ways in, one per thing you already know before you call:
 
 `silent` is the tag to follow when a call returned 2xx and did nothing.
 
+**Reports** are the subset that should change, written for the team that owns the API: what was expected, what happened, how to reproduce it, and the proposed fix. They are also the re-probe queue, because each one dates the last time the behaviour was seen.
+
 Every measurement here was taken against **`/api/v1`**. The site's own OpenAPI document advertises `/api/v1.1` instead; the two are the same API, differing only in `api_version` in the root document and the prefix each echoes in its own `links` (`051_api_version`).
 
 ## Findings
@@ -245,6 +247,29 @@ One per standard entity type: what it is, how it is identified, created and link
 - **011_audit_webhook_subscriptions** — Inventory every webhook subscription on a site, and see which have ever delivered  
   `webhook read-only permission silent`
 
+## Reports
+
+Behaviour that should change, addressed to the team that owns the API. Each names the entries that measured it, states what was expected, and proposes the fix. `reports/<slug>`.
+
+- **001_batch_create_skips_validation** [api, unreported] — A create inside POST /entity/_batch skips the required-attribute validation the single-create path applies, and answers 200 with the id of a row no read can reach.  
+  evidence: recipes/002_batch, findings/028_loud_and_silent, confirmed 2026-09-04
+- **002_complete_upload_without_bytes** [api, unreported] — POST links.complete_upload answers 201 and creates an Attachment when the presigned PUT never happened, and nothing on the row separates it from a good upload.  
+  evidence: findings/039_upload_silent_failures, findings/013_upload_media, confirmed 2026-09-04
+- **003_sort_fails_silently** [api, unreported] — A sort on an unknown or unsortable field answers 200 with the rows in default order, while the same field name in a filter answers 400 and names the reason.  
+  evidence: findings/026_result_order, findings/028_loud_and_silent, findings/017_filter_operators, confirmed 2026-09-04
+- **004_update_mode_ignored_in_query_string** [api, unreported] — multi_entity_update_mode sent as a query parameter is accepted and ignored, and the whole link set is replaced when the caller asked to add.  
+  evidence: findings/field_types/multi_entity, recipes/009_multi_entity_safely, findings/028_loud_and_silent, confirmed 2026-09-04
+- **005_writing_replies_deletes_rows** [api, unreported] — A write to Note.replies deletes the Reply rows rather than unlinking them, so PUT with an empty list destroys a thread at 200.  
+  evidence: findings/entity_types/Note, findings/entity_types/Reply, findings/028_loud_and_silent, confirmed 2026-09-04
+- **006_duplicate_field_name_is_201** [api, unreported] — Creating a custom field whose display name is taken answers 201 for a suffixed field instead of a conflict, and every retry burns a programmatic name no REST call frees.  
+  evidence: findings/019_create_fields, endpoints/post_schema_type_fields, confirmed 2026-09-04
+- **007_reference_disagrees_with_spec** [docs, unreported] — Four calls in the published REST reference exist under no spelling in the deployment's own OpenAPI document, which names two of them differently.  
+  evidence: findings/042_spec_coverage, confirmed 2026-09-04
+- **008_jsonb_filters_return_everything** [api, unreported] — A filter on PageSetting.settings_json or EventLogEntry.audit_trail is accepted and ignored, so the unfiltered set comes back at 200 and is_null and is_not_null each return every row.  
+  evidence: findings/023_pages, findings/field_types/jsonb, confirmed 2026-09-04
+- **009_attention_500s_on_bad_input** [api, unreported] — A record id that does not exist on activity_stream is a 500, and the follow body answers 500 for the plural entity name every URL on the API uses while an invalid name answers 400.  
+  evidence: findings/043_attention, confirmed 2026-09-04
+
 ## Endpoints
 
 One card per call: what it takes, what it answers, a real response and the edge cases that live on the call. `endpoints/<slug>`.
@@ -283,7 +308,7 @@ Those 5 are all in the webhook family, and they are blocked on the site rather t
   also: 047_site_facts_and_the_working_week (finding)
 - **`GET /spec.<format>`** — The site publishes its own OpenAPI v3 document, `json` or `yaml`, and it lists 62 operations where this corpus covers 23. The suffix is required and any other 406s.  
   `schema discovery cost`  
-  also: 042_spec_coverage (finding), 051_api_version (finding)
+  also: 042_spec_coverage (finding), 051_api_version (finding), 007_reference_disagrees_with_spec (report)
 - **`GET /subscription_seat/user_subscriptions`** — Returns a bare hash of user id to subscription string with no `data` and no `links`, holding only some HumanUser rows, and a `null` value means the user has no subscription rather than no such user.  
   `discovery user read-only`  
   also: 047_site_facts_and_the_working_week (finding)
@@ -304,7 +329,7 @@ Those 5 are all in the webhook family, and they are blocked on the site rather t
   also: 002_schema (finding), 007_fill_rates (finding), 011_create_project (finding), 012_create_version (finding), 019_create_fields (finding), 023_pages (finding), 025_event_log (finding)
 - **`POST /schema/<Type>/fields`** — You send a display name and the server derives the `sg_` name, which is only in `links.self`. A duplicate display name is 201 with a silent `_1` suffix, so read `/fields` first.  
   `schema custom-field create silent destructive`  
-  also: 019_create_fields (finding), 040_field_revive (finding)
+  also: 019_create_fields (finding), 040_field_revive (finding), 006_duplicate_field_name_is_201 (report)
 - **`GET /schema/<Type>/fields/<field>`** — One field's properties, at 1211 bytes against 48KB for the whole type. Pass `project_id` or `hidden_values` is empty and your status picker offers statuses the project refuses.  
   `schema status list-field`  
   also: 002_schema (finding), 009_status_lists (finding), 049_script_events (finding), 003_query_fields_and_pages (recipe), 005_propagate_status (recipe), 008_delivery_progress (recipe), 010_status_picker (recipe)
@@ -316,13 +341,13 @@ Those 5 are all in the webhook family, and they are blocked on the site rather t
   also: 040_field_revive (finding)
 - **`DELETE /schema/<Type>/fields/<field>`** — Retires a field at 204 and burns its programmatic name forever: the same name will not create again, only revive. Treat this as irreversible from REST.  
   `schema custom-field destructive`  
-  also: 019_create_fields (finding), 040_field_revive (finding)
+  also: 019_create_fields (finding), 040_field_revive (finding), 006_duplicate_field_name_is_201 (report)
 
 ### Records
 
 - **`GET /entity/<type>`** — Pages rows. An entity field is returned under `relationships` and never `attributes`, an unknown `fields` name is dropped at 200, and `links.next` is emitted on empty pages forever.  
   `query paging filter entity-field silent`  
-  also: 001_auth (finding), 003_query (finding), 004_array_vs_hash (finding), 005_link_usage (finding), 006_pagination (finding), 007_fill_rates (finding), 010_status_icons (finding), 011_create_project (finding), 016_dotted_multi_entity (finding), 018_project_listing (finding), 023_pages (finding), 026_result_order (finding), 027_auth_permissions (finding), 028_loud_and_silent (finding), 030_complex_filters (finding), 051_api_version (finding), 004_register_published_file (recipe)
+  also: 001_auth (finding), 003_query (finding), 004_array_vs_hash (finding), 005_link_usage (finding), 006_pagination (finding), 007_fill_rates (finding), 010_status_icons (finding), 011_create_project (finding), 016_dotted_multi_entity (finding), 018_project_listing (finding), 023_pages (finding), 026_result_order (finding), 027_auth_permissions (finding), 028_loud_and_silent (finding), 030_complex_filters (finding), 051_api_version (finding), 004_register_published_file (recipe), 003_sort_fails_silently (report), 008_jsonb_filters_return_everything (report)
 - **`POST /entity/<type>`** — `project` is the requirement on every project-scoped type and the identity field is not, whatever the schema says. `?fields` is ignored, and the 201 returns the whole record.  
   `write create entity-field silent`  
   also: 011_create_project (finding), 012_create_version (finding), 024_read_after_write (finding), 025_event_log (finding), 049_script_events (finding), 001_publish_version_with_media (recipe), 004_register_published_file (recipe), 007_build_and_reconcile_a_cut (recipe), 008_delivery_progress (recipe)
@@ -334,7 +359,7 @@ Those 5 are all in the webhook family, and they are blocked on the site rather t
   also: 048_one_record_beyond_crud (finding)
 - **`PUT /entity/<type>/<id>`** — Updates and returns the whole record, 77 attribute keys for a Shot. A key left out of the body is unchanged rather than cleared, and an empty body is a 200 no-op.  
   `write silent`  
-  also: 024_read_after_write (finding), 028_loud_and_silent (finding), 049_script_events (finding), 049_script_events (finding), 004_register_published_file (recipe), 006_media_round_trip (recipe), 008_delivery_progress (recipe), 009_multi_entity_safely (recipe)
+  also: 024_read_after_write (finding), 028_loud_and_silent (finding), 049_script_events (finding), 049_script_events (finding), 004_register_published_file (recipe), 006_media_round_trip (recipe), 008_delivery_progress (recipe), 009_multi_entity_safely (recipe), 004_update_mode_ignored_in_query_string (report), 005_writing_replies_deletes_rows (report)
 - **`DELETE /entity/<type>/<id>`** — Retires a row at 204 with an empty body. It is not erased: the row reads 404 normally and 200 under `options[return_only]=retired`, and a second delete is 404.  
   `write destructive`  
   also: 024_read_after_write (finding), 025_event_log (finding), 049_script_events (finding)
@@ -346,7 +371,7 @@ Those 5 are all in the webhook family, and they are blocked on the site rather t
   also: 048_one_record_beyond_crud (finding)
 - **`POST /entity/_batch`** — The key is `requests`, not `data`, and sending `data` is 400 `requests is missing`. It answers 200 rather than 201, and one bad request rolls the whole batch back.  
   `write batch create silent`  
-  also: 024_read_after_write (finding), 028_loud_and_silent (finding), 002_batch (recipe), 005_propagate_status (recipe), 007_build_and_reconcile_a_cut (recipe)
+  also: 024_read_after_write (finding), 028_loud_and_silent (finding), 002_batch (recipe), 005_propagate_status (recipe), 007_build_and_reconcile_a_cut (recipe), 001_batch_create_skips_validation (report)
 - **`PUT /entity/projects/<id>/_update_last_accessed`** — Stamps one user's last visit to a project. Write-only: a `user_id` that does not exist answers the same 200, and nothing readable over REST changes.  
   `project user silent`  
   also: 048_one_record_beyond_crud (finding)
@@ -355,7 +380,7 @@ Those 5 are all in the webhook family, and they are blocked on the site rather t
 
 - **`POST /entity/<type>/_search`** — The only way to send a filter the query string cannot express, and it refuses `application/json` at 415 naming both vendor types. `api3_array` cannot express `or`; `api3_hash` nests.  
   `query filter operator header paging silent`  
-  also: 003_query (finding), 004_array_vs_hash (finding), 006_pagination (finding), 014_attach_file (finding), 016_dotted_multi_entity (finding), 017_filter_operators (finding), 018_project_listing (finding), 021_media_resolution (finding), 023_pages (finding), 025_event_log (finding), 026_result_order (finding), 028_loud_and_silent (finding), 030_complex_filters (finding), 049_script_events (finding), 003_query_fields_and_pages (recipe), 004_register_published_file (recipe), 005_propagate_status (recipe), 007_build_and_reconcile_a_cut (recipe), 009_multi_entity_safely (recipe), 010_status_picker (recipe)
+  also: 003_query (finding), 004_array_vs_hash (finding), 006_pagination (finding), 014_attach_file (finding), 016_dotted_multi_entity (finding), 017_filter_operators (finding), 018_project_listing (finding), 021_media_resolution (finding), 023_pages (finding), 025_event_log (finding), 026_result_order (finding), 028_loud_and_silent (finding), 030_complex_filters (finding), 049_script_events (finding), 003_query_fields_and_pages (recipe), 004_register_published_file (recipe), 005_propagate_status (recipe), 007_build_and_reconcile_a_cut (recipe), 009_multi_entity_safely (recipe), 010_status_picker (recipe), 003_sort_fails_silently (report), 008_jsonb_filters_return_everything (report)
 - **`POST /entity/<type>/_summarize`** — Counts without paging rows. One `grouping` returns a field's distinct values and their counts at ~300ms, so rank a shortlist with it and never scan every field.  
   `query fill-rate cost list-field summary`  
   also: 006_pagination (finding), 020_summarize (finding), 021_media_resolution (finding), 028_loud_and_silent (finding), 030_complex_filters (finding), 003_query_fields_and_pages (recipe)
@@ -406,7 +431,7 @@ Those 5 are all in the webhook family, and they are blocked on the site rather t
   *no finding yet*
 - **`POST <links.complete_upload>`** — Step three, at 201 with a body of a single space. Not JSON, and it never names the row it created, so parsing it crashes after the write has landed.  
   `upload attachment async silent`  
-  also: 013_upload_media (finding), 014_attach_file (finding), 022_sequence_on_version (finding), 024_read_after_write (finding), 039_upload_silent_failures (finding), 001_publish_version_with_media (recipe), 006_media_round_trip (recipe), 008_delivery_progress (recipe)
+  also: 013_upload_media (finding), 014_attach_file (finding), 022_sequence_on_version (finding), 024_read_after_write (finding), 039_upload_silent_failures (finding), 001_publish_version_with_media (recipe), 006_media_round_trip (recipe), 008_delivery_progress (recipe), 002_complete_upload_without_bytes (report)
 - **`PUT <links.upload>`** — Step two, to storage rather than to Flow PT, with no Authorization header. It is the only step that moves bytes, and skipping it still lets step three answer 201.  
   `upload media attachment silent`  
   also: 013_upload_media (finding), 014_attach_file (finding), 039_upload_silent_failures (finding), 001_publish_version_with_media (recipe), 006_media_round_trip (recipe), 008_delivery_progress (recipe)
@@ -415,7 +440,7 @@ Those 5 are all in the webhook family, and they are blocked on the site rather t
 
 - **`GET /entity/<type>/<id>/activity_stream`** — The feed the web application draws, paged by `max_id` and `min_id` rather than by `page[]`. A record id that is not there answers 500, not the 404 the spec advertises.  
   `follow paging user async trap`  
-  also: 043_attention (finding)
+  also: 043_attention (finding), 009_attention_500s_on_bad_input (report)
 - **`GET /entity/<type>/<id>/followers`** — The HumanUsers watching one record, whole and unpaged, with `name` the only attribute. `links.self` is spelled `/entity/HumanUser/<id>`, singular and CamelCase.  
   `follow user paging note`  
   also: 043_attention (finding)
@@ -424,7 +449,7 @@ Those 5 are all in the webhook family, and they are blocked on the site rather t
   also: 043_attention (finding)
 - **`POST /entity/human_users/<user_id>/follow`** — Subscribes one HumanUser to a list of records at 204. `entity` must be the CamelCase schema name: the snake_case plural every path uses answers 500, and a bad id in the list 404s after applying the good ones.  
   `follow user header error-handling silent trap`  
-  also: 043_attention (finding)
+  also: 043_attention (finding), 009_attention_500s_on_bad_input (report)
 - **`GET /entity/human_users/<user_id>/following`** — Everything one HumanUser follows, unpaged in a single body, filterable only by `entity` and `project_id`. An ApiUser id is a 404, so a script has no follow list of its own.  
   `follow user paging project cost`  
   also: 043_attention (finding)

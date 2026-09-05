@@ -136,6 +136,11 @@ export const GROUPS = [
 		title: 'Entity types'
 	},
 	{ id: 'recipes', dir: 'recipes', base: '/recipes', title: 'Recipes' },
+	// Behaviour that should change, addressed to the team that owns the API. A
+	// report never restates its evidence: `evidence:` names the entries that
+	// measured it, and this group joins to them the way endpoints join to
+	// findings.
+	{ id: 'reports', dir: 'reports', base: '/reports', title: 'Reports' },
 	// One card per REST call, named by the call. `endpoint:` is the identity; the
 	// slug is only a filename, so the card is titled by what it is about.
 	{ id: 'endpoints', dir: 'endpoints', base: '/endpoints', title: 'Endpoints' }

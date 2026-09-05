@@ -52,6 +52,11 @@ behind, which is the queue rather than a gap in the tool.
 `corpus_index` also takes `phase`, one of `auth`, `protocol`, `schema`, `read`, `filter`, `write`,
 `upload`, `observe`, `render`. That is the part of a session a finding bites in.
 
+`group` is one of `findings`, `field_types`, `entity_types`, `recipes`, `endpoints` or `reports`. Every
+group's one-liner reaches the server under a different frontmatter key, `verdict` on a finding, an
+endpoint card and a matrix card, `intent` on a recipe and `summary` on a report, and the loader reads
+all three. Requiring `verdict` there once dropped all ten recipes with nothing said.
+
 `filter_operators` with no argument is the call to make before building anything that filters. It is 24
 lines and it is the difference between offering an operator that works and one that returns 400, or
 worse, omitting a type that filters fine because you never met a field of it.

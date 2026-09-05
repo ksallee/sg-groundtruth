@@ -119,8 +119,10 @@ function readGroup(source, group) {
 				// slug under it is a filename and nothing addresses it.
 				title: meta.title ?? meta.endpoint ?? '',
 				endpoint: meta.endpoint ?? '',
-				// `verdict` on a finding, `intent` on a recipe. One line either way.
-				verdict: meta.verdict ?? meta.intent ?? '',
+				// `verdict` on a finding, `intent` on a recipe, `summary` on a report.
+				// One line whichever it is. A field-type card has both and the
+				// verdict is the one a list row wants.
+				verdict: meta.verdict ?? meta.intent ?? meta.summary ?? '',
 				tags: Array.isArray(meta.tags) ? meta.tags : [],
 				// The phase of a session a finding bites in, and the calls it
 				// covers. Both are retrieval keys rather than content: /findings
@@ -132,6 +134,13 @@ function readGroup(source, group) {
 				coverage: meta.coverage ?? 'measured',
 				unmeasured: meta.unmeasured ?? '',
 				endpoints: Array.isArray(meta.endpoints) ? meta.endpoints : [],
+				// A report alone. `status` and `kind` decide how a row reads, and
+				// `confirmed` is what makes the group a re-probe queue.
+				kind: meta.kind ?? '',
+				status: meta.status ?? '',
+				ticket: meta.ticket ?? '',
+				confirmed: meta.confirmed ?? '',
+				evidence: Array.isArray(meta.evidence) ? meta.evidence : [],
 				name: displayName(slug, group.id),
 				// With the number, for a page title and a heading. The list shows
 				// the number in its own column, so it uses `name` and `number`.
@@ -202,7 +211,8 @@ const COUNT_KEY = {
 	field_types: 'fieldTypes',
 	entity_types: 'entityTypes',
 	recipes: 'recipes',
-	endpoints: 'endpoints'
+	endpoints: 'endpoints',
+	reports: 'reports'
 };
 
 function subject(groupId, slug, api) {
@@ -353,6 +363,42 @@ function stub(entry) {
 	};
 }
 
+// `evidence:` is the real path under corpus/, which is what check_corpus.py
+// validates against the filesystem, so it cannot drift into a spelling no file
+// has. GROUPS is the one place a directory is written down, so the path resolves
+// back to a page through that same list. Longest directory first:
+// `findings/field_types/percent` starts with `findings/` as well.
+const BY_DIR = [...GROUPS].sort((a, b) => b.dir.length - a.dir.length);
+
+function evidenceLinks(paths) {
+	const data = all();
+	return paths.map((ref) => {
+		const group = BY_DIR.find((g) => ref.startsWith(`${g.dir}/`));
+		const slug = group ? ref.slice(group.dir.length + 1) : '';
+		const found = group && data.subjects[group.id]?.find((s) => s.slug === slug);
+		// A published report can only cite something published. A typo, or a
+		// citation of a `scope: site` entry this build excludes, fails here rather
+		// than rendering a link to a page that was never built.
+		if (!found) {
+			throw new Error(
+				`[corpus] a report names evidence "${ref}", which is not a published entry. ` +
+					`Fix the path, or drop it if the target measures one site.`
+			);
+		}
+		return { name: found.title || found.fullName, href: found.href };
+	});
+}
+
+// The five keys a report adds, empty on every other group. One helper so a row
+// and a page cannot disagree about what a report holds.
+const report = (api) => ({
+	kind: api?.kind ?? '',
+	status: api?.status ?? '',
+	ticket: api?.ticket ?? '',
+	confirmed: api?.confirmed ?? '',
+	evidence: api?.evidence?.length ? evidenceLinks(api.evidence) : []
+});
+
 // A list row: identity, whatever the API card says, and a stub per local card.
 // The rendered bodies are the expensive part and are not needed to draw a list.
 function summary(s) {
@@ -373,6 +419,7 @@ function summary(s) {
 		endpoint: s.api?.endpoint ?? '',
 		coverage: s.api?.coverage ?? 'measured',
 		unmeasured: s.api?.unmeasured ?? '',
+		...report(s.api),
 		locals: s.locals.map(stub)
 	};
 }
@@ -398,6 +445,7 @@ function detail(s) {
 		coverage: s.api?.coverage ?? 'measured',
 		unmeasured: s.api?.unmeasured ?? '',
 		cardLinks: s.api?.cardLinks ?? [],
+		...report(s.api),
 		// Where the shipped file is, in the clone and on the site. Computed from
 		// GROUPS rather than from a map beside the markup, which is how the
 		// endpoint cards came to link at `corpus/findings/<slug>.md`.
@@ -415,6 +463,7 @@ export function index() {
 		fieldTypes: data.subjects.field_types.map(summary),
 		entityTypes: data.subjects.entity_types.map(summary),
 		recipes: data.subjects.recipes.map(summary),
+		reports: data.subjects.reports.map(summary),
 		endpoints: endpointOrder(data.subjects.endpoints.map(summary)),
 		hasSite: data.hasSite,
 		projects: data.projects,

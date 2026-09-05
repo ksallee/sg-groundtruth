@@ -71,9 +71,11 @@ def _load(overlay):
                 continue
             text = f.read_text()
             fm = _front(text)
-            # A recipe's one-liner is its `intent`, the same key the index and the site read it
-            # under. Requiring `verdict` here dropped all ten of them without saying so.
-            summary = fm.get("verdict") or fm.get("intent")
+            # The one-liner is under a different key per group: `verdict` on a finding, an
+            # endpoint card and a matrix card, `intent` on a recipe, `summary` on a report.
+            # Requiring `verdict` here dropped all ten recipes without saying so, and would
+            # have dropped every report the same way.
+            summary = fm.get("verdict") or fm.get("intent") or fm.get("summary")
             if not summary:
                 continue
             if level == "api" and fm.get("scope") != "api":
@@ -178,7 +180,8 @@ TOOLS = [
                 },
                 "group": {
                     "type": "string",
-                    "description": "findings, field_types, entity_types or recipes.",
+                    "description": ("findings, field_types, entity_types, recipes, endpoints "
+                                    "or reports."),
                 },
             },
         },

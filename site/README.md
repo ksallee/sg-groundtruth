@@ -237,6 +237,7 @@ Leave these alone unless the pipeline itself is the problem.
 | `src/lib/content/filters.js` | the operator vocabulary read out of each field-type card, and the families it groups them into |
 | `src/lib/content/markdown.js` | the shipped file behind an entry, verbatim, and the `.md` URL it is served at |
 | `src/lib/content/agents.js` | `llms.txt`, the section twins, the sitemap and robots |
+| `src/lib/components/ReportStatus.svelte` | the five keys a report carries that no other group does |
 | `svelte.config.js`, `vite.config.js`, `vercel.json` | build and deploy |
 
 ## Routes
@@ -262,11 +263,27 @@ list what they hold: field types, entity types, filters, recipes, findings. The 
 | `/recipes/[slug]` | one recipe in full |
 | `/findings` | the numbered corpus, then the cited examples |
 | `/findings/[slug]` | one finding in full |
+| `/reports` | every report as a table: kind, status and the date each was last confirmed |
+| `/reports/[slug]` | one report in full, under a block naming its evidence |
 | every list and `[slug]` above | grows with the reading level; a local-only entry is a row in the list it belongs to and a page under it |
 | `/how-it-works` | pointing a model at the index, running the probes, the scope field, enabling it for your site, the reading level, using it alongside an MCP server |
 
 The overlay has no route of its own and adds no nav entry. Only the reading level switch appears when the
 build read one.
+
+### Reports
+
+`/reports` is the one list page that is not an `EntryList`. What a reader wants there is which of them
+are filed and when each was last seen, and that is one row per report with a column each.
+
+A report is joined to its evidence rather than restating it. `evidence:` in the frontmatter is the real
+path under `corpus/`, which is what `probes/check_corpus.py` checks against the filesystem, and
+`corpus.js` resolves it back to a page through `GROUPS`, longest directory first: `findings/field_types/
+percent` starts with `findings/` as well. A report citing an entry this build excludes throws at build
+time rather than rendering a dead link, the same rule `linksFor` applies to an endpoint card.
+
+`EntryDetail` takes a `children` snippet, rendered under the header. `ReportStatus` is the only thing
+passed to it today, and the component stays unaware of what it is.
 
 ### The machine door
 

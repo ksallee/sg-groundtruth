@@ -56,7 +56,10 @@
 			items: shown(nav.fieldTypes).map((e) => ({ ...e, href: `/filters#${e.slug}` }))
 		},
 		{ id: 'recipes', label: 'Recipes', href: '/recipes', items: shown(nav.recipes) },
-		{ id: 'findings', label: 'Findings', href: '/findings', items: shown(nav.findings) }
+		{ id: 'findings', label: 'Findings', href: '/findings', items: shown(nav.findings) },
+		// Last, because a report is read after the finding behind it and never
+		// instead of one.
+		{ id: 'reports', label: 'Reports', href: '/reports', items: shown(nav.reports) }
 	]);
 
 	// A group opens and closes by hand, any number at once, and stays as the
