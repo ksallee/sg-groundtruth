@@ -19,6 +19,8 @@ The only call that takes no bearer token, because it is where the bearer comes f
 | `grant_type` | `client_credentials`, `password` or `session_token` (probe 027). Not `authorization_code` |
 | `client_id` | the script name, for `client_credentials` |
 | `client_secret` | the script key |
+| `session_token` | the launcher's `sessionToken`, for `session_token` (probe 052). Reusable: minting does not consume it |
+| `refresh_token` | the previous response's `refresh_token`, for `refresh_token`. Answers another 600s bearer |
 | `scope` | `sudo_as_login:<login>` to act as one HumanUser. The only scope the site declares (probe 027) |
 
 **Sample requests**
@@ -78,5 +80,7 @@ r = requests.post(f"{c.site}/api/v1/auth/access_token",
 **Links**
 
 - `endpoints/get_root`
+- `endpoints/put_internal_api_app_session_request_id`
 - `findings/001_auth`
 - `findings/027_auth_permissions`
+- `findings/052_app_session_launcher`

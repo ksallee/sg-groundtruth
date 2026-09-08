@@ -34,6 +34,18 @@ class FPT:
         self._expires_at = 0.0
 
     @classmethod
+    def from_session(cls, site, session_token):
+        """A client that is a person: the session token the App Session Launcher handed out.
+
+        The bearer it mints carries that HumanUser, so every row is created by them without any
+        impersonation. Minting also renews the session (probe 052); the session token is the
+        credential to keep, the bearer is disposable.
+        """
+        c = cls(site, "", "")
+        c._creds = {"grant_type": "session_token", "session_token": session_token}
+        return c
+
+    @classmethod
     def from_env(cls, env=None, sudo_as_login=""):
         """A client from the environment. Acting as someone is asked for, never inferred.
 
@@ -58,6 +70,8 @@ class FPT:
             # Every impersonation refusal lands here rather than on the call the caller meant to
             # make, so the message says which of the two failed.
             who = f" as {self.sudo_as_login!r}" if self.sudo_as_login else ""
+            if self._creds.get("grant_type") == "session_token":
+                who = " with a session token"   # expired or revoked: the person has to sign in again
             raise FPTError(f"auth{who} {r.status_code}: {r.text[:300]}")
         d = r.json()
         self._token = d["access_token"]

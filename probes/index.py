@@ -74,7 +74,7 @@ ATTENTION = ("follow", "activity_stream", "thread_contents")
 def family(endpoint):
     """The resource an endpoint acts on. Order matters: a path can match twice."""
     method, _, path = endpoint.partition(" ")
-    if path == "/" or path.startswith("/auth/"):
+    if path == "/" or path.startswith(("/auth/", "/internal_api/app_session_request")):
         return "Session"
     if path.startswith(SITE_PREFIXES):
         return "Site"
