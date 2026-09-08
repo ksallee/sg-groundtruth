@@ -46,6 +46,7 @@ run package-installs bash -c '
   cd "$d" && "$d/venv/bin/python" -c "
 from sg_groundtruth.client import FPT, FPTError
 from sg_groundtruth.env import load, repo_root
+from sg_groundtruth.launcher import request, poll, alive, renew
 "
   rm -rf "$d"'
 
