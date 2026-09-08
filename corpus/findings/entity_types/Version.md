@@ -51,7 +51,7 @@ checkboxes at `false`, and `sg_status_list` at the field's `default_value`.
 | `project` | entity | `Project`. Required on create |
 | `entity` | entity | `Asset`, `Level`, `MocapTake`, `Reel`, `ShootDay`, `Shot`, `Sequence`, `Delivery`, `Launch`, `Camera`, `Slate`, `SourceClip`, plus the site's enabled CustomEntity slots (probe 008) |
 | `sg_task` | entity | `Task` |
-| `user` | entity | `HumanUser`, `ApiUser`, `Group` |
+| `user` | entity | `HumanUser`, `ApiUser`, `Group`. Display name **Artist**, and it defaults to the caller |
 | `client_approved_by` | entity | `HumanUser`, `ClientUser` |
 | `source_clip` | entity | `SourceClip` |
 | `task_template` | entity | `TaskTemplate` |
@@ -98,3 +98,15 @@ lists are site configuration. Write and filter: `field_types/status_list`.
   `viewed_by_current_user_at`, and one `pivot_column` (`field_types/pivot_column`).
 - There is no `attachments` field. A file uploaded with no field in the path is found through
   `Attachment.attachment_links`, never from the Version (probe 014).
+- **`user` is the Artist field and defaults to the caller**, so a script's Versions are authored by
+  the script: 106 of 200 recent rows had `user` equal to their own `created_by` ApiUser. It is
+  editable, unlike `created_by`:
+
+  | create | `created_by` | `user` (Artist) |
+  |---|---|---|
+  | script, `user` not sent | the ApiUser | the ApiUser |
+  | script, `user` sent | the ApiUser | the HumanUser sent |
+  | `scope=sudo_as_login:<login>` (probe 027) | the HumanUser | the HumanUser |
+
+  A tool publishing for someone wants one of the last two. Sending `user` needs no impersonation
+  permission; the scope also fixes `created_by`.
