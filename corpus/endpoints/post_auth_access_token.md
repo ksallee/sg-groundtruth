@@ -19,7 +19,7 @@ The only call that takes no bearer token, because it is where the bearer comes f
 | `grant_type` | `client_credentials`, `password` or `session_token` (probe 027). Not `authorization_code` |
 | `client_id` | the script name, for `client_credentials` |
 | `client_secret` | the script key |
-| `session_token` | the launcher's `sessionToken`, for `session_token` (probe 052). Reusable: minting does not consume it |
+| `session_token` | the launcher's `sessionToken`, for `session_token` (probe 052). Reusable: minting does not consume it, and renews the session at most once every 300s |
 | `refresh_token` | the previous response's `refresh_token`, for `refresh_token`. Answers another 600s bearer |
 | `scope` | `sudo_as_login:<login>` to act as one HumanUser. The only scope the site declares (probe 027) |
 

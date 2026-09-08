@@ -56,7 +56,8 @@ Without the cookie, or with a REST bearer instead of it:
 - `expiresAt` is a sliding window, and this call does not slide it. Two reads five seconds apart return
   the same value. What moves it is any spend of the session token: `POST /auth/access_token` with
   `grant_type=session_token`, `POST /internal_api/session`, or the licence renewal
-  (`052_app_session_launcher`).
+  (`052_app_session_launcher`). A mint moves it only when the last move was 300s or more ago; the
+  two `POST` renewals move it every time.
 - `license` is the Autodesk Identity seat lease, separate from the session and renewed separately by
   `POST /internal_api/autodesk_identity/license_renewal`. `expirationReason` names which of the two the
   top-level `expiresAt` reports.

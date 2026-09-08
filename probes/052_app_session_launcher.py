@@ -106,7 +106,8 @@ def session_status(session_token, label):
                     f"{(v.get('expiresAt', now) - now) / 3600:.1f}h")
     rows.append(f"  expirationReason {d0.get('expirationReason')!r} expired {d0.get('expired')!r} "
                 f"notifyAt {(d0.get('notifyAt', now) - now) / 3600:.1f}h from now")
-    # What counts as activity: a second GET, a bearer minted from the token, and the renew call.
+    # What counts as activity: a second GET, a bearer minted from the token, and the renew call. A
+    # mint within 300s of the last move reads as no move; the two POSTs move it every time.
     d1 = requests.get(S, cookies=c, timeout=30).json()
     rows.append(f"  a second GET moves expiresAt: {d1['expiresAt'] != d0['expiresAt']}")
     mint(grant_type="session_token", session_token=session_token)

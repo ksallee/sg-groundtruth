@@ -47,7 +47,7 @@ after   expiresAt 1788975774      now + 86400
 **Edge cases**
 
 - It is not needed to keep a REST client alive: minting a bearer with `grant_type=session_token` moves
-  `expiresAt` by the same amount (`052_app_session_launcher`). It is the call for a client that holds a
+  `expiresAt` by the same amount, recorded at most once every 300s (`052_app_session_launcher`). It is the call for a client that holds a
   session token and has nothing to mint for a while.
 - The web app calls it only when the page saw input in the last three minutes; a client renewing on a
   timer keeps a session alive indefinitely, which is the behaviour the site's `User Session Expiry`

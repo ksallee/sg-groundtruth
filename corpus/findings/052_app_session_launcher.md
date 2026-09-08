@@ -49,7 +49,8 @@ GET /entity/human_users/<id>                          200 permission_rule_set {"
 GET /internal_api/session, cookie _session_id=<session token>
   200 {"app":{"createdAt":<t>,"expiresAt":<t+86400>},"license":{...},"expired":false,"expiresAt":...}
   a second GET               expiresAt unchanged
-  after minting a bearer     expiresAt = now + 86400
+  after minting a bearer     expiresAt = now + 86400, once 300s have passed since the last move
+  ten mints 30s apart        unchanged until the one at 305s, which moved it +305
   POST /internal_api/session 200 {"message":"OK"}, expiresAt = now + 86400
   POST .../license_renewal   200 {"message":"OK"}, license and app both reset to now
   no cookie, or bearer only  401 {"message":"Unauthorized"}
@@ -62,8 +63,9 @@ GET /internal_api/session, cookie _session_id=<session token>
   (probe 027).
 - The session token is the credential; the bearer is disposable. Hold the session token, mint a 600s
   bearer whenever one is needed, and each mint moves the session's expiry to now plus the site's
-  window (one day on the probed site). A token spent at least once per window never expires; one left
-  idle past it does, and the token endpoint then refuses it.
+  window (one day on the probed site), written at most once every five minutes. A token spent at
+  least once per window never expires; one left idle past it does, and the token endpoint then
+  refuses it.
 - A pending request lives about five minutes and a handed-out one is gone at once. Poll from one place,
   keep `sessionToken` from the one response that holds it, and when the poll turns 404 issue a new request and show
   the person the new `url` rather than tell them what went wrong: forgotten, denied and mistyped all
