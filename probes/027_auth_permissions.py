@@ -141,7 +141,8 @@ rows.append(f"  /entity/groups      -> {len(groups)} rows, "
 hu = c.get("/schema/HumanUser/fields").json()["data"]
 rows.append("  HumanUser fields that decide visibility: "
             f"{sorted(k for k in hu if k in ('permission_rule_set', 'groups', 'projects', 'sg_status_list'))}")
-rows.append(f"  HumanUser.can_impersonate_this_user present: {'can_impersonate_this_user' in hu}")
+rows.append(f"  HumanUser.can_impersonate_this_user present: {'can_impersonate_this_user' in hu}"
+            f", editable {hu.get('can_impersonate_this_user', {}).get('editable', {}).get('value')}")
 
 # 5. Impersonation. `/spec.json` declares it as an OAuth2 scope on both grants, not a body field:
 #    "scopes": {"sudo_as_login:{user_login}": "Sudo to another users"}.
@@ -187,7 +188,14 @@ dead = c.post("/entity/human_users/_search", headers=ARR,
                                 ["sg_status_list", "is_not", "act"]],
                     "fields": "login", "page": {"size": 1}})
 _lib.note_from(dead.json())
+off = c.post("/entity/human_users/_search", headers=ARR,
+             json={"filters": [["can_impersonate_this_user", "is", False],
+                               ["sg_status_list", "is", "act"]],
+                   "fields": "login", "page": {"size": 1}})
+_lib.note_from(off.json())
 for label, login in (("inactive target", (dead.json().get("data") or [{}])[0]
+                      .get("attributes", {}).get("login")),
+                     ("target with the flag off", (off.json().get("data") or [{}])[0]
                       .get("attributes", {}).get("login")),
                      ("unknown target", FAKE)):
     if not login:
