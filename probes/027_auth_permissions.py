@@ -141,5 +141,101 @@ rows.append(f"  /entity/groups      -> {len(groups)} rows, "
 hu = c.get("/schema/HumanUser/fields").json()["data"]
 rows.append("  HumanUser fields that decide visibility: "
             f"{sorted(k for k in hu if k in ('permission_rule_set', 'groups', 'projects', 'sg_status_list'))}")
+rows.append(f"  HumanUser.can_impersonate_this_user present: {'can_impersonate_this_user' in hu}")
+
+# 5. Impersonation. `/spec.json` declares it as an OAuth2 scope on both grants, not a body field:
+#    "scopes": {"sudo_as_login:{user_login}": "Sudo to another users"}.
+#
+#    Subjects are discovered, never named here: a login in committed source is site data, and the
+#    site the probe runs on decides which permission levels exist to compare.
+rows.append("\n=== 5. sudo_as_login")
+spec = requests.get(f"{site}/api/v1/spec.json", timeout=30)
+flows = spec.json().get("components", {}).get("securitySchemes", {}).get("bearerAuth", {}).get("flows", {})
+rows.append(f"  /spec.json bearerAuth flows {sorted(flows)}, "
+            f"scopes {sorted({k for f in flows.values() for k in (f.get('scopes') or {})})}")
+
+cands = c.post("/entity/human_users/_search", headers=ARR,
+               json={"filters": [["can_impersonate_this_user", "is", True],
+                                 ["sg_status_list", "is", "act"]],
+                     "fields": "login,permission_rule_set", "page": {"size": 200}})
+_lib.note_from(cands.json())
+by_set = {}
+for u in cands.json().get("data", []):
+    name = (u["relationships"]["permission_rule_set"]["data"] or {}).get("name")
+    by_set.setdefault(name, u["attributes"]["login"])
+rows.append(f"  active + can_impersonate_this_user, by permission_rule_set: "
+            f"{ {k: '<login>' for k in sorted(by_set)} }")
+
+admin_login = by_set.get("Admin")
+other = next((v for k, v in sorted(by_set.items()) if k != "Admin"), None)
+other_set = next((k for k in sorted(by_set) if k != "Admin"), None)
+
+# The two forms, on the same active target: the body field the API ignores, and the scope it reads.
+if admin_login:
+    for label, extra in (("sudo_as_login=<login> (body field)", {"sudo_as_login": admin_login}),
+                         ("scope=sudo_as_login:<login>", {"scope": f"sudo_as_login:{admin_login}"})):
+        r = token(grant_type="client_credentials", client_id=SCRIPT,
+                  client_secret=env["FPT_API_API_KEY"], **extra)
+        got = claims(r.json()["access_token"]) if r.ok else None
+        rows.append(f"  {label} -> {r.status_code} "
+                    + (f"user {got['user']} sudo_as_login {got.get('sudo_as_login') and '<login>'!r}"
+                       if got else err(r)))
+
+# Targets the scope refuses, so the failure shapes are on the record too.
+dead = c.post("/entity/human_users/_search", headers=ARR,
+              json={"filters": [["can_impersonate_this_user", "is", True],
+                                ["sg_status_list", "is_not", "act"]],
+                    "fields": "login", "page": {"size": 1}})
+_lib.note_from(dead.json())
+for label, login in (("inactive target", (dead.json().get("data") or [{}])[0]
+                      .get("attributes", {}).get("login")),
+                     ("unknown target", FAKE)):
+    if not login:
+        continue
+    r = token(grant_type="client_credentials", client_id=SCRIPT,
+              client_secret=env["FPT_API_API_KEY"], scope=f"sudo_as_login:{login}")
+    # The API echoes the login back inside the message. A login is not an email, so the shared
+    # scrubber cannot catch it; the probe knows what it sent and replaces it here.
+    rows.append(f"  scope, {label} -> {r.status_code} "
+                f"{(err(r) if not r.ok else 'ok').replace(login, '<login>')}")
+
+
+def as_user(login):
+    """A bearer acting as one HumanUser, or None where the site refused."""
+    r = token(grant_type="client_credentials", client_id=SCRIPT,
+              client_secret=env["FPT_API_API_KEY"], scope=f"sudo_as_login:{login}")
+    return r.json()["access_token"] if r.ok else None
+
+
+def get_as(tok, path, **params):
+    return requests.get(f"{site}/api/v1{path}", timeout=60,
+                        headers={"Authorization": f"Bearer {tok}", "Accept": "application/json"},
+                        params=params or None)
+
+
+# 6. What the level actually changes. The corpus was measured by one script user in api_admin and
+#    says a lower level "may see fewer rows and fewer fields"; both halves are now measured.
+rows.append("\n=== 6. what a permission level changes")
+levels = [("script", None)] + [(k, v) for k, v in (("Admin", admin_login), (other_set, other)) if v]
+toks = {k: (good.json()["access_token"] if v is None else as_user(v)) for k, v in levels}
+toks = {k: t for k, t in toks.items() if t}
+if len(toks) < 2:
+    rows.append("  only one caller available on this site; the comparison was not measured here")
+else:
+    ENTS = ["projects", "human_users", "api_users", "versions", "shots", "published_files", "notes"]
+    for ent in ENTS:
+        cells = []
+        for k, t in toks.items():
+            r = get_as(t, f"/entity/{ent}", **{"page[size]": 200})
+            cells.append(f"{k}:{len(r.json().get('data', [])) if r.ok else str(r.status_code) + ' ' + err(r)[:60]}")
+        rows.append(f"  rows {ent:<17} {'  '.join(cells)}")
+    for ty in ("Version", "HumanUser", "Project"):
+        cells = [f"{k}:{len(get_as(t, f'/schema/{ty}/fields').json().get('data', {}))}" for k, t in toks.items()]
+        rows.append(f"  schema fields {ty:<10} {'  '.join(cells)}")
+    for k, t in toks.items():
+        r = get_as(t, "/license_info")
+        rows.append(f"  GET /license_info {k:<8} -> {r.status_code} {err(r) if not r.ok else 'ok'}")
+    for p in ("/me", "/entity/human_users/me"):
+        rows.append(f"  GET {p:<24} " + "  ".join(f"{k}:{get_as(t, p).status_code}" for k, t in toks.items()))
 
 _lib.emit("027_auth_permissions", "\n".join(rows), env)

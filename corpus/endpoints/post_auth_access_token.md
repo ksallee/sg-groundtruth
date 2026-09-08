@@ -19,10 +19,11 @@ The only call that takes no bearer token, because it is where the bearer comes f
 | `grant_type` | `client_credentials`, `password` or `session_token` (probe 027). Not `authorization_code` |
 | `client_id` | the script name, for `client_credentials` |
 | `client_secret` | the script key |
+| `scope` | `sudo_as_login:<login>` to act as one HumanUser. The only scope the site declares (probe 027) |
 
 **Sample requests**
 
-A script token:
+A script token, and the same call acting as a person:
 
 ```python
 import requests
