@@ -67,9 +67,12 @@ A project id that is not there:
 | `{}` | 400 `user_id is missing` |
 | the path under `shots` | 404, `detail` null |
 
-- Nothing reads the result back. `Project.last_accessed_by_current_user` is relative to the
-  requesting account, so a script reads `null` before and after its own call, and on the probed site
-  the write logged no `EventLogEntry`. Treat the call as fire and forget.
+- `Project.last_accessed_by_current_user` is relative to the requesting account, and a script has no
+  HumanUser row to be current, so a script reads `null` before and after its own call. It is not
+  unreadable: a token acting as the stamped user reads the timestamp back. Measured on the probed
+  site, a script `PUT` with `{"user_id": 24}` then read `null` as itself and
+  `'2026-09-08T16:00:59Z'` through `scope=sudo_as_login:<that user>` (probe 027). The write logged no
+  `EventLogEntry`. Fire and forget only if you have no way to be the user you stamped.
 - A bad `user_id` is a silent 200. Validate the id against `GET /entity/human_users` first if it
   matters that the stamp landed.
 - `GET` on the same path falls through to the file-field route, so the 404 names a field nobody asked

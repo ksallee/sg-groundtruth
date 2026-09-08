@@ -25,8 +25,8 @@ Every measurement here was taken against **`/api/v1`**. The site's own OpenAPI d
 
 - **001_auth** — Send the token request as `application/x-www-form-urlencoded`: `application/json` is 400 Invalid JSON body. client_credentials returns a 600s bearer, so ignore the refresh_token and re-auth.  
   `auth client token`
-- **027_auth_permissions** — The token endpoint also accepts password and session_token, not authorization_code; the bearer is a signed token whose user claim names the caller and the row holding its permission rule set.  
-  `auth token permission user client`
+- **027_auth_permissions** — The token endpoint accepts password and session_token. Impersonation is the OAuth2 scope sudo_as_login:<login>, never a body field, and a lower level reads far fewer rows and as many fields.  
+  `auth token permission user client sudo`
 
 ### protocol — headers, and what a status code is worth
 
@@ -570,6 +570,7 @@ Those 5 are all in the webhook family, and they are blocked on the site rather t
 - **status** — 009_status_lists (finding), 010_status_icons (finding), 025_event_log (finding), 005_propagate_status (recipe), 008_delivery_progress (recipe), 010_status_picker (recipe), status_list (field type), get_schema_type_fields_field (endpoint), put_webhook_hooks_record_uuid (endpoint)
 - **step** — pivot_column (field type), Step (entity type)
 - **storage** — 021_media_resolution (finding), 044_multipart_upload (finding), 004_register_published_file (recipe), PublishedFile (entity type), put_entity_type_id_field_upload (endpoint), post_entity_type_id_field_upload_multipart_abort (endpoint), put_entity_type_id_upload (endpoint)
+- **sudo** — 027_auth_permissions (finding)
 - **summary** — 003_query_fields_and_pages (recipe), summary (field type), timecode (field type), post_entity_type_summarize (endpoint)
 - **task** — 005_propagate_status (recipe), Step (entity type), Task (entity type), TimeLog (entity type)
 - **timecode** — 007_build_and_reconcile_a_cut (recipe), timecode (field type), Cut (entity type), CutItem (entity type)
