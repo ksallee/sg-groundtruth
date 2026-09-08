@@ -85,9 +85,19 @@ accepted grants as `sudo_as_login:{user_login}`, and only the scope form is read
 | `scope=sudo_as_login:<login>` | 200, claim `sudo_as_login` set to that login |
 | `scope`, inactive target | 400 code 102 `Cannot 'sudo' - inactive user account: '<login>'` |
 | `scope`, unknown target | 400 code 102 `Cannot 'sudo' - unknown or retired user: '<login>'` |
+| `scope`, target with the flag off | 400 code 102 `Cannot 'sudo' - user account has 'can_impersonate_this_user' turned off: '<login>'` |
 
-The target needs `HumanUser.can_impersonate_this_user` true **and** `sg_status_list` active; the two failures
-are distinguishable, and both name the account rather than failing blind.
+The target needs `HumanUser.can_impersonate_this_user` true **and** `sg_status_list` active. Each refusal
+names its own reason and all three land at the token endpoint, before any request the caller meant to make,
+so a client learns it cannot act as someone the moment it authenticates rather than part way through a job.
+
+The flag is not settable over REST. A script in `api_admin` writing it is refused
+`400` code 104 `The field is not editable for this user: [HumanUser.can_impersonate_this_user]`, so
+impersonation is something a site administrator grants in the web UI and a client can only read.
+
+That last refusal was measured with the flag turned off by hand in the web UI, because no active account
+on the probed site had it set to false. The probe looks for one and prints the row only where the site
+has it, so a rerun elsewhere may show two refusals rather than three.
 
 A sudo'd token does not change who the caller *is*: `user` stays the `ApiUser`, and `sudo_as_login` is added
 holding the login string the caller supplied. The token therefore reports nothing the caller did not already
