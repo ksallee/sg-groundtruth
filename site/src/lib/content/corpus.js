@@ -560,7 +560,7 @@ const pathOf = (endpoint) => endpoint.slice(endpoint.indexOf(' ') + 1);
 // `/entity/<type>/_search` is Search before it is Records.
 export function family(endpoint) {
 	const path = pathOf(endpoint);
-	if (path === '/' || path.startsWith('/auth/')) return 'Session';
+	if (path === '/' || path.startsWith('/auth/') || path.startsWith('/internal_api/app_session_request')) return 'Session';
 	if (SITE_PREFIXES.some((p) => path.startsWith(p))) return 'Site';
 	if (path.startsWith('/schema')) return 'Schema';
 	if (path.includes('_search') || path.includes('_summarize') || path.startsWith('/hierarchy/'))

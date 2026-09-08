@@ -50,10 +50,15 @@ On the probed site:
 - `user_authentication_method` decides whether a human grant is available at all. `oxygen` on the probed
   site means the identity provider owns the login, so `password` will not work for a person there even
   though the token endpoint accepts the grant type.
+- `authentication_app_session_launcher_enabled` true means a person can sign in without a script key:
+  `POST /internal_api/app_session_request`, approved in a browser (probe 052). On the probed site it is
+  the only grant a person has, because `oxygen` refuses `password`.
 - `shotgun_version` is the only version string the API exposes. Anything conditioned on server version
   reads it here rather than inferring it from behaviour.
 
 **Links**
 
 - `endpoints/post_auth_access_token`
+- `endpoints/post_internal_api_app_session_request`
 - `findings/027_auth_permissions`
+- `findings/052_app_session_launcher`

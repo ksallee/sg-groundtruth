@@ -27,6 +27,9 @@ Every measurement here was taken against **`/api/v1`**. The site's own OpenAPI d
   `auth client token`
 - **027_auth_permissions** — The token endpoint accepts password and session_token. Impersonation is the OAuth2 scope sudo_as_login:<login>, never a body field, and a lower level reads far fewer rows and as many fields.  
   `auth token permission user client sudo`
+- **052_app_session_launcher** **[partial]** — Post appName and machineId, open url in a browser, PUT the id until approved. The sessionToken spends at grant_type=session_token as that person, and every mint renews the session.  
+  `auth token user launcher permission`  
+  not measured: a person clicking deny, and a session left idle past the site's expiry window; both wait on time and on the site, not on the probe
 
 ### protocol — headers, and what a status code is worth
 
@@ -246,6 +249,8 @@ One per standard entity type: what it is, how it is identified, created and link
   `status icon colour schema list-field entity-field dotted-field project cache`
 - **011_audit_webhook_subscriptions** — Inventory every webhook subscription on a site, and see which have ever delivered  
   `webhook read-only permission silent`
+- **012_sign_in_as_a_person** — Reach the REST API as a person, with no script key and no password, by having them approve a login in their browser  
+  `auth token user launcher`
 
 ## Reports
 
@@ -274,9 +279,9 @@ Behaviour that should change, addressed to the team that owns the API. Each name
 
 One card per call: what it takes, what it answers, a real response and the edge cases that live on the call. `endpoints/<slug>`.
 
-58 of 64 have a finding or recipe behind them as well. A card with none is documented and not yet probed, which is the queue.
+63 of 69 have a finding or recipe behind them as well. A card with none is documented and not yet probed, which is the queue.
 
-59 cards are marked `measured`: every call on them was made and answered. 5 are marked `partial` or `untested` and say on the card what was not reached.
+64 cards are marked `measured`: every call on them was made and answered. 5 are marked `partial` or `untested` and say on the card what was not reached.
 
 Those 5 are all in the webhook family, and they are blocked on the site rather than on the work: entity events reach no hook on the probed site, so the delivery payload, `X-SG-SIGNATURE` and the batch headers cannot be recorded here (`045_webhooks`). **If you run a site where webhooks deliver, these are the entries to contribute.** A probe and a recorded response is the whole ask.
 
@@ -284,10 +289,16 @@ Those 5 are all in the webhook family, and they are blocked on the site rather t
 
 - **`GET /`** — The site's login configuration, answered without a token. Read `user_authentication_method` here before choosing a grant type.  
   `auth discovery`  
-  also: 027_auth_permissions (finding), 051_api_version (finding)
+  also: 027_auth_permissions (finding), 051_api_version (finding), 052_app_session_launcher (finding)
 - **`POST /auth/access_token`** — Form-encode it. `application/json` is 415 naming the one legal type, and the 600s bearer is cheaper to re-mint than the refresh_token is to use.  
   `auth token client`  
-  also: 001_auth (finding), 027_auth_permissions (finding)
+  also: 001_auth (finding), 027_auth_permissions (finding), 052_app_session_launcher (finding), 012_sign_in_as_a_person (recipe)
+- **`POST /internal_api/app_session_request`** — Send `appName` and `machineId`, form or JSON, with no token and no cookie. The answer is a `sessionRequestId` to poll and a `url` a logged-in person opens in a browser to approve.  
+  `auth token user launcher`  
+  also: 052_app_session_launcher (finding), 012_sign_in_as_a_person (recipe)
+- **`PUT /internal_api/app_session_request/<sessionRequestId>`** — Poll it with no body. `{"approved": false}` while pending; once, `{"approved": true, "sessionToken", "userLogin"}`; then 404 forever. Forgotten, denied and unknown all read the same 404.  
+  `auth token user launcher`  
+  also: 052_app_session_launcher (finding), 012_sign_in_as_a_person (recipe)
 
 ### Site
 
@@ -504,12 +515,24 @@ Those 5 are all in the webhook family, and they are blocked on the site rather t
   `page`  
   also: 048_one_record_beyond_crud (finding)
 
+### Other
+
+- **`POST /internal_api/autodesk_identity/license_renewal`** — Renews the Autodesk Identity licence lease behind the `_session_id` cookie: `{"message": "OK"}` and `license.expiresAt` moves to now plus one day. 401 without the cookie.  
+  `auth user launcher`  
+  also: 052_app_session_launcher (finding)
+- **`GET /internal_api/session`** — With the session token as the `_session_id` cookie, answers when the session and the licence lease expire, in epoch seconds. Reading it does not renew anything. 401 without the cookie.  
+  `auth token user launcher`  
+  also: 052_app_session_launcher (finding)
+- **`POST /internal_api/session`** — Renews the session behind the `_session_id` cookie: `{"message": "OK"}` and `expiresAt` moves to now plus the site's expiry window. 401 without the cookie.  
+  `auth token user launcher`  
+  also: 052_app_session_launcher (finding)
+
 
 ## By tag
 
 - **async** — 013_upload_media (finding), 024_read_after_write (finding), 043_attention (finding), 006_media_round_trip (recipe), image (field type), get_entity_type_id_field_upload (endpoint), post_transcode_attachment_metadata_id (endpoint), post_links_complete_upload (endpoint), get_entity_type_id_activity_stream (endpoint)
 - **attachment** — 013_upload_media (finding), 014_attach_file (finding), 022_sequence_on_version (finding), 039_upload_silent_failures (finding), 048_one_record_beyond_crud (finding), 001_publish_version_with_media (recipe), 006_media_round_trip (recipe), 008_delivery_progress (recipe), url (field type), Attachment (entity type), Delivery (entity type), Note (entity type), get_entity_type_id_field (endpoint), post_entity_type_id_field_upload (endpoint), get_entity_type_id_upload (endpoint), post_entity_type_id_upload (endpoint), put_entity_type_id_upload (endpoint), get_entity_type_id_upload_multipart (endpoint), post_links_complete_upload (endpoint), put_links_upload (endpoint), get_entity_notes_id_thread_contents (endpoint)
-- **auth** — 001_auth (finding), 027_auth_permissions (finding), 049_script_events (finding), get_root (endpoint), post_auth_access_token (endpoint)
+- **auth** — 001_auth (finding), 027_auth_permissions (finding), 049_script_events (finding), 052_app_session_launcher (finding), 012_sign_in_as_a_person (recipe), get_root (endpoint), post_auth_access_token (endpoint), post_internal_api_app_session_request (endpoint), put_internal_api_app_session_request_id (endpoint), post_internal_api_autodesk_identity_license_renewal (endpoint), get_internal_api_session (endpoint), post_internal_api_session (endpoint)
 - **batch** — 024_read_after_write (finding), 002_batch (recipe), 005_propagate_status (recipe), 007_build_and_reconcile_a_cut (recipe), post_entity_batch (endpoint)
 - **cache** — 010_status_icons (finding), 010_status_picker (recipe)
 - **client** — 001_auth (finding), 027_auth_permissions (finding), 051_api_version (finding), post_auth_access_token (endpoint)
@@ -539,6 +562,7 @@ Those 5 are all in the webhook family, and they are blocked on the site rather t
 - **image** — 006_media_round_trip (recipe), image (field type), get_entity_type_id_field (endpoint), get_entity_type_id_field_upload (endpoint)
 - **inspector** — 005_link_usage (finding), 007_fill_rates (finding), 009_status_lists (finding), 018_project_listing (finding), 020_summarize (finding), 021_media_resolution (finding), 023_pages (finding), calculated (field type), checkbox (field type), password (field type), pivot_column (field type), summary (field type)
 - **jsonb** — jsonb (field type), Note (entity type)
+- **launcher** — 052_app_session_launcher (finding), 012_sign_in_as_a_person (recipe), post_internal_api_app_session_request (endpoint), put_internal_api_app_session_request_id (endpoint), post_internal_api_autodesk_identity_license_renewal (endpoint), get_internal_api_session (endpoint), post_internal_api_session (endpoint)
 - **link** — 005_link_usage (finding), Version (entity type)
 - **list-field** — 009_status_lists (finding), 018_project_listing (finding), 020_summarize (finding), 008_delivery_progress (recipe), 010_status_picker (recipe), list (field type), status_list (field type), Asset (entity type), Cut (entity type), Delivery (entity type), get_schema_type_fields_field (endpoint), post_entity_type_summarize (endpoint)
 - **media** — 013_upload_media (finding), 021_media_resolution (finding), 022_sequence_on_version (finding), 039_upload_silent_failures (finding), 006_media_round_trip (recipe), image (field type), timecode (field type), url (field type), Attachment (entity type), Version (entity type), get_entity_type_id_field (endpoint), get_entity_type_id_field_upload (endpoint), put_entity_type_id_field_upload (endpoint), post_transcode_attachment_metadata_id (endpoint), put_links_upload (endpoint)
@@ -551,7 +575,7 @@ Those 5 are all in the webhook family, and they are blocked on the site rather t
 - **page** — 023_pages (finding), 030_complex_filters (finding), 048_one_record_beyond_crud (finding), 003_query_fields_and_pages (recipe), get_exports_page_id_format (endpoint), get_exports_page_id_layout_format (endpoint)
 - **paging** — 003_query (finding), 005_link_usage (finding), 006_pagination (finding), 016_dotted_multi_entity (finding), 025_event_log (finding), 026_result_order (finding), 043_attention (finding), 051_api_version (finding), get_entity_type (endpoint), post_entity_type_search (endpoint), get_entity_type_id_activity_stream (endpoint), get_entity_type_id_followers (endpoint), get_entity_human_users_id_following (endpoint), get_webhook_hooks (endpoint), get_webhook_hooks_hook_id_deliveries (endpoint)
 - **path** — 021_media_resolution (finding), 022_sequence_on_version (finding), 004_register_published_file (recipe), PublishedFile (entity type)
-- **permission** — 027_auth_permissions (finding), 049_script_events (finding), 011_audit_webhook_subscriptions (recipe), put_preferences_update (endpoint)
+- **permission** — 027_auth_permissions (finding), 049_script_events (finding), 052_app_session_launcher (finding), 011_audit_webhook_subscriptions (recipe), put_preferences_update (endpoint)
 - **pivot-column** — pivot_column (field type), Shot (entity type)
 - **playlist** — 009_multi_entity_safely (recipe), Playlist (entity type)
 - **project** — 011_create_project (finding), 018_project_listing (finding), 023_pages (finding), 046_search_without_a_path (finding), 010_status_picker (recipe), Project (entity type), put_schedule_work_day_rules (endpoint), put_entity_projects_id_update_last_accessed (endpoint), post_hierarchy_expand (endpoint), post_hierarchy_search (endpoint), get_entity_human_users_id_following (endpoint)
@@ -574,12 +598,12 @@ Those 5 are all in the webhook family, and they are blocked on the site rather t
 - **summary** — 003_query_fields_and_pages (recipe), summary (field type), timecode (field type), post_entity_type_summarize (endpoint)
 - **task** — 005_propagate_status (recipe), Step (entity type), Task (entity type), TimeLog (entity type)
 - **timecode** — 007_build_and_reconcile_a_cut (recipe), timecode (field type), Cut (entity type), CutItem (entity type)
-- **token** — 001_auth (finding), 027_auth_permissions (finding), 045_webhooks (finding), post_auth_access_token (endpoint), post_webhook_hooks (endpoint)
+- **token** — 001_auth (finding), 027_auth_permissions (finding), 045_webhooks (finding), 052_app_session_launcher (finding), 012_sign_in_as_a_person (recipe), post_auth_access_token (endpoint), post_internal_api_app_session_request (endpoint), put_internal_api_app_session_request_id (endpoint), post_webhook_hooks (endpoint), get_internal_api_session (endpoint), post_internal_api_session (endpoint)
 - **transcode** — post_transcode_attachment_metadata_id (endpoint)
 - **trap** — 004_array_vs_hash (finding), 016_dotted_multi_entity (finding), 018_project_listing (finding), 019_create_fields (finding), 023_pages (finding), 024_read_after_write (finding), 025_event_log (finding), 026_result_order (finding), 028_loud_and_silent (finding), 030_complex_filters (finding), 039_upload_silent_failures (finding), 040_field_revive (finding), 043_attention (finding), 045_webhooks (finding), 046_search_without_a_path (finding), 049_script_events (finding), 050_webhook_subscriptions (finding), post_entity_type_id (endpoint), get_entity_type_id_field (endpoint), post_hierarchy_expand (endpoint), post_hierarchy_search (endpoint), get_entity_type_id_activity_stream (endpoint), post_entity_human_users_id_follow (endpoint), put_webhook_deliveries_record_uuid (endpoint), post_webhook_hooks (endpoint), post_webhook_hooks_record_uuid_test_connection (endpoint)
 - **upload** — 013_upload_media (finding), 014_attach_file (finding), 022_sequence_on_version (finding), 024_read_after_write (finding), 039_upload_silent_failures (finding), 044_multipart_upload (finding), 001_publish_version_with_media (recipe), 006_media_round_trip (recipe), 008_delivery_progress (recipe), image (field type), url (field type), Attachment (entity type), get_entity_type_id_field_upload (endpoint), get_entity_type_id_upload (endpoint), post_links_complete_upload (endpoint), put_links_upload (endpoint)
 - **url** — 006_media_round_trip (recipe), url (field type), Attachment (entity type)
-- **user** — 027_auth_permissions (finding), 043_attention (finding), 047_site_facts_and_the_working_week (finding), get_license_info (endpoint), put_schedule_work_day_rules (endpoint), get_subscription_seat_user_subscriptions (endpoint), post_subscription_seat_user_subscriptions (endpoint), put_entity_projects_id_update_last_accessed (endpoint), get_entity_type_id_activity_stream (endpoint), get_entity_type_id_followers (endpoint), put_entity_type_id_unfollow (endpoint), post_entity_human_users_id_follow (endpoint), get_entity_human_users_id_following (endpoint), get_entity_notes_id_thread_contents (endpoint)
+- **user** — 027_auth_permissions (finding), 043_attention (finding), 047_site_facts_and_the_working_week (finding), 052_app_session_launcher (finding), 012_sign_in_as_a_person (recipe), post_internal_api_app_session_request (endpoint), put_internal_api_app_session_request_id (endpoint), get_license_info (endpoint), put_schedule_work_day_rules (endpoint), get_subscription_seat_user_subscriptions (endpoint), post_subscription_seat_user_subscriptions (endpoint), put_entity_projects_id_update_last_accessed (endpoint), get_entity_type_id_activity_stream (endpoint), get_entity_type_id_followers (endpoint), put_entity_type_id_unfollow (endpoint), post_entity_human_users_id_follow (endpoint), get_entity_human_users_id_following (endpoint), get_entity_notes_id_thread_contents (endpoint), post_internal_api_autodesk_identity_license_renewal (endpoint), get_internal_api_session (endpoint), post_internal_api_session (endpoint)
 - **version** — 003_query (finding), 005_link_usage (finding), 007_fill_rates (finding), 012_create_version (finding), 013_upload_media (finding), 014_attach_file (finding), 021_media_resolution (finding), 022_sequence_on_version (finding), 001_publish_version_with_media (recipe), 002_batch (recipe), 004_register_published_file (recipe), 005_propagate_status (recipe), 006_media_round_trip (recipe), 007_build_and_reconcile_a_cut (recipe), 008_delivery_progress (recipe), 009_multi_entity_safely (recipe), url (field type), Delivery (entity type), Playlist (entity type), Version (entity type)
 - **webhook** — 045_webhooks (finding), 050_webhook_subscriptions (finding), 011_audit_webhook_subscriptions (recipe), get_webhook_deliveries_record_uuid (endpoint), put_webhook_deliveries_record_uuid (endpoint), post_webhook_deliveries_record_uuid_redeliver (endpoint), get_webhook_hooks (endpoint), post_webhook_hooks (endpoint), get_webhook_hooks_hook_id_deliveries (endpoint), get_webhook_hooks_record_uuid (endpoint), put_webhook_hooks_record_uuid (endpoint), delete_webhook_hooks_record_uuid (endpoint), post_webhook_hooks_record_uuid_test_connection (endpoint)
 - **write** — 011_create_project (finding), 012_create_version (finding), 013_upload_media (finding), 014_attach_file (finding), 019_create_fields (finding), 022_sequence_on_version (finding), 024_read_after_write (finding), 025_event_log (finding), 028_loud_and_silent (finding), 045_webhooks (finding), 049_script_events (finding), 001_publish_version_with_media (recipe), 002_batch (recipe), 004_register_published_file (recipe), 005_propagate_status (recipe), 006_media_round_trip (recipe), 007_build_and_reconcile_a_cut (recipe), 008_delivery_progress (recipe), 009_multi_entity_safely (recipe), Sequence (entity type), put_preferences_update (endpoint), put_schedule_work_day_rules (endpoint), post_subscription_seat_user_subscriptions (endpoint), post_entity_type (endpoint), post_entity_type_id (endpoint), put_entity_type_id (endpoint), delete_entity_type_id (endpoint), post_entity_batch (endpoint), put_webhook_hooks_record_uuid (endpoint)
