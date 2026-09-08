@@ -1,10 +1,10 @@
 ---
-tags: [auth, token, permission, user, client]
+tags: [auth, token, permission, user, client, sudo]
 endpoints: [POST /auth/access_token, GET /, GET /entity/<type>]
 phase: auth
 scope: api
 measured: site-wide, the caller's own token and the permission listings
-verdict: The token endpoint also accepts password and session_token, not authorization_code; the bearer is a signed token whose user claim names the caller and the row holding its permission rule set.
+verdict: The token endpoint accepts password and session_token. Impersonation is the OAuth2 scope sudo_as_login:<login>, never a body field, and a lower level reads far fewer rows and as many fields.
 ---
 
 # 027_auth_permissions
@@ -54,7 +54,7 @@ GET /entity/permissions -> 404 "Entity type 'permissions' does not exist." (same
 - A script key is not the only way in. `password` and `session_token` are accepted grants: both fail on the credential, not on the grant name, while `authorization_code`, `implicit` and the device-code URI all fail on the grant name. A person with a Flow PT login can therefore reach the same REST API without an administrator issuing a script user.
 - No route reports the caller. The bearer itself does: it is three dot-separated segments, and segment 2 is base64url JSON with a `user` claim of `{type, id}` plus `auth_type` and `sudo_as_login`. Decode it to read the claim; never verify it, and never log it.
 - The permission model is readable as rows and opaque as rules. `PermissionRuleSet` has 10 fields, all read only, and none of them holds a rule. A client learns which set a user is in and nothing about what that set allows.
-- Every measurement in this corpus was taken by a script user in the `api_admin` set. A caller at a lower level may see fewer rows and fewer fields, and no finding here is qualified by that.
+- Every measurement in this corpus was taken by a script user in the `api_admin` set, and a lower level reads **far fewer rows and exactly as many fields**. Impersonating an `Artist` on the probed site returned 8 projects of 22 and **zero** Versions, Shots, PublishedFiles and Notes, while `/schema/<type>/fields` returned the same counts at every level. A row count or a fill rate recorded anywhere in this corpus is an `api_admin` number; a field census is not level-dependent.
 
 **Grant types.** Two failure shapes separate an accepted grant from a rejected one. `Unsupported grant_type` (code 103) means the name is not in the set. Any other error means the name was accepted and the credential was not.
 
@@ -76,8 +76,22 @@ Unlike a filter operator (probe 017), the rejection does not enumerate the accep
 client can test a site for that path without credentials. Obtaining a session token needs the launcher and
 was not measured here.
 
-Passing `sudo_as_login` to the token endpoint alongside `client_credentials` returned 200 with the claim
-still `null`, so the parameter is ignored at that layer.
+**Impersonation.** `sudo_as_login` is an OAuth2 **scope**, not a body field. `/spec.json` declares it on both
+accepted grants as `sudo_as_login:{user_login}`, and only the scope form is read:
+
+| sent with `client_credentials` | result |
+|---|---|
+| `sudo_as_login=<login>` as a body field | 200, claim `sudo_as_login` still `null`. Silently ignored |
+| `scope=sudo_as_login:<login>` | 200, claim `sudo_as_login` set to that login |
+| `scope`, inactive target | 400 code 102 `Cannot 'sudo' - inactive user account: '<login>'` |
+| `scope`, unknown target | 400 code 102 `Cannot 'sudo' - unknown or retired user: '<login>'` |
+
+The target needs `HumanUser.can_impersonate_this_user` true **and** `sg_status_list` active; the two failures
+are distinguishable, and both name the account rather than failing blind.
+
+A sudo'd token does not change who the caller *is*: `user` stays the `ApiUser`, and `sudo_as_login` is added
+holding the login string the caller supplied. The token therefore reports nothing the caller did not already
+know, so a client wanting the human's id must look the login up.
 
 **Who am I.** There is no `me` route under any of the seven shapes tried. The identity is in the token:
 
@@ -112,9 +126,32 @@ every row.
 On the probed site the 24 `HumanUser` rows split 12 `Admin`, 6 `Artist`, 3 `Manager`, 3 `Vendor`, and all 16
 `ApiUser` rows are `API Admin`.
 
-**Unmeasured.** One credential was available, a script user in `api_admin`. Nothing here measures what a
-lower-permission caller reads. A row count, a field census, a fill rate or a status vocabulary recorded
-anywhere in this corpus was taken at that level and may be smaller for an artist. Whether `password` or
-`session_token` yields a usable REST token at all, and what `auth_type` then reads, is untested: both were
-sent deliberately fake credentials. The experiment that settles it is a second credential at a lower level,
-running the same probes and diffing the output row for row and field for field.
+**What a level changes.** The experiment this finding once called for, a second caller at a lower level
+diffed row for row, needs no second credential: impersonation supplies it. Measured with one script key,
+acting as itself, as an `Admin` and as an `Artist`:
+
+```
+rows projects          script:22   Admin:22   Artist:8
+rows human_users       script:25   Admin:25   Artist:25
+rows api_users         script:16   Admin:16   Artist:400 "Entity of type ApiUser can not be
+                                                          accessed by this user. Rule: Artist"
+rows versions          script:200  Admin:200  Artist:0
+rows shots             script:200  Admin:200  Artist:0
+rows published_files   script:200  Admin:200  Artist:0
+rows notes             script:200  Admin:200  Artist:0
+schema fields Version  script:71   Admin:71   Artist:71
+GET /license_info      script:200  Admin:200  Artist:401 "Must sudo as Administrator to query
+                                                          license information"
+GET /me                script:404  Admin:404  Artist:404
+```
+
+Rows collapse, fields do not, and a refusal is a 400 naming the rule or a 401 naming the level rather than an
+empty list. `/me` stays absent for a human caller too, so that finding is a property of the API and not of
+the script user who first measured it.
+
+**Unmeasured.** Which permission *rules* produce those numbers: `PermissionRuleSet` exposes no rule and the
+site's own settings are not on the REST surface, so only the effect is measurable, never the cause.
+Conditional permissions are therefore invisible here. Whether `password` or `session_token` yields a usable
+REST token at all, and what `auth_type` then reads, is still untested: both were sent deliberately fake
+credentials. Only levels the probed site has *active* can be compared, and a site whose lower-level accounts
+are all disabled measures nothing.

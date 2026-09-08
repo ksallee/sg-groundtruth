@@ -72,7 +72,9 @@ r = c.get("/license_info", params={"prefs": "hours_per_day"})
   `GET /subscription_seat/user_subscriptions` hash. On the probed site the three were 4, 24 and 14.
   Do not derive one from another.
 - `/spec.json` marks this call with the `sudo_as_login` security scope. A script token reads it
-  without one.
+  without one, and so does a token acting as an `Admin`. Acting as an `Artist` it is
+  `401` code 110 `Must sudo as Administrator to query license information`, the API naming the
+  scope in its own refusal (probe 027).
 
 **Links**
 
