@@ -4,7 +4,7 @@ endpoints: [GET /entity/<type>]
 phase: render
 scope: api
 measured: site-wide, the Status and Icon listings
-verdict: Status.icon is an entity link under relationships; display_type picks one of three renderings, and stock icons are absent from the API but reachable via the sprite in the site's own stylesheet.
+verdict: Status.icon is an entity link under relationships; display_type picks one of three renderings; url is empty unless image_data is asked for beside it; the stock sprite is in the site's own stylesheet.
 ---
 
 # 010_status_icons
@@ -61,6 +61,10 @@ unauthenticated GET /images/sg_icon_image_map.png?<hash>  -> 200  335561 bytes  
   | `image` | custom upload. `url` is a self-contained `data:image/png;base64` URI whose newlines must be stripped, and `image_data` holds the same bytes |
   | `html` | custom text badge. `html` is the label, and there is no image |
 
+- Ask for `image_data` beside `url`. `?fields=display_type,url` returns `""` for the `image`
+  rendering and the same request with `image_data` added returns the data URI, so narrowing the
+  projection is what empties the field, and `""` is indistinguishable from "this icon has no
+  image". `recipes/010` measures every combination and draws the whole picker from them.
 - `bg_color` is comma-separated RGB (`"25,118,27"`), not hex, and draws a badge on its own with no icon
   fetched: the cheapest correct rendering.
 - The `image_map` sprite is not in the API. Nothing in `/entity/icons` names a stylesheet or an image, so
