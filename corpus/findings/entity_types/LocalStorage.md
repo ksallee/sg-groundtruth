@@ -61,6 +61,20 @@ A Windows root is stored as sent, backslashes and drive letter included: `Z:\zzp
 back unchanged. That is the reverse of `PublishedFile.path`, which refuses a backslash in either
 `relative_path` or `local_path` (`recipes/004_register_published_file`).
 
+**Roots** A row may define one platform, two or all three, and one write is resolved against every
+root it defines (probe 058).
+
+| the write | what the server does |
+|---|---|
+| `{"local_path"}` under any one of the three roots | strips that root and fills all three `local_path_*` from the row |
+| `{"relative_path", "local_storage"}` | the identical read shape |
+| a `windows_path` root reached with forward slashes, `Z:/root/…` | resolves, and reads back with backslashes |
+| a path under two rows whose roots nest | the deeper root wins, in either creation order |
+| a path under two rows with the identical root | the higher id |
+
+Nothing in the response reports the choice beyond `path.local_storage` and `path_cache_storage`,
+which hold the same row.
+
 **Delete frees the name.** `DELETE /entity/local_storages/<id>` answered 204, a `GET` of the id
 answered 404, and creating a row with the same `code` answered 201. The duplicate error above names
 retired rows, and a deleted row did not block the name in practice. A schema field behaves the other
