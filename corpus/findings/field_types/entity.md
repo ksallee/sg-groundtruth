@@ -32,6 +32,8 @@ multi_entity, probe 016), but it is typed:
 | links an Asset | `{"code": "charA_art_v001", "entity.Shot.code": null}` |
 | links a Shot | `{"code": "sh010_0010_comp_v001", "entity.Shot.code": "sh010_0010"}` |
 
+A middle segment outside this field's `valid_types` drops the key at 200 rather than reading `null` (probe 059).
+
 **Write** `PUT /entity/versions/<id>` with a `{"type": ..., "id": ...}` hash; identical shape on create
 (probe 012).
 
