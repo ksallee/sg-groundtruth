@@ -200,6 +200,9 @@ published_file_type as a bare id ->
   to one), re-run it immediately before the create, and treat the answer as advisory. Production code pairs
   it with a filesystem probe of the publish directory and a retry cap because either source alone goes stale;
   that belongs in the client, and the API cannot confirm or deny what the retry found.
+- **A caller with no storage root has a second route.** The same field takes the three-call upload,
+  which puts the bytes on the site and names no LocalStorage at all
+  (`recipes/013_publish_file_bytes`). Everything below still applies to the `local` shape.
 - **Each accepted path write mints an Attachment**, on the create and again on every corrective `PUT`. The
   id is inside the `path` object. Nothing removes the previous one, so a publish loop that rewrites paths
   accumulates Attachment rows silently. Delete by `DELETE /entity/attachments/<id>`, which answered 204.

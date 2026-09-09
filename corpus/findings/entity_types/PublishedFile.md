@@ -82,10 +82,11 @@ Writing one, on create or on `PUT`:
 | `{"relative_path": "demo_show/charA.v001.ma", "local_storage": {"type": "LocalStorage", "id": N}}` | 201, the same read shape |
 | `{"url": "file:///…", "name": "charA.v001.ma"}` | 201, `link_type` `web`, six keys, no local paths |
 | the same `local_path` a second time | 201, a second row |
+| the three-call upload addressed at `path` | `link_type` `upload`, the bytes on the site and no storage named (`recipes/013_publish_file_bytes`) |
 
-`{"local_path": …}` is resolved against the site's LocalStorage rows, so read those first and send a path
-under one of the roots: `GET /entity/local_storages?fields=code,mac_path,windows_path,linux_path`. Each
-accepted write mints an Attachment that outlives the PublishedFile; delete it by the `id` inside `path`.
+`{"local_path": …}` is resolved against the site's LocalStorage rows, so read those first and send a
+path under one of their roots (`entity_types/LocalStorage`). Each accepted write mints an Attachment
+that outlives the PublishedFile; delete it by the `id` inside `path`.
 
 **Links**
 

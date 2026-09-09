@@ -57,6 +57,20 @@ the same hole as a multi_entity dotted read (probe 016). Ask for the field, not 
 | the same object plus `type` and `id` | 200, both ignored, a new Attachment id |
 | the same object into `sg_uploaded_movie_mp4` | 200 |
 
+The url itself is validated. These four were measured on `PublishedFile.path`, whose write also takes
+two other shapes (`entity_types/PublishedFile`), and the refusal is the same message a `{}` gets:
+
+| sent | result |
+|---|---|
+| `{"url": "file:///root/a folder/plate.exr"}`, a raw space | 400 `API update() invalid/missing url hash string 'url':` and the object echoed |
+| `{"url": "https://example.com/a folder/plate.exr"}`, a raw space | 400, the same message |
+| the same url with the space as `%20` | 200, stored and read back as sent |
+| a raw `U+202F` in the url | 200, percent-encoded to `%E2%80%AF` on the way in |
+| `{"url": …}` with no `name` | 200, `name` reads back as the whole url |
+
+Percent-encode a path before sending it. A raw space is the one character measured to fail, and the
+site's own rows hold their `file://` urls encoded.
+
 The url is read back exactly as sent and each accepted write mints an Attachment row, so a direct
 object publishes a link the review player will open without putting bytes on the site, with no
 transcode and no thumbnail. The derived fields take the same object, so a client can assert a
