@@ -27,7 +27,8 @@ No product code. Read-only. Every finding cited later by the code that depends o
 - [x] 007 fill rates: which Version fields are populated on recent entries
 - [x] 008 custom entities: which `CustomEntityNN` are enabled, and their display names
 - [x] 009 status lists: per-project values, and what REST cannot see or set
-- [x] 010 status icons and colours (Status entity)
+- [x] 010 status icons and colours (Status entity). The `image_map_key` sprite is not in the API and
+      is rediscovered from the site's own stylesheet: `corpus/recipes/010_status_picker.md`
 - [ ] ~~009 old~~ per-project values, and what REST cannot see or set
 
 Writes — sandbox project `comfyui-fpt sandbox` (id 1180), never BBB:
@@ -94,11 +95,6 @@ Ranking produces a shortlist with evidence. The operator confirms it; nothing he
 - Recorded demo; publish repo, `probes/findings/` becomes the public cookbook
 
 ## Open
-
-- Probe 010 resolved all three icon cases, but the sprite behind `image_map_key` is still unlocated — not
-  under `/images/*`. Standard statuses render from `bg_color` + name until it is found; check the web app's
-  CSS for the sprite reference.
-
 
 - Does ComfyUI re-evaluate `INPUT_TYPES` on refresh, or does a profile change need a restart? Decides whether
   re-inspection is live or requires a bounce.

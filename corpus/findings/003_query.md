@@ -49,3 +49,4 @@ sample row with dotted fields:
 - `sort=-id` with `page[size]`/`page[number]` behaves as documented and returns a different slice; no total count comes back with it (probe 006).
 - An unknown name in `?fields` returns 200 with the key absent, so a typo reads as "no data", not as an error; the same name in `filter[]` 400s (probe 004).
 - Asking for an entity field by bare name already yields `name` alongside `id` and `type`, so resolving a link for display costs no second call.
+- The middle segment of a dotted path is checked against the field's `valid_types` in `?fields` and against the schema in a filter, so a wrong type is a 200 with the key absent and 400s only as a filter (probe 059).
