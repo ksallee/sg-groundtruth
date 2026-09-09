@@ -136,11 +136,13 @@ What the four path shapes do, all sent to `POST /entity/published_files`:
                 Local Storage.
 ```
 
-**Storage correction, not reproduced here.** The operator claim is that the server sometimes attaches the
-wrong LocalStorage to a relative-path publish, most often on Windows where the roots are bare drive letters
-and two rows match the same path. On the probed site there is one LocalStorage row, so no path is ambiguous
-and no shape returned anything but id 3. Step 5 is written as a check rather than a fix for that reason, and
-is **unverified against a multi-storage site**. The corrective write itself does work:
+**Storage correction.** The operator claim is that the server sometimes attaches the wrong LocalStorage
+to a relative-path publish, most often on Windows where the roots are bare drive letters and two rows
+match the same path. Probe 058 measured the rule: with rows whose roots nest, the deepest matching root
+wins whatever order the rows were created in, and the reply reports the choice only as the id inside
+`path` (`findings/058_local_storage_roots`). Step 5 is the check that catches it, and it is a check
+rather than a fix because a `{"local_path"}` write cannot name the row it means. The corrective write
+does work:
 
 ```
 PUT /entity/published_files/<id>  {"path": {"relative_path": …, "local_storage": {…}}}
@@ -200,6 +202,9 @@ published_file_type as a bare id ->
   to one), re-run it immediately before the create, and treat the answer as advisory. Production code pairs
   it with a filesystem probe of the publish directory and a retry cap because either source alone goes stale;
   that belongs in the client, and the API cannot confirm or deny what the retry found.
+- **A caller with no storage root has a second route.** The same field takes the three-call upload,
+  which puts the bytes on the site and names no LocalStorage at all
+  (`recipes/013_publish_file_bytes`). Everything below still applies to the `local` shape.
 - **Each accepted path write mints an Attachment**, on the create and again on every corrective `PUT`. The
   id is inside the `path` object. Nothing removes the previous one, so a publish loop that rewrites paths
   accumulates Attachment rows silently. Delete by `DELETE /entity/attachments/<id>`, which answered 204.

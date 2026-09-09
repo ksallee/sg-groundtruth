@@ -68,4 +68,6 @@ Sizes below are from the probed site.
 - There is no cheap middle tier: anything about a type costs the `/fields` call, so drill straight to one field with `/fields/<field>` when you know the name.
 - `project_id` is accepted on both `/schema` and `/fields` and does change the body (13368 → 13395b, 48111 → 48139b), so a project-scoped schema is not the site schema. Cache the two under separate keys (see the `.schema-cache/<site>/<site|pNNN>/` split).
 - Site settings are not under `/schema`. `GET /preferences` returns 200 with 17 keys, `hours_per_day` and `duration_units` among them (`field_types/duration`).
+- Nothing in a field's block names where the field came from. `visible.editable` is the closest
+  reading and the `sg_` prefix is not one at all (probe 056).
 - Counts are site state, not API constants. On the probed site, `/schema` returned 114 types and `Version` 71 fields, against 113 and 61 on an earlier run. Measure and cache; never hardcode a count or a field list.
