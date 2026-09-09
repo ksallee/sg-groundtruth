@@ -113,7 +113,8 @@ who = json.loads(base64.urlsafe_b64decode(p + "=" * (-len(p) % 4)))["user"]   # 
 
 Then `GET /entity/api_users/<id>` or `/entity/human_users/<id>` returns `permission_rule_set` under
 `relationships` as a `{id, name, type}` hash, and `projects` as the multi_entity list that scopes the caller
-to a project subset. An empty `projects` list is site-wide access. A script that cannot decode its own token
+to a project subset. The `ApiUser` measured here reads every project with an empty list; a HumanUser with an
+empty list does not (`entity_types/HumanUser`). A script that cannot decode its own token
 can still find itself by filtering `api_users` on `firstname is <the client_id it authenticated with>`,
 because `firstname` is the script name; `_search` returned exactly one row for it.
 
