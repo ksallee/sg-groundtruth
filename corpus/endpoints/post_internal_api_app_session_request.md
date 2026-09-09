@@ -71,3 +71,4 @@ The same call with nothing in the body:
 - `endpoints/post_auth_access_token`
 - `endpoints/get_root`
 - `findings/052_app_session_launcher`
+- `findings/062_cors`
