@@ -18,6 +18,7 @@ verdict: Pages rows. An entity field is returned under `relationships` and never
 | `page[size]` | measured to 5000 with no cap reached |
 | `page[number]` | 1-based |
 | `sort` | field name, `-` for descending. An unsortable name is a 200 no-op |
+| `options[return_only]` | `retired` lists the deleted rows in place of the live ones, never both |
 
 **Sample requests**
 
