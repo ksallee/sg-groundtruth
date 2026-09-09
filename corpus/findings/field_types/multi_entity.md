@@ -19,7 +19,9 @@ listing 15. `attachment_links` is a field on `Attachment`, not on `Version`: fil
 (probe 014).
 
 **Read** Under `relationships`, never `attributes`, as `{data: [...], links: {self}}`. Each element is
-`{id, name, type}`, where `name` is the target's display name, already resolved.
+`{id, name, type}`, where `name` is the target's `cached_display_name`, already resolved and identical
+to the single-link form on every type measured (probe 060). A deleted target is removed from the list
+rather than left as a stale element.
 
 ```
 relationships.sg_ai_generated_from = {"data": [{"id": 26332, "name": "zzprobe_..._target_a",
