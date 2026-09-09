@@ -21,8 +21,11 @@ reader that only walks `attributes` sees every link as absent (probe 003, probe 
             "related": "/api/v1/entity/assets/1230"}}}
 ```
 
-`data` is `null` when unlinked. `name` is the linked row's display name, free: no second call to render a
-picker. A dotted path reads back on a single link (unlike multi_entity, probe 016), but it is typed:
+`data` is `null` when unlinked. `name` is the target's `cached_display_name`, filled on every type
+measured, so a picker needs no second call. It matches the target's identity field only because
+`cached_display_name` copies it: Delivery reads `#<id>: <title>`, and a client wanting the raw `code`
+or `content` reads the target (probe 060). A dotted path reads back on a single link (unlike
+multi_entity, probe 016), but it is typed:
 
 | row | `attributes` |
 |---|---|
@@ -79,11 +82,8 @@ one type and are advisory, while `Version.project` and `TimeLog.user` each decla
 prefix does not predict it either: `Version.source_clip` has no prefix and is advisory. Two fields on
 one type can differ, as `TimeLog.entity` and `TimeLog.user` do.
 
-A field that binds names the expected type, `<Expected> expected, got <Sent>`, at `code: 104` on the two
-Version fields; the last two rows refuse for editability, not for type. Nothing in the schema separates
-the groups: `sg_task`, `source_clip` and `task_template` each declare one valid type and only
-`task_template` refused. One type does both: `TimeLog.entity` took a Project and `TimeLog.user`
-refused one.
+A field that binds names the expected type, `<Expected> expected, got <Sent>`, at `code: 104`. The last
+two rows refuse for editability, not for type.
 
 **Clear**
 
