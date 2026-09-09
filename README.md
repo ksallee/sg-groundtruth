@@ -147,8 +147,15 @@ sandbox named in `.env.local`.
 | `dev` | where work lands. Branch from it, and open the pull request against it |
 | `main` | what a clone gets and what the site deploys from. `dev` merges here when it is ready |
 
-A release to PyPI is a published GitHub release, cut from `main`, and only when the package itself
-changed. The corpus changes far more often than the client does.
+Every merge into `main` is tagged. Two families, because the corpus changes far more often than the
+client does:
+
+| tag | when | ships |
+|---|---|---|
+| `corpus/<YYYY-MM-DD>` | any merge into `main` | nothing. A date to compare against `confirmed:` and a Flow PT release |
+| `v<version>` | `[project].version` in `pyproject.toml` changed | PyPI, through a published GitHub release on that tag |
+
+A tag alone publishes nothing: `release.yml` fires only on a published release.
 
 ## Licence
 
