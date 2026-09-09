@@ -3,7 +3,7 @@ endpoint: POST /entity/_text_search
 coverage: measured
 tags: [query, filter, header, silent]
 scope: api
-measured: sample project 1 of 1, read only
+measured: sample project 1 of 1 and the sandbox project, read only
 verdict: Free-text search across several types at once, returning a flattened row that is not the `_search` shape. `entity_types` is required and its value doubles as the per-type filter.
 ---
 
@@ -17,9 +17,10 @@ look in.
 | part | value |
 |---|---|
 | `Content-Type` | the same vendor types `_search` requires |
-| `text` | the words. Required, and it must not be empty |
+| `text` | the words. Required, and it must not be empty. Every word must match, each anywhere in a name |
 | `entity_types` | required. A map of schema name to a filter array, `[]` for no filter |
-| `page` | `{"size": n}` |
+| `page` | `{"size": n, "number": n}`. `size` is 1 to 25 and defaults to 25; `number` starts at 1 |
+| `sort` | advertised by `/spec.json`, accepted, and ignored |
 
 **Sample requests**
 
@@ -63,6 +64,9 @@ r = c.post("/entity/_text_search", headers=ARR,
 | 200 | matches, or none |
 | 400 | `source: {"entity_types": ["entity_types is missing"]}` |
 | 400 | `source: {"text": ["text must be filled"]}` for `""` |
+| 400 | `source: {"page": {"size": ["size must be less than 25"]}}` for `26` and up |
+| 400 | `source: {"page": {"size": ["size must be greater than 0"]}}` for `0` and below |
+| 400 | `source: {"page": {"number": ["number must be greater than 0"]}}` for `0` |
 | 415 | no vendor content type, naming both legal ones |
 
 **Edge cases**
@@ -73,11 +77,15 @@ r = c.post("/entity/_text_search", headers=ARR,
   `["", ""]` for a type that links to nothing. It is not an entity reference and cannot be followed.
 - `entity_types` maps a type to a filter, so one call can be scoped differently per type. That is the
   only place in the API where a filter is keyed by the type it applies to.
-- Result order across types is not the order the keys were given in.
+- The response has no `links`, so paging is `page.number` and there is nothing that says a further
+  page exists. Ask until `data` is empty.
+- `text` is matched case-insensitively against the row's name and against the name of the row under
+  `attributes.links`. It is not matched against `description`.
 
 **Links**
 
 - `endpoints/post_entity_type_search`
 - `endpoints/post_hierarchy_search`
 - `findings/046_search_without_a_path`
+- `findings/053_text_search_matching`
 - `findings/004_array_vs_hash`
