@@ -24,63 +24,16 @@ from sg_groundtruth import corpus as C  # noqa: E402
 CORPUS = ROOT / "corpus"
 DOORS = CORPUS / "doors"
 
-# The order a client meets them, so the listing itself teaches the shape of a session.
-PHASES = {
-    "auth": "getting a token, and what it is",
-    "protocol": "headers, and what a status code is worth",
-    "schema": "what the site has, and adding to it",
-    "read": "getting rows back",
-    "filter": "selecting the rows you want",
-    "write": "creating and updating",
-    "upload": "getting bytes in and out",
-    "observe": "what changed",
-    "render": "showing it to a person",
-}
-
-# Endpoints are grouped by the resource they act on, in the order a client meets
-# them, and the family is derived from the path rather than declared on the card.
-# A hand-kept list was fine at 23 endpoints and wrong at 54: a new card fell off
-# the end of it silently. `site/src/lib/content/corpus.js` holds the same rules.
-FAMILIES = ["Session", "Site", "Schema", "Records", "Search", "Media", "Attention",
-            "Webhooks", "Exports", "Other"]
-METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"]
-
-SITE_PREFIXES = ("/spec.", "/preferences", "/license_info", "/schedule/", "/subscription_seat/")
-ATTENTION = ("follow", "activity_stream", "thread_contents")
-
-
-def family(endpoint):
-    """The resource an endpoint acts on. Order matters: a path can match twice."""
-    method, _, path = endpoint.partition(" ")
-    if path == "/" or path.startswith(("/auth/", "/internal_api/app_session_request")):
-        return "Session"
-    if path.startswith(SITE_PREFIXES):
-        return "Site"
-    if path.startswith("/schema"):
-        return "Schema"
-    if "_search" in path or "_summarize" in path or path.startswith("/hierarchy/"):
-        return "Search"
-    if "_upload" in path or path.startswith(("<links.", "/transcode/")):
-        return "Media"
-    if any(k in path for k in ATTENTION):
-        return "Attention"
-    if path.startswith("/webhook"):
-        return "Webhooks"
-    if path.startswith("/exports/"):
-        return "Exports"
-    if path.startswith("/entity"):
-        return "Records"
-    return "Other"
+# The phases, the families and the shape of a door row are `sg_groundtruth.corpus`: the MCP server
+# answers out of the same doors, and a row that differs between the two is a door an agent cannot
+# follow.
+PHASES, FAMILIES, METHODS = C.PHASES, C.FAMILIES, C.METHODS
 
 
 def endpoint_key(endpoint):
     method, _, path = endpoint.partition(" ")
     rank = METHODS.index(method) if method in METHODS else len(METHODS)
-    return (FAMILIES.index(family(endpoint)), path, rank)
-
-
-def mark(e):
-    return "" if e["coverage"] == "measured" else f" **[{e['coverage']}]**"
+    return (FAMILIES.index(C.family(endpoint)), path, rank)
 
 
 # A door an agent has to page through is the cost the map was written to remove. A family over this is
@@ -101,7 +54,7 @@ def entry_door(name, title, blurb, entries):
     """One door: a heading and a one-liner per entry, then that entry's own rules."""
     out = [f"# {title}", "", blurb, ""]
     for e in entries:
-        out += [f"## {e['slug']}", "", f"{e['summary']}{mark(e)}", ""]
+        out += [f"## {e['slug']}", "", f"{e['summary']}{C.mark(e)}", ""]
         if e.get("unmeasured"):
             out += [f"not measured: {e['unmeasured']}", ""]
         rules = C.rules(e)
@@ -110,36 +63,15 @@ def entry_door(name, title, blurb, entries):
     return write(name, out)
 
 
-# The door that holds an entry's rules, so a line on an endpoint door says where to read on.
-def rules_door(e):
-    if e["group"] == "findings":
-        return f"doors/findings-{e['phase']}" if e["phase"] in PHASES else "doors/unphased"
-    return f"doors/{e['group']}"
-
-
-def call_section(card, behind, order, level="##"):
-    """One call: what the card says it takes and answers, its own edge cases, and what measured it.
-
-    The verdicts, not the rules. Copying the bullets of every entry naming a call put 18,000 tokens
-    on `POST /entity/<type>/_search` alone and made the door dearer than the index it replaced
-    (benchmark, #58). A verdict says whether the entry bears on the call; the line names the door
-    that holds its rules.
-    """
-    ep = card["endpoint"]
-    rows = sorted((e for e in behind.get(ep, []) if e["slug"] != card["slug"]), key=order)
-    out = ([f"{level} `{ep}`{mark(card)}", ""] if level else []) + [card["summary"], ""]
+def call_section(card, behind, level="##"):
+    """One call: what the card says it takes and answers, its own edge cases, and what measured it."""
+    rows = C.joined(card, behind)
+    out = ([f"{level} `{card['endpoint']}`{C.mark(card)}", ""] if level else []) + [card["summary"], ""]
     if card.get("unmeasured"):
         out += [f"not measured: {card['unmeasured']}", ""]
     rules = C.rules(card)
     out += ["\n\n".join(rules) if rules else "No edge case recorded on the card.", ""]
-    if rows:
-        out += ["**Measured by**", ""]
-        out += [f"- `{e['slug']}` ({e['group']}) — {e['summary']}  \n  rules: `{rules_door(e)}`"
-                for e in rows] + [""]
-    silent = [e for e in [card] + rows if "silent" in e["tags"]]
-    if silent:
-        out += ["**Silent on this call**", ""]
-        out += [f"- `{e['slug']}` — {e['summary']}" for e in silent] + [""]
+    out += C.measured_by(rows) + C.silent_on(card, rows)
     return out + [f"`corpus/{card['path']}`", ""]
 
 
@@ -148,7 +80,7 @@ HEAD = ("Every call in this family: what the card records, the edge cases that l
         "that entry's rules. The map is `corpus/INDEX.md`.")
 
 
-def endpoint_doors(fam, cards, behind, order):
+def endpoint_doors(fam, cards, behind):
     """One door for the family, split when it grows past what an agent should read to answer one call.
 
     A caller holds the call. What bites on it is spread over a card, findings in four phases and a
@@ -159,7 +91,7 @@ def endpoint_doors(fam, cards, behind, order):
     def door(title, rows):
         out = [f"# {title}", "", HEAD, ""]
         for card in rows:
-            out += call_section(card, behind, order)
+            out += call_section(card, behind)
         return out, len("\n".join(out))
 
     whole, size = door(f"Endpoints — {fam}", cards)
@@ -178,7 +110,7 @@ def endpoint_doors(fam, cards, behind, order):
         per_call = True
         for card in rows:
             out = [f"# `{card['endpoint']}`", "", HEAD, ""]
-            out += call_section(card, behind, order, level="")
+            out += call_section(card, behind, level="")
             names.append(write(f"endpoints-{slugify(card['endpoint'])}.md", out))
     return names, ("call" if per_call else "method")
 
@@ -227,21 +159,11 @@ def main():
         "A verified call and its real response, addressed by the task. The heading is the intent and "
         "the rules are the recipe's own **Notes**. The code is in the entry.", recipes))
 
-    # Findings first and in phase order, then the matrices, the recipes and the reports: the order a
-    # session meets them, which is the order the rules under a call are worth reading in.
-    rank = {g: i for i, g in enumerate(
-        ["findings", "field_types", "entity_types", "recipes", "reports"])}
-    phases = list(PHASES)
-
-    def order(e):
-        return (rank.get(e["group"], 9),
-                phases.index(e["phase"]) if e.get("phase") in phases else 9, e["slug"])
-
     split = {}
     for fam in FAMILIES:
-        rows = [e for e in cards if family(e["endpoint"]) == fam]
+        rows = [e for e in cards if C.family(e["endpoint"]) == fam]
         if rows:
-            names, seam = endpoint_doors(fam, rows, behind, order)
+            names, seam = endpoint_doors(fam, rows, behind)
             written.update(names)
             if seam:
                 split[fam] = seam
@@ -318,7 +240,7 @@ def index(findings, types, entities, recipes, cards, reports, by_tag, behind, sp
             "none is the queue. A family's door is `doors/endpoints-<family>.md`, in lower case.",
             ""]
     for fam in FAMILIES:
-        rows = [e for e in cards if family(e["endpoint"]) == fam]
+        rows = [e for e in cards if C.family(e["endpoint"]) == fam]
         if not rows:
             continue
         seam = {"method": f", one door per method: `doors/endpoints-{fam.lower()}-<method>.md`",

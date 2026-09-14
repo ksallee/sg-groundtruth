@@ -1,0 +1,169 @@
+#!/usr/bin/env python3
+"""Drive the MCP server over stdio and check what it answers.
+
+The gate above this one proves the server speaks. This one proves the answers are the tiers: the map,
+a door by the name the map spells, an entry's rules, a card joined to its door row, and a ranked
+search. Each check is a claim `docs/mcp.md` makes, so a claim that stops being true fails here rather
+than in a session.
+
+The ranking cases are the ones #59 measured as misses: `movie link` returned 19 entries with the one
+that mattered outside the first five, and `sort` returned 38 in file order.
+"""
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+from sg_groundtruth import corpus as C  # noqa: E402
+
+ROW_RE = re.compile(r"^- `([^`]+)` \(([a-z_]+)\)", re.M)
+# The call an agent is about to make, and the card it has to reach. Every one of these normalised to
+# the wrong card or to none before #59: a segment after an id read as a field name.
+REAL = {
+    "GET /entity/shots/1/activity_stream": "GET /entity/<type>/<id>/activity_stream",
+    "GET https://example.shotgunstudio.com/api/v1/entity/versions/53": "GET /entity/<type>/<id>",
+    "GET /entity/versions/53/sg_uploaded_movie": "GET /entity/<type>/<id>/<field>",
+    "GET /entity/human_users/12/following": "GET /entity/human_users/<user_id>/following",
+    "PUT /entity/projects/70/_update_last_accessed": "PUT /entity/projects/<id>/_update_last_accessed",
+    "POST /entity/_text_search": "POST /entity/_text_search",
+    "GET /spec.json": "GET /spec.<format>",
+}
+bad = []
+
+
+def check(name, ok, detail=""):
+    if not ok:
+        bad.append(f"{name}: {detail}" if detail else name)
+
+
+def drive(requests, overlay=False):
+    """One server process, every request, the answers in order."""
+    cmd = [sys.executable, "-m", "sg_groundtruth.mcp"] + (["--overlay"] if overlay else [])
+    p = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True,
+                       env={"PYTHONPATH": str(ROOT / "src"), "PATH": "/usr/bin:/bin"},
+                       input="".join(json.dumps(r) + "\n" for r in requests))
+    if p.returncode:
+        sys.exit(f"server exited {p.returncode}\n{p.stderr}")
+    return [json.loads(line) for line in p.stdout.splitlines() if line.strip()]
+
+
+def text(answer):
+    return answer["result"]["content"][0]["text"]
+
+
+def call(tool, **args):
+    return {"jsonrpc": "2.0", "id": 0, "method": "tools/call",
+            "params": {"name": tool, "arguments": args}}
+
+
+entries = C.load(ROOT / "corpus")
+cards = [e for e in entries if e["group"] == "endpoints"]
+doors = sorted(f.stem for f in (ROOT / "corpus" / "doors").glob("*.md"))
+
+# initialize, tools/list, then one tools/call per tool.
+reqs = [
+    {"jsonrpc": "2.0", "id": 0, "method": "initialize",
+     "params": {"protocolVersion": "2025-06-18"}},
+    {"jsonrpc": "2.0", "id": 0, "method": "tools/list"},
+    call("corpus_index"),
+    call("corpus_index", phase="read"),
+    call("corpus_door", name="findings-read"),
+    call("corpus_door", name="no-such-door"),
+    call("corpus_entry", slug="026_result_order"),
+    call("corpus_entry", slug="026_result_order", view="full"),
+    call("corpus_search", query="movie link"),
+    call("corpus_search", query="presigned expires"),
+    call("corpus_search", query="sort"),
+    call("corpus_endpoint", endpoint="POST /entity/shots/_search"),
+    call("filter_operators", data_type="date"),
+    call("filter_operators"),
+]
+reqs += [call("corpus_door", name=d) for d in doors]
+reqs += [call("corpus_endpoint", endpoint=a) for a in REAL]
+reqs += [call("corpus_endpoint", endpoint=c["endpoint"]) for c in cards]
+types = sorted(e["slug"] for e in entries if e["group"] == "field_types")
+reqs += [call("filter_operators", data_type=t) for t in types]
+out = drive(reqs)
+check("one answer per request", len(out) == len(reqs), f"{len(out)} of {len(reqs)}")
+init, listed, rest = out[0], out[1], out[2:]
+
+check("initialize", init["result"]["protocolVersion"] == "2025-06-18", init)
+tools = listed["result"]["tools"]
+check("five tools or more", len(tools) >= 5, [t["name"] for t in tools])
+check("every tool has a schema", all(t.get("inputSchema", {}).get("type") == "object" for t in tools))
+
+named = {t["name"] for t in tools}
+want = {"corpus_index", "corpus_door", "corpus_entry", "corpus_search", "corpus_endpoint",
+        "filter_operators"}
+check("the six tools", named == want, sorted(named ^ want))
+
+(index, phase, door, unknown, rules, full, movie, presigned, sort, endpoint,
+ operators, operators_all), rest = rest[:12], rest[12:]
+
+check("the map is INDEX.md", text(index) == (ROOT / "corpus" / "INDEX.md").read_text())
+check("a slice is door rows", "rules: `doors/findings-read`" in text(phase) and
+      "026_result_order" in text(phase))
+check("a door is the file", text(door) == (ROOT / "corpus" / "doors" / "findings-read.md").read_text())
+check("an unknown door lists the doors", all(d in text(unknown) for d in doors))
+check("rules is the rules", '`["id", "in", [...]]` returns id ascending' in text(rules))
+check("rules is smaller than the entry", len(text(rules)) < len(text(full)),
+      f"{len(text(rules))} vs {len(text(full))}")
+check("full is the entry", text(full).endswith((ROOT / "corpus" / "findings" /
+                                                "026_result_order.md").read_text().rstrip() + "\n")
+      or (ROOT / "corpus" / "findings" / "026_result_order.md").read_text() in text(full))
+
+for name, answer, top in (("movie link", movie, 3), ("presigned expires", presigned, 3)):
+    hits = ROW_RE.findall(text(answer))
+    check(f"{name!r} ranks field_types/url in the top {top}",
+          ("url", "field_types") in hits[:top], hits[:top])
+hits = ROW_RE.findall(text(sort))
+check("'sort' ranks 026_result_order first", hits[:1] == [("026_result_order", "findings")], hits[:1])
+check("search returns ten at most", len(hits) <= 10, len(hits))
+
+card = next(c for c in cards if c["endpoint"] == "POST /entity/<type>/_search")
+check("the card is on the endpoint answer", card["summary"] in text(endpoint))
+check("the door row is on the endpoint answer",
+      "**Measured by**" in text(endpoint) and "rules: `doors/findings-read`" in text(endpoint))
+check("silent is on the endpoint answer", "**Silent on this call**" in text(endpoint))
+check("the answer names the endpoint door",
+      "door: `doors/endpoints-search`" in text(endpoint).splitlines()[0])
+check("filter_operators", text(operators).startswith("date: "), text(operators)[:40])
+
+for name, answer in zip(doors, rest[:len(doors)]):
+    check(f"door {name}", text(answer) == (ROOT / "corpus" / "doors" / f"{name}.md").read_text())
+for (asked, want), answer in zip(REAL.items(), rest[len(doors):]):
+    card = next(c for c in cards if c["endpoint"] == want)
+    check(f"{asked} resolves to {want}", text(answer).startswith(f"corpus/{card['path']}"),
+          text(answer).splitlines()[0])
+for card, answer in zip(cards, rest[len(doors) + len(REAL):]):
+    check(f"{card['endpoint']} resolves to itself",
+          text(answer).startswith(f"corpus/{card['path']}"), text(answer)[:80])
+
+# One line per field-type card, and the per-type call agreeing with it. A type whose card records no
+# relation and no refusal reads "not recorded", which is a card to finish rather than an answer.
+listed = dict(line.split(": ", 1) for line in text(operators_all).splitlines() if ": " in line)
+check("every field type is answered", sorted(listed) == types, sorted(set(listed) ^ set(types)))
+check("no field type reads not recorded",
+      not [k for k, v in listed.items() if v == "not recorded"],
+      [k for k, v in listed.items() if v == "not recorded"])
+for t, answer in zip(types, rest[len(doors) + len(REAL) + len(cards):]):
+    check(f"filter_operators {t}", text(answer).splitlines()[0] == f"{t}: {listed.get(t)}",
+          text(answer).splitlines()[0])
+
+# The scope filter: an entry true of one installation never ships as general behaviour, and the
+# overlay is the opt-in. Checked in process because a clone with no corpus.local has nothing to
+# serve over the wire.
+sys.path.insert(0, str(ROOT / "src"))
+from sg_groundtruth import mcp  # noqa: E402
+
+check("only scope api without --overlay",
+      all(e["scope"] == "api" and e["level"] == "api" for e in mcp._load(False)))
+
+if bad:
+    print("\n".join(bad))
+    sys.exit(1)
+print(f"mcp: {len(tools)} tools, {len(doors)} doors, {len(cards)} endpoints, "
+      f"{len(reqs)} requests answered")
