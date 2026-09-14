@@ -157,7 +157,9 @@ def check_leaks(f, text):
 
 def check_register(f, text):
     """How an agent is allowed to write. Prose only; a measured value is not prose."""
-    prose = "" if f.name == "INDEX.md" else FENCE_RE.sub("", text)  # INDEX is generated   # payloads and error strings are evidence, not register
+    # INDEX.md and doors/ are generated from the entries, which are checked themselves. Fenced
+    # payloads and error strings are evidence, not register.
+    prose = "" if f.name == "INDEX.md" or f.parent.name == "doors" else FENCE_RE.sub("", text)
     for m in dict.fromkeys(x.lower() for x in BANNED_RE.findall(prose)):
         fail(f, f"banned register {m!r} — state the fact plainly (CLAUDE.md Style)")
     if "\u2014" in prose:
@@ -405,6 +407,14 @@ for f in sorted(CORPUS.rglob("*.md")):
         fail(f, f"**Actual** is {n} lines, max {ACTUAL_MAX} — trim to representative rows")
     if text.count("**Verdict**"):
         fail(f, "verdict repeated in the body; it belongs in the frontmatter only")
+
+# The map is what every session reads before it asks anything, so it is capped rather than allowed to
+# grow with the corpus. Over the cap, a list belongs on a door and the map keeps the names.
+INDEX_MAX = 8000
+index_file = CORPUS / "INDEX.md"
+if index_file.is_file() and index_file.stat().st_size > INDEX_MAX:
+    fails.append(f"corpus/INDEX.md is {index_file.stat().st_size} bytes, max {INDEX_MAX}. It names "
+                 f"every entry and routes to a door; anything longer belongs on the door")
 
 for t_, entries in sorted(tag_census.items()):
     if t_ not in CLASS_TAGS and len(entries) > TAG_MAX:

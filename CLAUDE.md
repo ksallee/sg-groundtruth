@@ -17,7 +17,13 @@ Derive only from public Flow PT REST docs and this repo's own probes.
 response, the edge cases that live on the call. Produced by probes.
 `corpus/reports/`: behaviour that should change, written for the team that owns the API. Written by hand
 from findings, never by a probe.
-`corpus/INDEX.md`: generated. Read this first, always. Open an entry only when its one-liner falls short.
+`corpus/INDEX.md`: generated, capped at 8 KB. Read this first, always. It names every entry and which
+door answers what you hold.
+`corpus/doors/`: generated. One line per entry and that entry's rules, copied whole: one door per
+findings phase, one for the field types, the entity types, the recipes, the reports and the tags, and
+one per endpoint family. An endpoint door carries the edge cases that live on the call, the verdict of
+every entry that measured it, and the group door holding that entry's rules. Open an entry when a rule
+needs its transcript, its sample or its table.
 
 **Four ways in, one per thing a caller already knows.** An agent about to make a call holds the call, the
 entity type, the field's `data_type` and the task. Three of those had a door and the fourth did not:
@@ -142,7 +148,7 @@ The REST docs are incomplete and sometimes wrong. Probe, record, then code again
 - Never rewrite an API error, a MIME type, a field name or a file extension. Those are the teaching content.
 - Every probe that produces a usable call also records a recipe
 - `python probes/check_corpus.py` then `python probes/index.py` after any probe
-- Tags drive retrieval, so the vocabulary must not drift. Reuse an existing tag from `corpus/INDEX.md` or add
+- Tags drive retrieval, so the vocabulary must not drift. Reuse an existing tag from `corpus/doors/tags.md` or add
   one deliberately. Singular, lowercase: `version`, not `versions` or `Version`. The two selection rules
   above are enforced, and so is the 25-entry cap.
 - Every finding and recipe names its `endpoints:`. A call with no card in `corpus/endpoints/` is a card to

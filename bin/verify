@@ -30,10 +30,14 @@ run() {
 # The frontmatter contract: scope, measured, endpoints, tags, and the banned register.
 run corpus python probes/check_corpus.py
 
-# INDEX.md is generated and committed. A stale one is the failure the index exists to prevent,
-# since an agent is told to read it first and stop at the one-liner.
+# INDEX.md and corpus/doors/ are generated and committed. A stale one is the failure the index
+# exists to prevent, since an agent is told to read the map first and the door after it. A door the
+# generator no longer writes is litter an agent would still read, so untracked ones fail too.
 python probes/index.py > /dev/null 2>&1
-run index-current git diff --exit-code --quiet corpus/INDEX.md
+run index-current bash -c '
+  git diff --exit-code -- corpus/INDEX.md corpus/doors || exit 1
+  new=$(git ls-files --others --exclude-standard corpus/doors)
+  [ -z "$new" ] || { echo "not committed: $new"; exit 1; }'
 
 # The client is what comfyui-flow-production-tracking installs. A wheel that builds and does not
 # import is the failure that blocks it, and no amount of running from this clone would show it.
