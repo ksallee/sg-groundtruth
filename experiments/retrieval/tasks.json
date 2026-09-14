@@ -1,0 +1,207 @@
+[
+  {
+    "id": "weekly-report",
+    "task": "Every Monday we send a client a status report for one project. Write report.csv, one row per Version, columns version, status, shot, created_by, created_at, movie. Sort oldest first, print the total on its own line, then attach report.csv to the project's most recent Note and print the id of what you attached.",
+    "source": "experiments/weekly-report/BRIEF.md, graded against SCORECARD.md traps 1-5, 7, 8",
+    "plan": {
+      "calls": ["GET /entity/<type>", "POST /entity/<type>/_search", "POST /entity/<type>/_summarize"],
+      "entity_types": ["Version", "Shot", "Note", "Attachment"],
+      "data_types": ["entity", "url", "status_list", "date_time"],
+      "phases": ["read", "upload"]
+    },
+    "required": [
+      "corpus/findings/006_pagination.md",
+      "corpus/findings/026_result_order.md",
+      "corpus/findings/003_query.md",
+      "corpus/findings/field_types/url.md",
+      "corpus/findings/013_upload_media.md",
+      "corpus/findings/014_attach_file.md"
+    ]
+  },
+  {
+    "id": "movie-link",
+    "task": "Put a link to each Version's uploaded movie in a CSV we email to a client. The link has to still work when they open it on Tuesday.",
+    "source": "experiments/weekly-report/SCORECARD.md trap 5, the one trap that separated the arms",
+    "plan": {
+      "calls": ["GET /entity/<type>", "POST /entity/<type>/_search"],
+      "entity_types": ["Version", "Attachment"],
+      "data_types": ["url"],
+      "phases": ["read"]
+    },
+    "required": [
+      "corpus/findings/field_types/url.md",
+      "corpus/findings/013_upload_media.md"
+    ]
+  },
+  {
+    "id": "attach-to-note",
+    "task": "Attach a report file to a Note so the client finds it in context, print the id of what you attached, and read it back to prove the bytes are there.",
+    "source": "experiments/weekly-report/SCORECARD.md traps 7 and 8",
+    "plan": {
+      "calls": ["POST /entity/<type>/_search"],
+      "entity_types": ["Note", "Attachment"],
+      "data_types": [],
+      "phases": ["upload"]
+    },
+    "required": [
+      "corpus/findings/014_attach_file.md",
+      "corpus/findings/039_upload_silent_failures.md"
+    ]
+  },
+  {
+    "id": "entity-dict-name",
+    "task": "Our naming template holds a bare {entity} token. Render the display name of whatever row a Version's entity field points at, whether that is a Shot, an Asset or a Task, without a branch per type.",
+    "source": "issue #7",
+    "plan": {
+      "calls": ["GET /entity/<type>/<id>", "POST /entity/<type>/_search"],
+      "entity_types": ["Version", "Shot", "Asset", "Task"],
+      "data_types": ["entity", "multi_entity"],
+      "phases": ["read"]
+    },
+    "required": [
+      "corpus/findings/060_entity_dict_name.md",
+      "corpus/findings/field_types/entity.md"
+    ]
+  },
+  {
+    "id": "status-icon",
+    "task": "Draw the status picker a project actually offers: every status with its label, its colour and its real icon. Our client asks for display_type, url and html and gets an empty url for the one custom icon on the site.",
+    "source": "issue #9, items 1 and 2",
+    "plan": {
+      "calls": ["POST /entity/<type>/_search", "GET /schema/<Type>/fields/<field>"],
+      "entity_types": ["Status", "Icon"],
+      "data_types": ["status_list"],
+      "phases": ["render"]
+    },
+    "required": [
+      "corpus/findings/010_status_icons.md",
+      "corpus/recipes/010_status_picker.md"
+    ]
+  },
+  {
+    "id": "dotted-path-type",
+    "task": "A naming template can hold entity.Asset.code. Decide whether writing that against a Shot is an error we can catch or silently fine.",
+    "source": "issue #9, item 3",
+    "plan": {
+      "calls": ["GET /entity/<type>", "POST /entity/<type>/_search"],
+      "entity_types": ["Version", "Shot", "Asset"],
+      "data_types": ["entity"],
+      "phases": ["read"]
+    },
+    "required": [
+      "corpus/findings/059_dotted_path_type_check.md",
+      "corpus/findings/003_query.md"
+    ]
+  },
+  {
+    "id": "publish-across-platforms",
+    "task": "A Mac artist publishes a sequence and a Linux farm reads it back. Register the PublishedFile so both sides resolve a path, pick the right storage root when there are several, and make our own filter on path_cache find the rows we published.",
+    "source": "issue #10",
+    "plan": {
+      "calls": ["POST /entity/<type>", "PUT /entity/<type>/<id>", "GET /entity/<type>/<id>", "POST /entity/<type>/_search"],
+      "entity_types": ["PublishedFile", "LocalStorage"],
+      "data_types": ["url"],
+      "phases": ["write"]
+    },
+    "required": [
+      "corpus/findings/058_local_storage_roots.md",
+      "corpus/findings/021_media_resolution.md",
+      "corpus/findings/entity_types/PublishedFile.md",
+      "corpus/findings/entity_types/LocalStorage.md",
+      "corpus/recipes/004_register_published_file.md"
+    ]
+  },
+  {
+    "id": "publish-bytes-no-root",
+    "task": "Ship a template anyone can open: publish a file's bytes against a PublishedFile when the caller has no LocalStorage root at all, and read those bytes back later.",
+    "source": "issue #17, item 1",
+    "plan": {
+      "calls": ["POST /entity/<type>", "GET /entity/<type>/<id>"],
+      "entity_types": ["PublishedFile", "Attachment"],
+      "data_types": ["url"],
+      "phases": ["upload"]
+    },
+    "required": [
+      "corpus/recipes/013_publish_file_bytes.md",
+      "corpus/findings/field_types/url.md",
+      "corpus/findings/entity_types/PublishedFile.md"
+    ]
+  },
+  {
+    "id": "stock-vs-custom",
+    "task": "Decide, from one read per type, which of a client's fields we can depend on existing everywhere and which ones that site invented.",
+    "source": "issue #17, item 2",
+    "plan": {
+      "calls": ["GET /schema/<Type>/fields"],
+      "entity_types": ["PublishedFile", "Version"],
+      "data_types": [],
+      "phases": ["schema"]
+    },
+    "required": [
+      "corpus/findings/056_stock_vs_custom_field.md",
+      "corpus/findings/002_schema.md"
+    ]
+  },
+  {
+    "id": "impersonate",
+    "task": "Act as a named person from a script key, so a write is attributed to them, and make the client say which of the refusals it got.",
+    "source": "issues #36 and #42",
+    "plan": {
+      "calls": ["POST /auth/access_token"],
+      "entity_types": ["HumanUser"],
+      "data_types": [],
+      "phases": ["auth"]
+    },
+    "required": [
+      "corpus/findings/027_auth_permissions.md",
+      "corpus/findings/entity_types/HumanUser.md",
+      "corpus/endpoints/post_auth_access_token.md"
+    ]
+  },
+  {
+    "id": "create-a-person",
+    "task": "Create a HumanUser for a new artist over REST, and decide which people we are allowed to act as.",
+    "source": "issue #37",
+    "plan": {
+      "calls": ["POST /entity/<type>", "GET /entity/<type>"],
+      "entity_types": ["HumanUser"],
+      "data_types": [],
+      "phases": ["write"]
+    },
+    "required": [
+      "corpus/findings/entity_types/HumanUser.md"
+    ]
+  },
+  {
+    "id": "sign-in-as-a-person",
+    "task": "Sign a person into our tool with no script key and no password: they approve it once in a browser, and we hold a token that is theirs.",
+    "source": "issue #45",
+    "plan": {
+      "calls": ["POST /auth/access_token"],
+      "entity_types": ["HumanUser"],
+      "data_types": [],
+      "phases": ["auth"]
+    },
+    "required": [
+      "corpus/findings/052_app_session_launcher.md",
+      "corpus/recipes/012_sign_in_as_a_person.md",
+      "corpus/endpoints/post_internal_api_app_session_request.md",
+      "corpus/endpoints/put_internal_api_app_session_request_id.md"
+    ]
+  },
+  {
+    "id": "text-search",
+    "task": "One search box over a show: type a few letters and get Shots, Assets and Versions back in one call, paged.",
+    "source": "issue #48",
+    "plan": {
+      "calls": ["POST /entity/_text_search", "POST /entity/<type>/_search"],
+      "entity_types": ["Shot", "Asset", "Version"],
+      "data_types": [],
+      "phases": ["filter"]
+    },
+    "required": [
+      "corpus/findings/053_text_search_matching.md",
+      "corpus/endpoints/post_entity_text_search.md"
+    ]
+  }
+]
