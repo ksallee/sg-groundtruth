@@ -64,21 +64,22 @@ There is no `DisplayColumn` type, and `Page` has no field naming a column.
 
 - A site-level page is a `Page` whose `project` is null, and nothing else about it differs. Both kinds
   read from the same endpoint, both hold `PageSetting` rows of the same shape, and both take the same
-  filters. The two are told apart by `project` alone, so `filter[project.Project.id]=N` returns a
+  filters.
+- The two are told apart by `project` alone, so `filter[project.Project.id]=N` returns a
   project's pages and `[["project","is",null]]` returns the site-level ones. Send the string `"null"`
   to the flat filter and it 400s with `got String: "null"`; the operator wants a real null.
 - `PageSetting.settings_json` is `text` in the schema and decoded JSON in the response, so parse nothing.
-  Two shapes come back under one field: an object is the page's shared layout and its `user` is null,
+- Two shapes come back under one field: an object is the page's shared layout and its `user` is null,
   an array is one user's override and its `user` is set. Read `[["page","is",{...}],["user","is",null]]`
   to get the shared one and ignore the rest, or a personal column order will read as the page's.
 - The shared layout is a widget tree of `{type, settings, children}`. `children.body.settings` holds
   `entity_type`, `mode`, `sorts`, `grouping` and `filters`; `children.body.children.list_content.settings`
-  holds `columns` in display order, plus `column_widths` and `column_display_names`. The override array
-  is `[{spec_path, settings}]`, where `spec_path` is that same tree path with `|` between the segments,
+  holds `columns` in display order, plus `column_widths` and `column_display_names`.
+- The override array is `[{spec_path, settings}]`, where `spec_path` is that same tree path with `|` between the segments,
   so `body|list_content` patches the grid.
 - `columns` are schema field names, usable in `?fields` as they stand, and a dotted path such as
-  `created_by.HumanUser.email` appears among them. Some are stale or web-only: on the probed site, 5 of
-  the 21 list pages in one project named a column absent from that type's `/schema/<Type>/fields`.
+  `created_by.HumanUser.email` appears among them.
+- Some are stale or web-only: on the probed site, 5 of the 21 list pages in one project named a column absent from that type's `/schema/<Type>/fields`.
   `?fields` answers 200 and drops a name the type does not have, so a stale column costs a missing key
   rather than an error. Check the list against `/schema/<Type>/fields` to know which columns you lost.
 - `filters` is the web condition tree (`path`, `relation`, `values`, `logical_operator`), not the

@@ -52,7 +52,8 @@ DELETE -> 204, empty body. GET the same id -> 404
 
 **Teaches**
 - There is no conditional write. `If-Match`, `If-Unmodified-Since` and `If-None-Match` are ignored and the
-  update applies at 200, though a `GET` returns a weak `ETag`; echoing `updated_at` back is refused with
+  update applies at 200, though a `GET` returns a weak `ETag`.
+- Echoing `updated_at` back is refused with
   `API update() Task.updated_at is editable on create only.` So a read-then-write guard narrows the race
   window and never closes it, and exactness needs serialisation outside the API (`recipes/005`).
 
@@ -69,8 +70,8 @@ DELETE -> 204, empty body. GET the same id -> 404
 | `DELETE /entity/<type>/{id}` | 204, empty body | everything | the id answers 404 from then on |
 
 - **Trap.** `?fields` on a write is accepted and ignored, plain names and dotted paths alike, with no error, the
-  same quiet drop a bogus `?fields` name gets on a read (probe 004). The reported create-versus-update
-  asymmetry is real but inverted: the create response is the thin one. Neither verb resolves
+  same quiet drop a bogus `?fields` name gets on a read (probe 004).
+- The reported create-versus-update asymmetry is real but inverted: the create response is the thin one. Neither verb resolves
   `project.Project.name` or `entity.Shot.code`, and both return the link's own `name` under `relationships`,
   so a second call is needed only for a linked entity's other fields.
 - On the probed site a Version create answers 9 attributes and 15 relationships and an update answers 52
@@ -90,6 +91,6 @@ DELETE -> 204, empty body. GET the same id -> 404
   site a 16x16 PNG thumbnail stayed at `/images/status/transient/thumbnail_pending.png` past t+21s and
   resolved by t+42s, so poll on the path prefix and never on elapsed time.
 - **Unsettled.** One team reports a newly created Version's linked-entity field reading back empty at the
-  moment of its own creation event, and built a diagnostic to fail loudly on it. This repo has no event
-  listener, so the claim is untested here and a negative result would prove nothing. Settling it needs a
+  moment of its own creation event, and built a diagnostic to fail loudly on it.
+- This repo has no event listener, so the claim is untested here and a negative result would prove nothing. Settling it needs a
   listener reading the entity from inside the event callback and comparing against a read a second later.

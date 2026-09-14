@@ -78,29 +78,31 @@ an operator string as the first element, and a fourth element on a triple. `["id
 - **Depth stops at 265 groups, loudly.** 266 is `500 {"title": "Shotgun Server Error", "source": null}`,
   repeatably, with no `source` to read. Nothing is silently truncated below that: the control, an
   `and` of two disjoint conditions at the innermost level, returns 0 at every depth from 1 to 265,
-  where a dropped inner group would return the full page. The limit is depth, not payload: one flat
-  `or` group of 5000 conditions at 90090 bytes is 200.
+  where a dropped inner group would return the full page.
+- The limit is depth, not payload: one flat `or` group of 5000 conditions at 90090 bytes is 200.
 - **A query-string `filter[]` on `POST _search` is read by nothing.** `?filter[id]=863` alongside a body
   filter selecting row 862 returns row 862; `?filter[project.Project.id]=<p1>` alongside a body filter
-  selecting a row in another project returns that other row. A misspelled `?filter[zzz_not_a_field]=1`
-  is 200, where the same name in a body filter is 400 (probe 004). The same parameter on the `GET`
+  selecting a row in another project returns that other row.
+- A misspelled `?filter[zzz_not_a_field]=1` is 200, where the same name in a body filter is 400 (probe 004). The same parameter on the `GET`
   listing endpoint filters correctly, so the two endpoints take their filters in different places and
   a client moving from `GET` to `_search` must move the filter into the body.
 - **The `{path, relation, values}` object runs nowhere over REST.** It is rejected as a condition inside
   a group, as the whole `filters` value, under both Content-Types, and on `_summarize` as well as
-  `_search`. It is the web interface's storage format only (probe 023) and the rollup definition format
+  `_search`.
+- It is the web interface's storage format only (probe 023) and the rollup definition format
   (`field_types/summary`), so converting a saved page's filters into a query is a translation, never a
   pass-through: rewrite each leaf `{"path": p, "relation": r, "values": v}` as a triple and keep the
-  `logical_operator` groups as they stand. The group's own extra keys are tolerated: `filter_name`,
+  `logical_operator` groups as they stand.
+- The group's own extra keys are tolerated: `filter_name`,
   `filter_id` and an unknown key alongside triple conditions are all 200. The leaf's are not, so drop
   them rather than appending; `active` and `top_level_project_filter` both appear (`recipes/003`).
-  `v[0]` is right only where the relation takes a scalar. `in_last` and `in_next` take the whole list,
+- `v[0]` is right only where the relation takes a scalar. `in_last` and `in_next` take the whole list,
   and passing the first element alone is 400 `expects a 2-element array: [4]` (`recipes/003`), so the
   translator branches on the relation rather than flattening every leaf the same way.
 - One group holds mixed operators and mixes leaf conditions with sub-groups as siblings, which is what
   the stored page trees do. `and [["project","is",<p1>], {"or": [id is 862, id is 863]}]` returns 2 and
-  the same with an inner `and` returns 0. Dotted paths work inside a nested group, and an error inside
-  one is reported as at the top level: a bogus operator 400s with the field's `Valid relations` list,
+  the same with an inner `and` returns 0.
+- Dotted paths work inside a nested group, and an error inside one is reported as at the top level: a bogus operator 400s with the field's `Valid relations` list,
   a bogus field with `API read() Shot.sg_not_a_field doesn't exist.`
 
 **Python equivalent** `shotgun_api3` spells the same tree with different keys: `filter_operator` for

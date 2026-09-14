@@ -82,24 +82,26 @@ The four production uses, measured:
 - **`meta` holds the answer and refuses every query.** `old_value` and `new_value` exist only where
   `meta.type` is `attribute_change`; `new_entity`, `entity_retirement` and `entity_revival` hold
   `entity_id` and `entity_type` and no values at all, and a preference change has no `meta.type` and the
-  keys `old`, `new`, `pref`. Since `serializable` is unfilterable and unsortable (`field_types/serializable`),
-  select rows by `entity`, `event_type` and `attribute_name`, order by `-id`, and inspect `meta` client-side.
-  To restore a previous status: take the newest matching entry, check `meta.new_value` equals the value
+  keys `old`, `new`, `pref`.
+- Since `serializable` is unfilterable and unsortable (`field_types/serializable`), select rows by `entity`, `event_type` and `attribute_name`, order by `-id`, and inspect `meta` client-side.
+- To restore a previous status: take the newest matching entry, check `meta.new_value` equals the value
   the entity holds now, then write `meta.old_value`. A mismatch means something changed since, and the
   entry is stale.
 - **A created entry cannot be deleted, so never write one to a real site.** `POST` with `project` alone
   answers 201, invents `description: "New Event"`, and leaves `event_type`, `attribute_name`, `meta`,
-  `user` and `entity` null. Every one of those is then refused on `PUT` by a per-field permission rule,
-  and `DELETE` is refused by `PermissionRule 297`. This probe spent its one create on the minimal body and
-  stopped, so **whether `event_type` or `meta` can be set in the create body is unmeasured**: testing it
-  costs another permanent row. One row from this probe survives in the sandbox project of the probed site.
-  A ledger built here is append-only with no way to correct or retract an entry. Both refusals name a
-  role and a rule number, `API Admin -- PermissionRule 297`, so a script user in a different role may be
-  permitted more; check the error before concluding the API forbids it everywhere.
+  `user` and `entity` null.
+- Every one of those is then refused on `PUT` by a per-field permission rule, and `DELETE` is refused by
+  `PermissionRule 297`. Both refusals name a role and a rule number, `API Admin -- PermissionRule 297`, so
+  a script user in a different role may be permitted more; check the error before concluding the API
+  forbids it everywhere.
+- This probe spent its one create on the minimal body and stopped, so **whether `event_type` or `meta` can
+  be set in the create body is unmeasured**: testing it costs another permanent row. One row from this
+  probe survives in the sandbox project of the probed site. A ledger built here is append-only with no way
+  to correct or retract an entry.
 - **Ids are reserved ahead of use and committed late.** On the probed site the newest 500 rows spanned 738
   ids with 9 gaps, the largest 33 wide, while every 1001-id window at depth 10000 or more was 100% dense.
-  Gaps close, so they are held blocks and not deletions. A cursor that stores `max(id)` and asks for
-  `id greater_than <that>` loses whatever later lands in the gaps it passed. Track a low-water mark instead:
+  Gaps close, so they are held blocks and not deletions.
+- A cursor that stores `max(id)` and asks for `id greater_than <that>` loses whatever later lands in the gaps it passed. Track a low-water mark instead:
   re-scan a window behind the head, or drive the feed from `created_at` and deduplicate on `id`.
 - **`entity` goes null when its target is deleted; `meta` remembers.** On the probed site 12889 of 17778
   `Shotgun_Shot_Change` rows have `entity` null, and each names a `meta.entity_id` whose Shot now 404s.
@@ -112,8 +114,9 @@ The four production uses, measured:
 - **Narrowing works on everything but `meta`.** On the probed site the unfiltered log holds 2462044 rows,
   one project 22811, one Shot 2. `event_type` takes `starts_with` and `in`, `created_at` takes `in_last`
   and `between`, and `entity` takes a `{type, id}` hash, `type_is`, and a dotted path such as
-  `entity.Shot.code`. `attribute_name` alone is site-wide across every entity type, so pair it with
-  `event_type` or `entity`. A sort on `meta`, on `audit_trail` or on a name the type does not have is
+  `entity.Shot.code`.
+- `attribute_name` alone is site-wide across every entity type, so pair it with `event_type` or `entity`.
+- A sort on `meta`, on `audit_trail` or on a name the type does not have is
   accepted and ignored, falling back to ascending `id`, so a client cannot tell an ignored sort from a
   satisfied one.
 

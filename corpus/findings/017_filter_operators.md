@@ -54,8 +54,10 @@ an operator that does not exist
 ```
 
 **Teaches**
-- An unknown operator 400s on every data type: 21 of 21 reachable read-only. `source` names the field's whole legal vocabulary on 16 of them. The other five, `calculated`, `password`, `serializable`, `summary` and `url`, answer `data type cannot be used in a filter.` and enumerate nothing, because they take no operator at all. A bogus `?fields` name is the opposite, dropped at HTTP 200 (probe 004), so a filter typo can never masquerade as "no filter".
-- **A write can be accepted at 200 and silently discarded.** `cached_display_name` takes a write and drops it (`field_types/text.md`), `Task.splits` stores `null` for any well-formed payload (`field_types/serializable.md`), and the `multi_entity` update modes spelled in the query string return 200 and replace the whole list (`field_types/multi_entity.md`). An invalid operator, by contrast, 400s on all 21 data types tried.
+- An unknown operator 400s on every data type: 21 of 21 reachable read-only. `source` names the field's whole legal vocabulary on 16 of them. The other five, `calculated`, `password`, `serializable`, `summary` and `url`, answer `data type cannot be used in a filter.` and enumerate nothing, because they take no operator at all.
+- A bogus `?fields` name is the opposite, dropped at HTTP 200 (probe 004), so a filter typo can never masquerade as "no filter".
+- **A write can be accepted at 200 and silently discarded.** `cached_display_name` takes a write and drops it (`field_types/text.md`), `Task.splits` stores `null` for any well-formed payload (`field_types/serializable.md`), and the `multi_entity` update modes spelled in the query string return 200 and replace the whole list (`field_types/multi_entity.md`).
+- An invalid operator, by contrast, 400s on all 21 data types tried.
 - Every negative control returns 0 rather than the baseline, so these operators are applied, not ignored.
 - `in` takes a plain list for scalars, but on an entity field it needs full `{type, id}` hashes: `[{id: N}]` 400s with `invalid/missing entity hash string 'type'` and bare ints 400 with `expected [Hash, ...] but got Integer`.
 - `contains` through a dotted path (`entity.Shot.code`) makes server-side type-ahead over names one call, with no client-side scan.

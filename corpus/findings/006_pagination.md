@@ -48,9 +48,10 @@ asking for a total, one row requested each time:
 - `links.next` is not a terminator: it is present on empty pages too, so "follow next until absent" is an infinite loop. Stop on an empty `data` array.
 - Only the stop signal is wrong. Explicit `page[number]` walks the set, and the short final page returns the remainder.
 - No total is in a paged read. A GET returns `['data', 'links']` and no `meta` key, and `links` holds only
-  `self` and `next`, never `last`. Five option spellings (`options[return_paging_info]`,
-  `options[include_paging_info]`, `page[totals]`, `include_count`, `meta[total]`) are accepted at 200 and
-  change nothing; `page[size]=0` is 400 `size must be greater than 0`. POST `_search` with
-  `options.return_paging_info` returns the same two keys.
+  `self` and `next`, never `last`. POST `_search` with `options.return_paging_info` returns the same two
+  keys.
+- Five option spellings (`options[return_paging_info]`, `options[include_paging_info]`, `page[totals]`,
+  `include_count`, `meta[total]`) are accepted at 200 and change nothing; `page[size]=0` is 400
+  `size must be greater than 0`.
 - For "n of N", count with one POST `/entity/<type>/_summarize` and `{"field": "id", "type": "count"}`,
   which returned `{"summaries": {"id": 100}}` against the 100 rows the walk above found (probe 020).
