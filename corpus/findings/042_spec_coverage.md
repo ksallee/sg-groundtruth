@@ -47,8 +47,8 @@ cards with no operation in the spec: PUT <links.upload>, POST <links.complete_up
   documentation is unnecessary and, here, wrong.
 - **The spec and the published reference disagree.** The reference documents
   `PUT /entity/{entity}/{record_id}/_revive`, `POST .../_upload_complete`,
-  `PATCH /schema/{entity}/fields/{field}` and `PATCH /preferences`. This site's spec has none of those
-  spellings, and has `PUT /schema/<type>/fields/<field>` and `PUT /preferences/update` instead. Probe
+  `PATCH /schema/{entity}/fields/{field}` and `PATCH /preferences`.
+- This site's spec has none of those spellings, and has `PUT /schema/<type>/fields/<field>` and `PUT /preferences/update` instead. Probe
   041 measured the `PUT` on a schema field working. Read the spec, not the reference.
 - `servers[0].url` ends in `/api/v1.1`. Every recorded call in this corpus was made against `/api/v1`.
   Probe 051 swept 20 read-only calls under both prefixes: the two are the same API, differing only in

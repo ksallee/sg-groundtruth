@@ -97,8 +97,8 @@ DELETE -> 204, then GET 404, deliveries 404, DELETE again 404
 - **On the probed site, entity events reach no hook, and this is not a REST problem.** A hook created
   in the web interface and one created over REST behave identically: `active`, correctly subscribed,
   and no delivery record for any entity change or for `test_connection`, while `Webhook_Status_Change`
-  on the same hook in the same minute records normally. Two public endpoints were tried, a tunnel
-  proven reachable in-process and webhook.site. So the delivery recorder runs and the entity-event
+  on the same hook in the same minute records normally.
+- Two public endpoints were tried, a tunnel proven reachable in-process and webhook.site. So the delivery recorder runs and the entity-event
   feed into it does not. Diagnose a silent hook by toggling its status: a record proves the pipeline
   is alive and isolates the fault to the event feed.
 - Because no entity event was delivered, `X-SG-SIGNATURE`, the entity payload, the

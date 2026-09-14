@@ -110,8 +110,8 @@ run([{"request_type": "delete", "entity": "Version", "record_id": ids[0]},
   then send the children. Steps 1 and 2 above are that sequence.
 - **Results are in request order**, one row per request, interleaved by neither id nor type. A batch of
   `[update 29926, create, update 29927, create, update Shot 7557]` answered in exactly that order, so
-  `zip(requests, response["data"])` is correct and no key matching is needed. Two creates sending the same
-  `code` came back as two rows distinguished only by position and by the new ids, 29930 and 29931.
+  `zip(requests, response["data"])` is correct and no key matching is needed.
+- Two creates sending the same `code` came back as two rows distinguished only by position and by the new ids, 29930 and 29931.
 - **One failing request rolls back every other one.** Each round below sent a good create, one bad
   request, and an update of an existing row whose `description` read `before`:
 
@@ -126,16 +126,18 @@ run([{"request_type": "delete", "entity": "Version", "record_id": ids[0]},
 - **A batch create skips the validation a single create applies, and the row it makes is unreadable.**
   `POST /entity/versions` with no `project` is 400 `API create() missing 'project' attribute: {"code" => "v001"}`.
   The same create inside a batch answered 200 with `id` 29932 and a create row holding no `project`
-  relationship. `GET /entity/versions/29932` then answered 404 `Version: 29932 not found`, and a site-wide
+  relationship.
+- `GET /entity/versions/29932` then answered 404 `Version: 29932 not found`, and a site-wide
   `POST /entity/versions/_search` on its `code` returned 0 rows. `DELETE /entity/versions/29932` answered
-  204, so the row exists and only the id from the create response can reach it. Validate a batch payload
-  yourself; a 200 is not proof the row is addressable. A link to an id that does not exist is rejected on
+  204, so the row exists and only the id from the create response can reach it.
+- Validate a batch payload yourself; a 200 is not proof the row is addressable. A link to an id that does not exist is rejected on
   both paths, 400 `Update failed for [Version.entity]: Value is not legal.`
 - **Size.** No cap was found. A `requests` array of 5001 was validated in full, answering one
-  `data hash containing field/value pairs is required for the given request` per element. On the probed
-  site a committing batch of 200 answered in 11.7s, 500 in 31.0s and 1001 in 47.7s on one run and not at
+  `data hash containing field/value pairs is required for the given request` per element.
+- On the probed site a committing batch of 200 answered in 11.7s, 500 in 31.0s and 1001 in 47.7s on one run and not at
   all on another, where the client gave up at its own 60s read timeout. **All 1001 rows had committed
-  anyway.** A read timeout tells you nothing about what landed, and there is no request id to ask about,
+  anyway.**
+- A read timeout tells you nothing about what landed, and there is no request id to ask about,
   so keep a batch inside the response window, around 200 requests, and make each chunk re-runnable by
   reading back on `code` before resending.
 - **The contract, one 400 at a time.** Every rejection below names what it wanted.

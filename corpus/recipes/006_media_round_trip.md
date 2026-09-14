@@ -154,7 +154,8 @@ Poll `sg_uploaded_movie_transcoding_status` until it leaves 0 if the far end nee
   with no transcode and no thumbnail. Moving the bytes is the only transfer that survives.
 - **The signature expires, and re-reading the field is the fix.** The window is `X-Amz-Expires`
   seconds from `X-Amz-Date`, and the number is not a constant: two reads one second apart returned
-  847 and 900. Both reads returned different strings for the same Attachment, so a client that
+  847 and 900.
+- Both reads returned different strings for the same Attachment, so a client that
   outlives its url re-reads the field and starts the transfer again rather than retrying the string.
   A string held 706 seconds past expiry 403s `AccessDenied` (`field_types/image`). Persist the
   Attachment id or the Version id; never the url.

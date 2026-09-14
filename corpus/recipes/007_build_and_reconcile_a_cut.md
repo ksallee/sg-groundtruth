@@ -318,24 +318,25 @@ offers `code`, `shot`, `version` and the six numbers to decide it on, and enforc
 - **An id alone does not say which Cut a row is on.** `code` repeats across Cuts:
   `[["code", "is", "reel1_sh010"]]` returned items `(46, cut 19)` and `(53, cut 20)`. A blind
   `PUT /entity/cut_items/53` with no `cut` key answered 200, left `cut` at 20, and overwrote that Cut's
-  metadata. Before updating, confirm the row's Cut: filter on `cut` when reading, or ask for
+  metadata.
+- Before updating, confirm the row's Cut: filter on `cut` when reading, or ask for
   `cut.Cut.id` in `fields` and drop every id that does not match. A dotted read through this single
   `entity` field works, unlike one through a multi_entity field (probe 016).
 - **Sending `cut` in an update moves the item.** `PUT` with `{"cut": {"type": "Cut", "id": other}}`
   answers 200 and the item leaves its old Cut. So does the other side:
   `PUT /entity/cuts/<a>` with `{"cut_items": {"multi_entity_update_mode": "add", "value": [...]}}`
-  answered 200 and left the item's former Cut holding `[]`. `CutItem.cut` is single-valued, so an
-  `add` on the parent is a re-parent, not an addition.
+  answered 200 and left the item's former Cut holding `[]`.
+- `CutItem.cut` is single-valued, so an `add` on the parent is a re-parent, not an addition.
 - **`Cut.cut_items` is not the running order.** It is returned sorted by the item's display name:
   `['aaa_last', 'sh010', 'sh020', 'sh030', 'sh030_gap', 'sh030_overlap']` against `cut_order`
-  `1, 2, 3, 4, 5, 6` on the same six rows. Read the items with
-  `POST /entity/cut_items/_search`, `[["cut", "is", {"type": "Cut", "id": N}]]`, `sort: "cut_order"`.
+  `1, 2, 3, 4, 5, 6` on the same six rows.
+- Read the items with `POST /entity/cut_items/_search`, `[["cut", "is", {"type": "Cut", "id": N}]]`, `sort: "cut_order"`.
   A `null` `cut_order` sorts last in both directions.
 - **No frame rate is reachable from a CutItem.** `Cut.fps` is the only rate on either type, it is
   `null` until someone writes it, and no CutItem field points at the Cut's value. Read `Cut.fps` once
-  and pass it down; `float` reads back as a string, so `float()` it (`field_types/float`). Drop frame
-  is expressible only inside the `text` fields, which validate nothing, so the client owns that flag
-  too.
+  and pass it down; `float` reads back as a string, so `float()` it (`field_types/float`).
+- Drop frame is expressible only inside the `text` fields, which validate nothing, so the client owns
+  that flag too.
 - **Deleting a Cut does not delete its CutItems.** `DELETE /entity/cuts/<id>` answered 204 and the
   item survived with `cut` `null`, reachable only through
   `[["project", "is", ...], ["cut", "is", None]]`. Delete the items first. A delete inside a batch is

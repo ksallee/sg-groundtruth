@@ -72,7 +72,7 @@ unauthenticated GET /images/sg_icon_image_map.png?<hash>  -> 200  335561 bytes  
 - `image_map_key` is a CSS class. On the probed site the rule is in the web app's
   `/dist/production/stylesheets/login.css` and points at `/images/sg_icon_image_map.png?<hash>` with a
   per-icon background offset (`div.icon_apr` -> `-89px -11px`); both answered a GET with no
-  `Authorization` header at 200. Those two paths are undocumented and were found by reading the site's own
-  stylesheet, so a client must rediscover them the same way. Fetch the page's stylesheet, match
-  `.<image_map_key>`, and take the `url()` and the offset from the rule. Hardcoding either path breaks on a
-  differently-versioned deployment.
+  `Authorization` header at 200.
+- Those two paths are undocumented and were found by reading the site's own stylesheet, so a client must
+  rediscover them the same way. Fetch the page's stylesheet, match `.<image_map_key>`, and take the `url()`
+  and the offset from the rule. Hardcoding either path breaks on a differently-versioned deployment.

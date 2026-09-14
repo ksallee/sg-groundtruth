@@ -61,11 +61,13 @@ what a sort on a field that cannot be sorted does.
   low-cardinality status, each returned every row once, in the order of the same query read unpaged.
 - Sorts fail silently where filters fail loudly (probe 017). A `summary` field, a `url` field and a
   name that does not exist all return 200 with the rows in default order; the same three names in a
-  filter 400 and name the reason. Only sort *syntax* errors: an empty value, a space, a leading `+`.
+  filter 400 and name the reason.
+- Only sort *syntax* errors: an empty value, a space, a leading `+`.
   There is no way to detect a dropped sort from the response, so verify a sort field against
   `/schema/<Type>/fields` before relying on it.
 - Multi-key sort is comma separated with `-` per key, and id ascending is the implicit tiebreak:
   `sg_status_list,id` returned the identical page to `sg_status_list` while `sg_status_list,-id` did
-  not. A dotted path sorts (`entity.Shot.code` here, and site-wide `project.Project.name` reverses
+  not.
+- A dotted path sorts (`entity.Shot.code` here, and site-wide `project.Project.name` reverses
   under `-`). POST `_search` takes `"sort"` only as the same string; the array-of-objects spelling
   400s `sort array is not valid`.
