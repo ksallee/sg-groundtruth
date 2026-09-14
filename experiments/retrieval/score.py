@@ -242,10 +242,21 @@ def tag_forms(name):
     return {name.lower(), hyphen, hyphen.replace("-", "")}
 
 
+def door_name(call):
+    """The file `probes/index.py` writes for a call's family: lower case, and Records split by
+    method because the family passed 32 KB whole. The built form used the title-case family and
+    read no endpoint door at all when the real ones existed, which is why the first re-run of
+    this scorer reported recall falling on merge of #56."""
+    fam = family(call).lower()
+    if fam == "records":
+        return f"endpoints-records-{call.partition(' ')[0].lower()}"
+    return f"endpoints-{fam}"
+
+
 def doors_named(plan, doors, opts):
     names = set() if opts["no_recipes"] else {"recipes"}
     for call in plan["calls"]:
-        names.add(f"endpoints-{family(call)}")
+        names.add(door_name(call))
     for ph in plan["phases"]:
         names.add(f"findings-{ph}")
     if plan["entity_types"]:
@@ -289,6 +300,26 @@ def score(task, entries, doors, map_text, opts):
         opened |= members
     out["doors"] = {"door": {p for p in required if p in opened}, "entry": set(),
                     "tokens": tokens(chars), "read": ["map"] + names}
+
+    # `follow` is the map's own protocol. The endpoint door for each call, whole, since it is
+    # verdicts; the rule block of every entity type and data type the plan holds; then the rows
+    # the agent picks from those verdicts, which is judgment, so it is given the required set the
+    # way `index` is. Recall is scored at the verdict tier: was the required entry's verdict in
+    # front of the agent before it chose. Reading every row a hub call names instead is `doors`.
+    chars, seen = len(map_text), set()
+    for n in sorted({door_name(c) for c in plan["calls"]} & set(doors)):
+        text, members = assemble(doors[n], None)
+        chars += len(text)
+        seen |= members
+    cards = {f"corpus/findings/entity_types/{t}.md" for t in plan["entity_types"]}
+    cards |= {f"corpus/findings/field_types/{t}.md" for t in plan["data_types"]}
+    cards = {p for p in cards if p in entries}
+    seen |= cards
+    chars += sum(len(entries[p]["rules"]) for p in cards | set(required) if p in entries)
+    out["follow"] = {"door": {p for p in required if p in seen}, "entry": set(),
+                     "tokens": tokens(chars),
+                     "read": ["map, the calls' endpoint doors, the plan's cards, then the rows "
+                              "the verdicts name"]}
 
     hits = grep_matches(plan, entries)
     out["grep"] = {"door": {p for p in required if p in {e["path"] for e in hits}}, "entry": set(),
@@ -337,22 +368,23 @@ def main():
         print(f"\n### {t['id']}\n\nFrom {t['source']}.\n")
         print("| strategy | door-tier recall | entry-tier recall | tokens | read |")
         print("|---|---|---|---|---|")
-        for name in ("index", "doors", "grep"):
+        for name in ("index", "doors", "follow", "grep"):
             r = s[name]
             print(f"| `{name}` | {pct(r['door'], t['required'])} | {pct(r['entry'], t['required'])}"
                   f" | {r['tokens']:,} | {', '.join(r['read'])} |")
-        for name in ("doors", "grep"):
+        for name in ("doors", "follow", "grep"):
             missed = sorted(set(t["required"]) - s[name]["door"])
             if missed:
                 print(f"\n`{name}` missed: {', '.join(missed)}")
 
     print("\n## Summary\n")
     print("| task | required | `index` tokens | `doors` recall | `doors` tokens | "
-          "`grep` recall | `grep` tokens |")
-    print("|---|---|---|---|---|---|---|")
+          "`follow` recall | `follow` tokens | `grep` recall | `grep` tokens |")
+    print("|---|---|---|---|---|---|---|---|---|")
     for t, s in rows:
         print(f"| {t['id']} | {len(t['required'])} | {s['index']['tokens']:,} | "
               f"{pct(s['doors']['door'], t['required'])} | {s['doors']['tokens']:,} | "
+              f"{pct(s['follow']['door'], t['required'])} | {s['follow']['tokens']:,} | "
               f"{pct(s['grep']['door'], t['required'])} | {s['grep']['tokens']:,} |")
     n = len(rows)
     req = sum(len(t["required"]) for t, _ in rows)
@@ -360,9 +392,10 @@ def main():
     tok = lambda k: sum(s[k]["tokens"] for _, s in rows)
     print(f"| **all {n}** | {req} | {tok('index'):,} | "
           f"{hit('doors')}/{req} ({round(100 * hit('doors') / req)}%) | {tok('doors'):,} | "
+          f"{hit('follow')}/{req} ({round(100 * hit('follow') / req)}%) | {tok('follow'):,} | "
           f"{hit('grep')}/{req} ({round(100 * hit('grep') / req)}%) | {tok('grep'):,} |")
     print(f"\nmean tokens per task: index {round(tok('index') / n):,}, "
-          f"doors {round(tok('doors') / n):,}, grep {round(tok('grep') / n):,}")
+          f"doors {round(tok('doors') / n):,}, follow {round(tok('follow') / n):,}, grep {round(tok('grep') / n):,}")
     print(f"doors: {source}" + ", one call's block" * opts["per_call"]
           + ", no recipes door" * opts["no_recipes"])
 
