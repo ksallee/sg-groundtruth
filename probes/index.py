@@ -5,10 +5,10 @@ a caller can already address them, and says which door to open. It is capped at 
 `check_corpus.py`, because a map that grows with the corpus is a fixed cost every session pays before
 asking anything.
 
-A door carries one line per entry and that entry's rules, copied whole. The endpoint doors also carry
-the join: the rules of every entry naming a call, whatever group it lives in. The one retrieval miss a
-consumer filed was a rule sitting in a recipe while the agent read the finding, and no door led from
-one to the other.
+A group door carries one line per entry and that entry's rules, copied whole. An endpoint door carries
+the join: the verdict of every entry naming a call, whatever group it lives in, and the group door its
+rules are on. The one retrieval miss a consumer filed was a rule sitting in a recipe while the agent
+read the finding, and no door led from one to the other.
 
 The section each group states its rules in is spelled in `sg_groundtruth.corpus`, not here.
 """
@@ -83,8 +83,8 @@ def mark(e):
     return "" if e["coverage"] == "measured" else f" **[{e['coverage']}]**"
 
 
-# A door an agent has to page through is the cost the map was written to remove. A family whose join
-# passes this is written one door per call instead; the map says so and names the calls.
+# A door an agent has to page through is the cost the map was written to remove. A family over this is
+# written one door per method, and a method still over it one door per call; the map says which.
 DOOR_MAX = 32 * 1024
 
 
@@ -97,11 +97,11 @@ def write(name, lines):
     return name
 
 
-def entry_door(title, blurb, entries, heading=lambda e: e["slug"], name=None):
+def entry_door(name, title, blurb, entries):
     """One door: a heading and a one-liner per entry, then that entry's own rules."""
     out = [f"# {title}", "", blurb, ""]
     for e in entries:
-        out += [f"## {heading(e)}", "", f"{e['summary']}{mark(e)}", ""]
+        out += [f"## {e['slug']}", "", f"{e['summary']}{mark(e)}", ""]
         if e.get("unmeasured"):
             out += [f"not measured: {e['unmeasured']}", ""]
         rules = C.rules(e)
@@ -156,13 +156,13 @@ def endpoint_doors(fam, cards, behind, order):
     which keeps the reads together and the writes together; a method group still over the cap splits
     again, one door per call.
     """
-    def door(name, title, rows):
+    def door(title, rows):
         out = [f"# {title}", "", HEAD, ""]
         for card in rows:
             out += call_section(card, behind, order)
         return out, len("\n".join(out))
 
-    whole, size = door(fam, f"Endpoints — {fam}", cards)
+    whole, size = door(f"Endpoints — {fam}", cards)
     if size <= DOOR_MAX or len(cards) == 1:
         return [write(f"endpoints-{fam.lower()}.md", whole)], ""
 
@@ -171,7 +171,7 @@ def endpoint_doors(fam, cards, behind, order):
         rows = [c for c in cards if c["endpoint"].split(" ", 1)[0] == method]
         if not rows:
             continue
-        lines, size = door(method, f"Endpoints — {fam}, {method}", rows)
+        lines, size = door(f"Endpoints — {fam}, {method}", rows)
         if size <= DOOR_MAX or len(rows) == 1:
             names.append(write(f"endpoints-{fam.lower()}-{method.lower()}.md", lines))
             continue
@@ -205,30 +205,27 @@ def main():
         rows = [e for e in findings if e["phase"] == phase]
         if rows:
             written.add(entry_door(
-                f"Findings — {phase}: {blurb}",
+                f"findings-{phase}.md", f"Findings — {phase}: {blurb}",
                 "How the API behaves in this part of a session. Each rule is the entry's own "
-                "**Teaches**, copied whole.",
-                rows, name=f"findings-{phase}.md"))
+                "**Teaches**, copied whole.", rows))
     stray = [e for e in findings if e["phase"] not in PHASES]
     if stray:
-        written.add(entry_door("Findings — unphased", "A finding whose `phase:` names no part of a "
-                              "session. Fix the key on the entry.", stray, name="unphased.md"))
+        written.add(entry_door(
+            "unphased.md", "Findings — unphased",
+            "A finding whose `phase:` names no part of a session. Fix the key on the entry.", stray))
 
     written.add(entry_door(
-        "Field types",
+        "field_types.md", "Field types",
         "One per `data_type`: how it reads, writes, clears and filters. Each rule is the card's own "
-        "**Traps**, copied whole. The matrices behind them are in the cards.",
-        types, name="field_types.md"))
+        "**Traps**, copied whole. The matrices behind them are in the cards.", types))
     written.add(entry_door(
-        "Entity types",
+        "entity_types.md", "Entity types",
         "One per standard entity type: what it is, how it is identified, created and linked. Each "
-        "rule is the card's own **Traps**, copied whole.",
-        entities, name="entity_types.md"))
+        "rule is the card's own **Traps**, copied whole.", entities))
     written.add(entry_door(
-        "Recipes",
+        "recipes.md", "Recipes",
         "A verified call and its real response, addressed by the task. The heading is the intent and "
-        "the rules are the recipe's own **Notes**. The code is in the entry.",
-        recipes, name="recipes.md"))
+        "the rules are the recipe's own **Notes**. The code is in the entry.", recipes))
 
     # Findings first and in phase order, then the matrices, the recipes and the reports: the order a
     # session meets them, which is the order the rules under a call are worth reading in.
