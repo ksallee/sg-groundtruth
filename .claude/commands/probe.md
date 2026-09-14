@@ -46,7 +46,7 @@ the finding, where a reader can see what was cut, not at the point of capture.
 
 ```markdown
 ---
-tags: [reuse an existing tag from corpus/INDEX.md; singular, lowercase]
+tags: [reuse an existing tag from corpus/doors/tags.md; singular, lowercase]
 endpoints: [every call this covers, spelled as its card in corpus/endpoints/ spells it]
 phase: auth|protocol|schema|read|filter|write|upload|observe|render
 scope: api|site|project
@@ -106,7 +106,7 @@ one for that data type (probe 017). Do that first; it is cheaper and more comple
 
 ```markdown
 ---
-tags: [reuse tags from corpus/INDEX.md; may be empty]
+tags: [reuse tags from corpus/doors/tags.md; may be empty]
 scope: api|site|project
 measured: where the evidence was taken. Copy the line `_lib.emit` prints
 coverage: omit when every call was made and answered; else partial or untested
@@ -213,7 +213,7 @@ beginning "On the probed site, ...". What a stock field is called and how the ty
 
 ```markdown
 ---
-tags: [reuse tags from corpus/INDEX.md; may be empty]
+tags: [reuse tags from corpus/doors/tags.md; may be empty]
 scope: api
 measured: where the evidence was taken. Copy the line `_lib.emit` prints
 coverage: omit when every call was made and answered; else partial or untested

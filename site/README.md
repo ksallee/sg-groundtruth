@@ -44,7 +44,8 @@ is checked by `checkEndpoints`, which throws when an entry spells an endpoint no
 broken join fails the build rather than rendering a page that quietly lists less.
 
 `/findings` groups by the `phase:` key rather than by number, in the order a client meets them. `PHASES` in
-`src/lib/content/corpus.js` is that order, and `probes/index.py` holds the same list for `corpus/INDEX.md`.
+`src/lib/content/corpus.js` is that order, and `probes/index.py` holds the same list for `corpus/INDEX.md` and
+for the door it writes per phase.
 
 `corpus/findings/`, `corpus/findings/field_types/`, `corpus/findings/entity_types/`, `corpus/recipes/`
 and `corpus/endpoints/` each become a route. A `README.md` in one of those directories documents the

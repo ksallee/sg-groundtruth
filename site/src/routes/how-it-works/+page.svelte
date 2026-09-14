@@ -107,10 +107,11 @@
 		<p>Nothing to install. Clone it and give an agent one line.</p>
 		<pre>git clone {REPO}</pre>
 		<pre>Read sg-groundtruth/corpus/INDEX.md first.
-Open an entry only when its one-liner falls short.</pre>
+Open the door it names for the rules, and an entry only when a rule needs its evidence.</pre>
 		<p class="note">
-			{kb(data.indexBytes)} KB, generated. One line per entry: name, verdict, tags. The corpus behind
-			it is much larger.
+			{kb(data.indexBytes)} KB, generated: every entry by name, and which door answers the thing you
+			already hold. A door under <code>corpus/doors/</code> carries one line per entry and that
+			entry's rules, copied whole. The entries behind them are much larger.
 		</p>
 	</section>
 
