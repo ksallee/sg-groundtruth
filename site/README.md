@@ -44,7 +44,8 @@ is checked by `checkEndpoints`, which throws when an entry spells an endpoint no
 broken join fails the build rather than rendering a page that quietly lists less.
 
 `/findings` groups by the `phase:` key rather than by number, in the order a client meets them. `PHASES` in
-`src/lib/content/corpus.js` is that order, and `probes/index.py` holds the same list for `corpus/INDEX.md`.
+`src/lib/content/corpus.js` is that order, and `probes/index.py` holds the same list for `corpus/INDEX.md` and
+for the door it writes per phase.
 
 `corpus/findings/`, `corpus/findings/field_types/`, `corpus/findings/entity_types/`, `corpus/recipes/`
 and `corpus/endpoints/` each become a route. A `README.md` in one of those directories documents the
@@ -236,6 +237,7 @@ Leave these alone unless the pipeline itself is the problem.
 | `src/lib/site.js` | repo URL, the overlay directory a reader is told to create, and the one this build read |
 | `src/lib/content/filters.js` | the operator vocabulary read out of each field-type card, and the families it groups them into |
 | `src/lib/content/markdown.js` | the shipped file behind an entry, verbatim, and the `.md` URL it is served at |
+| `src/lib/content/doors.js` | the generated doors: what each one is a way in to, and the order the map lists them in |
 | `src/lib/content/agents.js` | `llms.txt`, the section twins, the sitemap and robots |
 | `src/lib/components/ReportStatus.svelte` | the five keys a report carries that no other group does |
 | `svelte.config.js`, `vite.config.js`, `vercel.json` | build and deploy |
@@ -265,6 +267,8 @@ list what they hold: field types, entity types, filters, recipes, findings. The 
 | `/findings/[slug]` | one finding in full |
 | `/reports` | every report as a table: kind, status and the date each was last confirmed |
 | `/reports/[slug]` | one report in full, under a block naming its evidence |
+| `/doors` | every door, grouped the way the map groups them, with what each holds and how large it is |
+| `/doors/[name]` | one door rendered, which is `corpus/doors/<name>.md` and nothing else |
 | every list and `[slug]` above | grows with the reading level; a local-only entry is a row in the list it belongs to and a page under it |
 | `/how-it-works` | pointing a model at the index, running the probes, the scope field, enabling it for your site, the reading level, using it alongside an MCP server |
 
@@ -293,8 +297,9 @@ client has to know how to rewrite.
 
 | route | is |
 |---|---|
-| `/llms.txt` | every published entry, one line each: name, the URL of its markdown, its verdict, and its coverage where it is not `measured`. The four doors and what each frontmatter key selects are above the list |
-| `/[section].md` | one section's rows, under the grouping its page draws: findings by phase, endpoints by family |
+| `/llms.txt` | the map: every entry by name with the URL of its markdown, and the door to open for each way in. The protocol above the list is the one `corpus/INDEX.md` gives a clone, in the same words |
+| `/doors/[name].md` | `corpus/doors/<name>.md` byte for byte. A door carries no frontmatter, because it is generated and what selects it is its name |
+| `/[section].md` | one section's rows, under the grouping its page draws: findings by phase, endpoints by family, and the doors holding that group's rules |
 | `/<section>/[slug].md` | `corpus/<dir>/<slug>.md` byte for byte, frontmatter included |
 | `/sitemap.xml` | every rendered page, and no twin |
 | `/robots.txt` | allow everything, and where the sitemap is |
@@ -304,8 +309,8 @@ Every one of them is prerendered, so a twin is a file in `build/` and no server 
 The frontmatter stays on a twin because it is the retrieval key: `scope`, `phase`, `endpoints`, `tags`
 and `coverage` are what a client selects on, and a body without them is less than the repository holds.
 
-`src/lib/content/markdown.js` reads the files and owns the `.md` URL of an entry. `agents.js` builds the
-four generated routes on top of it and `corpus.js`. The group directory is written down once, in
+`src/lib/content/markdown.js` reads the files and owns the `.md` URL of an entry, `doors.js` does the
+same for `corpus/doors/`, and `agents.js` builds the generated routes on top of them and `corpus.js`. The group directory is written down once, in
 `GROUPS` in `sources.js`: a second copy beside the markup is what put a dead
 `corpus/findings/get_root.md` behind every endpoint card's source link.
 
@@ -476,10 +481,15 @@ it, so they read as heads. The markdown is untouched.
   `corpus/findings/026_result_order.md` byte for byte, so an overlay a build merges into the HTML is
   absent from the markdown. One name, one set of bytes, wherever it is read from. A twin exists only
   where a shipped file does: a local-only subject has a page and no `.md`.
-- **`/llms.txt` is the whole index, not a table of contents.** 44 KB, one line per entry with its
-  verdict and the URL of its markdown, which is one fetch rather than a crawl. The section twins carry
-  the same rows under the grouping their pages draw, for a client that already knows which section it
-  wants.
+- **`/llms.txt` is the map, not the corpus again.** It was 51 KB, one line per entry with its verdict,
+  which is the index a second time over HTTP. It is now every entry by name with the URL of its
+  markdown, and the door to open for each way in, in the words `corpus/INDEX.md` uses. The verdicts it
+  dropped are on the doors, one tier down. The section twins still carry a verdict per row, for a client
+  that already knows which section it wants.
+- **A door is served as written.** `/doors/<name>` renders `corpus/doors/<name>.md` and rewrites
+  nothing in it, so the page and the `.md` are the same content and a reader can see what an agent
+  reads. The doors are not in the sidebar: a door is a tier, not a sixth group of entries, and `/doors`
+  is where that is explained. The footer links it on every page.
 - **The sitemap lists the rendered pages and never the twins.** A sitemap addresses a reader and
   `llms.txt` addresses a client; listing both spellings of one page asks a crawler to fetch it twice.
 - **Typography is system faces.** `--font-text` and `--font-mono` are one line each in `tokens.css`.

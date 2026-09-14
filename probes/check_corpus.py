@@ -157,7 +157,9 @@ def check_leaks(f, text):
 
 def check_register(f, text):
     """How an agent is allowed to write. Prose only; a measured value is not prose."""
-    prose = "" if f.name == "INDEX.md" else FENCE_RE.sub("", text)  # INDEX is generated   # payloads and error strings are evidence, not register
+    # INDEX.md and doors/ are generated from the entries, which are checked themselves. Fenced
+    # payloads and error strings are evidence, not register.
+    prose = "" if f.name == "INDEX.md" or f.parent.name == "doors" else FENCE_RE.sub("", text)
     for m in dict.fromkeys(x.lower() for x in BANNED_RE.findall(prose)):
         fail(f, f"banned register {m!r} — state the fact plainly (CLAUDE.md Style)")
     if "\u2014" in prose:
@@ -165,6 +167,39 @@ def check_register(f, text):
     for w in dict.fromkeys(CAPS_RE.findall(TICK_RE.sub("", prose))):
         if w not in CAPS_OK:
             fail(f, f"ALL-CAPS emphasis {w!r} — capitals are for API literals only (CLAUDE.md Style)")
+
+
+def check_bullets(f, text):
+    """Cap a rule bullet at 400 chars. The doors serve these verbatim, so a bullet's length is what
+    an agent pays per rule. Over the cap it is two rules in one, or a table wearing a bullet.
+
+    A bullet runs from its `- ` to the next top-level bullet, blank line or heading, continuation
+    lines included.
+    """
+    cap = 400
+    head = {"findings": "**Teaches**", "field_types": "**Traps**", "entity_types": "**Traps**",
+            "recipes": "## Notes"}.get(f.parent.name)
+    if not head or f.name == "README.md" or (
+            f.parent.name == "findings" and not f.stem[:1].isdigit()):
+        return
+    lines = text.splitlines()
+    if head not in lines:
+        return
+    label = re.compile(r"^\*\*[^*]+\*\*$")        # a section label, not a bold lead mid-line
+    bullets, cur = [], []
+    for ln in lines[lines.index(head) + 1:]:
+        if re.match(r"^#{1,2} ", ln) or label.match(ln.strip()):   # the next section, not a
+            break                                                  # subsection inside this one
+        if ln.startswith(("- ", "#")) or not ln.strip():
+            bullets.append(cur)
+            cur = [ln] if ln.startswith("- ") else []
+        elif cur:
+            cur.append(ln)
+    for b in bullets + [cur]:
+        n = len("\n".join(b))
+        if n > cap:
+            fail(f, f"bullet under {head} is {n} chars, max {cap}. Split it, or make it a table: "
+                    f"{b[0][2:62]}...")
 
 
 def check_report(f, head, text):
@@ -228,6 +263,7 @@ for f in sorted(CORPUS.rglob("*.md")):
     text = f.read_text()
     check_leaks(f, text)
     check_register(f, text)
+    check_bullets(f, text)
 
     is_type = f.parent.name in ("field_types", "entity_types")
     is_recipe = f.parent.name == "recipes"
@@ -371,6 +407,14 @@ for f in sorted(CORPUS.rglob("*.md")):
         fail(f, f"**Actual** is {n} lines, max {ACTUAL_MAX} — trim to representative rows")
     if text.count("**Verdict**"):
         fail(f, "verdict repeated in the body; it belongs in the frontmatter only")
+
+# The map is what every session reads before it asks anything, so it is capped rather than allowed to
+# grow with the corpus. Over the cap, a list belongs on a door and the map keeps the names.
+INDEX_MAX = 8000
+index_file = CORPUS / "INDEX.md"
+if index_file.is_file() and index_file.stat().st_size > INDEX_MAX:
+    fails.append(f"corpus/INDEX.md is {index_file.stat().st_size} bytes, max {INDEX_MAX}. It names "
+                 f"every entry and routes to a door; anything longer belongs on the door")
 
 for t_, entries in sorted(tag_census.items()):
     if t_ not in CLASS_TAGS and len(entries) > TAG_MAX:

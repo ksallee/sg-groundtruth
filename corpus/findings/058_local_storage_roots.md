@@ -57,17 +57,17 @@ PUT /entity/published_files/<id> {"version_number": 2}, six times
 - **One create fills every platform the row defines.** A Mac artist publishing under `mac_path` gives
   a Linux farm a working `local_path_linux` in the same write, and the join runs the same way for a
   path given under the Linux or Windows root: the server strips whichever root matched and re-joins
-  the remainder onto all three. `local_path_windows` comes back with backslashes and the drive letter
-  exactly as the row spells them, even though a backslash in the request is refused
-  (`recipes/004_register_published_file`). A platform reading null is a root the row leaves unset
-  (probe 021), never a property of the write.
+  the remainder onto all three.
+- `local_path_windows` comes back with backslashes and the drive letter exactly as the row spells them,
+  even though a backslash in the request is refused (`recipes/004_register_published_file`).
+- A platform reading null is a root the row leaves unset (probe 021), never a property of the write.
 - **A Windows root is matched with forward slashes.** `Z:/zzprobe_058_a/seq/plate.v001.exr` resolved
   against `windows_path` `Z:\zzprobe_058_a`, so a client normalises separators before sending and
   still reaches a drive-letter root.
 - **The deepest matching root wins, not the oldest row.** With `/zzprobe_058_n` and
   `/zzprobe_058_n/sub` both defined, a path under `sub` resolved to the `sub` row in both creation
   orders, so id order does not decide it. Two rows on the identical root resolved to the higher id.
-  A client that means one specific storage sends `{"relative_path", "local_storage"}`, which names it
+- A client that means one specific storage sends `{"relative_path", "local_storage"}`, which names it
   outright, rather than `{"local_path"}`.
 - **Nothing in the response signals the choice beyond the id.** `path.local_storage` and
   `path_cache_storage` hold the same row and there is no confidence, no candidate list and no warning,

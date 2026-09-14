@@ -107,10 +107,11 @@
 		<p>Nothing to install. Clone it and give an agent one line.</p>
 		<pre>git clone {REPO}</pre>
 		<pre>Read sg-groundtruth/corpus/INDEX.md first.
-Open an entry only when its one-liner falls short.</pre>
+Open the door it names for the rules, and an entry only when a rule needs its evidence.</pre>
 		<p class="note">
-			{kb(data.indexBytes)} KB, generated. One line per entry: name, verdict, tags. The corpus behind
-			it is much larger.
+			{kb(data.indexBytes)} KB, generated: every entry by name, and which door answers the thing you
+			already hold. A door under <code>corpus/doors/</code> carries one line per entry and that
+			entry's rules, copied whole. The entries behind them are much larger.
 		</p>
 	</section>
 
@@ -118,11 +119,11 @@ Open an entry only when its one-liner falls short.</pre>
 		<h2>Fetch it</h2>
 		<p>
 			Or do not clone at all. Every page here has a markdown twin at its own URL with
-			<code>.md</code> appended, and <a href="/llms.txt"><code>/llms.txt</code></a> is every published
-			entry in one file.
+			<code>.md</code> appended, and <a href="/llms.txt"><code>/llms.txt</code></a> is the map: every
+			entry by name, and the <a href="/doors">door</a> to open for each way in.
 		</p>
 		<pre>Read {ORIGIN}/llms.txt first.
-Fetch an entry's .md only when its one-liner falls short.</pre>
+Open the door it names for the rules, and an entry only when a rule needs its evidence.</pre>
 		<div class="scroll-x">
 			<table>
 				<thead>
@@ -132,8 +133,15 @@ Fetch an entry's .md only when its one-liner falls short.</pre>
 					<tr>
 						<td><a href="/llms.txt"><code>/llms.txt</code></a></td>
 						<td>
-							{kb(data.llmsBytes)} KB. Every entry, one line each: its name, its verdict, and the URL
-							of its markdown
+							{kb(data.llmsBytes)} KB. The map: every entry by name with the URL of its markdown,
+							and the door to open for each way in
+						</td>
+					</tr>
+					<tr>
+						<td><a href="/doors/field_types.md"><code>/doors/field_types.md</code></a></td>
+						<td>
+							One door: a line per entry and that entry's rules, copied whole. Every door is on
+							<a href="/doors">/doors</a>
 						</td>
 					</tr>
 					<tr>

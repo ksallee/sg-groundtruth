@@ -121,5 +121,5 @@ the Version was returned in `versions`. `project` places the playlist, not its c
 - The stock read-only fields are `created_at`, `created_by`, `external_share_count`, `id`,
   `image_blur_hash`, `image_source_entity`, `locked_at`, `locked_by`,
   `media_center_viewed_by_current_user_at`, `open_notes`, `open_notes_count`, `updated_at`, `updated_by`.
-  They 400 with two different messages: `API update() Playlist.id is read only.` and
+- They 400 with two different messages: `API update() Playlist.id is read only.` and
   `API update() Playlist.created_at is editable on create only.`

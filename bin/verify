@@ -30,10 +30,14 @@ run() {
 # The frontmatter contract: scope, measured, endpoints, tags, and the banned register.
 run corpus python probes/check_corpus.py
 
-# INDEX.md is generated and committed. A stale one is the failure the index exists to prevent,
-# since an agent is told to read it first and stop at the one-liner.
+# INDEX.md and corpus/doors/ are generated and committed. A stale one is the failure the index
+# exists to prevent, since an agent is told to read the map first and the door after it. A door the
+# generator no longer writes is litter an agent would still read, so untracked ones fail too.
 python probes/index.py > /dev/null 2>&1
-run index-current git diff --exit-code --quiet corpus/INDEX.md
+run index-current bash -c '
+  git diff --exit-code -- corpus/INDEX.md corpus/doors || exit 1
+  new=$(git ls-files --others --exclude-standard corpus/doors)
+  [ -z "$new" ] || { echo "not committed: $new"; exit 1; }'
 
 # The client is what comfyui-flow-production-tracking installs. A wheel that builds and does not
 # import is the failure that blocks it, and no amount of running from this clone would show it.
@@ -59,6 +63,11 @@ tools = json.loads(sys.stdin.readline())[\"result\"][\"tools\"]
 assert len(tools) >= 5, tools
 "'
 
+# What the server answers, not only that it answers: the map, a door by the name the map spells, an
+# entry's rules, a card joined to its door row, and the three searches #59 measured as misses. Every
+# claim in docs/mcp.md is a check in there, so a claim that stops being true fails here.
+run mcp-answers bin/check-mcp
+
 # Braces in a <pre> are a Svelte expression, which is why the corpus is rendered with marked and
 # not mdsvex. It is a build error, so the build is the check.
 #
@@ -69,10 +78,19 @@ run site-builds bash -c 'cd site && PUBLIC_OVERLAY_SOURCE=corpus.absent npm run 
 run site-types bash -c 'cd site && npx --no-install svelte-check --threshold error'
 
 # The generated half of the machine door is linked from no page, so check-links cannot see it and an
-# agent fetching /llms.txt would get the 404 page and conclude the corpus is not on the site.
+# agent fetching /llms.txt would get the 404 page and conclude the corpus is not on the site. The doors
+# are checked against corpus/doors/ rather than a list here: a door the generator writes and the site
+# does not build is a name on the map that 404s, which is the one thing the map cannot afford.
 run site-doors bash -c 'cd site/build && for f in llms.txt robots.txt sitemap.xml findings.md \
-  field-types.md entity-types.md recipes.md reports.md endpoints.md; do
+  field-types.md entity-types.md recipes.md reports.md endpoints.md doors.html; do
     [ -s "$f" ] || { echo "missing or empty: $f"; exit 1; }
+  done
+  for d in ../../corpus/doors/*.md; do
+    n=$(basename "$d" .md)
+    [ -s "doors/$n.md" ] || { echo "missing or empty: doors/$n.md"; exit 1; }
+    cmp -s "$d" "doors/$n.md" || { echo "doors/$n.md is not the file it was built from"; exit 1; }
+    [ -s "doors/$n.html" ] || { echo "missing or empty: the page at doors/$n"; exit 1; }
+    grep -qF "/doors/$n.md" llms.txt || { echo "llms.txt names no URL for doors/$n.md"; exit 1; }
   done'
 
 # Four references pointed at corpus/ENDPOINTS.md, a file that does not exist, two of them inside

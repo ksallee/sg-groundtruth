@@ -143,7 +143,8 @@ On the probed site, in one project:
 - **A sibling can hold a status outside `usable`.** REST does not enforce `hidden_values`
   (`field_types/status_list`), so a code the project hides writes and reads back fine. On the probed
   site `hld` is hidden on Task in this project and `PUT {"sg_status_list": "hld"}` answered 200 and
-  read back `hld`. The two spellings of the rule then disagree over the same siblings
+  read back `hld`.
+- The two spellings of the rule then disagree over the same siblings
   `['fin', 'fin', 'hld']`:
 
   | rule | result | parent |

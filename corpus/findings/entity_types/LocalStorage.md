@@ -90,8 +90,8 @@ from `PublishedFile.path_cache_storage` and from inside the `local` shape of any
 - **Writing one is admin-only.** Impersonating an `Artist` on the probed site returned every row on a
   `GET` and refused all three writes, each at 400 code 104: `Entity of type LocalStorage cannot be
   created by this user.`, `The field is not editable for this user: [LocalStorage.mac_path].` and
-  `Entity of type LocalStorage can not be deleted by this user.` A client that offers "point at any
-  folder" as a setup step has to say that an administrator runs it.
+  `Entity of type LocalStorage can not be deleted by this user.`
+- A client that offers "point at any folder" as a setup step has to say that an administrator runs it.
 - A row with no root on any platform is a 201, and nothing reports it as incomplete. The path a
   client then sends is refused as matching no defined storage (`recipes/004_register_published_file`).
 - The refusal to write is a 400, not a 401 or a 403, so a client branching on the status code reads it
