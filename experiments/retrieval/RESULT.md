@@ -326,7 +326,73 @@ evidence that holding a fact is not using it.
 
 **One author, one scorer, no second opinion** on any required set.
 
-## Re-run
+## After #56
 
-`score.py` reads `corpus/doors/` when it exists and builds the tiers only when it does not.
-Everything above is the built form. Re-run it on the merge of #56 and put both numbers here.
+Re-run on `dev` at `9569fc0`, the merge of #56, reading the generated `corpus/doors/`. Two things
+changed between the built form above and this run, and both are in `score.py`.
+
+**The scorer read no endpoint door on its first run against the real files.** It looked for
+`endpoints-Search` while `probes/index.py` writes `endpoints-search`, and Records is split by method
+because the family passed 32 KB. Every miss on that run was an entry sitting on an endpoint door, so
+recall read as falling from 35 of 36 to 30. `door_name` now spells the file as the generator does.
+
+**`follow` is a fourth strategy, and it is the map's own protocol.** `doors` reads every door the
+plan names, whole. The map does not say that. It says: the endpoint door for the call, which is
+verdicts; the group door row those verdicts name, which is one entry's rule block; the entry for a
+transcript. Choosing rows from verdicts is judgment, so `follow` is given the required set for that
+step the way `index` is, and its recall is scored one tier earlier: was the required entry's verdict
+in front of the agent before it chose. `follow` also reads the rule block of every entity type and
+data type the plan holds, since the map sends the agent there by name.
+
+| strategy | reads | given |
+|---|---|---|
+| `index` | the map, then every required entry in full | the required set |
+| `doors` | the map, then the doors the plan names, whole | the plan |
+| `follow` | the map, the calls' endpoint doors, the plan's cards, then the rows the verdicts name | the plan, then the required set for the rows |
+| `grep` | the rule section of every entry whose `endpoints:` or `tags:` match the plan | the plan |
+
+`index` is no longer what an agent does: the map carries names and no verdicts, so nothing in it
+picks an entry. Its number is the floor, what the corpus costs when the agent already knows the
+entry. The comparison that matters is the built form's `index`, 24,428 mean, which was INDEX.md
+whole and the required entries, against `follow` here.
+
+| task | required | `index` tokens | `doors` recall | `doors` tokens | `follow` recall | `follow` tokens | `grep` recall | `grep` tokens |
+|---|---|---|---|---|---|---|---|---|
+| weekly-report | 6 | 8,042 | 6/6 (100%) | 39,458 | 5/6 (83%) | 13,051 | 6/6 (100%) | 26,685 |
+| movie-link | 2 | 4,702 | 1/2 (50%) | 37,777 | 1/2 (50%) | 10,646 | 2/2 (100%) | 23,229 |
+| attach-to-note | 2 | 3,698 | 2/2 (100%) | 22,503 | 1/2 (50%) | 6,966 | 2/2 (100%) | 21,518 |
+| entity-dict-name | 2 | 5,895 | 2/2 (100%) | 37,777 | 2/2 (100%) | 11,361 | 1/2 (50%) | 22,018 |
+| status-icon | 2 | 6,865 | 2/2 (100%) | 32,994 | 1/2 (50%) | 12,305 | 2/2 (100%) | 15,624 |
+| dotted-path-type | 2 | 3,572 | 2/2 (100%) | 37,777 | 2/2 (100%) | 11,112 | 2/2 (100%) | 20,354 |
+| publish-across-platforms | 5 | 10,831 | 5/5 (100%) | 40,066 | 5/5 (100%) | 16,066 | 5/5 (100%) | 23,499 |
+| publish-bytes-no-root | 3 | 7,628 | 3/3 (100%) | 31,720 | 3/3 (100%) | 8,972 | 3/3 (100%) | 17,878 |
+| stock-vs-custom | 2 | 4,122 | 2/2 (100%) | 24,466 | 2/2 (100%) | 7,532 | 2/2 (100%) | 21,938 |
+| impersonate | 3 | 7,608 | 3/3 (100%) | 21,543 | 3/3 (100%) | 4,226 | 2/3 (67%) | 2,640 |
+| create-a-person | 1 | 4,031 | 1/1 (100%) | 26,694 | 1/1 (100%) | 7,962 | 0/1 (0%) | 19,256 |
+| sign-in-as-a-person | 4 | 5,539 | 4/4 (100%) | 21,543 | 4/4 (100%) | 4,730 | 4/4 (100%) | 2,640 |
+| text-search | 2 | 4,339 | 2/2 (100%) | 24,891 | 2/2 (100%) | 7,756 | 2/2 (100%) | 21,775 |
+| **all 13** | 36 | 76,872 | 35/36 (97%) | 399,209 | 32/36 (89%) | 122,685 | 33/36 (92%) | 239,054 |
+
+| mean tokens per task | built form | generated doors |
+|---|---|---|
+| `index` | 24,428 | 5,913 |
+| `doors` | 50,679 | 30,708 |
+| `follow` | | 9,437 |
+| `grep` | 18,380 | 18,389 |
+
+The map is 7,721 bytes. `doors` reaches 35 of 36 with no judgment and costs more than the old index
+did, because two calls are hubs: `POST /entity/<type>/_search` is named by 27 entries and
+`GET /entity/<type>` by 22, ten of the thirteen plans name one of them, and a door row per entry is
+the whole rule block. Following the map instead reads the 24 verdicts on the hub's door, about
+1,200 tokens, and pays for rule blocks only where it chooses, which is where the cost went: 9,437
+against 24,428 before, with the verdict of 32 of 36 required entries in front of the agent when it
+chose.
+
+The four `follow` misses are one shape. `013_upload_media` twice, `039_upload_silent_failures` and
+`010_status_icons` are each on a door the plan did not name: the upload calls, and the render phase.
+`weekly-report` and `movie-link` ask for a movie link and an attachment and their plans name no
+`_upload` call. Whether an agent would name one before reading is the plan question already stated
+under method faults, and the plans were not changed for this run.
+
+`--per-call` prices nothing against generated doors. A door on disk is one file, and `assemble`
+selects blocks only in the built form.
