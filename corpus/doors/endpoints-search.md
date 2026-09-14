@@ -22,6 +22,10 @@ The only way to send a filter the query string cannot express, and it refuses `a
   rules: `doors/findings-protocol`
 - `028_loud_and_silent` (findings) — A 400 is trustworthy and usually names the legal set, but a 200 proves nothing: an unknown field, sort key or query param is a no-op, and a batch can return an id for a row it never made.  
   rules: `doors/findings-protocol`
+- `062_cors` (findings) — Every path under `/api/v1` answers the preflight and echoes any `Origin`, credentials true. `/internal_api` and the web paths send no CORS header, so a page on another origin proxies those.  
+  rules: `doors/findings-protocol`
+- `061_shipped_statuses` (findings) — Nothing in the schema marks a shipped Status. `system` is true on a minority of them; the stock set is `created_by is null`, plus `options[return_only]=retired` for the rows a site retired.  
+  rules: `doors/findings-schema`
 - `003_query` (findings) — A dotted ?fields path comes back flat under literal key "sg_task.Task.content" in attributes; an entity field is returned under relationships as {data, links}. Never read a row from attributes alone.  
   rules: `doors/findings-read`
 - `006_pagination` (findings) — links.next is emitted on every page forever, including zero-row ones, so stop paging when data is empty and never on a missing next.  
@@ -132,6 +136,16 @@ Free-text search across several types at once, returning a flattened row that is
 - `entity_types` maps a type to a filter, so one call can be scoped differently per type. That is the
   only place in the API where a filter is keyed by the type it applies to.
 
+- The shape is checked per key, so one call cannot mix the two forms. The key holding the value the
+  `Content-Type` does not name decides the 400, and no type answers rows.
+
+- One bad key fails the whole call: a field the type lacks, an operator its data type lacks, or a key
+  no entity type is named by is 400 for every type in the map, not a type dropped from the answer.
+
+- A group under `api3_hash` may hold another group, to at least three levels, and `or` returns the
+  union of its branches. The array form takes basic condition arrays alone, and two of them are the
+  `and` of both.
+
 - The response has no `links`, so paging is `page.number` and there is nothing that says a further
   page exists. Ask until `data` is empty.
 
@@ -143,6 +157,8 @@ Free-text search across several types at once, returning a flattened row that is
 - `046_search_without_a_path` (findings) — `/hierarchy/_expand` and `/hierarchy/_search` refuse the vendor content types every other POST requires and take `application/json` alone, so one shared POST helper 415s on half the API.  
   rules: `doors/findings-filter`
 - `053_text_search_matching` (findings) — `page.size` caps at 25 and defaults to 25 with no `links`, so page with `page.number`. Every word must match a case-insensitive substring of the name or of the linked row's name.  
+  rules: `doors/findings-filter`
+- `063_text_search_filter_shape` (findings) — An `entity_types` value follows the request Content-Type: an array of triples under api3_array, a `logical_operator` group under api3_hash, which alone nests. The other shape is 400 code 103.  
   rules: `doors/findings-filter`
 
 **Silent on this call**
@@ -168,8 +184,24 @@ Returns one level of the navigation tree the web interface draws. It refuses the
 
 - `seed_entity_field` changed nothing on the probed site. Omit it until something shows it matters.
 
+- A child has no `path` when its `ref.kind` is `empty`: `{"label": "No Shots", "ref": {"kind":
+  "empty", "value": null}, "has_children": false}` is the placeholder for a level with nothing under it,
+  and it is a child like any other. Read `path` with a default.
+
+- `ref.kind` is `entity` for a row or a group that is one, `entity_type` for the ungrouped bucket,
+  `list` for a group that is a list value, and `empty` for the placeholder.
+
+- The `__none__` segment is reachable at two spellings. `_expand` writes
+  `<field>/<GroupType>/__none__` and `_search` returns `<field>/__none__`; both answer the same rows,
+  and the label is templated off the segment, so the second reads `Shots with no __none__`.
+
+- A path is answerable whether or not `children` named it. Expanding a level whose grouping field has
+  no rows answers one `empty` child, and the `__none__` path under that level still answers its rows.
+
 **Measured by**
 
+- `064_hierarchy_expand_buckets` (findings) — Dedupe `children` by `path` and keep the first. The `__none__` bucket is repeated once per group, byte-identical every time, and its rows are disjoint from every group's.  
+  rules: `doors/findings-read`
 - `046_search_without_a_path` (findings) — `/hierarchy/_expand` and `/hierarchy/_search` refuse the vendor content types every other POST requires and take `application/json` alone, so one shared POST helper 415s on half the API.  
   rules: `doors/findings-filter`
 
@@ -198,8 +230,13 @@ Answers where a row sits in the navigation tree. `search_criteria` must be a has
 - The path goes through `sg_sequence`, a field name, so the tree follows the site's own navigation
   configuration rather than a fixed hierarchy.
 
+- A row with nothing in the grouping field is returned as `/Project/<id>/Shot/sg_sequence/__none__`,
+  without the type segment `_expand` puts there. Both spellings answer the same rows on `_expand`.
+
 **Measured by**
 
+- `064_hierarchy_expand_buckets` (findings) — Dedupe `children` by `path` and keep the first. The `__none__` bucket is repeated once per group, byte-identical every time, and its rows are disjoint from every group's.  
+  rules: `doors/findings-read`
 - `046_search_without_a_path` (findings) — `/hierarchy/_expand` and `/hierarchy/_search` refuse the vendor content types every other POST requires and take `application/json` alone, so one shared POST helper 415s on half the API.  
   rules: `doors/findings-filter`
 

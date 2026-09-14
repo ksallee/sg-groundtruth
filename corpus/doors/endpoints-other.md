@@ -46,6 +46,8 @@ With the session token as the `_session_id` cookie, answers when the session and
 
 - `052_app_session_launcher` (findings) — Post appName and machineId, open url in a browser, PUT the id until approved. The sessionToken spends at grant_type=session_token as that person, and every mint renews the session.  
   rules: `doors/findings-auth`
+- `062_cors` (findings) — Every path under `/api/v1` answers the preflight and echoes any `Origin`, credentials true. `/internal_api` and the web paths send no CORS header, so a page on another origin proxies those.  
+  rules: `doors/findings-protocol`
 
 `corpus/endpoints/get_internal_api_session.md`
 
@@ -65,5 +67,7 @@ Renews the session behind the `_session_id` cookie: `{"message": "OK"}` and `exp
 
 - `052_app_session_launcher` (findings) — Post appName and machineId, open url in a browser, PUT the id until approved. The sessionToken spends at grant_type=session_token as that person, and every mint renews the session.  
   rules: `doors/findings-auth`
+- `062_cors` (findings) — Every path under `/api/v1` answers the preflight and echoes any `Origin`, credentials true. `/internal_api` and the web paths send no CORS header, so a page on another origin proxies those.  
+  rules: `doors/findings-protocol`
 
 `corpus/endpoints/post_internal_api_session.md`

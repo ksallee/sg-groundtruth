@@ -62,11 +62,11 @@ text, with {"Shot": and[project is 70]} on every call
 - The per-type filter is parsed by whatever the request's vendor content type selects, the same split
   `filters` on `POST /entity/<type>/_search` is under (probe 004). A client that sends `[]` for "search
   everything" gets 400 code 103 `Query is not an Hash: []` the moment it switches to `api3_hash`, and
-  there is no shape both content types accept. Under `api3_hash`, no filter is a group with an empty
-  `conditions`.
+  there is no shape both content types accept.
+- Under `api3_hash`, no filter is a group with an empty `conditions`.
 - A `conditions` entry may itself be a group, so `or` and three levels of nesting both filter and both
   answer the rows their branches answer: `or` over two codes returns those two rows and nothing else.
-  The array form has no `logical_operator` and takes basic condition arrays alone: a group as one
+- The array form has no `logical_operator` and takes basic condition arrays alone: a group as one
   element is 400 `Invalid filter. Expected array of basic condition arrays but received:`, and two
   triples in one array answer the rows the `and` of the same two answers.
 - The shape is checked per key, so a map may not mix the two forms: the key whose value is the other

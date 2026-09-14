@@ -58,9 +58,9 @@ the request itself, with Origin: https://example.invalid
 - `/api/v1` reflects whatever `Origin` reaches it. There is no allowlist to be on and nothing to
   register: `null`, an `http://localhost` origin and the string `banana` all come back in
   `access-control-allow-origin`, each with `access-control-allow-credentials: true`, so a browser
-  permits a credentialed cross-origin call from any page to any Flow PT site. `Vary: Origin,
-  Access-Control-Request-Method` is on every answer, so a shared cache does not hand one origin the
-  reply meant for another.
+  permits a credentialed cross-origin call from any page to any Flow PT site.
+- `Vary: Origin, Access-Control-Request-Method` is on every answer, so a shared cache does not hand
+  one origin the reply meant for another.
 - The preflight is answered in front of the API rather than by the route. Any path under `/api/v1`
   answers 200 with the echo, including one no route serves; a path outside `/api/v1` answers 200
   with nothing. It takes no token, and the answer has an empty body.
@@ -80,7 +80,7 @@ the request itself, with Origin: https://example.invalid
   trip per hour.
 - No `access-control-expose-headers`, so script reads only the six safelisted response headers
   (`cache-control`, `content-language`, `content-type`, `expires`, `last-modified`, `pragma`).
-  `etag` and `x-request-id` are on the response and unreadable from a page, and `if-none-match` is
+- `etag` and `x-request-id` are on the response and unreadable from a page, and `if-none-match` is
   refused at the preflight, so a browser client has no conditional request and no request id to
   quote in a support ticket.
 - What a page on another origin can call:

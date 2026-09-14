@@ -240,3 +240,45 @@ not measured: Only `description` and a linked row's name were tried as fields be
   One call is worth it for a picker; a client that needs the full row still re-reads by `links.self`.
 
 `corpus/findings/053_text_search_matching.md`
+
+## 063_text_search_filter_shape
+
+An `entity_types` value follows the request Content-Type: an array of triples under api3_array, a `logical_operator` group under api3_hash, which alone nests. The other shape is 400 code 103.
+
+| `Content-Type` | the value of an `entity_types` key | no filter |
+|---|---|---|
+| `application/vnd+shotgun.api3_array+json` | `[[field, op, value]]` | `[]` |
+| `application/vnd+shotgun.api3_hash+json` | `{"logical_operator": "and"\|"or", "conditions": [...]}` | `{"logical_operator": "and", "conditions": []}` |
+
+- The per-type filter is parsed by whatever the request's vendor content type selects, the same split
+  `filters` on `POST /entity/<type>/_search` is under (probe 004). A client that sends `[]` for "search
+  everything" gets 400 code 103 `Query is not an Hash: []` the moment it switches to `api3_hash`, and
+  there is no shape both content types accept.
+
+- Under `api3_hash`, no filter is a group with an empty `conditions`.
+
+- A `conditions` entry may itself be a group, so `or` and three levels of nesting both filter and both
+  answer the rows their branches answer: `or` over two codes returns those two rows and nothing else.
+
+- The array form has no `logical_operator` and takes basic condition arrays alone: a group as one
+  element is 400 `Invalid filter. Expected array of basic condition arrays but received:`, and two
+  triples in one array answer the rows the `and` of the same two answers.
+
+- The shape is checked per key, so a map may not mix the two forms: the key whose value is the other
+  shape decides the 400 and no rows come back for any type.
+
+| the filter names | answer |
+|---|---|
+| a field the type lacks, at any depth | 400 `API _text_search() Shot.content doesn't exist.` |
+| an operator the data type lacks | 400 naming every `Valid relations` for that type |
+| a key no entity type is named by | 400 `entity_types must use valid entity names as keys` |
+| `{}`, `null` or a string | 400 `entity_types must have an array or non-empty object as each key's value` |
+
+- One bad key fails the whole call, so a picker over ten types that names one field wrong returns
+  nothing rather than the nine types it got right. The error names the type and the field.
+
+- `text` is unchanged by a filter being present: every word still has to match a case-insensitive
+  substring of the name (probe 053), and the filter narrows what those words are matched against.
+  A text matching nothing and a filter matching nothing both answer 200 with an empty `data`.
+
+`corpus/findings/063_text_search_filter_shape.md`
