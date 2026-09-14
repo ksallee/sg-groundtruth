@@ -63,8 +63,8 @@ GET /internal_api/session, cookie _session_id=<session token>
   (probe 027).
 - The session token is the credential; the bearer is disposable. Hold the session token, mint a 600s
   bearer whenever one is needed, and each mint moves the session's expiry to now plus the site's
-  window (one day on the probed site), written at most once every five minutes. A token spent at
-  least once per window never expires; one left idle past it does, and the token endpoint then
+  window (one day on the probed site), written at most once every five minutes.
+- A token spent at least once per window never expires; one left idle past it does, and the token endpoint then
   refuses it.
 - A pending request lives about five minutes and a handed-out one is gone at once. Poll from one place,
   keep `sessionToken` from the one response that holds it, and when the poll turns 404 issue a new request and show

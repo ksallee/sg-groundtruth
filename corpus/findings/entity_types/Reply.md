@@ -104,7 +104,7 @@ one second all read the same timestamp, leaving their order undefined.
 - A filter for a type that is not in `Reply.entity`'s `valid_types` 400s with `API read()
   invalid/missing entity hash string 'type'`, even when live rows point at it. On the probed site the
   oldest replies hang off `Ticket`, a type absent from `/schema`, and the 400's own `Valid entity types`
-  list names `Ticket` while the filter is refused. `[["entity", "type_is", "Ticket"]]` returns those rows
-  at 200; use `type_is` for a type-level cut and reserve the hash for a type you read out of `valid_types`.
+  list names `Ticket` while the filter is refused.
+- `[["entity", "type_is", "Ticket"]]` returns those rows at 200; use `type_is` for a type-level cut and reserve the hash for a type you read out of `valid_types`.
 - `entity` is editable after the fact, with no type check against the original. A `PUT` moves a Reply from
   a Note to a Version at 200 and the Note's thread silently loses a row.

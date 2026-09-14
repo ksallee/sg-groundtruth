@@ -196,11 +196,12 @@ published_file_type as a bare id ->
 - **The version query is the whole guard, and it is a read-then-write race.** No field on PublishedFile is
   unique and no combination is enforced, so the identical body posted twice returns two 201s and there is no
   conflict error to catch (`entity_types/PublishedFile`). Two clients that read `next_version` at the same
-  moment both publish version 4. The API offers nothing to close this: no unique constraint to create, no
-  conditional write, no returned row to lose the race against. What a client can do is narrow the query to
-  the same context it publishes into (`name` plus `project`, plus `entity` or `task` if the stream is scoped
-  to one), re-run it immediately before the create, and treat the answer as advisory. Production code pairs
-  it with a filesystem probe of the publish directory and a retry cap because either source alone goes stale;
+  moment both publish version 4.
+- The API offers nothing to close this: no unique constraint to create, no conditional write, no returned
+  row to lose the race against.
+- What a client can do is narrow the query to the same context it publishes into (`name` plus `project`, plus `entity` or `task` if the stream is scoped
+  to one), re-run it immediately before the create, and treat the answer as advisory.
+- Production code pairs it with a filesystem probe of the publish directory and a retry cap because either source alone goes stale;
   that belongs in the client, and the API cannot confirm or deny what the retry found.
 - **A caller with no storage root has a second route.** The same field takes the three-call upload,
   which puts the bytes on the site and names no LocalStorage at all

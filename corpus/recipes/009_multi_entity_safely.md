@@ -147,16 +147,18 @@ Clearing, measured on both fields:
 
 - **The removal direction is the dangerous one.** An append that goes wrong loses one link; a removal
   that skips the other-parents check breaks a relationship something else still needs, and a child
-  that left one parent is not a child nothing claims. Remove from the parent, then ask
+  that left one parent is not a child nothing claims.
+- Remove from the parent, then ask
   `[[<field>, "is", <child hash>], ["id", "is_not", <parent id>]]` on the parent type, and strip the
-  child only on an empty answer. On the probed site the same query over an existing project answered
+  child only on an empty answer.
+- On the probed site the same query over an existing project answered
   `200, [332, 4473, ... 4491]` for one Shot, 20 Notes claiming it, 19 once the one it left is
   excluded.
 - **Use `is` with one entity hash for that query.** A bare id is
   `400 API read() invalid/missing entity hash: 954`, `is` with a list is `400 'is' 'relation' expects
   a 1-element array`, and `in` means "links any of", which on some fields returns the rows that link
-  nothing when a member is unresolvable (`field_types/multi_entity`). One `_search` answers for one
-  child; batch it by asking `in [child, child, ...]` and grouping the returned parents yourself.
+  nothing when a member is unresolvable (`field_types/multi_entity`).
+- One `_search` answers for one child; batch it by asking `in [child, child, ...]` and grouping the returned parents yourself.
 - **The query-string trap.** `?multi_entity_update_mode=add` and
   `?options[multi_entity_update_modes][<field>]=add` both answer 200 having replaced the whole list.
   The loss is a success response, so the mode is only ever correct in the body
@@ -167,27 +169,27 @@ Clearing, measured on both fields:
   `400 editable on create only` (probe 024). The wrapper is not a narrower window, it is no window.
 - **Verify by re-reading.** `?fields` is ignored on every write (probe 024) and a 200 proves nothing
   about a `multi_entity` field, since the query-string form returns one after replacing (probe 028).
-  Compare the set you wanted against a fresh `GET /entity/<slug>/<id>?fields=<field>`. A dotted path
+- Compare the set you wanted against a fresh `GET /entity/<slug>/<id>?fields=<field>`. A dotted path
   is not a shortcut: `?fields=versions.Version.code` answered 200 with `attributes` and
   `relationships` both empty (probe 016).
 - **Order is not stored.** `Playlist.versions` reads back sorted by the target's `code`, whatever
   order was written, and the human order is `sg_sort_order` on the `PlaylistVersionConnection` join
-  row, which a write through the field leaves null. `remove` then `add` the same member replaces the
-  join row and the order with it, so reorder by writing `sg_sort_order`, never by rewriting the
+  row, which a write through the field leaves null.
+- `remove` then `add` the same member replaces the join row and the order with it, so reorder by writing `sg_sort_order`, never by rewriting the
   member list (`entity_types/Playlist`).
 - **Know the field before sending a bare list.** `PUT {"replies": []}` on a Note deletes the Reply
   rows outright, and the ids answer 404 afterwards (`entity_types/Note`). A bare list is a replace on
   most fields and a delete on some, and nothing in the response distinguishes them.
-- **A multi_entity field reads back as a list.** `relationships.<field>.data` was a list on every
-  read taken here: 100 rows of `Note.note_links` and 100 of `Version.playlists` and `Version.tasks`
-  from `_search`, 20 of those re-read singly by `GET`, and 72 sandbox reads split across 0, 1 and 2
-  members over `GET`, `_search` under both filter Content-Types, and
-  `GET .../relationships/<field>`. Unset is `[]`, never null and never an absent key. One
-  implementation reported by the survey defends against the field coming back as a single mapping
+- **A multi_entity field reads back as a list.** Unset is `[]`, never null and never an absent key.
+- `relationships.<field>.data` was a list on every read taken here: 100 rows of `Note.note_links` and
+  100 of `Version.playlists` and `Version.tasks` from `_search`, 20 of those re-read singly by `GET`,
+  and 72 sandbox reads split across 0, 1 and 2 members over `GET`, `_search` under both filter
+  Content-Types, and `GET .../relationships/<field>`.
+- One implementation reported by the survey defends against the field coming back as a single mapping
   instead; that did not reproduce, so the defensive read below is recorded unverified, on the
-  survey's word rather than on a measurement here. The one field that does return a mapping is a
-  single `entity` field, `{"data": {"id", "name", "type"}}`, which is what a caller reading the
-  wrong field name gets.
+  survey's word rather than on a measurement here.
+- The one field that does return a mapping is a single `entity` field,
+  `{"data": {"id", "name", "type"}}`, which is what a caller reading the wrong field name gets.
 
       d = row["relationships"][field]["data"] or []
       d = [d] if isinstance(d, dict) else d

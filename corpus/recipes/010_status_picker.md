@@ -291,6 +291,6 @@ restrict only what a person may pick.
   (`field_types/status_list`).
 - `icon_type` has two values and no more. Over all 98 `Icon` rows on the probed site:
   `permanent_status`/`image_map` 94, `custom_status`/`html` 3, `custom_status`/`image` 1. Page 2 of
-  the same listing returned 0 rows, so that census covers the whole table (probe 006). Probe 010 left
-  the question open; the answer is site configuration, and a site with more custom statuses will hold
+  the same listing returned 0 rows, so that census covers the whole table (probe 006).
+- Probe 010 left the question open; the answer is site configuration, and a site with more custom statuses will hold
   more `custom_status` rows, not a third `icon_type`.

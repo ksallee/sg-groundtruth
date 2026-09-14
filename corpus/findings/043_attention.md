@@ -57,8 +57,8 @@ GET /entity/versions/1/thread_contents -> 404 Field 'Version.thread_contents' do
 - **`activity_stream` is not the event log.** It has its own id space, its own paging keys and its
   own latency. On the probed site the newest update was id `246800` dated two days before the run,
   and three Shots created during the run were absent from their own streams and from the project's
-  after 90 seconds of polling. Read `EventLogEntry` (`probe 025`) for anything a write has to
-  confirm.
+  after 90 seconds of polling.
+- Read `EventLogEntry` (`probe 025`) for anything a write has to confirm.
 - Page it with `max_id`, not `page[]`. Both bounds are exclusive, `earliest_update_id` is the floor
   reached, and `0` there means the stream ran out. `latest_update_id` is site-wide when no `max_id`
   is given, so it does not describe the record you asked about.

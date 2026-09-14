@@ -67,8 +67,8 @@ GET /exports/page/3074.csv -> 422 text/csv "Export for Page id=3074 not availabl
   never sent. The row comes back with the field values it had when it was retired.
 - The revive response is `{"data": {"type", "id"}, "links", "meta": {"did_revive"}}` and has no
   `attributes` key, less than any other write returns (probe 024). `did_revive` is `false` on a row
-  that was already live, at 200, which is the only way to tell a revive from a no-op. `?fields` is
-  ignored here as on every other write. On the probed site a successful revive logged one
+  that was already live, at 200, which is the only way to tell a revive from a no-op.
+- `?fields` is ignored here as on every other write. On the probed site a successful revive logged one
   `Shotgun_Shot_Revival` event and a no-op logged none.
 - **`/<field>` is not a cheap single-field read.** Every non-file field is a 400 naming the field:
   `Field Version.code is not an image or attachment.` A dotted path is a 406 with a one-byte body,
@@ -81,11 +81,12 @@ GET /exports/page/3074.csv -> 422 text/csv "Export for Page id=3074 not availabl
 - `relationships/<related_field>` returns the identical `data` a normal read puts under
   `relationships`, minus the `links.related` pointer, and it is not paged: a 60-link field answered
   all 60 rows with no `links.next`, and `page[size]`, `page[number]`, `fields` and `sort` were all
-  accepted and ignored. It saves 233 bytes on a single entity link and 183 on 60 of them, so it is
+  accepted and ignored.
+- It saves 233 bytes on a single entity link and 183 on 60 of them, so it is
   worth a call only when the link list is the whole request.
 - `_update_last_accessed` answers 200 for a `user_id` that does not exist and returns the same
-  `{data, links}` either way, so nothing in the response says whether it did anything. On the probed
-  site `Project.last_accessed_by_current_user` read `null` before and after, and no `EventLogEntry`
+  `{data, links}` either way, so nothing in the response says whether it did anything.
+- On the probed site `Project.last_accessed_by_current_user` read `null` before and after, and no `EventLogEntry`
   was written, because that field is relative to the requesting user and a script is not the user it
   stamps. There is no read-back over REST; treat the call as write-only.
 - The path is fixed to `projects`. `PUT /entity/shots/<id>/_update_last_accessed` is a 404 with a null
@@ -98,6 +99,7 @@ GET /exports/page/3074.csv -> 422 text/csv "Export for Page id=3074 not availabl
 - **Export is off by default and there is no field that says so.** A page id that does not exist
   answers `Trying to perform export for retired Page id=999999999`, and a non-numeric id is read as
   `id=0`, so a 422 does not distinguish a missing page from a page whose view is not marked
-  exportable. On the probed site 52 pages across all 27 `page_type` values answered 422 and none
+  exportable.
+- On the probed site 52 pages across all 27 `page_type` values answered 422 and none
   answered 200; `Page` has no `exportable` field and the flag is not in the layout `settings_json`
   probe 023 reads, so a client cannot discover which pages will work without trying each one.

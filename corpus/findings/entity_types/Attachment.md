@@ -113,8 +113,8 @@ per-read presigned url are in `field_types/url`; a `local` value has no `url` ke
   with no file, no filename and no link, and it cannot be repaired: `this_file` is create-only.
 - `file_extension` and `file_size` do not fill in. On the probed site, over a 500-row page, `file_size` was
   set on 130 rows and `file_extension` on 85, all created between 2013 and 2019; every row created 2025 or
-  later read null on both, some of them more than a year old. Take the size from the bytes you uploaded and
-  the extension from `filename`. Probe 014's null columns are the steady state, not a race.
+  later read null on both, some of them more than a year old.
+- Take the size from the bytes you uploaded and the extension from `filename`. Probe 014's null columns are the steady state, not a race.
 - `processing_status` returns `thumbnail_pending_us` straight after an upload, which is not one of the four
   values its own `valid_values` declares, and it reverts to `null` once transcoding finishes. A client
   matching against `valid_values` sees an unknown token, then nothing.
