@@ -167,6 +167,39 @@ def check_register(f, text):
             fail(f, f"ALL-CAPS emphasis {w!r} — capitals are for API literals only (CLAUDE.md Style)")
 
 
+def check_bullets(f, text):
+    """Cap a rule bullet at 400 chars. The doors serve these verbatim, so a bullet's length is what
+    an agent pays per rule. Over the cap it is two rules in one, or a table wearing a bullet.
+
+    A bullet runs from its `- ` to the next top-level bullet, blank line or heading, continuation
+    lines included.
+    """
+    cap = 400
+    head = {"findings": "**Teaches**", "field_types": "**Traps**", "entity_types": "**Traps**",
+            "recipes": "## Notes"}.get(f.parent.name)
+    if not head or f.name == "README.md" or (
+            f.parent.name == "findings" and not f.stem[:1].isdigit()):
+        return
+    lines = text.splitlines()
+    if head not in lines:
+        return
+    label = re.compile(r"^\*\*[^*]+\*\*$")        # a section label, not a bold lead mid-line
+    bullets, cur = [], []
+    for ln in lines[lines.index(head) + 1:]:
+        if re.match(r"^#{1,2} ", ln) or label.match(ln.strip()):   # the next section, not a
+            break                                                  # subsection inside this one
+        if ln.startswith(("- ", "#")) or not ln.strip():
+            bullets.append(cur)
+            cur = [ln] if ln.startswith("- ") else []
+        elif cur:
+            cur.append(ln)
+    for b in bullets + [cur]:
+        n = len("\n".join(b))
+        if n > cap:
+            fail(f, f"bullet under {head} is {n} chars, max {cap}. Split it, or make it a table: "
+                    f"{b[0][2:62]}...")
+
+
 def check_report(f, head, text):
     """A report against the API. Its evidence has to exist and its repro has to be runnable."""
     for key, allowed in (("kind", REPORT_KINDS), ("status", REPORT_STATUSES)):
@@ -228,6 +261,7 @@ for f in sorted(CORPUS.rglob("*.md")):
     text = f.read_text()
     check_leaks(f, text)
     check_register(f, text)
+    check_bullets(f, text)
 
     is_type = f.parent.name in ("field_types", "entity_types")
     is_recipe = f.parent.name == "recipes"
