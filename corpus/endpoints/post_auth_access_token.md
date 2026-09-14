@@ -84,3 +84,4 @@ r = requests.post(f"{c.site}/api/v1/auth/access_token",
 - `findings/001_auth`
 - `findings/027_auth_permissions`
 - `findings/052_app_session_launcher`
+- `findings/062_cors`

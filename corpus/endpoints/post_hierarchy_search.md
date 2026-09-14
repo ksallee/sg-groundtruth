@@ -75,9 +75,12 @@ r = c.post("/hierarchy/_search", headers=JSON,
   same thing rendered for a person and it omits the project.
 - The path goes through `sg_sequence`, a field name, so the tree follows the site's own navigation
   configuration rather than a fixed hierarchy.
+- A row with nothing in the grouping field is returned as `/Project/<id>/Shot/sg_sequence/__none__`,
+  without the type segment `_expand` puts there. Both spellings answer the same rows on `_expand`.
 
 **Links**
 
 - `endpoints/post_hierarchy_expand`
 - `endpoints/post_entity_text_search`
 - `findings/046_search_without_a_path`
+- `findings/064_hierarchy_expand_buckets`

@@ -71,4 +71,5 @@ Only `?fields` fails quietly, and a typo there reads as "no data" rather than "w
 | `api3_hash` | `{"logical_operator": "and", "conditions": [[field, op, value]]}` |
 
   The conditions inside the hash form stay triples. An object of `path`/`relation`/`values` is 400
-  `Missing logical operator`, and a bare list under `api3_hash` is 400 `Query is not an Hash`.
+  `Missing logical operator`, and a bare list under `api3_hash` is 400 `Query is not an Hash`. The
+  per-type filters of `POST /entity/_text_search` split the same way, one key at a time (probe 063).

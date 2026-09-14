@@ -69,3 +69,4 @@ Any call after that one, and any call on an id the site does not hold:
 - `endpoints/post_auth_access_token`
 - `findings/052_app_session_launcher`
 - `recipes/012_sign_in_as_a_person`
+- `findings/062_cors`

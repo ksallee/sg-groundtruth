@@ -62,3 +62,4 @@ On the probed site:
 - `endpoints/post_internal_api_app_session_request`
 - `findings/027_auth_permissions`
 - `findings/052_app_session_launcher`
+- `findings/062_cors`

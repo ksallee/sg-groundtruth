@@ -92,3 +92,4 @@ Without a vendor content type:
 - `findings/004_array_vs_hash`
 - `findings/030_complex_filters`
 - `findings/017_filter_operators`
+- `findings/062_cors`

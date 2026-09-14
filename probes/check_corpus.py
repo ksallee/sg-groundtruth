@@ -92,7 +92,7 @@ CAPS_RE = re.compile(r"(?<![\w`])[A-Z]{2,}(?![\w`])")
 CAPS_OK = {"REST", "API", "URL", "URI", "JSON", "HTTP", "GET", "PUT", "POST", "DELETE", "PATCH",
            "UTC", "ID", "IDS", "S3", "PNG", "MP4", "RGB", "CSS", "PDF", "USD", "RV", "SDK", "CLI",
            "MIT", "AGPL", "UI", "OK", "NULL", "TRUE", "FALSE", "AND", "OR", "NOT", "PG", "MIME",
-           "CRUD", "CSV", "VFX", "PT", "DAY", "HOUR", "WEEK", "MONTH", "YEAR", "YYYY", "MM", "DD",
+           "CRUD", "CSV", "VFX", "PT", "CORS", "DAY", "HOUR", "WEEK", "MONTH", "YEAR", "YYYY", "MM", "DD",
            "HTML", "XML", "EDL", "MP4", "PNG", "JPG", "TIF", "EXR", "MOV", "OTIO"}
 
 # The order a client meets them. index.py groups the findings listing by this, so a phase that is

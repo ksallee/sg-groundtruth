@@ -63,3 +63,4 @@ print({k: v["name"]["value"] for k, v in types.items() if k.startswith("CustomEn
 - `endpoints/get_schema_type_fields`
 - `findings/008_custom_entities`
 - `findings/002_schema`
+- `findings/062_cors`

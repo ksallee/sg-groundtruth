@@ -25,6 +25,8 @@ The site's login configuration, answered without a token. Read `user_authenticat
   rules: `doors/findings-auth`
 - `051_api_version` (findings) — /api/v1 and /api/v1.1 are the same API. Across 20 read-only calls the only difference is api_version in the root document and the prefix each echoes in its own links. Any other segment is 404.  
   rules: `doors/findings-protocol`
+- `062_cors` (findings) — Every path under `/api/v1` answers the preflight and echoes any `Origin`, credentials true. `/internal_api` and the web paths send no CORS header, so a page on another origin proxies those.  
+  rules: `doors/findings-protocol`
 
 `corpus/endpoints/get_root.md`
 
@@ -50,6 +52,8 @@ Form-encode it. `application/json` is 415 naming the one legal type, and the 600
   rules: `doors/findings-auth`
 - `052_app_session_launcher` (findings) — Post appName and machineId, open url in a browser, PUT the id until approved. The sessionToken spends at grant_type=session_token as that person, and every mint renews the session.  
   rules: `doors/findings-auth`
+- `062_cors` (findings) — Every path under `/api/v1` answers the preflight and echoes any `Origin`, credentials true. `/internal_api` and the web paths send no CORS header, so a page on another origin proxies those.  
+  rules: `doors/findings-protocol`
 - `012_sign_in_as_a_person` (recipes) — Reach the REST API as a person, with no script key and no password, by having them approve a login in their browser  
   rules: `doors/recipes`
 
@@ -76,6 +80,8 @@ Send `appName` and `machineId`, form or JSON, with no token and no cookie. The a
 
 - `052_app_session_launcher` (findings) — Post appName and machineId, open url in a browser, PUT the id until approved. The sessionToken spends at grant_type=session_token as that person, and every mint renews the session.  
   rules: `doors/findings-auth`
+- `062_cors` (findings) — Every path under `/api/v1` answers the preflight and echoes any `Origin`, credentials true. `/internal_api` and the web paths send no CORS header, so a page on another origin proxies those.  
+  rules: `doors/findings-protocol`
 - `012_sign_in_as_a_person` (recipes) — Reach the REST API as a person, with no script key and no password, by having them approve a login in their browser  
   rules: `doors/recipes`
 
@@ -101,6 +107,8 @@ Poll it with no body. `{"approved": false}` while pending; once, `{"approved": t
 
 - `052_app_session_launcher` (findings) — Post appName and machineId, open url in a browser, PUT the id until approved. The sessionToken spends at grant_type=session_token as that person, and every mint renews the session.  
   rules: `doors/findings-auth`
+- `062_cors` (findings) — Every path under `/api/v1` answers the preflight and echoes any `Origin`, credentials true. `/internal_api` and the web paths send no CORS header, so a page on another origin proxies those.  
+  rules: `doors/findings-protocol`
 - `012_sign_in_as_a_person` (recipes) — Reach the REST API as a person, with no script key and no password, by having them approve a login in their browser  
   rules: `doors/recipes`
 

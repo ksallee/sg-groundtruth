@@ -218,3 +218,68 @@ A field with `visible.editable` false is stock and safe to depend on; true means
   name (probe 002), rather than deciding from a name it learned somewhere else.
 
 `corpus/findings/056_stock_vs_custom_field.md`
+
+## 061_shipped_statuses
+
+Nothing in the schema marks a shipped Status. `system` is true on a minority of them; the stock set is `created_by is null`, plus `options[return_only]=retired` for the rows a site retired.
+
+- `created_by is null` selects the shipped rows and is the only mark that does. It is one filter at
+  200, so the split costs no extra call. A row an operator added names them in `created_by`, and
+  `created_by` is `editable: false`, so nobody can blank it afterwards.
+
+- `system` is a checkbox whose display name is `Locked by System`, and it does not mean "shipped":
+
+  | selection | on the probed site |
+  |---|---|
+  | `created_by is null` | 19 rows |
+  | `system is true` | 6 rows, `act` `dis` `ip` `na` `cfrm` `pndng` |
+  | `system is true` and `created_by` set | 0 rows |
+  | an `or` of the two | 19 rows, the same set as `created_by is null` alone |
+
+  `system` is a subset, so an `or` adds nothing and `system` alone drops 13 shipped codes.
+
+- `created_at` is not a mark either. On the probed site it is null on 17 of the 19 shipped rows and
+  `2014-08-06` on `cfrm` and `pndng`, which no creator names, while every operator-added row from
+  id 32 up has both a date and a person.
+
+- The live listing is what the site kept, not what it started with. On the probed site 9 further
+  rows are retired, 8 of them with no `created_by` (`cbb`, `rdy`, `blk`, `plsh`, `late`, `rsk`,
+  `rrq`, `out`), and only `options[return_only]=retired` returns them. A low id proves nothing on
+  its own: retired id 20, `tkt`, names a person.
+
+- The 19 shipped codes on the probed site, with the stock `image_map_key` each points at. Resolve a
+  key against the site's own stylesheet and the `/images/sg_icon_image_map.png` sprite, both of
+  which answer an unauthenticated GET at 200; probe 010 and `recipes/010_status_picker` record that
+  rediscovery and the offsets.
+
+  | code | name | `image_map_key` |
+  |---|---|---|
+  | `act` | Active | none. On the probed site it points at a `custom_status`/`html` icon |
+  | `apr` | Approved | `icon_apr` |
+  | `clsd` | Closed | `icon_fin` |
+  | `cmpt` | Complete | `icon_cmpt` |
+  | `dis` | Disabled | `icon_na` |
+  | `fin` | Final | `icon_fin` |
+  | `hld` | On Hold | `icon_hld` |
+  | `ip` | In Progress | `icon_ip` |
+  | `na` | N/A | `icon_na` |
+  | `omt` | Omit | `icon_omt` |
+  | `opn` | Open | `icon_rdy` |
+  | `res` | Resolved | `icon_fin` |
+  | `rev` | Pending Review | `icon_rev` |
+  | `wtg` | Waiting to Start | `icon_wtg` |
+  | `vwd` | Viewed | `icon_fin` |
+  | `recd` | Received | `icon_recd` |
+  | `dlvr` | Delivered | `icon_dlvr` |
+  | `cfrm` | Confirmed | `icon_thumb_up` |
+  | `pndng` | Pending | `icon_voice_command` |
+
+  15 distinct keys over 19 codes: `icon_fin` draws `clsd`, `fin`, `res` and `vwd`, and `icon_na`
+  draws `dis` and `na`. The icon does not identify the status, and `icon` is the one editable field
+  on the row, so a stock code can point at a custom icon.
+
+- Which codes a site holds is site configuration, and only the shape transfers. Read the split per
+  site rather than hardcoding the 19: this site retired 8 shipped rows and added 13 of its own, and
+  a shipped code is still only offered where a type's `valid_values` lists it (probe 009).
+
+`corpus/findings/061_shipped_statuses.md`
