@@ -23,11 +23,12 @@ thing you already know. A door under `corpus/doors/` carries one line per entry 
 rules, copied whole, 2 to 36 KB a file. The entry holds the transcript, the sample and the tables.
 An agent that loads the corpus instead spends its context on the first call.
 
-An agent with no clone fetches the same files off the site. `.md` appended to any entry or section URL
-returns the markdown that page was built from, frontmatter included, and `/llms.txt` is one line per
-entry with its verdict and the URL of its markdown.
+An agent with no clone fetches the same three tiers off the site. `/llms.txt` is the map, in the same
+words, with a URL in place of every name. `.md` appended to any door, entry or section URL returns the
+markdown that page was built from, frontmatter included.
 
-    https://sg-groundtruth.vercel.app/llms.txt                      44 KB, every entry, one line each
+    https://sg-groundtruth.vercel.app/llms.txt                      24 KB, the map
+    https://sg-groundtruth.vercel.app/doors/field_types.md          29 KB, one door
     https://sg-groundtruth.vercel.app/findings.md                   one section
     https://sg-groundtruth.vercel.app/findings/026_result_order.md  4 KB, the file itself
 
