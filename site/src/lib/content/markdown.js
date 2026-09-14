@@ -59,3 +59,17 @@ export function readEntry(groupId, slug) {
 // where the reader is deciding which to point an agent at. A number written into
 // prose is a number that drifts; this one is the file.
 export const indexBytes = () => fs.statSync(path.join(SHIPPED.root, 'INDEX.md')).size;
+
+// The smallest and largest shipped entry, for the page that sets the three tiers
+// against each other. Measured for the same reason as the line above it.
+export function entrySpread() {
+	const sizes = SECTIONS.flatMap((s) => {
+		const dir = path.join(SHIPPED.root, s.dir);
+		if (!fs.existsSync(dir)) return [];
+		return fs
+			.readdirSync(dir)
+			.filter((f) => f.endsWith('.md') && f !== 'README.md')
+			.map((f) => fs.statSync(path.join(dir, f)).size);
+	});
+	return { min: Math.min(...sizes), max: Math.max(...sizes) };
+}

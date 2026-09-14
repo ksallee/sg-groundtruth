@@ -75,7 +75,10 @@ function stripLeadingH1(body) {
 // wrapTables first: it matches a bare `<table>`, so marking the matrix before it
 // runs leaves that one table outside its own scroll container, and a table that
 // outgrows the column then widens the page instead of scrolling inside it.
-function render(body) {
+//
+// Exported because a door is corpus markdown too, and a second renderer beside
+// this one would give the same table two behaviours on two pages.
+export function renderMarkdown(body) {
 	return markMatrix(wrapTables(marked.parse(stripLeadingH1(body))));
 }
 
@@ -147,7 +150,7 @@ function readGroup(source, group) {
 				fullName: [numberOf(slug), displayName(slug, group.id)].filter(Boolean).join(' '),
 				number: numberOf(slug),
 				href: `${group.base}/${slug}`,
-				html: render(split.body),
+				html: renderMarkdown(split.body),
 				cardLinks: split.links,
 				// The markdown as written. /filters reads the operator vocabulary
 				// and the value matrix back out of it. Stripped before anything
@@ -550,7 +553,7 @@ export const FAMILIES = [
 	'Other'
 ];
 
-const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
+export const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 const SITE_PREFIXES = ['/spec.', '/preferences', '/license_info', '/schedule/', '/subscription_seat/'];
 const ATTENTION = ['follow', 'activity_stream', 'thread_contents'];
 
