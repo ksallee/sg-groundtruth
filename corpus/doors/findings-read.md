@@ -370,3 +370,36 @@ and nothing, which reads as "no display name" rather than "wrong field".
   children before deleting a parent; the 204 names nothing it took with it.
 
 `corpus/findings/060_entity_dict_name.md`
+
+## 064_hierarchy_expand_buckets
+
+Dedupe `children` by `path` and keep the first. The `__none__` bucket is repeated once per group, byte-identical every time, and its rows are disjoint from every group's. **[partial]**
+
+not measured: how the web interface draws the repeated node. Its tree needs a session a person approves (probe 052), and the saved token had expired
+
+- **Dedupe `children` by `path` and keep the first.** The bucket is emitted once after every group
+  and each copy serialises identically, key order included, so the first is the whole of it.
+
+- The repeat count is the number of groups, not the number of ungrouped rows. On the probed site one
+  project has 44 empty sequences and 44 unsequenced Shots: 44 groups that expand to `No Shots`, and
+  44 copies of the one bucket that holds all 44 rows.
+
+- `has_children: true` on the bucket is a shape, not a count. A project with nothing ungrouped still
+  lists it, and expanding it answers a single child of `"kind": "empty"` labelled `No Shots`.
+
+- A row is under the bucket or under a group, never both. Bucket rows and group rows summed to the
+  project's own Shot count on both projects measured that way.
+
+- **A grouping field with no rows hides every row under it.** On the probed site a project with 13
+  Shots and no Sequence answers `/Project/<id>/Shot` as one `"kind": "empty"` child labelled
+  `No Shots`, with no bucket among the children. The bucket path answers all 13 when asked for
+  directly, so build it rather than trusting `children` to name it.
+
+- Grouping by a list field repeats nothing: `/Project/<id>/Asset` returns one `__none__` child, last,
+  with `"kind": "list"`. The repetition measured here is the entity-grouped case.
+
+- `_expand` and `_search` spell the same bucket differently, and both answer: `_search` writes
+  `sg_sequence/__none__` where `_expand` writes `sg_sequence/Sequence/__none__`. The label is
+  templated off the segment, so the first reads `Shots with no __none__`.
+
+`corpus/findings/064_hierarchy_expand_buckets.md`

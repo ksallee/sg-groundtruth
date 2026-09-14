@@ -69,3 +69,4 @@ Without the cookie, or with a REST bearer instead of it:
 - `endpoints/post_internal_api_autodesk_identity_license_renewal`
 - `endpoints/put_internal_api_app_session_request_id`
 - `findings/052_app_session_launcher`
+- `findings/062_cors`

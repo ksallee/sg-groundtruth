@@ -16,13 +16,13 @@ An endpoint door holds the edge cases that live on the call and the verdict of e
 
 **auth** 001_auth, 027_auth_permissions, 052_app_session_launcher
 
-**protocol** 004_array_vs_hash, 028_loud_and_silent, 051_api_version
+**protocol** 004_array_vs_hash, 028_loud_and_silent, 051_api_version, 062_cors
 
-**schema** 002_schema, 008_custom_entities, 009_status_lists, 019_create_fields, 040_field_revive, 042_spec_coverage, 047_site_facts_and_the_working_week, 056_stock_vs_custom_field
+**schema** 002_schema, 008_custom_entities, 009_status_lists, 019_create_fields, 040_field_revive, 042_spec_coverage, 047_site_facts_and_the_working_week, 056_stock_vs_custom_field, 061_shipped_statuses
 
-**read** 003_query, 005_link_usage, 006_pagination, 007_fill_rates, 018_project_listing, 021_media_resolution, 023_pages, 026_result_order, 048_one_record_beyond_crud, 059_dotted_path_type_check, 060_entity_dict_name
+**read** 003_query, 005_link_usage, 006_pagination, 007_fill_rates, 018_project_listing, 021_media_resolution, 023_pages, 026_result_order, 048_one_record_beyond_crud, 059_dotted_path_type_check, 060_entity_dict_name, 064_hierarchy_expand_buckets
 
-**filter** 016_dotted_multi_entity, 017_filter_operators, 020_summarize, 030_complex_filters, 046_search_without_a_path, 053_text_search_matching
+**filter** 016_dotted_multi_entity, 017_filter_operators, 020_summarize, 030_complex_filters, 046_search_without_a_path, 053_text_search_matching, 063_text_search_filter_shape
 
 **write** 011_create_project, 012_create_version, 024_read_after_write, 045_webhooks, 050_webhook_subscriptions, 058_local_storage_roots
 
@@ -187,4 +187,4 @@ POST /internal_api/session
 
 `doors/tags.md` holds the entries under each.
 
-async attachment auth batch cache client colour cost create custom-entity custom-field cut date delivery dependency destructive discovery dotted-field duration entity-field enumeration error-handling etag event-log fill-rate filter follow header icon image inspector jsonb launcher link list-field media multi-entity multipart note number observe operator page paging path permission pivot-column playlist project protocol provenance published-file query read-only reply schema sequence serializable shot silent sort status step storage sudo summary task timecode token transcode trap upload url user version webhook write
+async attachment auth batch browser cache client colour cors cost create custom-entity custom-field cut date delivery dependency destructive discovery dotted-field duration entity-field enumeration error-handling etag event-log fill-rate filter follow header icon image inspector jsonb launcher link list-field media multi-entity multipart note number observe operator page paging path permission pivot-column playlist project protocol provenance published-file query read-only reply schema sequence serializable shot silent sort status step storage sudo summary task timecode token transcode trap upload url user version webhook write

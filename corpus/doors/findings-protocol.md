@@ -36,7 +36,8 @@ Only `?fields` fails quietly, and a typo there reads as "no data" rather than "w
 | `api3_hash` | `{"logical_operator": "and", "conditions": [[field, op, value]]}` |
 
   The conditions inside the hash form stay triples. An object of `path`/`relation`/`values` is 400
-  `Missing logical operator`, and a bare list under `api3_hash` is 400 `Query is not an Hash`.
+  `Missing logical operator`, and a bare list under `api3_hash` is 400 `Query is not an Hash`. The
+  per-type filters of `POST /entity/_text_search` split the same way, one key at a time (probe 063).
 
 `corpus/findings/004_array_vs_hash.md`
 
@@ -120,3 +121,58 @@ server does not recognise them, and a write is confirmed by re-reading the row, 
   `servers` whichever prefix served it. Left in, both read as version differences and neither is one.
 
 `corpus/findings/051_api_version.md`
+
+## 062_cors
+
+Every path under `/api/v1` answers the preflight and echoes any `Origin`, credentials true. `/internal_api` and the web paths send no CORS header, so a page on another origin proxies those. **[partial]**
+
+not measured: what a live session cookie authenticates on /api/v1, since allow-credentials invites one, and the presigned upload host, which is not this site. A live session needs a person at a browser
+
+- `/api/v1` reflects whatever `Origin` reaches it. There is no allowlist to be on and nothing to
+  register: `null`, an `http://localhost` origin and the string `banana` all come back in
+  `access-control-allow-origin`, each with `access-control-allow-credentials: true`, so a browser
+  permits a credentialed cross-origin call from any page to any Flow PT site.
+
+- `Vary: Origin, Access-Control-Request-Method` is on every answer, so a shared cache does not hand
+  one origin the reply meant for another.
+
+- The preflight is answered in front of the API rather than by the route. Any path under `/api/v1`
+  answers 200 with the echo, including one no route serves; a path outside `/api/v1` answers 200
+  with nothing. It takes no token, and the answer has an empty body.
+
+- What is allowed is fixed, except the header list, which is an echo of a closed set:
+
+  | asked for | answered |
+  |---|---|
+  | `Access-Control-Request-Method` one of `GET` `POST` `PUT` `PATCH` `DELETE` | `access-control-allow-methods: GET, POST, PUT, PATCH, DELETE` |
+  | `Access-Control-Request-Method: TRACE` or `BREW` | 200 with every CORS header dropped, which fails the preflight |
+  | `Access-Control-Request-Headers` drawn from `authorization`, `content-type`, `accept`, `accept-language`, `content-language`, `range`, `origin` | the same string echoed back |
+  | one name outside that set, even beside a legal one | 200 with every CORS header dropped |
+
+  A page may send `Authorization` and the `application/vnd+shotgun.api3_hash+json` content type
+  (probe 004), and nothing else: `cache-control`, `if-none-match` and `x-requested-with` fail the
+  preflight and the request is never made. The content type is not a safelisted value, so every
+  call is preflighted, and `access-control-max-age: 3600` is what keeps that to one extra round
+  trip per hour.
+
+- No `access-control-expose-headers`, so script reads only the six safelisted response headers
+  (`cache-control`, `content-language`, `content-type`, `expires`, `last-modified`, `pragma`).
+
+- `etag` and `x-request-id` are on the response and unreadable from a page, and `if-none-match` is
+  refused at the preflight, so a browser client has no conditional request and no request id to
+  quote in a support ticket.
+
+- What a page on another origin can call:
+
+  | | from a page on another origin |
+  |---|---|
+  | everything under `/api/v1` | direct. Mint a token, read, filter, write. The `_upload` flow then leaves the site for a presigned host, whose own answer is not measured here |
+  | `/internal_api/*`: the App Session Launcher and the session | through a proxy. The browser discards an answer with no `access-control-allow-origin`, at 200, 401 and 404 alike |
+  | `/images/...`, `/dist/...` | as an `<img>` or a `<link>`, which need no CORS. Not through `fetch`, and pixels read back off a canvas are tainted |
+
+  So a page signs a person in by having its own server make the two launcher calls of probe 052,
+  opening the returned `url` in a tab for the person to approve, and then minting the bearer from
+  the page, since `POST /auth/access_token` is one of the calls it may make. The alternative, a
+  page holding `client_credentials`, ships the script key to every visitor.
+
+`corpus/findings/062_cors.md`

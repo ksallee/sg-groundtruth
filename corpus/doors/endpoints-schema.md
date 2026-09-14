@@ -20,6 +20,8 @@ The enabled type list, and the enablement test for a `CustomEntityNN`: a slot ab
 
 **Measured by**
 
+- `062_cors` (findings) — Every path under `/api/v1` answers the preflight and echoes any `Origin`, credentials true. `/internal_api` and the web paths send no CORS header, so a page on another origin proxies those.  
+  rules: `doors/findings-protocol`
 - `002_schema` (findings) — Fetch /schema once for the type list, then /schema/<Type>/fields only for types you actually need: it is the expensive call (48KB, ~330ms each) and must never be looped over all types.  
   rules: `doors/findings-schema`
 - `008_custom_entities` (findings) — Presence in /schema is the enablement test for a custom entity: a slot absent from the listing 404s. Slot numbers are non-contiguous and site-specific, so read name.value and never hardcode one.  
@@ -74,6 +76,8 @@ Every field on one type with its `data_type`, `editable` and `mandatory`. The ex
 - `019_create_fields` (findings) — Custom fields are creatable over REST, but you pass a display name and a duplicate silently becomes <name>_1: an idempotent ensure() must read /schema first, never POST-and-hope.  
   rules: `doors/findings-schema`
 - `056_stock_vs_custom_field` (findings) — A field with `visible.editable` false is stock and safe to depend on; true means the site can hide it, which is every custom field and a few stock ones. The `sg_` prefix decides nothing.  
+  rules: `doors/findings-schema`
+- `061_shipped_statuses` (findings) — Nothing in the schema marks a shipped Status. `system` is true on a minority of them; the stock set is `created_by is null`, plus `options[return_only]=retired` for the rows a site retired.  
   rules: `doors/findings-schema`
 - `007_fill_rates` (findings) — On the sample project 30 of 71 Version fields are populated. Rank by fill rate, but drop checkbox, summary and computed fields first: False and 0 are not null and read as 100% filled.  
   rules: `doors/findings-read`

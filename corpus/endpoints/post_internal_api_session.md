@@ -58,3 +58,4 @@ after   expiresAt 1788975774      now + 86400
 - `endpoints/get_internal_api_session`
 - `endpoints/post_auth_access_token`
 - `findings/052_app_session_launcher`
+- `findings/062_cors`
