@@ -113,11 +113,11 @@ and no `list` field at all. A cut's status is on the Cut.
 `cut.Cut.id` also reads back in `fields`, unlike a dotted path through a multi_entity field (probe 016).
 
 **Traps**
-- **An id does not say which Cut a row is on, and `code` repeats across Cuts.** A search on
-  `[["code", "is", "sh010"]]` returned items `(46, cut 19)` and `(53, cut 20)`. A blind
-  `PUT /entity/cut_items/53` with no `cut` key answered 200, left `cut` at 20, and overwrote the other
-  Cut's item. Deciding update-versus-create on "does it have an id" is the data-loss path: read the
-  candidates filtered on `cut`, or ask for `cut.Cut.id` and drop every id that does not match.
+- **An id does not say which Cut a row is on, and `code` repeats across Cuts.** A search on `[["code",
+  "is", "sh010"]]` returned items `(46, cut 19)` and `(53, cut 20)`. A blind `PUT /entity/cut_items/53`
+  with no `cut` key answered 200, left `cut` at 20, and overwrote the other Cut's item.
+- Deciding update-versus-create on "does it have an id" is the data-loss path: read the candidates
+  filtered on `cut`, or ask for `cut.Cut.id` and drop every id that does not match.
 - **Sending `cut` in an update moves the item** to that Cut at 200, and `Cut.cut_items` with
   `{"multi_entity_update_mode": "add"}` on the other side does the same, leaving the previous Cut
   holding `[]`.
