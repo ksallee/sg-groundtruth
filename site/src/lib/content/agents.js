@@ -8,9 +8,11 @@
 import { error, text } from '@sveltejs/kit';
 import { index, slugs, findingsByPhase, endpointsByFamily } from './corpus.js';
 import { SECTIONS, section, readEntry, twinHref } from './markdown.js';
+import { doors, doorTwinHref } from './doors.js';
 import { ORIGIN, REPO } from '$lib/site.js';
 
 const abs = (href) => `${ORIGIN}${href}`;
+const link = (label, href) => `[${label}](${abs(href)})`;
 
 // A row a client can act on: what it is, where the bytes are, and the one line
 // the entry ends in. Coverage rides along, because an entry that reads like the
@@ -72,6 +74,14 @@ export function sectionIndex(segment) {
 		lines.push(...part.entries.map(row), '');
 	}
 
+	// A client that fetched one section has the names and the verdicts. The rules
+	// behind them are on the doors for that same group, so the section names them
+	// rather than leaving the reader to go back to the map for it.
+	const rules = doors().filter((d) => d.kind === section.group);
+	if (rules.length) {
+		lines.push(`The rules these entries teach, copied whole: ${rules.map(doorLink).join(', ')}.`, '');
+	}
+
 	lines.push(
 		`Append \`.md\` to any entry URL for the file that page was built from.`,
 		`The rendered pages are at ${abs(section.base)}.`,
@@ -81,54 +91,169 @@ export function sectionIndex(segment) {
 }
 
 // --- llms.txt ---------------------------------------------------------------
+//
+// The map, over HTTP. `probes/index.py` writes the same map to `corpus/INDEX.md`
+// for an agent with a clone, and the protocol here is in its words: an agent
+// handed either one is told to do the same thing. What changes is that every
+// name is a URL, because a client that fetches cannot open a path.
+//
+// It is the map and not the corpus again. One line per entry with its verdict
+// was 44 KB, which is the index a second time over HTTP, and the verdicts now
+// have a tier of their own: the doors.
 
-const PREAMBLE = `> Recorded behaviour of the Flow Production Tracking REST API. Every entry is what a live \
-site answered when a probe asked it. The official REST documentation is incomplete and in places wrong.
+const BLURB =
+	'> Recorded behaviour of the Flow Production Tracking REST API. Every entry is what a live site ' +
+	'answered when a probe asked it. The official REST documentation is incomplete and in places wrong.';
 
-Append \`.md\` to any entry or section URL for the markdown that page was built from, frontmatter \
-included. ${ORIGIN}/findings/026_result_order.md is the file behind \
-${ORIGIN}/findings/026_result_order.
+const doorLink = (d) => link(`doors/${d.name}.md`, doorTwinHref(d.name));
 
-The frontmatter is the retrieval key, and it is why the twins carry it:
+// The mark a door puts on an entry whose calls were not all made and answered.
+const mark = (e) => (e.coverage && e.coverage !== 'measured' ? ` **[${e.coverage}]**` : '');
 
-| key | what it selects |
-|---|---|
-| \`scope\` | \`api\` is the only scope published here. It is true of any Flow PT site. A measurement of one site or one project stays in the repository. |
-| \`phase\` | the part of a session a finding bites in: auth, protocol, schema, read, filter, write, upload, observe, render |
-| \`endpoints\` | the calls the entry was measured against, spelled as the card that owns them is named |
-| \`tags\` | the subject. \`silent\`, \`destructive\` and \`trap\` name the kind of failure instead. |
-| \`verdict\` | the one line the entry ends in |
-| \`coverage\` | absent means measured. \`partial\` and \`untested\` come with an \`unmeasured\` line. |
-
-Four ways in, one per thing a caller already knows.
-
-| you know | start at |
-|---|---|
-| the call you are about to make | ${ORIGIN}/endpoints.md |
-| the entity type | ${ORIGIN}/entity-types.md |
-| the field's \`data_type\` | ${ORIGIN}/field-types.md |
-| the task | ${ORIGIN}/recipes.md |
-
-Findings are what the API does, and they are grouped by phase rather than by number: \
-${ORIGIN}/findings.md`;
+// Every entry is named the way the doors name it, which is its slug, so a name
+// read off the map matches the heading it is under on the door. An endpoint card
+// is named by its call: that is the card's identity and the only thing a caller
+// holds.
+const name = (e) => (e.group === 'endpoints' ? `\`${e.endpoint}\`` : e.slug);
+const entryLink = (e) => link(name(e), twinHref(e.group, e.slug)) + mark(e);
+const names = (rows) => rows.map(entryLink).join(', ');
 
 export function llmsTxt() {
-	const lines = ['# SG Ground Truth', '', PREAMBLE, ''];
+	const data = index();
+	const open = doors();
+	const cited = new Set();
+	const byName = (n) => {
+		const found = open.find((d) => d.name === n);
+		if (found) cited.add(found.name);
+		return found;
+	};
+	const ofKind = (kind, test = () => true) =>
+		open.filter((d) => d.kind === kind && test(d)).map((d) => (cited.add(d.name), d));
 
-	for (const section of SECTIONS) {
-		const { rows } = group(section.segment);
-		if (!rows.length) continue;
-		lines.push(`## ${section.title}`, '', ...rows.map(row), '');
+	const findings = published(data.findings);
+	const recipes = published(data.recipes);
+	const cards = published(data.endpoints);
+
+	const lines = ['# SG Ground Truth', '', BLURB, ''];
+
+	lines.push(
+		'Read this first. It names every entry and says which door to open. A group door carries one ' +
+			'line per entry and that entry\'s rules, copied whole.',
+		'',
+		'| you know | open |',
+		'|---|---|',
+		'| the call | its family under **Endpoints** |'
+	);
+	for (const [holds, door] of [
+		['the entity type', 'entity_types'],
+		['the `data_type`', 'field_types'],
+		['the task', 'recipes']
+	]) {
+		const found = byName(door);
+		if (found) lines.push(`| ${holds} | ${doorLink(found)} |`);
 	}
+	lines.push(
+		'| the phase of a session | its phase under **Findings** |',
+		'',
+		'An endpoint door holds the edge cases that live on the call and the verdict of every entry ' +
+			'that measured it, each naming the group door its rules are on. Read the verdicts, open that ' +
+			'door for the rules, the entry for a transcript, a sample or a table. A 2xx that did nothing ' +
+			'is under **Silent on this call**. Measured against `/api/v1`.',
+		'',
+		'Every URL here is the markdown its page was built from. Drop the `.md` for the rendered page. ' +
+			'On an entry the frontmatter is the retrieval key, and it is why the twins carry it: `scope` ' +
+			'(`api` is the only one published here, and is true of any Flow PT site), `phase`, ' +
+			'`endpoints`, `tags`, `verdict`, and `coverage`, which is absent on an entry fully measured.',
+		''
+	);
+
+	lines.push('## Findings', '');
+	for (const phase of findingsByPhase(findings)) {
+		const door = byName(`findings-${phase.id}`) ?? byName('unphased');
+		lines.push(`**${phase.id}**${door ? ` ${doorLink(door)}` : ''}`, '', names(phase.entries), '');
+	}
+
+	for (const [title, rows, door] of [
+		['Field types', published(data.fieldTypes), 'field_types'],
+		['Entity types', published(data.entityTypes), 'entity_types']
+	]) {
+		const found = byName(door);
+		lines.push(`## ${title}`, '', ...(found ? [doorLink(found), ''] : []), names(rows), '');
+	}
+
+	const recipeDoor = byName('recipes');
+	lines.push(
+		'## Recipes',
+		'',
+		...(recipeDoor ? [doorLink(recipeDoor), ''] : []),
+		...recipes.map((e) => `- ${entryLink(e)}: ${e.verdict}`),
+		''
+	);
+
+	// The count is what makes a card with nothing behind it the queue rather than
+	// an omission, and it is read off the join, never written down.
+	const measured = new Set([...findings, ...recipes].flatMap((e) => e.endpoints));
+	const covered = cards.filter((c) => measured.has(c.endpoint)).length;
+	lines.push(
+		'## Endpoints',
+		'',
+		`One card per call, ${covered} of ${cards.length} with an entry behind them; a card with none ` +
+			'is the queue.',
+		''
+	);
+	for (const fam of endpointsByFamily(cards)) {
+		const famDoors = ofKind('endpoints', (d) => d.family === fam.id);
+		lines.push(
+			`**${fam.id}**${famDoors.length ? ` ${famDoors.map(doorLink).join(', ')}` : ''}`,
+			'',
+			...fam.entries.map((e) => `- ${entryLink(e)}`),
+			''
+		);
+	}
+
+	const reportDoor = byName('reports');
+	const reports = published(data.reports);
+	if (reports.length) {
+		lines.push('## Reports', '', ...(reportDoor ? [doorLink(reportDoor), ''] : []), names(reports), '');
+	}
+
+	const tagDoor = byName('tags');
+	const tags = [
+		...new Set(
+			[findings, published(data.fieldTypes), published(data.entityTypes), recipes, cards, reports]
+				.flat()
+				.flatMap((e) => e.tags)
+		)
+	].sort();
+	lines.push(
+		'## Tags',
+		'',
+		...(tagDoor ? [`${doorLink(tagDoor)} holds the entries under each.`, ''] : []),
+		tags.join(' '),
+		''
+	);
 
 	lines.push(
 		'## Elsewhere',
 		'',
-		`- [How it works](${ORIGIN}/how-it-works): how the corpus is produced, and what the three scopes mean`,
-		`- [Filters](${ORIGIN}/filters): the operator vocabulary, one section per \`data_type\`. HTML only; each field-type twin carries its own filter matrix.`,
+		`- ${link('Every door', '/doors')}: what each one holds, and how large it is`,
+		`- ${link('How it works', '/how-it-works')}: how the corpus is produced, and what the three scopes mean`,
+		`- ${link('Filters', '/filters')}: the operator vocabulary, one section per \`data_type\`. HTML only; each field-type twin carries its own filter matrix.`,
 		`- [The repository](${REPO}): the probes that produced every entry, and \`python -m sg_groundtruth.mcp\`, which serves this corpus to an agent over MCP`,
 		''
 	);
+
+	// A door nothing above names is a door an agent reading this file cannot
+	// reach. It is generated and committed, so this fails the build rather than
+	// publishing a map with a hole in it.
+	const missed = open.filter((d) => !cited.has(d.name)).map((d) => d.name);
+	if (missed.length) {
+		throw new Error(
+			`[agents] llms.txt names no URL for ${missed.join(', ')}. Every door in corpus/doors/ ` +
+				`has to be reachable from the map.`
+		);
+	}
+
 	return lines.join('\n');
 }
 
@@ -150,6 +275,8 @@ function pages() {
 		'/',
 		'/how-it-works',
 		'/filters',
+		'/doors',
+		...doors().map((d) => d.href),
 		...SECTIONS.map((s) => s.base),
 		...published(entries).map((e) => e.href)
 	];
