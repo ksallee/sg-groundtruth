@@ -156,14 +156,6 @@ an operator string as the first element, and a fourth element on a triple. `["id
 - Dotted paths work inside a nested group, and an error inside one is reported as at the top level: a bogus operator 400s with the field's `Valid relations` list,
   a bogus field with `API read() Shot.sg_not_a_field doesn't exist.`
 
-**Python equivalent** `shotgun_api3` spells the same tree with different keys: `filter_operator` for
-`logical_operator`, `filters` for `conditions`, `all` for `and` and `any` for `or`.
-
-```python
-sg.find("Shot", [{"filter_operator": "any",
-                  "filters": [["id", "is", 862], ["id", "is", 863]]}])
-```
-
 `corpus/findings/030_complex_filters.md`
 
 ## 046_search_without_a_path

@@ -86,22 +86,6 @@ The four production uses, measured:
   accepted and ignored, falling back to ascending `id`, so a client cannot tell an ignored sort from a
   satisfied one.
 
-**Python equivalent**
-
-```python
-
-probe 025: what a Shot's status was before the current one
-
-prev = sg.find_one(
-    "EventLogEntry",
-    [["entity", "is", {"type": "Shot", "id": shot_id}],
-     ["event_type", "is", "Shotgun_Shot_Change"],
-     ["attribute_name", "is", "sg_status_list"]],
-    ["meta"], order=[{"field_name": "id", "direction": "desc"}])
-now = sg.find_one("Shot", [["id", "is", shot_id]], ["sg_status_list"])["sg_status_list"]
-old = prev["meta"]["old_value"] if prev and prev["meta"]["new_value"] == now else None
-```
-
 `corpus/findings/025_event_log.md`
 
 ## 043_attention
@@ -163,16 +147,5 @@ A script's writes reach the event log only while its ApiUser has generate_event_
   puts `retirement_date` and `display_name` in `meta`, and every earlier row for that entity drops
   its `entity` link at once, so the history is reachable only through `meta.entity_id`, which is
   unfilterable (probe 025). Capture the id before deleting or lose the trail.
-
-**Python equivalent**
-
-```python
-
-probe 049: is this script even logging? check before trusting an empty feed
-
-me = sg.find_one("ApiUser", [["firstname", "is", SCRIPT_NAME]], ["generate_event_log_entries"])
-if not me["generate_event_log_entries"]:
-    sg.update("ApiUser", me["id"], {"generate_event_log_entries": True})
-```
 
 `corpus/findings/049_script_events.md`

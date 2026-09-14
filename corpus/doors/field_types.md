@@ -66,16 +66,6 @@ A checkbox is two-state, never null - an untouched row already reads false, null
 - Writing a legacy name is lossy: `"Red"` stores `253,1,0` and never reads back as `"Red"`, so filtering
   on the name it was written with returns 0.
 
-**Python equivalent**
-
-```python
-sg.update("Task", tid, {"color": "255,128,0"})       # decimal triple, no spaces
-sg.update("Task", tid, {"color": "pipeline_step"})   # the only way to un-set it; None is a 400
-t = sg.find_one("Task", [["id", "is", tid]], ["color", "step.Step.color"])
-c = t["step.Step.color"] if t["color"] == "pipeline_step" else t["color"]
-rgb = tuple(int(x) for x in c.split(",")) if c else None
-```
-
 `corpus/findings/field_types/color.md`
 
 ## date
@@ -417,20 +407,6 @@ REST does not enforce hidden_values: a project-hidden status writes and reads ba
 
 - Codes are per entity type: `Version` has 16, `Shot` 10, `Shot.sg_latest_vendor_status` 6. Never reuse a
   code across types, and read the schema per field, not per entity.
-
-**Python equivalent**
-
-```python
-
-usable statuses for a project, then set one
-
-f = sg.schema_field_read("Version", "sg_status_list", project_entity={"type": "Project", "id": pid})
-p = f["sg_status_list"]["properties"]
-usable = [v for v in p["valid_values"]["value"] if v not in p["hidden_values"]["value"]]
-sg.update("Version", vid, {"sg_status_list": "fin"})   # code, not "Final"
-sg.update("Version", vid, {"sg_status_list": None})    # clear; "" works too
-sg.find("Version", [["sg_status_list", "in", ["rev", "fin"]]])
-```
 
 `corpus/findings/field_types/status_list.md`
 

@@ -224,15 +224,6 @@ entity_types and event_type are mutually exclusive and one 400 covers giving nei
 
 - `batch_deliveries` and `validate_ssl_cert` round-trip on create and are readable back.
 
-**Python equivalent**
-
-```python
-
-probe 050: a login hook, which entity_types cannot express
-
-c.post("/webhook/hooks", json={"url": URL, "event_type": "Shotgun_User_Login"})
-```
-
 `corpus/findings/050_webhook_subscriptions.md`
 
 ## 058_local_storage_roots

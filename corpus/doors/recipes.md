@@ -119,17 +119,17 @@ Apply many creates, updates and deletes in one atomic call, and match the result
 
 Resolve a query field's value, and run the rows a saved Page shows
 
-The field is not a shortcut
+### The field is not a shortcut
 
-The four flavours
+### The four flavours
 
-The tree runs nowhere as stored
+### The tree runs nowhere as stored
 
-Tokens
+### Tokens
 
-Relations whose value is a list
+### Relations whose value is a list
 
-Reading the page
+### Reading the page
 
 - `columns` are schema field names in display order and go straight into `?fields`. All six on the
   page above were returned. On the probed site another Shot page lists the pivot columns `step_35` and
@@ -145,11 +145,11 @@ Reading the page
 - `sorts` and `grouping` are lists of `{column, direction}`. `?sort` takes one field, so the second
   and later sort keys and the grouping have to be applied client-side.
 
-The stored project can be a project that is gone
+### The stored project can be a project that is gone
 
-Once translated, the field is still unusable as a field
+### Once translated, the field is still unusable as a field
 
-The URL slug
+### The URL slug
 
 `corpus/recipes/003_query_fields_and_pages.md`
 
@@ -509,19 +509,19 @@ Add to and remove from a multi_entity field without destroying the links you did
 
 List the statuses a project actually offers, each with the label, colour and icon needed to draw it
 
-Two calls, not one per status
+### Two calls, not one per status
 
-`Icon.url` is empty unless `image_data` is asked for beside it
+### `Icon.url` is empty unless `image_data` is asked for beside it
 
-The three renderings
+### The three renderings
 
-Rediscover the sprite; never hardcode it
+### Rediscover the sprite; never hardcode it
 
-Fall back to `bg_color`
+### Fall back to `bg_color`
 
-The picker is not a validator
+### The picker is not a validator
 
-The other pieces
+### The other pieces
 
 - Read the schema per entity type. Codes do not transfer: on the probed site Version has 16 and Task
   10, overlapping on five, and `HumanUser` has `act` and `dis`, which no other type offers.
