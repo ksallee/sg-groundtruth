@@ -212,3 +212,112 @@ def by_endpoint(entries):
         if e["group"] == "endpoints" and e.get("endpoint"):
             out.setdefault(e["endpoint"], [])
     return out
+
+
+# The doors, and what a row on one says.
+#
+# `probes/index.py` writes them and the MCP server answers out of them, so the phase names, the
+# families and the shape of a row are spelled here once. A row that differs between the two is a door
+# an agent cannot follow: the name it read on one surface has to open on the other.
+
+# The order a client meets them, so the listing itself teaches the shape of a session.
+PHASES = {
+    "auth": "getting a token, and what it is",
+    "protocol": "headers, and what a status code is worth",
+    "schema": "what the site has, and adding to it",
+    "read": "getting rows back",
+    "filter": "selecting the rows you want",
+    "write": "creating and updating",
+    "upload": "getting bytes in and out",
+    "observe": "what changed",
+    "render": "showing it to a person",
+}
+
+# Endpoints are grouped by the resource they act on, in the order a client meets them, and the family
+# is derived from the path rather than declared on the card. A hand-kept list was fine at 23 endpoints
+# and wrong at 54: a new card fell off the end of it silently. `site/src/lib/content/corpus.js` holds
+# the same rules.
+FAMILIES = ["Session", "Site", "Schema", "Records", "Search", "Media", "Attention",
+            "Webhooks", "Exports", "Other"]
+METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"]
+
+SITE_PREFIXES = ("/spec.", "/preferences", "/license_info", "/schedule/", "/subscription_seat/")
+ATTENTION = ("follow", "activity_stream", "thread_contents")
+
+# Findings first and in phase order, then the matrices, the recipes and the reports: the order a
+# session meets them, which is the order the rules under a call are worth reading in.
+_RANK = {g: i for i, g in enumerate(
+    ["findings", "field_types", "entity_types", "recipes", "reports"])}
+
+
+def family(endpoint):
+    """The resource an endpoint acts on. Order matters: a path can match twice."""
+    method, _, path = endpoint.partition(" ")
+    if path == "/" or path.startswith(("/auth/", "/internal_api/app_session_request")):
+        return "Session"
+    if path.startswith(SITE_PREFIXES):
+        return "Site"
+    if path.startswith("/schema"):
+        return "Schema"
+    if "_search" in path or "_summarize" in path or path.startswith("/hierarchy/"):
+        return "Search"
+    if "_upload" in path or path.startswith(("<links.", "/transcode/")):
+        return "Media"
+    if any(k in path for k in ATTENTION):
+        return "Attention"
+    if path.startswith("/webhook"):
+        return "Webhooks"
+    if path.startswith("/exports/"):
+        return "Exports"
+    if path.startswith("/entity"):
+        return "Records"
+    return "Other"
+
+
+def entry_order(e):
+    phases = list(PHASES)
+    return (_RANK.get(e["group"], 9),
+            phases.index(e["phase"]) if e.get("phase") in phases else 9, e["slug"])
+
+
+def mark(e):
+    return "" if e.get("coverage", "measured") == "measured" else f" **[{e['coverage']}]**"
+
+
+def door_of(e):
+    """The door holding this entry's rules."""
+    if e["group"] == "findings":
+        return f"doors/findings-{e.get('phase')}" if e.get("phase") in PHASES else "doors/unphased"
+    return f"doors/{e['group']}"
+
+
+def door_row(e):
+    """One entry as a door writes it: the verdict, and where its rules are."""
+    return f"- `{e['slug']}` ({e['group']}) — {e['summary']}  \n  rules: `{door_of(e)}`"
+
+
+def joined(card, behind, order=entry_order):
+    """Every entry naming this call, the card itself excluded, in reading order."""
+    rows = (e for e in behind.get(card["endpoint"], []) if e["slug"] != card["slug"])
+    return sorted(rows, key=order)
+
+
+def measured_by(rows):
+    """The verdicts, not the rules.
+
+    Copying the bullets of every entry naming a call put 18,000 tokens on `POST /entity/<type>/_search`
+    alone and made the door dearer than the index it replaced (benchmark, #58). A verdict says whether
+    the entry bears on the call; the row names the door that holds its rules.
+    """
+    if not rows:
+        return []
+    return ["**Measured by**", ""] + [door_row(e) for e in rows] + [""]
+
+
+def silent_on(card, rows):
+    """A 2xx that did not carry out the request, on this call."""
+    silent = [e for e in [card] + rows if "silent" in e["tags"]]
+    if not silent:
+        return []
+    return (["**Silent on this call**", ""]
+            + [f"- `{e['slug']}` — {e['summary']}" for e in silent] + [""])
