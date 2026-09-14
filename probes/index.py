@@ -110,83 +110,77 @@ def entry_door(title, blurb, entries, heading=lambda e: e["slug"], name=None):
     return write(name, out)
 
 
-def call_section(card, behind, level="###"):
-    """One call: what the card says it takes and answers, its own edge cases, and what else bites."""
+# The door that holds an entry's rules, so a line on an endpoint door says where to read on.
+def rules_door(e):
+    if e["group"] == "findings":
+        return f"doors/findings-{e['phase']}" if e["phase"] in PHASES else "doors/unphased"
+    return f"doors/{e['group']}"
+
+
+def call_section(card, behind, order, level="##"):
+    """One call: what the card says it takes and answers, its own edge cases, and what measured it.
+
+    The verdicts, not the rules. Copying the bullets of every entry naming a call put 18,000 tokens
+    on `POST /entity/<type>/_search` alone and made the door dearer than the index it replaced
+    (benchmark, #58). A verdict says whether the entry bears on the call; the line names the door
+    that holds its rules.
+    """
     ep = card["endpoint"]
-    rows = [e for e in behind.get(ep, []) if e["slug"] != card["slug"]]
-    out = [f"{level} `{ep}`{mark(card)}", "", card["summary"], ""]
+    rows = sorted((e for e in behind.get(ep, []) if e["slug"] != card["slug"]), key=order)
+    out = ([f"{level} `{ep}`{mark(card)}", ""] if level else []) + [card["summary"], ""]
     if card.get("unmeasured"):
         out += [f"not measured: {card['unmeasured']}", ""]
     rules = C.rules(card)
     out += ["\n\n".join(rules) if rules else "No edge case recorded on the card.", ""]
+    if rows:
+        out += ["**Measured by**", ""]
+        out += [f"- `{e['slug']}` ({e['group']}) — {e['summary']}  \n  rules: `{rules_door(e)}`"
+                for e in rows] + [""]
     silent = [e for e in [card] + rows if "silent" in e["tags"]]
     if silent:
         out += ["**Silent on this call**", ""]
         out += [f"- `{e['slug']}` — {e['summary']}" for e in silent] + [""]
-    reported = [e for e in rows if e["group"] == "reports"]
-    if reported:
-        out += ["Reported: " + ", ".join(f"`{e['slug']}`" for e in reported)
-                + ". The reports door carries them.", ""]
-    rest = [e for e in rows if e["group"] != "reports"]
-    if rest:
-        out += ["Rules below: " + ", ".join(f"`{e['slug']}`" for e in rest), ""]
     return out + [f"`corpus/{card['path']}`", ""]
 
 
-def rule_sections(cards, behind, order, level="###"):
-    """Every rule that bites on one of these calls, copied whole, each naming where it came from.
-
-    An entry naming four of the calls states its rules once. Printing them under each call in turn
-    tripled the file and taught a reader nothing the second time.
-    """
-    named, held = {}, {c["endpoint"] for c in cards}
-    for card in cards:
-        for e in behind.get(card["endpoint"], []):
-            if e["slug"] != card["slug"] and e["group"] != "reports":
-                named.setdefault(e["slug"], e)
-    out = []
-    for e in sorted(named.values(), key=order):
-        where = ", ".join(f"`{p}`" for p in e["endpoints"] if p in held)
-        phase = f", phase `{e['phase']}`" if e.get("phase") else ""
-        out += [f"{level} `{e['slug']}` — {e['group']}{phase}", "", e["summary"], ""]
-        if where:
-            out += [f"On {where}.", ""]
-        rules = [C.attribute(b, e["slug"]) for b in C.rules(e)]
-        out += ["\n\n".join(rules) if rules else "No rule beyond the entry.", "",
-                f"`corpus/{e['path']}`", ""]
-    return out
-
-
-HEAD = ("Every call here, then every rule that bites on one of them, copied whole from the entry that "
-        "measured it. A rule ends in the slug it came from. Open that entry for the transcript, the "
-        "sample and the tables behind it. The map is `corpus/INDEX.md`.")
+HEAD = ("Every call in this family: what the card records, the edge cases that live on the call, and "
+        "the verdict of every entry that measured it. Each of those lines names the door holding "
+        "that entry's rules. The map is `corpus/INDEX.md`.")
 
 
 def endpoint_doors(fam, cards, behind, order):
-    """One door for the family, or one per call when the family's join is too big to read.
+    """One door for the family, split when it grows past what an agent should read to answer one call.
 
     A caller holds the call. What bites on it is spread over a card, findings in four phases and a
-    recipe, and reading one of those is how a caller ships an empty icon (#9).
+    recipe, and reading one of those is how a caller ships an empty icon (#9). The seam is the method,
+    which keeps the reads together and the writes together; a method group still over the cap splits
+    again, one door per call.
     """
-    body = ["## Calls", ""]
-    for card in cards:
-        body += call_section(card, behind)
-    rules = rule_sections(cards, behind, order)
-    if rules:
-        body += ["## Rules", ""] + rules
-    whole = [f"# Endpoints — {fam}", "", HEAD, ""] + body
-    if len("\n".join(whole)) <= DOOR_MAX or len(cards) == 1:
-        return [write(f"endpoints-{fam.lower()}.md", whole)], False
+    def door(name, title, rows):
+        out = [f"# {title}", "", HEAD, ""]
+        for card in rows:
+            out += call_section(card, behind, order)
+        return out, len("\n".join(out))
 
-    names = []
-    for card in cards:
-        out = [f"# `{card['endpoint']}`", "", HEAD, ""]
-        out += call_section(card, behind, level="##")
-        rows = rule_sections([card], behind, order, level="##")
-        if rows:
-            out += ["## Rules", ""] + rows
-        names.append(write(f"endpoints-{slugify(card['endpoint'])}.md", out))
-    return names, True
+    whole, size = door(fam, f"Endpoints — {fam}", cards)
+    if size <= DOOR_MAX or len(cards) == 1:
+        return [write(f"endpoints-{fam.lower()}.md", whole)], ""
+
+    names, per_call = [], False
+    for method in METHODS:
+        rows = [c for c in cards if c["endpoint"].split(" ", 1)[0] == method]
+        if not rows:
+            continue
+        lines, size = door(method, f"Endpoints — {fam}, {method}", rows)
+        if size <= DOOR_MAX or len(rows) == 1:
+            names.append(write(f"endpoints-{fam.lower()}-{method.lower()}.md", lines))
+            continue
+        per_call = True
+        for card in rows:
+            out = [f"# `{card['endpoint']}`", "", HEAD, ""]
+            out += call_section(card, behind, order, level="")
+            names.append(write(f"endpoints-{slugify(card['endpoint'])}.md", out))
+    return names, ("call" if per_call else "method")
 
 
 def main():
@@ -248,14 +242,14 @@ def main():
         return (rank.get(e["group"], 9),
                 phases.index(e["phase"]) if e.get("phase") in phases else 9, e["slug"])
 
-    per_call = set()
+    split = {}
     for fam in FAMILIES:
         rows = [e for e in cards if family(e["endpoint"]) == fam]
         if rows:
-            names, split = endpoint_doors(fam, rows, behind, order)
+            names, seam = endpoint_doors(fam, rows, behind, order)
             written.update(names)
-            if split:
-                per_call.add(fam)
+            if seam:
+                split[fam] = seam
 
     out = ["# Reports", "",
            "Behaviour that should change, addressed to the team that owns the API. Each names the "
@@ -279,7 +273,7 @@ def main():
         if f.name not in written:
             f.unlink()
 
-    index(findings, types, entities, recipes, cards, reports, by_tag, behind, per_call)
+    index(findings, types, entities, recipes, cards, reports, by_tag, behind, split)
     sizes = {f.name: f.stat().st_size for f in sorted(DOORS.glob("*.md"))}
     print(f"indexed {len(findings)} findings, {len(types)} field types, {len(entities)} entity "
           f"types, {len(recipes)} recipes, {len(cards)} endpoints, {len(reports)} reports, "
@@ -288,7 +282,7 @@ def main():
           f"largest {max(sizes.values())} bytes ({max(sizes, key=sizes.get)})")
 
 
-def index(findings, types, entities, recipes, cards, reports, by_tag, behind, per_call):
+def index(findings, types, entities, recipes, cards, reports, by_tag, behind, split):
     """The map: every entry by name, and the door to open for each way in.
 
     Capped at 8,000 bytes by `check_corpus.py`. Every session pays for this file before it asks
@@ -298,8 +292,8 @@ def index(findings, types, entities, recipes, cards, reports, by_tag, behind, pe
     names = lambda rows: ", ".join(e["slug"] for e in rows)
     out = [
         "# Corpus index", "",
-        "Read this first. It names every entry and says which door to open. A door carries one line "
-        "per entry and its rules, copied whole.", "",
+        "Read this first. It names every entry and says which door to open. A group door carries one "
+        "line per entry and that entry's rules, copied whole.", "",
         "| you know | open |",
         "|---|---|",
         "| the call | its family under **Endpoints** |",
@@ -307,12 +301,11 @@ def index(findings, types, entities, recipes, cards, reports, by_tag, behind, pe
         "| the `data_type` | `doors/field_types.md` |",
         "| the task | `doors/recipes.md` |",
         "| the phase of a session | `doors/findings-<phase>.md` |", "",
-        "Open an entry when a rule needs its evidence. A 2xx that did nothing is under **Silent on "
-        "this call**, on the endpoint door. Everything here was measured against `/api/v1` "
-        "(`051_api_version`).", "",
+        "An endpoint door holds the edge cases that live on the call and the verdict of every entry "
+        "that measured it, each naming the group door its rules are on. Read the verdicts, open that "
+        "door for the rules, the entry for a transcript, a sample or a table. A 2xx that did nothing "
+        "is under **Silent on this call**. Measured against `/api/v1` (`051_api_version`).", "",
         "## Findings", "",
-        "How the API behaves, by the phase of a session it bites in. `doors/findings-<phase>.md`.",
-        "",
     ]
     for phase in list(PHASES) + ["unphased"]:
         rows = [e for e in findings
@@ -320,36 +313,29 @@ def index(findings, types, entities, recipes, cards, reports, by_tag, behind, pe
         if rows:
             out += [f"**{phase}** {names(rows)}", ""]
 
-    out += ["## Field types", "",
-            "One per `data_type`. `doors/field_types.md`.", "",
-            names(types) or "none yet", "",
-            "## Entity types", "",
-            "One per standard entity type. `doors/entity_types.md`.", "",
-            names(entities) or "none yet", "",
-            "## Recipes", "",
-            "A verified call and its real response. `doors/recipes.md`.", ""]
+    out += ["## Field types", "", names(types) or "none yet", "",
+            "## Entity types", "", names(entities) or "none yet", "",
+            "## Recipes", ""]
     out += [f"- {e['slug']} — {e['summary']}" for e in recipes] or ["none yet"]
 
     out += ["", "## Endpoints", "",
-            "One card per call; the door joins onto it every rule that names it. "
-            f"{covered} of {len(cards)} have an entry behind them, and a card with none is the "
-            "queue. **per call** is one door per call, `doors/endpoints-<call>.md`, the call in "
-            "lower case with `-` for every other run.", ""]
+            f"One card per call, {covered} of {len(cards)} with an entry behind them; a card with "
+            "none is the queue. A family's door is `doors/endpoints-<family>.md`, in lower case.",
+            ""]
     for fam in FAMILIES:
         rows = [e for e in cards if family(e["endpoint"]) == fam]
         if not rows:
             continue
-        door = "per call" if fam in per_call else f"`doors/endpoints-{fam.lower()}.md`"
-        out += [f"**{fam}** — {door}", "", "```"] + [e["endpoint"] for e in rows] + ["```", ""]
+        seam = {"method": f", one door per method: `doors/endpoints-{fam.lower()}-<method>.md`",
+                "call": ", one door per call: `doors/endpoints-<call>.md`, the call in lower case "
+                        "with `-` for every other run"}.get(split.get(fam), "")
+        out += [f"**{fam}**{seam}", "", "```"] + [e["endpoint"] for e in rows] + ["```", ""]
     unknown = sorted(set(behind) - {e["endpoint"] for e in cards})
     if unknown:
         out += ["Named by an entry with no card: " + ", ".join(f"`{p}`" for p in unknown), ""]
 
-    out += ["## Reports", "",
-            "Behaviour that should change, and the re-probe queue. `doors/reports.md`.", "",
-            names(reports) or "none yet", "",
-            "## Tags", "",
-            "`doors/tags.md` lists the entries under each.", "",
+    out += ["## Reports", "", names(reports) or "none yet", "",
+            "## Tags", "", "`doors/tags.md` holds the entries under each.", "",
             " ".join(sorted(by_tag))]
     (CORPUS / "INDEX.md").write_text("\n".join(out) + "\n")
 
