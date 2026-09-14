@@ -40,10 +40,12 @@ FRONT_RE = re.compile(r"\A---\n(.*?)\n---\n", re.S)
 LIST_KEYS = ("tags", "endpoints", "evidence")
 # Every bold label any group uses as a section, so a section ends at the next one and not at the next
 # bolded sentence. Two findings state their first rule as `**Boolean logic needs ...**` over the table
-# that measures it, and a split on any bold line returned nothing for both.
+# that measures it, and a split on any bold line returned nothing for both. A new section label goes
+# here, or the section above it swallows it.
 LABELS = ("**Q**", "**Endpoint**", "**Docs claim**", "**Actual**", "**Teaches**",
           "**Data type**", "**Read**", "**Write**", "**Clear**", "**Filter**", "**Traps**",
           "**Type**", "**Identity**", "**Create**", "**Links**", "**Status**",
+          "**Python equivalent**",
           "**Params**", "**Sample requests**", "**Response codes**", "**Edge cases**",
           "**Expected**", "**Reproduce**", "**Impact**", "**Proposed change**")
 
@@ -84,24 +86,43 @@ def section(text, label):
 def blocks(text, prose=True):
     """The rules in a section, each copied whole.
 
-    A bullet keeps its continuation lines, so a bullet ending in an indented table keeps the table, and
-    a paragraph keeps the table it introduces. Never truncate one to its first sentence: CLAUDE.md
-    records what two verdicts cost when they dropped the qualifier and read finished anyway.
+    A bullet keeps its continuation lines, so a bullet ending in an indented table keeps the table; a
+    paragraph keeps the table it introduces and the sample under it. Never truncate one to its first
+    sentence: CLAUDE.md records what two verdicts cost when they dropped the qualifier and read
+    finished anyway.
     """
     out, lines = [], text.splitlines()
     i, first = 0, True
+
+    def past_fence(j):
+        """The line after the fence opening at j. A `#` inside one is a comment, not a heading."""
+        j += 1
+        while j < len(lines) and not lines[j].startswith("```"):
+            j += 1
+        return j + 1
+
     while i < len(lines):
         ln = lines[i]
         if not ln.strip():
             i += 1
             continue
-        if first:                       # the label line itself, and whatever trails it
+        if first:                       # the label line itself
             first = False
             if ln.startswith(("**", "#")):
                 i += 1
                 continue
+        if ln.startswith("```"):
+            end = past_fence(i)
+            if prose:
+                block = "\n".join(lines[i:end]).rstrip()
+                if out:                 # the sample is evidence for the rule above it
+                    out[-1] += "\n\n" + block
+                else:
+                    out.append(block)
+            i = end
+            continue
         if ln.startswith("#"):
-            out.append(ln.lstrip("# ").strip())
+            out.append(ln.rstrip())     # a heading is a rule where the prose under it is the working
             i += 1
             continue
         if ln[:2] in ("- ", "* "):
@@ -121,20 +142,22 @@ def blocks(text, prose=True):
             out.append("\n".join(buf).rstrip())
             continue
         if not prose:                   # a paragraph or a table nothing points at
-            while i < len(lines) and lines[i].strip() and lines[i][:2] not in ("- ", "* "):
+            while (i < len(lines) and lines[i].strip() and not lines[i].startswith("```")
+                   and lines[i][:2] not in ("- ", "* ")):
                 i += 1
             continue
         buf = []
         while i < len(lines):
             run = []
-            while i < len(lines) and lines[i].strip() and not lines[i].startswith("#"):
+            while (i < len(lines) and lines[i].strip()
+                   and not lines[i].startswith(("#", "```"))):
                 run.append(lines[i])
                 i += 1
             buf += run
-            # A paragraph and the table under it are one rule: the sentence states it and the table
-            # is the enumeration. Keep them together across the blank line between.
-            if (i + 1 < len(lines) and not lines[i].strip() and lines[i + 1].startswith("|")
-                    and not run[-1].startswith("|")):
+            # A paragraph and the table under it are one rule: the sentence states it and the table is
+            # the enumeration. Keep them together across the blank line between.
+            if (run and i + 1 < len(lines) and not lines[i].strip()
+                    and lines[i + 1].startswith("|") and not run[-1].startswith("|")):
                 buf.append("")
                 i += 1
                 continue
@@ -147,17 +170,6 @@ def rules(entry):
     """The rule blocks of one entry, in the order it states them."""
     spec = GROUPS[entry["group"]]
     return blocks(section(entry["text"], spec.rules), spec.prose)
-
-
-def attribute(block, slug):
-    """A joined rule names where it came from. A table is attributed on its own line, because a
-    trailing cell is a cell."""
-    lines = block.rstrip().splitlines()
-    if not lines:
-        return block
-    if lines[-1].lstrip().startswith("|"):
-        return f"{block}\n\n  from `{slug}`"
-    return f"{block} ({slug})"
 
 
 def load(corpus):

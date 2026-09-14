@@ -192,13 +192,11 @@ def main():
     types, entities, reports = by["field_types"], by["entity_types"], by["reports"]
     cards = sorted(by["endpoints"], key=lambda e: endpoint_key(e["endpoint"]))
 
-    behind = defaultdict(list)
+    behind = C.by_endpoint(entries)
     by_tag = defaultdict(list)
     for e in entries:
         for t in e["tags"]:
             by_tag[t].append(f"{e['slug']} ({e['group']})")
-        for p in e["endpoints"]:
-            behind[p].append(e)
 
     DOORS.mkdir(exist_ok=True)
     written = set()
