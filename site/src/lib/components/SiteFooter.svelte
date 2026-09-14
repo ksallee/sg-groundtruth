@@ -14,8 +14,12 @@
 			<li><a href={REPO}>GitHub</a></li>
 			<li><a href="{REPO}/tree/main/corpus">The corpus</a></li>
 			<li><a href="/how-it-works">How it works</a></li>
-			<!-- Every entry as markdown, one line each. On every page because the
-			     client that wants it did not arrive at the front door. -->
+			<!-- The middle tier: one line per entry and that entry's rules, copied
+			     whole. A reader who wants the rules and not the transcripts behind
+			     them has no other way in. -->
+			<li><a href="/doors">Doors</a></li>
+			<!-- The map as markdown. On every page because the client that wants it
+			     did not arrive at the front door. -->
 			<li><a href="/llms.txt">llms.txt</a></li>
 			<li>MIT, intended</li>
 		</ul>
