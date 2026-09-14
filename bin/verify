@@ -63,6 +63,11 @@ tools = json.loads(sys.stdin.readline())[\"result\"][\"tools\"]
 assert len(tools) >= 5, tools
 "'
 
+# What the server answers, not only that it answers: the map, a door by the name the map spells, an
+# entry's rules, a card joined to its door row, and the three searches #59 measured as misses. Every
+# claim in docs/mcp.md is a check in there, so a claim that stops being true fails here.
+run mcp-answers bin/check-mcp
+
 # Braces in a <pre> are a Svelte expression, which is why the corpus is rendered with marked and
 # not mdsvex. It is a build error, so the build is the check.
 #
