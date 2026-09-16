@@ -267,6 +267,28 @@ One create fills every `local_path_*` the storage row defines, whichever platfor
 
 `corpus/findings/058_local_storage_roots.md`
 
+## 069_client_note
+
+`client_note` cannot be set over REST: `true` on create is 400 and any `PUT` is 400 `editable on create only`. `sg_note_type: "Client"` is the one marker a caller can write.
+
+**Two refusals, one field.** The create path answers `Client Notes can not be created through the
+API`, and the update path answers `Note.client_note is editable on create only.` Read together they
+close every route: the only call allowed to set the flag refuses `true`, and `false` is what an omitted
+key already stores. The schema's `editable: false` is right here, unlike `created_at` (probe 070).
+`sudo_as_login` changes nothing; the refusal is on the API, not on the identity.
+
+**`sg_note_type` is what a REST caller can write.** Both fields are stock (`visible.editable` false,
+probe 056). `sg_note_type` is an ordinary `list`: a value outside `valid_values` is 400 with the
+vocabulary in the error, a `PUT` is 200, and `is` filters count it. On the probed site the vocabulary
+is `Internal` and `Client`; read it from the schema, never assume it. Setting it to `Client` leaves
+`client_note` `false`, so a client written this way is invisible to a filter on `client_note`.
+
+**Filter both when listing client-facing Notes.** A Note the web application flagged and a Note the
+API typed are two disjoint sets: `client_note is true` finds the first, `sg_note_type is "Client"`
+the second. On the probed sandbox, 0 and 108 rows.
+
+`corpus/findings/069_client_note.md`
+
 ## 070_authored_timestamps
 
 A create body sets created_at and updated_at and they read back exactly, on Note, Task and Version, though the schema flags both editable false; every PUT on either 400s. **[partial]**

@@ -332,3 +332,26 @@ Filter unread with `["read_by_current_user", "is", "unread"]` and read with `is 
 `in`.
 
 `corpus/findings/068_note_read_state.md`
+
+## 071_note_link_name_filter
+
+Filter notes about a thing on `note_links.<Type>.cached_display_name`: it resolves for every valid type, `code` 400s on Booking and `name` on all but Department. The path cannot be read back.
+
+**The type in the path picks the name field, and the types disagree.** `Shot`, `Asset`, `Sequence`
+and `Version` are named by `code`, `Department` and `Group` by `name`, a `Booking` by neither.
+`cached_display_name` is on every type and resolved for all 28, and on a Shot it matched the same
+20 rows as `code`. Use it unless the query needs a field only that type has.
+
+**A wrong type and a wrong field fail the same way.** `note_links.ZzNotAType.code` and
+`note_links.Shot.zz_not_a_field` both answer 400 `doesn't exist.`, so the error does not say which
+segment is wrong. Check the type against `valid_types` first.
+
+**One filter per type.** A path names one type, and `note_links` spans 28. "Notes about anything
+called sh010" is one `_search` per type the client cares about, or one `["note_links", "in",
+[{"type": "Shot", "id": N}, ...]]` after resolving the ids. There is no bare text relation on the
+field: `note_links contains` is 400.
+
+**Read the links back through the field, not the path.** `?fields=note_links.Shot.code` returns 200
+with the key absent (probe 016). Ask for `note_links` and take `relationships.note_links.data[].name`.
+
+`corpus/findings/071_note_link_name_filter.md`

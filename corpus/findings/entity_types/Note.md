@@ -100,7 +100,9 @@ Search "notes about X" through the link: it filters although it cannot be read b
 | `note_links.<Type>.code` | 27; `note_links.Booking.code` 400s `doesn't exist` | the same 20 |
 | `note_links.<Type>.name` | 1, `Department`; the other 27 400 | |
 | `note_links.Shot.sg_sequence.Sequence.code` | yes, two hops resolve | |
-| `note_links`, bare, with `contains` | 400 `'multi_entity' data type doesn't support 'contains' 'relation'` | | The list is not enforced either, and
+| `note_links`, bare, with `contains` | 400 `'multi_entity' data type doesn't support 'contains' 'relation'` | |
+
+The list is not enforced either, and
 creates sending `[{"type": "Project", ...}]` and `[{"type": "HumanUser", ...}]` both returned 201 and
 read the link back. Starting from `[Shot, Asset]`:
 
