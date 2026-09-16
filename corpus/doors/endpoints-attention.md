@@ -34,12 +34,17 @@ The two id keys bound the window that was searched, not the record's own history
 
 - `043_attention` (findings) — The six attention calls share no convention with the rest of the API: no paging, no `fields`, `links.self` spelled `/entity/Shot/7668`, and a missing record id on activity_stream is a 500.  
   rules: `doors/findings-observe`
+- `066_user_feed` (findings) — A HumanUser's activity_stream is what the person created, not what they follow: 0 of 9 rows touched the 81 followed records. A feed is a fan-out over their tasks' Shots and Assets.  
+  rules: `doors/findings-observe`
+- `067_notes_in_the_stream` (findings) — A Reply reaches every linked stream in 33 s as `create_reply`, creates too; a script's Note create and status changes were absent after 430 s. Write as a person.  
+  rules: `doors/findings-observe`
 - `009_attention_500s_on_bad_input` (reports) — A record id that does not exist on activity_stream is a 500, and the follow body answers 500 for the plural entity name every URL on the API uses while an invalid name answers 400.  
   rules: `doors/reports`
 
 **Silent on this call**
 
 - `043_attention` — The six attention calls share no convention with the rest of the API: no paging, no `fields`, `links.self` spelled `/entity/Shot/7668`, and a missing record id on activity_stream is a 500.
+- `067_notes_in_the_stream` — A Reply reaches every linked stream in 33 s as `create_reply`, creates too; a script's Note create and status changes were absent after 430 s. Write as a person.
 
 `corpus/endpoints/get_entity_type_id_activity_stream.md`
 
@@ -171,6 +176,8 @@ Everything one HumanUser follows, unpaged in a single body, filterable only by `
 **Measured by**
 
 - `043_attention` (findings) — The six attention calls share no convention with the rest of the API: no paging, no `fields`, `links.self` spelled `/entity/Shot/7668`, and a missing record id on activity_stream is a 500.  
+  rules: `doors/findings-observe`
+- `066_user_feed` (findings) — A HumanUser's activity_stream is what the person created, not what they follow: 0 of 9 rows touched the 81 followed records. A feed is a fan-out over their tasks' Shots and Assets.  
   rules: `doors/findings-observe`
 
 **Silent on this call**

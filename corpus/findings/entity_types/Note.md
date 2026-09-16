@@ -49,6 +49,9 @@ the field flagged `mandatory` is optional, as on Asset, Task and Version (probe 
 | `project` + `subject` + `content` | 201 |
 | `project` + `subject` + `note_links` | 201, the link stored |
 | `project` + `subject` + `attachments` | 201, the link stored |
+| `project` + `client_note: true` | 400 `API create() Client Notes can not be created through the API`, as the script and under `sudo_as_login` alike |
+| `project` + `client_note: false` | 201; the 201 echo omits the key and a re-read returns `false` |
+| `project` + `created_at: "2019-03-04T05:06:07Z"` | 201, stored as sent, though the schema flags it `editable: false` (probe 070) |
 
 An omitted `subject` is not auto-filled, unlike `Asset.code` and `Task.content`: the row has no title.
 The 201 echoes the server's defaults, so read them off the response:
@@ -81,11 +84,23 @@ The 201 echoes the server's defaults, so read them off the response:
 | `tags` | multi_entity | `['Tag']` | yes |
 | `addressings_to`, `addressings_cc` | multi_entity | `['Group', 'HumanUser']` | yes |
 
-`note_links` attaches a Note to the thing it is about. On the probed site its `valid_types` holds 36
-entries, the stock ones `Asset, Booking, Camera, Contract, Cut, Department, Episode, Group, Launch,
-Level, MocapPass, MocapSetup, MocapTake, MocapTakeRange, Performer, Playlist, Reel, Routine, Scene,
-Sequence, ShootDay, Shot, Slate, SourceClip, TaskTemplate, Version`, the rest `CustomEntityNN`. `Task`
-is absent: a Note about a Task goes in the separate `tasks` field. The list is not enforced either, and
+`note_links` attaches a Note to the thing it is about. `Task` is absent: a Note about a Task goes in the separate `tasks` field. On the probed site `valid_types` holds 28 entries, 26 stock and two `CustomEntityNN`:
+
+```
+Asset, Booking, Camera, Contract, Cut, Department, Episode, Group, Launch, Level, MocapPass,
+MocapSetup, MocapTake, MocapTakeRange, Performer, Playlist, Reel, Routine, Scene, Sequence,
+ShootDay, Shot, Slate, SourceClip, TaskTemplate, Version
+```
+
+Search "notes about X" through the link: it filters although it cannot be read back (probe 016), and the path names the target type, which decides the name field (probe 071).
+
+| path, over the 28 valid types | resolves | `is "sh010"` |
+|---|---|---|
+| `note_links.<Type>.cached_display_name` | 28 of 28 | 20 rows |
+| `note_links.<Type>.code` | 27; `note_links.Booking.code` 400s `doesn't exist` | the same 20 |
+| `note_links.<Type>.name` | 1, `Department`; the other 27 400 | |
+| `note_links.Shot.sg_sequence.Sequence.code` | yes, two hops resolve | |
+| `note_links`, bare, with `contains` | 400 `'multi_entity' data type doesn't support 'contains' 'relation'` | | The list is not enforced either, and
 creates sending `[{"type": "Project", ...}]` and `[{"type": "HumanUser", ...}]` both returned 201 and
 read the link back. Starting from `[Shot, Asset]`:
 
@@ -126,10 +141,20 @@ GET /schema/Note/fields/sg_status_list?project_id=<pid>
 
 `default_value` applies when the key is omitted on create, so a Note is never statusless. The
 `open_notes_count` rollup on other types counts Notes whose status is in the site's open set and can be
-neither filtered nor sorted (`field_types/summary`). `sg_note_type` is a separate `list` field whose
-`valid_values` is the set for a dropdown, also site configuration.
+neither filtered nor sorted (`field_types/summary`).
+
+**Read state** `read_by_current_user` holds `"read"` or `"unread"` per authenticated identity and is in no schema response: `GET /schema/Note/fields` returns 33 fields without it, and `GET /schema/Note/fields/read_by_current_user` answers 200 with `data: null` (probe 068).
+
+| call | result |
+|---|---|
+| `PUT {"read_by_current_user": "read"}` as the script | 200, re-reads `"unread"`: an ApiUser has no read state |
+| the same `PUT` under `sudo_as_login` | 200, re-reads `"read"` for that person and `"unread"` for everyone else |
+| `"zzznope"` | 400 `Update failed for [Note.read_by_current_user]: 'zzznope' is not a valid list value. Valid list values: 'read', 'unread'.` |
+| `["read_by_current_user", "is", "unread"]` | the caller's unread Notes |
+| `["read_by_current_user", "in", ["read"]]` | 200 and the caller's unread Notes; the filter is not evaluated |
 
 **Traps**
+- **`client_note` cannot be set over the API**, on create or after. Every update answers `400 API update() Note.client_note is editable on create only.` A client-facing Note over REST is `sg_note_type: "Client"`, an editable `list`, and nothing else; it leaves `client_note` false (probe 069).
 - **A bare `replies: []` write deletes the Reply rows.** Trimming that list the way a client trims any
   other `multi_entity` field destroys the replies, with nothing at the id after. Keep it out of a `PUT`.
 - A bare list written to `note_links` replaces the set, so appending one link with
