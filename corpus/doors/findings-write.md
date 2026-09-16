@@ -72,6 +72,10 @@ Site-wide types are the boundary, not the rule. `Project` has no `project` field
 `name` is the one field flagged both `mandatory` and `unique`, so a create there is not idempotent
 (`entity_types/Project`).
 
+`editable` is the same shape of flag and the same shape of wrong. `created_at` and `updated_at` are
+flagged `editable: false` on Note, Reply, Task and Version, and a create body sets both (probe 070).
+Neither flag describes the create path; send the body and read the 400.
+
 `corpus/findings/012_create_version.md`
 
 ## 024_read_after_write
@@ -262,3 +266,69 @@ One create fills every `local_path_*` the storage row defines, whichever platfor
   closed at the API; it stays a client convention.
 
 `corpus/findings/058_local_storage_roots.md`
+
+## 069_client_note
+
+`client_note` cannot be set over REST: `true` on create is 400 and any `PUT` is 400 `editable on create only`. `sg_note_type: "Client"` is the one marker a caller can write.
+
+**Two refusals, one field.** The create path answers `Client Notes can not be created through the
+API`, and the update path answers `Note.client_note is editable on create only.` Read together they
+close every route: the only call allowed to set the flag refuses `true`, and `false` is what an omitted
+key already stores. The schema's `editable: false` is right here, unlike `created_at` (probe 070).
+`sudo_as_login` changes nothing; the refusal is on the API, not on the identity.
+
+**`sg_note_type` is what a REST caller can write.** Both fields are stock (`visible.editable` false,
+probe 056). `sg_note_type` is an ordinary `list`: a value outside `valid_values` is 400 with the
+vocabulary in the error, a `PUT` is 200, and `is` filters count it. On the probed site the vocabulary
+is `Internal` and `Client`; read it from the schema, never assume it. Setting it to `Client` leaves
+`client_note` `false`, so a client written this way is invisible to a filter on `client_note`.
+
+**Filter both when listing client-facing Notes.** A Note the web application flagged and a Note the
+API typed are two disjoint sets: `client_note is true` finds the first, `sg_note_type is "Client"`
+the second. On the probed sandbox, 0 and 108 rows.
+
+`corpus/findings/069_client_note.md`
+
+## 070_authored_timestamps
+
+A create body sets created_at and updated_at and they read back exactly, on Note, Task and Version, though the schema flags both editable false; every PUT on either 400s. **[partial]**
+
+not measured: Whether an EventLogEntry create can date itself is untried: that row cannot be deleted afterwards (probe 025), so the probe did not spend one.
+
+**`editable: false` does not describe the create path.** Both timestamps are flagged `editable: false`
+on all four types and both are accepted in a create body. This is the same inversion probe 012 found on
+`mandatory`, where the one field flagged mandatory on a Note is optional and `project`, which is not
+flagged, is required. The server's own error says which half of the flag is real: `is editable on create
+only`, not `is not editable`. Read `editable: false` as "not editable by a `PUT`" and test the create.
+
+| verb | `created_at` | `updated_at` |
+|---|---|---|
+| `POST` | stored as sent | stored as sent, on the types that have it |
+| `PUT` | 400 `is editable on create only` | 400 `is editable on create only` |
+
+**An authored date is the real one.** It is what the row reads back, what `created_at` filters and
+sorts on, and what `less_than` selects: nothing keeps a separate wall-clock insert time. An import
+writes history that queries correctly, and a bug writes rows that a "created this week" feed can never
+see.
+
+**`null` is accepted and leaves the row undated.** `{"created_at": null}` answers 201 and the field
+reads back `None`, so every `created_at` filter and every sort on it drops the row. Omit the key rather
+than sending null on a create built by dropping empty values.
+
+- `updated_at` is not on `Reply` at all: the create 400s with `API create() Reply.updated_at doesn't
+  exist.` `created_at` is there and takes a value like the rest.
+
+- The value shapes are the `date_time` write shapes exactly (`field_types/date_time`): `ISO 8601` with or
+  without an offset, a date-only string meaning midnight UTC, an offset normalised to UTC, and
+  `"YYYY-MM-DD HH:MM:SS UTC"` refused, which is the spelling the create's own 201 echo uses.
+
+- The 201 echo and the re-read disagree about the format. Three of the four types echo
+  `2019-03-04 05:06:07 UTC`, Task echoes `ISO 8601`, and a `GET` on any of them returns `ISO 8601`. Parse
+  the re-read, not the echo.
+
+- `sudo_as_login` changes nothing here: a person's create dates itself exactly as the script's does.
+
+- Nothing measured here reaches the event log. A create still writes an `EventLogEntry` dated now, and
+  that entry cannot be deleted (probe 025), so a back-dated import leaves a forward-dated audit trail.
+
+`corpus/findings/070_authored_timestamps.md`

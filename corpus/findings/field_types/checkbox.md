@@ -105,6 +105,10 @@ ids here; `is_not None` cannot be asked at all.
 - `_summarize` returns the UI glyph, not the value, so the empty-group trick that yields an empty count
   on a list field (`[('<value>', 99), ('', 1)]`) never sees `''` here and reports the field fully
   populated.
+- A checkbox can be refused on both paths. `Note.client_note` is `editable: false` and answers
+  `400 API create() Client Notes can not be created through the API` to a create sending `true` and
+  `400 API update() Note.client_note is editable on create only.` to every update, `false` included, so
+  there is no value a caller can put in it (probe 069).
 - Strings coerce on read and write (`"true"` -> `True`), so a checkbox set from a CSV or a form post
   works until someone sends `"1"`. That 400s with a different error shape (`Invalid data for 'checkbox'
   data type`, under `source`) than a bare `1` (`expected [String, FalseClass, TrueClass] ... got

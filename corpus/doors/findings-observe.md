@@ -149,3 +149,52 @@ A script's writes reach the event log only while its ApiUser has generate_event_
   unfilterable (probe 025). Capture the id before deleting or lose the trail.
 
 `corpus/findings/049_script_events.md`
+
+## 066_user_feed
+
+A HumanUser's activity_stream is what the person created, not what they follow: 0 of 9 rows touched the 81 followed records. A feed is a fan-out over their tasks' Shots and Assets.
+
+- A HumanUser stream is the rows whose `created_by` is that person, plus the creation of the row
+  itself. It is not the Inbox and it is not the follow list: the 77 Tasks and 4 Notes the person
+  follows contributed nothing to it, and impersonating the person did not change it.
+
+- A Shot's stream holds its Tasks and Versions as `primary_entity` rows; a Task's stream holds the
+  Task alone. A feed of "my day" is one call per distinct Shot or Asset behind the person's Tasks,
+  merged on `id` descending, with `max_id` for paging (`endpoints/get_entity_type_id_activity_stream`).
+
+- `read` was false on every row under the script token and under `sudo_as_login`, so the stream does
+  not expose the Inbox's read state. Keep the last `id` seen locally and page with `min_id`.
+
+- What a Note or a Reply writes to any stream is `probe 067`.
+
+`corpus/findings/066_user_feed.md`
+
+## 067_notes_in_the_stream
+
+A Reply reaches every linked stream in 33 s as `create_reply`, creates too; a script's Note create and status changes were absent after 430 s. Write as a person.
+
+- **`create_reply` is a fourth `update_type`**, next to `create`, `update` and `delete`
+  (`probe 043`). Its `primary_entity` is the Note, named `<subject> - <content>`, and `meta` holds the
+  Reply's id and its `content`, so a feed can draw the reply without a second call.
+
+- One update id is written once and fanned out: the same `create_reply` row, id `247337`, was on
+  the Note, the Version, the Shot, the Task and the Project. A fan-out over several streams must
+  deduplicate on `id`.
+
+- A record's stream holds the creates of its children: the Shot's had the Task and the Version, the
+  Task's had the Version. The Version's stream holds no Task. Read the Shot or Asset, not the Task.
+
+- Latency for what does show is under 33 s on the probed site, against the 90 s absence
+  `probe 043` measured. Poll at 30 s.
+
+- A Note created by the script user wrote no `create` row on any of six streams, and two status
+  changes by the script wrote no `update`, in 430 s. Attribute changes made in the web application
+  are on the same streams.
+
+- Autodesk staff on the community forum tie API-made Inbox items to `sudo_as_login` and to the
+  script's "Generate Events" flag. A Note created under `scope=sudo_as_login` on the same site was
+  on the Shot's stream and on its own within 60 s. Attribute a write to a person (`probe 027`).
+
+- `read_by_current_user` on the Note read `"unread"` for the script, a string, not a boolean.
+
+`corpus/findings/067_notes_in_the_stream.md`

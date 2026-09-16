@@ -52,6 +52,7 @@ On the probed site and project: 16 `valid_values`, `hidden_values` `['pndl', 'pn
 | status | when |
 |---|---|
 | 200 | the field exists on that type |
+| 200, `data: null` | the field is real but the type's field census omits it: `GET /schema/Note/fields/read_by_current_user` |
 | 404 | `Field 'Version.sg_not_a_field' does not exist.` |
 
 **Edge cases**
@@ -62,6 +63,9 @@ On the probed site and project: 16 `valid_values`, `hidden_values` `['pndl', 'pn
   client subtracts `hidden_values` itself.
 - The 404 names the type and the field together, `Version.sg_not_a_field`, which is the only error on
   the schema endpoints that says which half you got wrong.
+- **A 200 with `data: null` is a third answer, not an empty one.** `Note.read_by_current_user` is on
+  every Note, filters and takes a write, and is in neither `GET /schema/Note/fields` nor this call's
+  `data`. Ask this endpoint, not the field census, before concluding a field is absent (probe 068).
 
 **Links**
 

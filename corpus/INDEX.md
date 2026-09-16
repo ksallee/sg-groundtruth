@@ -22,13 +22,13 @@ An endpoint door holds the edge cases that live on the call and the verdict of e
 
 **read** 003_query, 005_link_usage, 006_pagination, 007_fill_rates, 018_project_listing, 021_media_resolution, 023_pages, 026_result_order, 048_one_record_beyond_crud, 059_dotted_path_type_check, 060_entity_dict_name, 064_hierarchy_expand_buckets
 
-**filter** 016_dotted_multi_entity, 017_filter_operators, 020_summarize, 030_complex_filters, 046_search_without_a_path, 053_text_search_matching, 063_text_search_filter_shape
+**filter** 016_dotted_multi_entity, 017_filter_operators, 020_summarize, 030_complex_filters, 046_search_without_a_path, 053_text_search_matching, 063_text_search_filter_shape, 068_note_read_state, 071_note_link_name_filter
 
-**write** 011_create_project, 012_create_version, 024_read_after_write, 045_webhooks, 050_webhook_subscriptions, 058_local_storage_roots
+**write** 011_create_project, 012_create_version, 024_read_after_write, 045_webhooks, 050_webhook_subscriptions, 058_local_storage_roots, 069_client_note, 070_authored_timestamps
 
 **upload** 013_upload_media, 014_attach_file, 022_sequence_on_version, 039_upload_silent_failures, 044_multipart_upload
 
-**observe** 025_event_log, 043_attention, 049_script_events
+**observe** 025_event_log, 043_attention, 049_script_events, 066_user_feed, 067_notes_in_the_stream
 
 **render** 010_status_icons
 
@@ -55,6 +55,7 @@ Asset, Attachment, Cut, CutItem, Delivery, HumanUser, LocalStorage, Note, Playli
 - 011_audit_webhook_subscriptions — Inventory every webhook subscription on a site, and see which have ever delivered
 - 012_sign_in_as_a_person — Reach the REST API as a person, with no script key and no password, by having them approve a login in their browser
 - 013_publish_file_bytes — Publish a file's bytes onto a PublishedFile when the caller has no LocalStorage root to write under
+- 014_notes_about — Find the Notes about a Shot, Asset or Version by the name of the thing, and read what each Note is linked to
 
 ## Endpoints
 

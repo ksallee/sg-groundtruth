@@ -119,7 +119,11 @@ The same bad value fails on write and passes on read:
 - Never round-trip a filter value into an update.
 - An invalid operator 400s (probe 017); an invalid value does not, so a dropdown typo reads as "no rows match".
 - "list" names the schema, not the value: it holds one string, and an array 400s with `expected [String, NilClass]`.
-- `viewed_by_current_user` is flagged `editable: true` and takes a 200, but writing `'read'` reads back
-  `'unread'`: computed per API user, not storage (probe 007).
+- `viewed_by_current_user` and `Note.read_by_current_user` are stored per person, not per row. A write
+  under `sudo_as_login` reads back for that person alone; the script's own write answers 200 and stores
+  nothing, which is what "writing `'read'` reads back `'unread'`" was (probe 007, corrected by probe 068).
+- **A `list` field can name `in` and `not_in` in its own `Valid relations` and evaluate neither.** On
+  `Note.read_by_current_user`, `in`, `not_in` and an `is` value outside `valid_values` each answer 200
+  with the caller's unread rows rather than 0 (probe 068). Run a negative control per field.
 - `default_value` is applied on create when the field is omitted, so a fill-rate count over a `list` measures
   the default, not intent (probe 007).

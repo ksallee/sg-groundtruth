@@ -48,6 +48,12 @@ The only way to send a filter the query string cannot express, and it refuses `a
   rules: `doors/findings-filter`
 - `030_complex_filters` (findings) — api3_hash nests and/or groups 265 deep and mixes leaves with sub-groups; api3_array cannot express or, query-string filter[] is ignored on _search, and {path,relation,values} runs nowhere.  
   rules: `doors/findings-filter`
+- `068_note_read_state` (findings) — read_by_current_user is per person and missing from the schema; `is` and `is_not` are evaluated, while `in`, `not_in` and an unknown `is` value all return the unread rows at 200.  
+  rules: `doors/findings-filter`
+- `071_note_link_name_filter` (findings) — Filter notes about a thing on `note_links.<Type>.cached_display_name`: it resolves for every valid type, `code` 400s on Booking and `name` on all but Department. The path cannot be read back.  
+  rules: `doors/findings-filter`
+- `069_client_note` (findings) — `client_note` cannot be set over REST: `true` on create is 400 and any `PUT` is 400 `editable on create only`. `sg_note_type: "Client"` is the one marker a caller can write.  
+  rules: `doors/findings-write`
 - `014_attach_file` (findings) — Leave the field out of the _upload path and the file is stored as an Attachment on attachment_links; read it back with POST /entity/attachments/_search, never flat filter[].  
   rules: `doors/findings-upload`
 - `025_event_log` (findings) — meta.old_value and meta.new_value answer "what was this before", but meta is unfilterable and unsortable: narrow on entity, event_type and attribute_name, sort -id, read meta yourself.  
@@ -66,6 +72,8 @@ The only way to send a filter the query string cannot express, and it refuses `a
   rules: `doors/recipes`
 - `010_status_picker` (recipes) — List the statuses a project actually offers, each with the label, colour and icon needed to draw it  
   rules: `doors/recipes`
+- `014_notes_about` (recipes) — Find the Notes about a Shot, Asset or Version by the name of the thing, and read what each Note is linked to  
+  rules: `doors/recipes`
 - `003_sort_fails_silently` (reports) — A sort on an unknown or unsortable field answers 200 with the rows in default order, while the same field name in a filter answers 400 and names the reason.  
   rules: `doors/reports`
 - `008_jsonb_filters_return_everything` (reports) — A filter on PageSetting.settings_json or EventLogEntry.audit_trail is accepted and ignored, so the unfiltered set comes back at 200 and is_null and is_not_null each return every row.  
@@ -81,6 +89,7 @@ The only way to send a filter the query string cannot express, and it refuses `a
 - `016_dotted_multi_entity` — A dotted path through a multi_entity field reads back nothing: HTTP 200 with the key silently absent from attributes. Filters on that same path work, including two hops.
 - `017_filter_operators` — is/is_not/contains/not_contains/starts_with/ends_with/in/not_in all work, on text fields and through dotted paths; an unknown operator 400s on all 21 data types, naming the valid list on 16.
 - `030_complex_filters` — api3_hash nests and/or groups 265 deep and mixes leaves with sub-groups; api3_array cannot express or, query-string filter[] is ignored on _search, and {path,relation,values} runs nowhere.
+- `068_note_read_state` — read_by_current_user is per person and missing from the schema; `is` and `is_not` are evaluated, while `in`, `not_in` and an unknown `is` value all return the unread rows at 200.
 - `025_event_log` — meta.old_value and meta.new_value answer "what was this before", but meta is unfilterable and unsortable: narrow on entity, event_type and attribute_name, sort -id, read meta yourself.
 - `049_script_events` — A script's writes reach the event log only while its ApiUser has generate_event_log_entries True. The default is False and nothing errors when off. One create logs one row per field plus one _New.
 - `005_propagate_status` — Roll a status up from a parent's Tasks and Versions onto the parent, without racing a concurrent write
@@ -113,13 +122,20 @@ Counts without paging rows. One `grouping` returns a field's distinct values and
   rules: `doors/findings-filter`
 - `030_complex_filters` (findings) — api3_hash nests and/or groups 265 deep and mixes leaves with sub-groups; api3_array cannot express or, query-string filter[] is ignored on _search, and {path,relation,values} runs nowhere.  
   rules: `doors/findings-filter`
+- `068_note_read_state` (findings) — read_by_current_user is per person and missing from the schema; `is` and `is_not` are evaluated, while `in`, `not_in` and an unknown `is` value all return the unread rows at 200.  
+  rules: `doors/findings-filter`
+- `071_note_link_name_filter` (findings) — Filter notes about a thing on `note_links.<Type>.cached_display_name`: it resolves for every valid type, `code` 400s on Booking and `name` on all but Department. The path cannot be read back.  
+  rules: `doors/findings-filter`
 - `003_query_fields_and_pages` (recipes) — Resolve a query field's value, and run the rows a saved Page shows  
+  rules: `doors/recipes`
+- `014_notes_about` (recipes) — Find the Notes about a Shot, Asset or Version by the name of the thing, and read what each Note is linked to  
   rules: `doors/recipes`
 
 **Silent on this call**
 
 - `028_loud_and_silent` — A 400 is trustworthy and usually names the legal set, but a 200 proves nothing: an unknown field, sort key or query param is a no-op, and a batch can return an id for a row it never made.
 - `030_complex_filters` — api3_hash nests and/or groups 265 deep and mixes leaves with sub-groups; api3_array cannot express or, query-string filter[] is ignored on _search, and {path,relation,values} runs nowhere.
+- `068_note_read_state` — read_by_current_user is per person and missing from the schema; `is` and `is_not` are evaluated, while `in`, `not_in` and an unknown `is` value all return the unread rows at 200.
 
 `corpus/endpoints/post_entity_type_summarize.md`
 
