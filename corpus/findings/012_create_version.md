@@ -66,3 +66,7 @@ Sequence answers the same message for `""` and for `null` (`entity_types/Sequenc
 Site-wide types are the boundary, not the rule. `Project` has no `project` field at all, and its identity
 `name` is the one field flagged both `mandatory` and `unique`, so a create there is not idempotent
 (`entity_types/Project`).
+
+`editable` is the same shape of flag and the same shape of wrong. `created_at` and `updated_at` are
+flagged `editable: false` on Note, Reply, Task and Version, and a create body sets both (probe 070).
+Neither flag describes the create path; send the body and read the 400.

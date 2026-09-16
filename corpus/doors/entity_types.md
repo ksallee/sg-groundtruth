@@ -171,6 +171,8 @@ A LocalStorage row is site-wide and admin-only to write: an Artist reads every r
 
 A Note is titled by `subject` and bodied by `content`; only `project` is required to create one, `attachments` link in that same call, and a bare write to `replies` destroys the Reply rows.
 
+- **`client_note` cannot be set over the API**, on create or after. Every update answers `400 API update() Note.client_note is editable on create only.` A client-facing Note over REST is `sg_note_type: "Client"`, an editable `list`, and nothing else; it leaves `client_note` false (probe 069).
+
 - **A bare `replies: []` write deletes the Reply rows.** Trimming that list the way a client trims any
   other `multi_entity` field destroys the replies, with nothing at the id after. Keep it out of a `PUT`.
 

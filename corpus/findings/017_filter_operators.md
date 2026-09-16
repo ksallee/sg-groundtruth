@@ -61,3 +61,6 @@ an operator that does not exist
 - Every negative control returns 0 rather than the baseline, so these operators are applied, not ignored.
 - `in` takes a plain list for scalars, but on an entity field it needs full `{type, id}` hashes: `[{id: N}]` 400s with `invalid/missing entity hash string 'type'` and bare ints 400 with `expected [Hash, ...] but got Integer`.
 - `contains` through a dotted path (`entity.Shot.code`) makes server-side type-ahead over names one call, with no client-side scan.
+- A `list` field takes four relations, `is`, `is_not`, `in`, `not_in`, and refuses the text four: `["sg_note_type", "contains", "Client"]` 400s with `API read() Note.sg_note_type's 'list' data type doesn't support 'contains' 'relation'` (probe 068). Filter a dropdown with `in`.
+- **The `Valid relations` list is what the type accepts, not what it evaluates.** `Note.read_by_current_user` names all four, and only `is` and `is_not` filter: `in`, `not_in` and an `is` value outside the vocabulary each answer 200 with the caller's unread rows (probe 068). A negative control is the only way to tell.
+- Through a `multi_entity` link, the path has to name the target type and a field that type has. On `Note.note_links`, `cached_display_name` resolves on all 28 types the probed site allows, `code` on 27 and `name` on 1 (probe 071, and probe 016 for the read half).

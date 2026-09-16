@@ -620,3 +620,24 @@ Publish a file's bytes onto a PublishedFile when the caller has no LocalStorage 
   first, and the archive is what a consumer downloads.
 
 `corpus/recipes/013_publish_file_bytes.md`
+
+## 014_notes_about
+
+Find the Notes about a Shot, Asset or Version by the name of the thing, and read what each Note is linked to
+
+- `cached_display_name` resolves for every one of the 28 `valid_types`. `code` is 400 on `Booking`
+  and `name` on every type but `Department`, with the same `doesn't exist.` string for a wrong type
+  and a wrong field.
+
+- `?fields=note_links.Shot.code` answers 200 with the key absent from `attributes` (probe 016). The
+  links are readable only through `note_links` itself, as `{id, name, type}` triples.
+
+- `["note_links", "contains", NAME]` without a type is 400 `'multi_entity' data type doesn't support
+  'contains' 'relation'`. There is no search across all types in one filter by name; resolve ids first
+  and use `["note_links", "in", [{"type": ..., "id": ...}, ...]]`.
+
+- A Note about a Task is in `tasks`, not `note_links`. Search it on `tasks.Task.content`.
+
+- Two hops resolve: `note_links.Shot.sg_sequence.Sequence.code` narrows to a sequence.
+
+`corpus/recipes/014_notes_about.md`

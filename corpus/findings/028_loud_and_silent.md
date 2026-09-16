@@ -1,6 +1,6 @@
 ---
 tags: [query, filter, sort, write, operator, error-handling, trap, silent]
-endpoints: [POST /entity/<type>/_search, POST /entity/<type>/_summarize, GET /entity/<type>, GET /schema/<Type>, PUT /entity/<type>/<id>, POST /entity/_batch]
+endpoints: [POST /entity/<type>/_search, POST /entity/<type>/_summarize, GET /entity/<type>, GET /schema/<Type>, GET /schema/<Type>/fields/<field>, PUT /entity/<type>/<id>, POST /entity/_batch]
 phase: protocol
 scope: api
 measured: first sample project, read only
@@ -79,15 +79,18 @@ field-type matrix cheap to build.
 | `["id", "in", [...]]` | 200, id ascending; the order of the list is discarded (verified) | probe 026 |
 | any filter on `PageSetting.settings_json` | 200 and the full unfiltered set, while another field on the same type filters (verified) | probe 023 |
 | any filter on `EventLogEntry.audit_trail` | the same (verified) | `field_types/jsonb` |
+| `["read_by_current_user", "in", [...]]` on a Note | 200 and the caller's unread rows, whatever the list holds; `not_in` and an `is` value outside `read`/`unread` answer the same. `is "read"` and `is_not` do filter | probe 068 |
+| `GET /schema/<Type>/fields/<field>` for a field the census omits | 200 with `data: null`, while a name that is nothing at all 404s `Field '<Type>.<name>' does not exist.` | probe 068 |
 | `filter[]` query params on `POST _search` | ignored entirely: a body filter wins and a bogus param name still returns 200, while the same param filters correctly on `GET /entity/<type>` | probe 030 |
 | a batch create missing a required attribute | 200 with an id for a row that does not exist: `GET` 404s, `_search` returns 0, `DELETE` answers 204. The single-create path 400s on the same body | `recipes/002_batch` |
 
-**Silent and destructive.** Six writes return success and either do nothing or destroy data. Not re-run
+**Silent and destructive.** Seven writes return success and either do nothing or destroy data. Not re-run
 here: they are recorded, and re-proving them costs rows.
 
 | written | answer | recorded |
 |---|---|---|
 | `cached_display_name` | 200, the write discarded; the field re-reads as `code` | `field_types/text`, `entity_types/Sequence` |
+| `Note.read_by_current_user` as an ApiUser | 200, the echo and the re-read both `unread`; the same write under `sudo_as_login` stores | probe 068 |
 | `Task.splits`, any well-formed payload | 200, `null` stored | `field_types/serializable` |
 | a `multi_entity` update mode spelled in the query string | 200, the whole list replaced instead of appended | `field_types/multi_entity` |
 | an already-linked Shot added to a second `Sequence.shots` | 200, the first Sequence's `shots` is now `[]` | `entity_types/Sequence` |

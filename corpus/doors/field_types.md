@@ -41,6 +41,11 @@ A checkbox is two-state, never null - an untouched row already reads false, null
   on a list field (`[('<value>', 99), ('', 1)]`) never sees `''` here and reports the field fully
   populated.
 
+- A checkbox can be refused on both paths. `Note.client_note` is `editable: false` and answers
+  `400 API create() Client Notes can not be created through the API` to a create sending `true` and
+  `400 API update() Note.client_note is editable on create only.` to every update, `false` included, so
+  there is no value a caller can put in it (probe 069).
+
 - Strings coerce on read and write (`"true"` -> `True`), so a checkbox set from a CSV or a form post
   works until someone sends `"1"`. That 400s with a different error shape (`Invalid data for 'checkbox'
   data type`, under `source`) than a bare `1` (`expected [String, FalseClass, TrueClass] ... got
@@ -105,8 +110,9 @@ Stored and read as UTC `YYYY-MM-DDTHH:MM:SSZ`: a written offset is silently norm
 - `""` 400s where a `text` field accepts it; only `null` clears. There is no numeric form: epoch integers
   400 with the `[String, NilClass]` type error, epoch strings with the format error.
 
-- `created_at`/`updated_at` 400 with "is editable on create only"; check the schema's `editable` flag
-  before writing any timestamp.
+- `editable: false` on a timestamp means "not editable by a `PUT`", not "not settable". The 400 says so
+  outright, `is editable on create only`, and a create body sets both (probe 070). Test the create path
+  rather than reading the flag.
 
 `corpus/findings/field_types/date_time.md`
 
@@ -238,8 +244,13 @@ A list is one bare string in attributes; a write outside valid_values 400s and i
 
 - "list" names the schema, not the value: it holds one string, and an array 400s with `expected [String, NilClass]`.
 
-- `viewed_by_current_user` is flagged `editable: true` and takes a 200, but writing `'read'` reads back
-  `'unread'`: computed per API user, not storage (probe 007).
+- `viewed_by_current_user` and `Note.read_by_current_user` are stored per person, not per row. A write
+  under `sudo_as_login` reads back for that person alone; the script's own write answers 200 and stores
+  nothing, which is what "writing `'read'` reads back `'unread'`" was (probe 007, corrected by probe 068).
+
+- **A `list` field can name `in` and `not_in` in its own `Valid relations` and evaluate neither.** On
+  `Note.read_by_current_user`, `in`, `not_in` and an `is` value outside `valid_values` each answer 200
+  with the caller's unread rows rather than 0 (probe 068). Run a negative control per field.
 
 - `default_value` is applied on create when the field is omitted, so a fill-rate count over a `list` measures
   the default, not intent (probe 007).

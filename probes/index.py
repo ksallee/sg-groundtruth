@@ -1,7 +1,7 @@
 """Regenerate corpus/INDEX.md and corpus/doors/ — the two cheap tiers, generated from the entries.
 
 The map is the file an agent is told to read first, so it names every entry, groups them the four ways
-a caller can already address them, and says which door to open. It is capped at 8,000 bytes by
+a caller can already address them, and says which door to open. It is capped at 8 KiB by
 `check_corpus.py`, because a map that grows with the corpus is a fixed cost every session pays before
 asking anything.
 
@@ -202,7 +202,7 @@ def main():
 def index(findings, types, entities, recipes, cards, reports, by_tag, behind, split):
     """The map: every entry by name, and the door to open for each way in.
 
-    Capped at 8,000 bytes by `check_corpus.py`. Every session pays for this file before it asks
+    Capped at 8 KiB by `check_corpus.py`. Every session pays for this file before it asks
     anything, so a line here has to earn its place against the door it points at.
     """
     covered = sum(1 for e in cards if behind.get(e["endpoint"]))
