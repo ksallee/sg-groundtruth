@@ -27,3 +27,7 @@ site/.env
 site/static/status-sprite.png
 site/src/lib/content/status-icons.json
 .vercel
+
+# Probes that need something other than the REST API (a running Toolkit engine, Shotgun Desktop).
+# Out of scope for the corpus; kept for the operator, never pushed.
+probes/local/
