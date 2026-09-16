@@ -43,6 +43,16 @@ site-local zone. A Version created at client UTC `2026-09-02T15:58:53.5Z` read b
 | `1772600767` (epoch int) | 400 `API update() Version.client_approved_at expected [String, NilClass] data type(s) but got Integer: 1772600767` |
 | `{"created_at": "2020-01-01T00:00:00Z"}` | 400, code 103, `API update() Version.created_at is editable on create only.` |
 
+A `POST` is the other half: `created_at` and `updated_at` are accepted in a create body and stored
+exactly as sent, on `Note`, `Task` and `Version`, and `created_at` on `Reply`, although the schema flags
+both `editable: false` (probe 070).
+
+| timestamp, sent to | result |
+|---|---|
+| `POST /entity/<type>` | stored as sent; `{"created_at": null}` is 201 and leaves the row undated |
+| `PUT /entity/<type>/<id>` | 400 `API update() <Type>.<field> is editable on create only.` |
+| `POST /entity/replies` with `updated_at` | 400 `API create() Reply.updated_at doesn't exist.` |
+
 **Clear**
 
 | sent | result |
@@ -115,5 +125,6 @@ buckets are UTC-aligned, with no site-local offset.
   `between ["2026-03-04", "2026-03-05"]` or `in_calendar_day`.
 - `""` 400s where a `text` field accepts it; only `null` clears. There is no numeric form: epoch integers
   400 with the `[String, NilClass]` type error, epoch strings with the format error.
-- `created_at`/`updated_at` 400 with "is editable on create only"; check the schema's `editable` flag
-  before writing any timestamp.
+- `editable: false` on a timestamp means "not editable by a `PUT`", not "not settable". The 400 says so
+  outright, `is editable on create only`, and a create body sets both (probe 070). Test the create path
+  rather than reading the flag.

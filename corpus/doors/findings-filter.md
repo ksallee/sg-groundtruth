@@ -12,6 +12,8 @@ A dotted path through a multi_entity field reads back nothing: HTTP 200 with the
 
 - Filter through multi-entity freely. To read those values, query the child entity separately (`/entity/tasks` filtered by the parent) rather than asking for them inline.
 
+- **Name the target type and a field that type has.** A path is validated against the named type, not against the link's `valid_types`, so `note_links.Booking.code` and `note_links.Group.name` both 400 `doesn't exist` while both types are legal targets. `cached_display_name` is the one name field every type answers to, and it is what a "notes about X" search should use (probe 071).
+
 - Corrects probe 005: `page[size]` is not capped at 100. On the probed site 150 returned 150 rows and 500 returned all 300.
 
 `corpus/findings/016_dotted_multi_entity.md`
@@ -33,6 +35,12 @@ is/is_not/contains/not_contains/starts_with/ends_with/in/not_in all work, on tex
 - `in` takes a plain list for scalars, but on an entity field it needs full `{type, id}` hashes: `[{id: N}]` 400s with `invalid/missing entity hash string 'type'` and bare ints 400 with `expected [Hash, ...] but got Integer`.
 
 - `contains` through a dotted path (`entity.Shot.code`) makes server-side type-ahead over names one call, with no client-side scan.
+
+- A `list` field takes four relations, `is`, `is_not`, `in`, `not_in`, and refuses the text four: `["sg_note_type", "contains", "Client"]` 400s with `API read() Note.sg_note_type's 'list' data type doesn't support 'contains' 'relation'` (probe 068). Filter a dropdown with `in`.
+
+- **The `Valid relations` list is what the type accepts, not what it evaluates.** `Note.read_by_current_user` names all four, and only `is` and `is_not` filter: `in`, `not_in` and an `is` value outside the vocabulary each answer 200 with the caller's unread rows (probe 068). A negative control is the only way to tell.
+
+- Through a `multi_entity` link, the path has to name the target type and a field that type has. On `Note.note_links`, `cached_display_name` resolves on all 28 types the probed site allows, `code` on 27 and `name` on 1 (probe 071, and probe 016 for the read half).
 
 `corpus/findings/017_filter_operators.md`
 
@@ -282,3 +290,45 @@ An `entity_types` value follows the request Content-Type: an array of triples un
   A text matching nothing and a filter matching nothing both answer 200 with an empty `data`.
 
 `corpus/findings/063_text_search_filter_shape.md`
+
+## 068_note_read_state
+
+read_by_current_user is per person and missing from the schema; `is` and `is_not` are evaluated, while `in`, `not_in` and an unknown `is` value all return the unread rows at 200.
+
+**A field the schema does not have.** `GET /schema/Note/fields` returns 33 fields and none of them is
+this one, yet every Note read and every create response returns it, `?fields` selects it, a filter
+resolves it and a `PUT` is validated against `'read', 'unread'`. `GET /schema/Note/fields/<field>`
+separates the two cases: an undeclared field answers 200 with `data: null`, a name that is nothing at
+all answers 404 `Field 'Note.<name>' does not exist.` Ask that call, not the field census, before
+concluding a field is absent.
+
+**It is per person, and an ApiUser has no state to write.** The value is whatever the authenticated
+identity last set, so the same Note reads `read` for one caller and `unread` for another in the same
+second. A script's own `PUT` answers 200 and stores nothing, which is the same silent-write shape as
+`cached_display_name` (probe 028). Mark a note read under `sudo_as_login` as the person it belongs to,
+then re-read as that person to confirm.
+
+**Only two of the four relations it advertises are evaluated.**
+
+| operator | answers | evaluated |
+|---|---|---|
+| `is "read"` / `is "unread"` | the rows in that state for the caller | yes |
+| `is_not "read"` / `is_not "unread"` | the rows in the other state | yes |
+| `is "<not read or unread>"` | the caller's unread rows, not 0 | no |
+| `in [...]`, any members | the caller's unread rows | no |
+| `not_in [...]`, any members | the caller's unread rows | no |
+
+`in` and `not_in` are named in the field's own `Valid relations` list, take a 200 from `_search` and
+from `_summarize`, and answer identically under both `api3_array` and `api3_hash`. They return the
+unread set whatever the list holds, so `in ["read"]` reads as "no notes are read" on a caller who has
+read half of them. On a script user, for whom every row is unread, every broken case returns the whole
+baseline, which is how this looks like "the filter was dropped".
+
+An out-of-vocabulary `is` value behaves the same way. That differs from an ordinary `list` field, where
+a value outside `valid_values` matches 0 rows (`field_types/list`), so the usual "a filter typo reads as
+no rows match" does not hold here: it reads as every unread row.
+
+Filter unread with `["read_by_current_user", "is", "unread"]` and read with `is "read"`. Never with
+`in`.
+
+`corpus/findings/068_note_read_state.md`
