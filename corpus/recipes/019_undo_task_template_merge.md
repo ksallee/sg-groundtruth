@@ -77,8 +77,11 @@ def undo_merge(entity, snap):
         if t["id"] not in before:
             c.delete(f"/entity/tasks/{t['id']}").raise_for_status()
     ids = [{"type": "Task", "id": i} for i in before]
+    # Every edge left after a non-null step 2 whose downstream Task is on the old template is one of the
+    # template's own; the write can re-create it under a new id (probe 111), so do not sweep it.
     for d in search("task_dependencies", [["task", "in", ids]], ["task"]) if ids else []:
-        if d["id"] not in snap["deps"]:
+        back = snap["task_template"] and before[link(d, "task")["id"]]["template_task"]
+        if d["id"] not in snap["deps"] and not back:
             c.delete(f"/entity/task_dependencies/{d['id']}").raise_for_status()
 
     # 4. The fields both applies overwrote.
@@ -117,6 +120,11 @@ step 4  PUT the snapshot's fields        -> "hand", 99, 1440 back; comp still ip
   edge between two claimed Tasks that the template lacks, or holds with another type, offset or
   direction, and erases the row (probes 101, 102): revive cannot bring it back. Snapshot each edge's
   ends, type and offset and re-create the missing ones (recipe 016).
+- Step 2 erases every edge whose downstream Task is on the old template and that the template lacks,
+  pre-merge edges the merge kept included (probe 111). Snapshot ends, type and offset to re-create them.
+- The step 3 skip of edges downstream on the old template follows probe 111's read after step 2, where
+  the template's own edge came back under a new id and the unskipped sweep deleted it. The corrected
+  sweep itself was not re-run.
 - **In one `_batch` (recipe 022), leave out the edges step 2 removes.** A batch takes its ids before
   it runs, so it cannot read after step 2 as step 3 does here. A DELETE of an edge the non-null
   `task_template` write already removed is 404 `Entity of type [TaskDependency] with id=... does not

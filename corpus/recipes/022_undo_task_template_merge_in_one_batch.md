@@ -3,7 +3,7 @@ intent: Undo a task template merge in one atomic call, returning Tasks, fields a
 tags: [task-template, batch, task, dependency, destructive]
 endpoints: [POST /entity/<type>/_search, GET /entity/<type>/<id>, POST /entity/_batch]
 scope: api
-measured: sandbox project written, 2 templates and 4 Shots made and deleted; 42.0 s, 93 calls
+measured: sandbox project written, 2 templates and 4 Shots made and deleted; 42.0 s, 93 calls; step 3 rule: probe 111, 2 Shots
 ---
 
 # 022_undo_task_template_merge_in_one_batch
@@ -67,8 +67,9 @@ def undo_merge(entity, snap):
     # 2. The old template. Non-null: re-syncs its Tasks, drops the merge's edges between them. Null: nothing.
     reqs.append(upd(entity["type"], entity["id"], {"task_template": snap["task_template"]}))
 
-    # 3. What the merge made. A Task delete retires its edges; an edge between two old Tasks that both
-    #    return to a template task is already gone after step 2, and deleting it 404s the batch.
+    # 3. What the merge made. A Task delete retires its edges. A non-null step 2 erases every edge whose
+    #    downstream Task returns to a template task and that the template lacks (probe 111); deleting
+    #    one of those 404s the batch.
     for t in now:
         if t["id"] not in before:
             reqs.append(dele("Task", t["id"]))
@@ -76,7 +77,7 @@ def undo_merge(entity, snap):
         down, up = link(d, "task")["id"], link(d, "dependent_task")["id"]
         if d["id"] in snap["deps"] or down not in before or up not in before:
             continue
-        removed = snap["task_template"] and before[down]["template_task"] and before[up]["template_task"]
+        removed = snap["task_template"] and before[down]["template_task"]
         if not removed:
             reqs.append(dele("TaskDependency", d["id"]))
 
@@ -109,8 +110,13 @@ Shot with no template before: batch [claims null, Shot null, DELETE paint,
 ## Notes
 
 - The dependency read happens before the batch, after the merge; recipe 019 reads after step 2 and
-  so never meets the 404. An edge with one end back on a template task and the other on none was
-  not measured: test it before relying on the rule for it.
+  so never meets the 404.
+- Mixed ends (probe 111): an edge re-created after the merge from a Task going back to A onto an
+  unlinked Task is erased by step 2. The earlier version of this recipe, which left out only edges with
+  both ends back on A, DELETEd it and got the 404. An edge whose upstream end alone goes back to A is
+  kept by step 2 and deleted here.
+- Step 2 also erases pre-merge edges the merge kept, where the downstream Task is on A and A lacks the
+  edge (probe 111). Snapshot each edge's ends, type and offset and re-create those after the undo.
 - `snapshot` stores `template_task` per Task and `task_template` from recipe 019, keyed by Task id.
 - Atomic: any failing request rolls back the claims and the template write too (recipe 002), so a
   rejected batch leaves the merged state, not a half undo. Re-read before a retry.
