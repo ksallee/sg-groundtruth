@@ -24,7 +24,7 @@ An endpoint door holds the edge cases that live on the call and the verdict of e
 
 **filter** 016_dotted_multi_entity, 017_filter_operators, 020_summarize, 030_complex_filters, 046_search_without_a_path, 053_text_search_matching, 063_text_search_filter_shape, 068_note_read_state, 071_note_link_name_filter, 074_page_filter_coverage, 079_summarize_multi_grouping, 080_query_field_cost
 
-**write** 011_create_project, 012_create_version, 024_read_after_write, 045_webhooks, 050_webhook_subscriptions, 058_local_storage_roots, 069_client_note, 070_authored_timestamps, 078_page_setting_write, 083_task_template_on_create, 084_task_template_reapply, 085_task_dependency_types, 086_batch_tasks_with_dependencies, 087_dependency_cascade, 089_task_delete_side_effects
+**write** 011_create_project, 012_create_version, 024_read_after_write, 045_webhooks, 050_webhook_subscriptions, 058_local_storage_roots, 069_client_note, 070_authored_timestamps, 078_page_setting_write, 083_task_template_on_create, 084_task_template_reapply, 085_task_dependency_types, 086_batch_tasks_with_dependencies, 087_dependency_cascade, 089_task_delete_side_effects, 092_dependency_edge_reschedule, 093_clear_dates_pin, 094_permission_preflight, 095_dependency_remove_undo, 096_task_template_unmerge, 097_null_dates_unpin, 098_template_merge_in_one_batch, 099_template_apply_edge_copy_kept, 100_duration_write_pin, 101_template_edge_conflict, 102_task_template_resync
 
 **upload** 013_upload_media, 014_attach_file, 022_sequence_on_version, 039_upload_silent_failures, 044_multipart_upload
 
@@ -58,6 +58,10 @@ Asset, Attachment, Cut, CutItem, Delivery, HumanUser, LocalStorage, Note, Playli
 - 014_notes_about — Find the Notes about a Shot, Asset or Version by the name of the thing, and read what each Note is linked to
 - 015_apply_task_template_without_duplicates — Apply a task template to an entity that already has Tasks, without duplicating the ones it already holds
 - 016_create_tasks_with_dependencies — Create a set of Tasks and the dependencies between them, with types and offsets, in two calls
+- 017_check_permission_before_writing — Learn whether the signed-in person may update, create or delete a type before writing, with calls that change nothing
+- 018_remove_and_restore_a_dependency — Remove one dependency between two Tasks and put it back on undo, with its type and offset
+- 019_undo_task_template_merge — Undo a task template merge, returning an entity's Tasks, fields and dependencies to their state before it
+- 020_apply_task_template_in_one_batch — Apply a task template to an entity that already has Tasks, without duplicates, in one atomic call
 
 ## Endpoints
 
