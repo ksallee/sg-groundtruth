@@ -242,21 +242,30 @@ def tag_forms(name):
     return {name.lower(), hyphen, hyphen.replace("-", "")}
 
 
-def door_name(call):
-    """The file `probes/index.py` writes for a call's family: lower case, and Records split by
-    method because the family passed 32 KB whole. The built form used the title-case family and
-    read no endpoint door at all when the real ones existed, which is why the first re-run of
-    this scorer reported recall falling on merge of #56."""
-    fam = family(call).lower()
-    if fam == "records":
-        return f"endpoints-records-{call.partition(' ')[0].lower()}"
-    return f"endpoints-{fam}"
+def door_name(call, doors):
+    """The endpoint door whose heading names the call, or None.
+
+    Found by content, not by a spelled file name. The scorer spelled the name twice and was wrong
+    both times: `endpoints-Search` against #56's lower-case files, then `endpoints-search` after
+    #84 split the family one door per call. Each time it read no door and reported recall falling
+    where the corpus had lost nothing."""
+    heading = re.compile(rf"^#+ `{re.escape(call)}`$", re.M)
+    for name in sorted(doors):
+        door = doors[name]
+        if not name.startswith("endpoints-"):
+            continue
+        if door["kind"] == "endpoints":
+            if any(b["call"] == call for b in door["blocks"]):
+                return name
+        elif heading.search(door["text"]):
+            return name
+    return None
 
 
 def doors_named(plan, doors, opts):
     names = set() if opts["no_recipes"] else {"recipes"}
     for call in plan["calls"]:
-        names.add(door_name(call))
+        names.add(door_name(call, doors))
     for ph in plan["phases"]:
         names.add(f"findings-{ph}")
     if plan["entity_types"]:
@@ -307,7 +316,7 @@ def score(task, entries, doors, map_text, opts):
     # way `index` is. Recall is scored at the verdict tier: was the required entry's verdict in
     # front of the agent before it chose. Reading every row a hub call names instead is `doors`.
     chars, seen = len(map_text), set()
-    for n in sorted({door_name(c) for c in plan["calls"]} & set(doors)):
+    for n in sorted({door_name(c, doors) for c in plan["calls"]} - {None}):
         text, members = assemble(doors[n], None)
         chars += len(text)
         seen |= members

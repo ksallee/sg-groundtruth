@@ -39,6 +39,11 @@ run index-current bash -c '
   new=$(git ls-files --others --exclude-standard corpus/doors)
   [ -z "$new" ] || { echo "not committed: $new"; exit 1; }'
 
+# The retrieval benchmark (#75) gates changes to the map, and it read no Search door after #84 split
+# the family per call, so the split scored as a recall drop it did not cause. Every call a task names
+# has to resolve to a door on disk.
+run retrieval-doors python -m unittest experiments/retrieval/test_score.py
+
 # The client is what comfyui-flow-production-tracking installs. A wheel that builds and does not
 # import is the failure that blocks it, and no amount of running from this clone would show it.
 run package-installs bash -c '

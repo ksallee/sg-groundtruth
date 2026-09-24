@@ -444,3 +444,28 @@ doors, where tags play no part. A `task` tag on those entries is redundant for a
 `TaskTemplate`. The trim would cost `grep` only on a plan holding `Task` but neither `TaskTemplate`
 nor a call the entry names; none of the 18 plans is written that way, which is the plan fault stated
 under method faults.
+
+## Search split per call (#84, #86)
+
+Re-run on 2026-09-24 against `main` at `9617641`, 18 tasks. Round 3 of the task-template probes grew
+the Search door to 33,358 bytes, past the 32 KiB cap, and `probes/index.py` now writes it as one door
+per call: `endpoints-post-entity-type-search` at 21,025 bytes and four more between 2,097 and 5,352.
+**Pre-split** is the same commit with `index.py` held to one Search door, regenerated in a scratch
+worktree.
+
+The scorer on `main` still spelled the door `endpoints-search`, read no Search door, and reported
+`doors` at 47/50 and `follow` at 41/50. Every extra miss sat on a Search call. `door_name` now finds
+the endpoint door whose heading names the call, and `test_score.py`, run by `bin/verify`, fails when a
+call a task names has no door on disk. Both columns below use the fixed scorer.
+
+| strategy | pre-split recall | split recall | pre-split mean tokens | split mean tokens |
+|---|---|---|---|---|
+| `index` | | | 6,500 | 6,525 |
+| `doors` | 49/50 (98%) | 49/50 (98%) | 46,722 | 44,990 |
+| `follow` | 46/50 (92%) | 46/50 (92%) | 15,777 | 14,045 |
+| `grep` | 47/50 (94%) | 47/50 (94%) | 32,839 | 32,839 |
+
+Recall is identical per task and per strategy; the misses are the ones listed above. A plan naming
+`POST /entity/<type>/_search` reads 21,025 bytes of door instead of 33,358, which is where the 11%
+`follow` saving comes from. `index` rises by 25 tokens because the map names the five doors. `grep`
+reads no door.
