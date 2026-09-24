@@ -103,3 +103,6 @@ apply_template(shot, tt2) again -> 0 claimed, the same 4 Tasks and 1 dependency
 - The key is `content` plus `step` id. Two Tasks on the entity with the same key keep only the last
   in `free`, so the other is left unclaimed and a duplicate stays.
 - Set fields such as status survive the claim: `paint` kept `ip`. Only `template_task` is written.
+- **A copied edge reschedules.** The server moves an unpinned claimed Task to satisfy the edge it
+  copied; a pinned one keeps its dates and flags `dependency_violation` (probe 092). Pin the Tasks
+  whose dates must hold before step 2.
