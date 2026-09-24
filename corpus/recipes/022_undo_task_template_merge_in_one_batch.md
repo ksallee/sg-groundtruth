@@ -25,9 +25,10 @@ from sg_groundtruth.env import load
 
 c = FPT.from_env(load("."))
 ARR = {"Content-Type": "application/vnd+shotgun.api3_array+json"}
-# The fields probes 096 and 104 measured. Probe 102 adds content, step, est_in_mins, task_reviewers,
-# milestone and custom fields, when the template sets them: add the ones yours set.
-KEEP = ["sg_sort_order", "sg_description", "duration"]
+# The fields probes 096 and 104 measured, and content: A's re-sync renames a Task it wires (probe 112).
+# Probe 102 adds step, est_in_mins, task_reviewers, milestone and custom fields, when the template sets
+# them: add the ones yours set. Recipe 019's snapshot reads its own KEEP, which holds these.
+KEEP = ["sg_sort_order", "sg_description", "duration", "content"]
 
 
 def search(slug, filters, fields):
@@ -117,6 +118,12 @@ Shot with no template before: batch [claims null, Shot null, DELETE paint,
   kept by step 2 and deleted here.
 - Step 2 also erases pre-merge edges the merge kept, where the downstream Task is on A and A lacks the
   edge (probe 111). Snapshot each edge's ends, type and offset and re-create those after the undo.
+- **Revive before the batch.** `_batch` takes no revive (recipe 021), and a Task still retired when
+  step 2 runs is re-created from its template task, so its revive leaves two Tasks on one template task
+  (probe 110). Revive by separate calls, then send the batch.
+- Two Tasks on one template task in the snapshot: A's apply wires the server's pick of the two, the one
+  that held no edge 11 of 14 times, and renames it with A's `content` (probe 112). Recipe 023 orders
+  the claims for that case.
 - `snapshot` stores `template_task` per Task and `task_template` from recipe 019, keyed by Task id.
 - Atomic: any failing request rolls back the claims and the template write too (recipe 002), so a
   rejected batch leaves the merged state, not a half undo. Re-read before a retry.

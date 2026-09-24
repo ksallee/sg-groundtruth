@@ -6,7 +6,7 @@ scope: api
 measured: sandbox project written, probe 112: reordered batch 3 runs, plain batch 7 runs; 37-39 s, 80 calls
 ---
 
-# 0XX_undo_task_template_merge_with_a_task_linked_twice
+# 023_undo_task_template_merge_with_a_task_linked_twice
 
 Recipe 022 writes every old `template_task` before the old `task_template`. When the snapshot has two
 Tasks on the same template task (the site allows it), the apply that follows re-syncs and wires only
@@ -17,8 +17,8 @@ in the same batch. A `template_task` write on its own changes nothing else (prob
 ## Call
 
 ```python
-# snapshot() from recipe 019 before the merge, with "content" in KEEP (the apply renames the Task it
-# re-syncs), plus the Task ids its edges touch:
+# snapshot() from recipe 019 before the merge (its KEEP holds content, which the apply renames on the
+# Task it re-syncs), plus the Task ids its edges touch, read with fields ["task", "dependent_task"]:
 #   snap["edged"] = {i for d in deps for i in (link(d, "task")["id"], link(d, "dependent_task")["id"])}
 # Recipe 022's undo_merge builds `reqs`; replace its step 1 and step 2 with:
 

@@ -1,8 +1,6 @@
-# Endpoints — Search
+# `POST /entity/<type>/_search`
 
 Every call in this family: what the card records, the edge cases that live on the call, and the verdict of every entry that measured it. Each of those lines names the door holding that entry's rules. The map is `corpus/INDEX.md`.
-
-## `POST /entity/<type>/_search`
 
 The only way to send a filter the query string cannot express, and it refuses `application/json` at 415 naming both vendor types. `api3_array` cannot express `or`; `api3_hash` nests.
 
@@ -112,6 +110,12 @@ The only way to send a filter the query string cannot express, and it refuses `a
   rules: `doors/findings-write`
 - `109_template_apply_outside_edge` (findings) — A template apply erases an edge where a linked Task depends on a Task not linked to the template (root or not, other template, other Shot); it kept the edge with the outside Task downstream.  
   rules: `doors/findings-write`
+- `110_template_task_after_revive` (findings) — Revive restores `template_task`. A task_template write while the Task is retired re-creates it, so a later revive leaves two Tasks on one template task. Revive first, then write.  
+  rules: `doors/findings-write`
+- `111_template_undo_outside_edge` (findings) — An undo's write back to template A erases every edge whose downstream Task is A-linked and that A lacks, pre-merge edges included; recipe 022 DELETEs one such edge, 404s and rolls back.  
+  rules: `doors/findings-write`
+- `112_template_unmerge_linked_twice` (findings) — Undo relinking two Tasks to one template task: A wires either one (11 of 14 picked the loser), nothing is made. Relink the loser after the task_template write: then it matches the one-link undo.  
+  rules: `doors/findings-write`
 - `014_attach_file` (findings) — Leave the field out of the _upload path and the file is stored as an Attachment on attachment_links; read it back with POST /entity/attachments/_search, never flat filter[].  
   rules: `doors/findings-upload`
 - `025_event_log` (findings) — meta.old_value and meta.new_value answer "what was this before", but meta is unfilterable and unsortable: narrow on entity, event_type and attribute_name, sort -id, read meta yourself.  
@@ -148,6 +152,8 @@ The only way to send a filter the query string cannot express, and it refuses `a
   rules: `doors/recipes`
 - `022_undo_task_template_merge_in_one_batch` (recipes) — Undo a task template merge in one atomic call, returning Tasks, fields and dependencies to their state before it  
   rules: `doors/recipes`
+- `023_undo_task_template_merge_with_a_task_linked_twice` (recipes) — Undo a task template merge when two Tasks pointed at the same old template task, without the server picking which one gets the edges  
+  rules: `doors/recipes`
 - `003_sort_fails_silently` (reports) — A sort on an unknown or unsortable field answers 200 with the rows in default order, while the same field name in a filter answers 400 and names the reason.  
   rules: `doors/reports`
 - `008_jsonb_filters_return_everything` (reports) — A filter on PageSetting.settings_json or EventLogEntry.audit_trail is accepted and ignored, so the unfiltered set comes back at 200 and is_null and is_not_null each return every row.  
@@ -170,176 +176,3 @@ The only way to send a filter the query string cannot express, and it refuses `a
 - `009_multi_entity_safely` — Add to and remove from a multi_entity field without destroying the links you did not mean to touch
 
 `corpus/endpoints/post_entity_type_search.md`
-
-## `POST /entity/<type>/_summarize`
-
-Counts without paging rows. One `grouping` returns a field's distinct values and their counts at ~300ms, so rank a shortlist with it and never scan every field.
-
-- Summarizing an unsummarizable field, `image`, answers 200 with a 37-byte body and no summary. It does
-  not 400. Test that the key you asked for is in `summaries` before reading it.
-
-- `group_name` is the rendered label and `group_value` the raw one. For a `timecode` field the rendered
-  form is `HH:MM:SS:FF`, which is how the frame rate is recovered when no field exposes it.
-
-- One call per field at about 300ms. Over 71 fields that is 21 seconds. Rank a shortlist by fill rate
-  first and summarize only the candidates.
-
-**Measured by**
-
-- `028_loud_and_silent` (findings) — A 400 is trustworthy and usually names the legal set, but a 200 proves nothing: an unknown field, sort key or query param is a no-op, and a batch can return an id for a row it never made.  
-  rules: `doors/findings-protocol`
-- `091_status_summary_exclusions` (findings) — Excluded statuses are invisible to REST: not in /schema at any scope, not writable by PUT. status_list honours them: fin plus an excluded omt rolls up to fin, omt alone to na.  
-  rules: `doors/findings-schema`
-- `006_pagination` (findings) — links.next is emitted on every page forever, including zero-row ones, so stop paging when data is empty and never on a missing next.  
-  rules: `doors/findings-read`
-- `021_media_resolution` (findings) — PublishedFile.path is returned with the LocalStorage join already done, so a client never reads LocalStorage or reassembles a root, but a platform whose storage root is unset reads null.  
-  rules: `doors/findings-read`
-- `081_dotted_image` (findings) — entity.Shot.image returns the Shot's thumbnail as a presigned S3 URL under attributes, same object, fresh signature, in the same call. image is_not null matched 50 Shots whose image reads null.  
-  rules: `doors/findings-read`
-- `020_summarize` (findings) — _summarize needs the same vendor Content-Type as _search, and one `grouping` call returns a field's distinct-value count and its empty count. At ~300ms a field, rank a shortlist, never scan.  
-  rules: `doors/findings-filter`
-- `030_complex_filters` (findings) — api3_hash nests and/or groups 265 deep and mixes leaves with sub-groups; api3_array cannot express or, query-string filter[] is ignored on _search, and {path,relation,values} runs nowhere.  
-  rules: `doors/findings-filter`
-- `068_note_read_state` (findings) — read_by_current_user is per person and missing from the schema; `is` and `is_not` are evaluated, while `in`, `not_in` and an unknown `is` value all return the unread rows at 200.  
-  rules: `doors/findings-filter`
-- `071_note_link_name_filter` (findings) — Filter notes about a thing on `note_links.<Type>.cached_display_name`: it resolves for every valid type, `code` 400s on Booking and `name` on all but Department. The path cannot be read back.  
-  rules: `doors/findings-filter`
-- `074_page_filter_coverage` (findings) — Every stored page filter with its tokens filled converts and runs 200 but one, yet recipe 003 kept unticked leaves (active "false"): 11 trees returned the wrong count. Drop them.  
-  rules: `doors/findings-filter`
-- `079_summarize_multi_grouping` (findings) — _summarize nests one group level per grouping entry, 3 deep tested, counts summing exactly. status_list rolls a group up to one status; status_percentage ignores any value and is no per-status share.  
-  rules: `doors/findings-filter`
-- `080_query_field_cost` (findings) — One _summarize with the parent leaf as `in [N rows]`, grouped on that link, reproduced open_notes_count for 300 Shots in 573 ms, against ~290 ms a row one call at a time.  
-  rules: `doors/findings-filter`
-- `077_page_change_stamps` (findings) — PageSetting has no updated_at; Page.updated_at moves when its layout is saved. Poll Page.updated_at; Shotgun_PageSetting_Change names which setting changed but its entity is null on 131 of 500.  
-  rules: `doors/findings-observe`
-- `003_query_fields_and_pages` (recipes) — Resolve a query field's value, and run the rows a saved Page shows  
-  rules: `doors/recipes`
-- `014_notes_about` (recipes) — Find the Notes about a Shot, Asset or Version by the name of the thing, and read what each Note is linked to  
-  rules: `doors/recipes`
-
-**Silent on this call**
-
-- `028_loud_and_silent` — A 400 is trustworthy and usually names the legal set, but a 200 proves nothing: an unknown field, sort key or query param is a no-op, and a batch can return an id for a row it never made.
-- `030_complex_filters` — api3_hash nests and/or groups 265 deep and mixes leaves with sub-groups; api3_array cannot express or, query-string filter[] is ignored on _search, and {path,relation,values} runs nowhere.
-- `068_note_read_state` — read_by_current_user is per person and missing from the schema; `is` and `is_not` are evaluated, while `in`, `not_in` and an unknown `is` value all return the unread rows at 200.
-
-`corpus/endpoints/post_entity_type_summarize.md`
-
-## `POST /entity/_text_search`
-
-Free-text search across several types at once, returning a flattened row that is not the `_search` shape. `entity_types` is required and its value doubles as the per-type filter.
-
-- There is no `fields` parameter. Every row is `name`, `links` and `status`, whatever the type, so a
-  client that needs more re-reads the row by its `links.self`.
-
-- `attributes.links` is a two-element array of strings, the linked row's type and its name, and it is
-  `["", ""]` for a type that links to nothing. It is not an entity reference and cannot be followed.
-
-- `entity_types` maps a type to a filter, so one call can be scoped differently per type. That is the
-  only place in the API where a filter is keyed by the type it applies to.
-
-- The shape is checked per key, so one call cannot mix the two forms. The key holding the value the
-  `Content-Type` does not name decides the 400, and no type answers rows.
-
-- One bad key fails the whole call: a field the type lacks, an operator its data type lacks, or a key
-  no entity type is named by is 400 for every type in the map, not a type dropped from the answer.
-
-- A group under `api3_hash` may hold another group, to at least three levels, and `or` returns the
-  union of its branches. The array form takes basic condition arrays alone, and two of them are the
-  `and` of both.
-
-- The response has no `links`, so paging is `page.number` and there is nothing that says a further
-  page exists. Ask until `data` is empty.
-
-- `text` is matched case-insensitively against the row's name and against the name of the row under
-  `attributes.links`. It is not matched against `description`.
-
-**Measured by**
-
-- `046_search_without_a_path` (findings) — `/hierarchy/_expand` and `/hierarchy/_search` refuse the vendor content types every other POST requires and take `application/json` alone, so one shared POST helper 415s on half the API.  
-  rules: `doors/findings-filter`
-- `053_text_search_matching` (findings) — `page.size` caps at 25 and defaults to 25 with no `links`, so page with `page.number`. Every word must match a case-insensitive substring of the name or of the linked row's name.  
-  rules: `doors/findings-filter`
-- `063_text_search_filter_shape` (findings) — An `entity_types` value follows the request Content-Type: an array of triples under api3_array, a `logical_operator` group under api3_hash, which alone nests. The other shape is 400 code 103.  
-  rules: `doors/findings-filter`
-
-**Silent on this call**
-
-- `post_entity_text_search` — Free-text search across several types at once, returning a flattened row that is not the `_search` shape. `entity_types` is required and its value doubles as the per-type filter.
-- `053_text_search_matching` — `page.size` caps at 25 and defaults to 25 with no `links`, so page with `page.number`. Every word must match a case-insensitive substring of the name or of the linked row's name.
-
-`corpus/endpoints/post_entity_text_search.md`
-
-## `POST /hierarchy/_expand`
-
-Returns one level of the navigation tree the web interface draws. It refuses the vendor content types every other POST requires and accepts only `application/json`.
-
-- **The content type is inverted.** `_search`, `_summarize` and `_text_search` refuse
-  `application/json` and demand a vendor type; `/hierarchy/*` does the exact opposite. A client with one
-  shared POST helper gets 415 on whichever half it did not write first.
-
-- One level per call. `children` names the next paths and `has_children` says which are worth expanding,
-  so walking a project is one call per node.
-
-- Code 107 appears here and nowhere else in the corpus. It is a lookup that found the wrong number of
-  rows, not a malformed request.
-
-- `seed_entity_field` changed nothing on the probed site. Omit it until something shows it matters.
-
-- A child has no `path` when its `ref.kind` is `empty`: `{"label": "No Shots", "ref": {"kind":
-  "empty", "value": null}, "has_children": false}` is the placeholder for a level with nothing under it,
-  and it is a child like any other. Read `path` with a default.
-
-- `ref.kind` is `entity` for a row or a group that is one, `entity_type` for the ungrouped bucket,
-  `list` for a group that is a list value, and `empty` for the placeholder.
-
-- The `__none__` segment is reachable at two spellings. `_expand` writes
-  `<field>/<GroupType>/__none__` and `_search` returns `<field>/__none__`; both answer the same rows,
-  and the label is templated off the segment, so the second reads `Shots with no __none__`.
-
-- A path is answerable whether or not `children` named it. Expanding a level whose grouping field has
-  no rows answers one `empty` child, and the `__none__` path under that level still answers its rows.
-
-**Measured by**
-
-- `064_hierarchy_expand_buckets` (findings) — Dedupe `children` by `path` and keep the first. The `__none__` bucket is repeated once per group, byte-identical every time, and its rows are disjoint from every group's.  
-  rules: `doors/findings-read`
-- `046_search_without_a_path` (findings) — `/hierarchy/_expand` and `/hierarchy/_search` refuse the vendor content types every other POST requires and take `application/json` alone, so one shared POST helper 415s on half the API.  
-  rules: `doors/findings-filter`
-
-`corpus/endpoints/post_hierarchy_expand.md`
-
-## `POST /hierarchy/_search`
-
-Answers where a row sits in the navigation tree. `search_criteria` must be a hash keyed exactly `entity`, and every other shape is the same misleading `size must be 1`.
-
-`size must be 1` does not mean what it says. Every one of these has one key and is refused:
-
-| sent as `search_criteria` | result |
-|---|---|
-| `{"entity": {"type": "Shot", "id": 862}}` | 200 |
-| `{"entity_type": "Shot"}` | 400 `size must be 1` |
-| `{"Shot": 862}` | 400 `size must be 1` |
-| `{"Shot": [862]}` | 400 `size must be 1` |
-| `[{"entity_type": "Shot"}]` | 400 `must be a hash` |
-
-- The key has to be the literal string `entity`. The error counts keys it recognises, not keys you sent,
-  so an unrecognised key reads as a size problem and never names itself.
-
-- `incremental_path` is the breadcrumb, one entry per level, and the last is the row. `path_label` is the
-  same thing rendered for a person and it omits the project.
-
-- The path goes through `sg_sequence`, a field name, so the tree follows the site's own navigation
-  configuration rather than a fixed hierarchy.
-
-- A row with nothing in the grouping field is returned as `/Project/<id>/Shot/sg_sequence/__none__`,
-  without the type segment `_expand` puts there. Both spellings answer the same rows on `_expand`.
-
-**Measured by**
-
-- `064_hierarchy_expand_buckets` (findings) — Dedupe `children` by `path` and keep the first. The `__none__` bucket is repeated once per group, byte-identical every time, and its rows are disjoint from every group's.  
-  rules: `doors/findings-read`
-- `046_search_without_a_path` (findings) — `/hierarchy/_expand` and `/hierarchy/_search` refuse the vendor content types every other POST requires and take `application/json` alone, so one shared POST helper 415s on half the API.  
-  rules: `doors/findings-filter`
-
-`corpus/endpoints/post_hierarchy_search.md`

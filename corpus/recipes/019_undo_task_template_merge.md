@@ -3,7 +3,7 @@ intent: Undo a task template merge, returning an entity's Tasks, fields and depe
 tags: [task-template, task, dependency, destructive]
 endpoints: [POST /entity/<type>/_search, GET /entity/<type>/<id>, PUT /entity/<type>/<id>, DELETE /entity/<type>/<id>]
 scope: api
-measured: sandbox project written, 2 templates and 1 Shot made and deleted; 43.6 s, 104 calls
+measured: sandbox project written, 2 templates and 1 Shot made and deleted; 43.6 s, 104 calls; re-run on 3 Shots
 ---
 
 # 019_undo_task_template_merge
@@ -26,10 +26,10 @@ from sg_groundtruth.env import load
 c = FPT.from_env(load("."))
 ARR = {"Content-Type": "application/vnd+shotgun.api3_array+json"}
 SLUG = {"Shot": "shots", "Asset": "assets", "Sequence": "sequences"}
-# The fields probe 096 saw the apply overwrite. Probe 102 adds content, step, est_in_mins,
-# task_reviewers, milestone and a custom field (a list and a checkbox field probed), when the
-# template sets them: add the ones yours set.
-KEEP = ["template_task", "sg_sort_order", "sg_description", "duration"]
+# The fields probe 096 saw the apply overwrite, and content, which the re-sync renames (probes 102,
+# 112). Probe 102 adds step, est_in_mins, task_reviewers, milestone and a custom field (a list and a
+# checkbox field probed), when the template sets them: add the ones yours set.
+KEEP = ["template_task", "sg_sort_order", "sg_description", "duration", "content"]
 
 
 def search(slug, filters, fields):
@@ -110,6 +110,9 @@ step 4  PUT the snapshot's fields        -> "hand", 99, 1440 back; comp still ip
 
 ## Notes
 
+- **Revive before step 2.** A Task retired since the snapshot does not count as linked: step 2
+  re-creates its template task and wires the copy, and a later revive leaves two Tasks on one template
+  task, both upstream of the same Task. Revive restores `template_task` (probe 110).
 - Step 4 is what makes it an undo rather than a reapply of A. Status survives both applies, so
   it is not in `KEEP`. Assignees and dates are only filled where empty (probe 102): add them when the
   Task had none before. `snapshot` reads `attributes` only; read `step` and
@@ -123,8 +126,16 @@ step 4  PUT the snapshot's fields        -> "hand", 99, 1440 back; comp still ip
 - Step 2 erases every edge whose downstream Task is on the old template and that the template lacks,
   pre-merge edges the merge kept included (probe 111). Snapshot ends, type and offset to re-create them.
 - The step 3 skip of edges downstream on the old template follows probe 111's read after step 2, where
-  the template's own edge came back under a new id and the unskipped sweep deleted it. The corrected
-  sweep itself was not re-run.
+  the template's own edge came back under a new id and the unskipped sweep deleted it. Re-run as
+  written, with `content` in `KEEP`, on three sandbox Shots merged by recipe 015:
+
+  | Shot | undo | Tasks, links, fields, status | edges after |
+  |---|---|---|---|
+  | the Response case | ok | equal | roto on comp, same id |
+  | no template before, comp and lay by hand | ok, undo to null | equal | none, as before |
+  | probe 111's W, 3 hand edges before and 3 after the merge | ok | equal | roto on comp, new id |
+
+  The third lost roto on x, roto on lay (step 2) and comp on x (the merge), as the notes above say.
 - **In one `_batch` (recipe 022), leave out the edges step 2 removes.** A batch takes its ids before
   it runs, so it cannot read after step 2 as step 3 does here. A DELETE of an edge the non-null
   `task_template` write already removed is 404 `Entity of type [TaskDependency] with id=... does not
