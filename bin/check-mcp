@@ -129,7 +129,7 @@ check("the door row is on the endpoint answer",
       "**Measured by**" in text(endpoint) and "rules: `doors/findings-read`" in text(endpoint))
 check("silent is on the endpoint answer", "**Silent on this call**" in text(endpoint))
 check("the answer names the endpoint door",
-      "door: `doors/endpoints-search`" in text(endpoint).splitlines()[0])
+      "door: `doors/endpoints-post-entity-type-search`" in text(endpoint).splitlines()[0])
 check("filter_operators", text(operators).startswith("date: "), text(operators)[:40])
 
 for name, answer in zip(doors, rest[:len(doors)]):
