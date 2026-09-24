@@ -1,6 +1,6 @@
 ---
 intent: Apply a task template to an entity that already has Tasks, without duplicates, in one atomic call
-tags: [task-template, batch]
+tags: [task-template, batch, task]
 endpoints: [POST /entity/<type>/_search, POST /entity/_batch]
 scope: api
 measured: sandbox project written, 1 template and 5 Shots made and deleted; 30.3 s, 73 calls

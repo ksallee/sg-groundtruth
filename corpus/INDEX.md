@@ -63,7 +63,7 @@ Asset, Attachment, Cut, CutItem, Delivery, HumanUser, LocalStorage, Note, Playli
 - 019_undo_task_template_merge — Undo a task template merge, returning an entity's Tasks, fields and dependencies to their state before it
 - 020_apply_task_template_in_one_batch — Apply a task template to an entity that already has Tasks, without duplicates, in one atomic call
 - 021_undo_a_batch_delete — Delete Tasks or dependencies in one batch and undo it by reviving the same rows
-- 022_undo_task_template_merge_in_one_batch — Undo a task template merge in one atomic call
+- 022_undo_task_template_merge_in_one_batch — Undo a task template merge in one atomic call, returning Tasks, fields and dependencies to their state before it
 
 ## Endpoints
 

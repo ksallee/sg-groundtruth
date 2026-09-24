@@ -209,7 +209,7 @@ The key is `requests`, not `data`, and sending `data` is 400 `requests is missin
   rules: `doors/recipes`
 - `021_undo_a_batch_delete` (recipes) — Delete Tasks or dependencies in one batch and undo it by reviving the same rows  
   rules: `doors/recipes`
-- `022_undo_task_template_merge_in_one_batch` (recipes) — Undo a task template merge in one atomic call  
+- `022_undo_task_template_merge_in_one_batch` (recipes) — Undo a task template merge in one atomic call, returning Tasks, fields and dependencies to their state before it  
   rules: `doors/recipes`
 - `001_batch_create_skips_validation` (reports) — A create inside POST /entity/_batch skips the required-attribute validation the single-create path applies, and answers 200 with the id of a row no read can reach.  
   rules: `doors/reports`

@@ -1,6 +1,6 @@
 ---
 intent: Apply a task template to an entity that already has Tasks, without duplicating the ones it already holds
-tags: [task-template, batch, dependency]
+tags: [task-template, task, batch, dependency]
 endpoints: [POST /entity/<type>/_search, POST /entity/_batch, GET /entity/<type>/<id>, PUT /entity/<type>/<id>]
 scope: api
 measured: sandbox project written, 2 templates and 1 Shot made and deleted

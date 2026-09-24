@@ -145,7 +145,7 @@ One row, and the only read where `fields` is honoured on a single record. A reti
   rules: `doors/recipes`
 - `019_undo_task_template_merge` (recipes) — Undo a task template merge, returning an entity's Tasks, fields and dependencies to their state before it  
   rules: `doors/recipes`
-- `022_undo_task_template_merge_in_one_batch` (recipes) — Undo a task template merge in one atomic call  
+- `022_undo_task_template_merge_in_one_batch` (recipes) — Undo a task template merge in one atomic call, returning Tasks, fields and dependencies to their state before it  
   rules: `doors/recipes`
 
 **Silent on this call**

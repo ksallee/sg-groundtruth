@@ -1,6 +1,6 @@
 ---
-intent: Undo a task template merge in one atomic call
-tags: [task-template, batch, dependency, destructive]
+intent: Undo a task template merge in one atomic call, returning Tasks, fields and dependencies to their state before it
+tags: [task-template, batch, task, dependency, destructive]
 endpoints: [POST /entity/<type>/_search, GET /entity/<type>/<id>, POST /entity/_batch]
 scope: api
 measured: sandbox project written, 2 templates and 4 Shots made and deleted; 42.0 s, 93 calls

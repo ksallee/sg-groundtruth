@@ -829,7 +829,7 @@ Delete Tasks or dependencies in one batch and undo it by reviving the same rows
 
 ## 022_undo_task_template_merge_in_one_batch
 
-Undo a task template merge in one atomic call
+Undo a task template merge in one atomic call, returning Tasks, fields and dependencies to their state before it
 
 - The dependency read happens before the batch, after the merge; recipe 019 reads after step 2 and
   so never meets the 404. An edge with one end back on a template task and the other on none was

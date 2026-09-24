@@ -1,6 +1,6 @@
 ---
 intent: Undo a task template merge, returning an entity's Tasks, fields and dependencies to their state before it
-tags: [task-template, dependency, destructive]
+tags: [task-template, task, dependency, destructive]
 endpoints: [POST /entity/<type>/_search, GET /entity/<type>/<id>, PUT /entity/<type>/<id>, DELETE /entity/<type>/<id>]
 scope: api
 measured: sandbox project written, 2 templates and 1 Shot made and deleted; 43.6 s, 104 calls

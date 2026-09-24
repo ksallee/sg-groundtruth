@@ -1,5 +1,5 @@
 ---
-tags: [task-template, dependency, destructive, trap]
+tags: [task-template, task, dependency, destructive, trap]
 endpoints: [PUT /entity/<type>/<id>, POST /entity/<type>, POST /entity/<type>/_search, DELETE /entity/<type>/<id>]
 phase: write
 scope: api
