@@ -62,7 +62,7 @@ revive g's old row beside its new one -> 400 "Revive failed for [TaskDependency 
   difference is the id, and the retired original then cannot be revived: the pair is unique across
   live rows, so revive after re-create is the 400 above. Undo by revive, or by re-create, not both.
 - Neither route restores the downstream Task's old dates. An unpinned Task snaps to the edge as
-  measured against the upstream now (probe 085); an undo that wants the old dates writes them, which pins the Task
-  (probe 087).
+  measured against the upstream now (probe 085); an undo that wants the old dates writes them, and the `start_date` write pins the Task
+  (probe 093).
 - In a first run, d pinned at 03-16..03-17, later than its finish-to-finish +1 allows, read
   `dependency_violation` false. It flags a Task placed earlier than its edge allows, not one placed later.

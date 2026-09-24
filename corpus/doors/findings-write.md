@@ -491,15 +491,16 @@ An upstream date write reschedules every unpinned downstream Task, later and ear
 | `start-to-start` | follows the upstream start; untouched by a due date write |
 | `pinned` true | dates held; `dependency_violation` true while broken, false again once satisfied |
 | downstream of a pinned Task | follows the pinned Task, not the upstream end of the chain |
-| any, when the upstream's dates are written `null` | unmoved: keeps its dates (probe 097) |
+| `finish-to-start`, when a Task with no upstream has its dates written `null` | unmoved; the next real date write moves it (probe 097) |
 
 - **The cascade pulls back as well as pushes.** Shortening the upstream moved d1 and d2 earlier. A Task
   whose dates a person chose and did not pin is overwritten by any upstream write, and by a new edge
   (probe 092).
 
-- **Writing a dependent's own dates pins it.** The date `PUT` on d1 set `pinned` true (as
-  `entity_types/Task` found) and d2 followed d1 to a date before the upstream ends. A `null` date pins
-  it too (probe 093); a `duration` write does not (probe 100); a Task with no upstream never pins (probe 097).
+- **Writing a dependent's `start_date` pins it.** The date `PUT` on d1 set `pinned` true (as
+  `entity_types/Task` found) and d2 followed d1 to a date before the upstream ends. That `PUT` wrote
+  `start_date`; probe 093 found `start_date` is what pins, null or real, and a `due_date` write alone
+  does not. A `duration` write does not (probe 100); a Task with no upstream never pins (probe 097).
 
 - `PUT {"pinned": false}` reschedules at once: d1 snapped back behind the upstream and d2 with it.
 
@@ -556,25 +557,27 @@ A new edge reschedules an unpinned downstream Task at once, whether POSTed or co
 
 ## 093_clear_dates_pin
 
-A null write on a dependent Task's start_date or due_date pins it exactly like a real date; duration is held. Only PUT pinned:false recomputes the nulled date(s) from the dependency.
+On a dependent Task a start_date write pins it, null or real; a due_date write never does, null or real. A pinned null Task holds; PUT pinned:false refills both dates.
 
-| write on the dependent | result |
-|---|---|
-| `{"start_date": null, "due_date": null}` | `pinned` -> `true`, same as a real date write |
-| one field null, the other untouched | also pins; the untouched field keeps its old value, not null |
-| upstream moves while pinned, dates null | dependent holds `None`/`None`, does not recompute or follow |
-| `duration` | held across every null write; never cleared or recomputed alongside the dates |
-| `PUT {"pinned": false}` | rewrites **both** dates from the dependency at once, even when only one was null |
+| write on a dependent Task | `pinned` after | on the next upstream write |
+|---|---|---|
+| `start_date` null, alone or with `due_date` | `true` | held; the null stays null, `dependency_violation` stays `false` |
+| `start_date` real | `true` (control) | held; `dependency_violation` `true` |
+| `due_date` null alone | `false` | follows: both dates rewritten from the upstream and `duration` |
+| `due_date` real | `false` (control, twice); `duration` recomputed | follows, new `duration` kept |
+| `PUT {"pinned": false}` | `false` | rewrites `start_date` from the upstream, `due_date` from `duration` |
 
-- A `null` is a write, not an absence: the field that goes null is exactly as pinning as a real date,
-  confirming `entity_types/Task`'s "writing a dependent's own dates pins it" for the clear case too.
+- **`start_date` is the pinning write, not "any date".** The same Task (`due`) stayed unpinned after
+  `due_date` null and after a real `due_date`, then pinned on a real `start_date`. A `due_date` write
+  acts like a `duration` write (probe 100): it resizes, it does not anchor.
 
-- Clearing does not put a Task into a distinguishable "waiting to be scheduled" state. It is `pinned`
-  with a hole in it, and the hole does not fill itself; only unpinning triggers the recompute, and that
-  recompute ignores the surviving field, overwriting it along with the null one (see probe 087, where
-  the same unpin snapped a dependent back behind its upstream).
+- Nothing unpins a Task by itself: `both` and `start` stayed pinned with a null start across the
+  upstream move. A null start raises no `dependency_violation`, so it is invisible to a violation check.
 
-- A sync that wants the server to reschedule a Task must set `pinned: false`, not merely null the dates.
+- `duration` survives every null write (960 throughout); the unpin recompute uses it to refill `due_date`.
+
+- A sync that wants the server to reschedule a Task sets `pinned: false`; nulling the dates either pins
+  it (`start_date`) or is overwritten at the next upstream write (`due_date`).
 
 `corpus/findings/093_clear_dates_pin.md`
 
@@ -649,8 +652,8 @@ Remove an edge with `DELETE` on its TaskDependency row: revive restores its type
   live rows, so revive after re-create is the 400 above. Undo by revive, or by re-create, not both.
 
 - Neither route restores the downstream Task's old dates. An unpinned Task snaps to the edge as
-  measured against the upstream now (probe 085); an undo that wants the old dates writes them, which pins the Task
-  (probe 087).
+  measured against the upstream now (probe 085); an undo that wants the old dates writes them, and the `start_date` write pins the Task
+  (probe 093).
 
 - In a first run, d pinned at 03-16..03-17, later than its finish-to-finish +1 allows, read
   `dependency_violation` false. It flags a Task placed earlier than its edge allows, not one placed later.
@@ -685,29 +688,26 @@ A template write re-syncs every Task linked to it: fields but status reset, edge
 
 ## 097_null_dates_unpin
 
-A Task with no upstream edge never pins on a null date write: pinned stays false, its downstream Tasks hold their dates, and pinned:false has nothing to recompute either null from.
+A Task with no upstream never pins, on a null or a real date write; nulling its dates leaves its downstream unmoved, and pinned:false refills nothing.
 
-| the Task | after `start_date`/`due_date` both set to `null` |
+| the Task | after a date write |
 |---|---|
-| no edges | `pinned` stays `false`; a null write only pins a Task that has an upstream (093, `entity_types/Task`) |
-| upstream-only (has downstream, no upstream) | same: `pinned` stays `false` |
-| its downstream Task | keeps its already-computed dates; a null upstream does not clear, recompute or move it |
+| no edges, dates set `null` | `pinned` stays `false`; a null write only pins a Task that has an upstream (093, `entity_types/Task`) |
+| no edges, real dates | `pinned` stays `false` |
+| upstream-only (has downstream, no upstream), `null` or real dates | `pinned` stays `false` |
+| its `finish-to-start` downstream | unmoved by the `null` write; moved by the real one (03-11..03-12), as in 087 |
 
-- **`pinned` is a dependency concept, not a date-write concept.** 093 showed a null write pins a
-  dependent because it conflicts with what the upstream would compute for it. A Task with nothing
-  upstream has no computed value to conflict with, so the same null write leaves `pinned` at `false`.
+- **Only a Task with an upstream pins on a date write.** Here neither a `null` nor a real date write set
+  `pinned` on a Task with no upstream, with or without a downstream. 087 and 093 measured the pin on
+  dependents.
 
-- `PUT {"pinned": false}` on a Task that was already `false` is a no-op: the nulls survive it. There is
-  no fallback anchor (not `duration`, not a project date, not today) because unpinning only ever
-  triggers the recompute-from-dependency 087 and 093 measured, and there is no dependency to recompute
-  from.
+- `PUT {"pinned": false}` on a Task that was already `false` is a no-op: the nulls survive it. No
+  fallback anchor filled them: not `duration`, not a project date, not today.
 
-- Sending the nulls and `pinned: false` in one `PUT` changes nothing here: with no upstream, neither
-  key does anything the other key would contest, so there is no winner to report.
+- Sending the nulls and `pinned: false` in one `PUT` read back the same as the nulls alone.
 
-- A downstream Task is scheduled once, off its upstream's dates at link time (`entity_types/Task`). It
-  does not re-derive from a live read of the upstream on every fetch: nulling the upstream leaves the
-  downstream's own stored dates untouched, unlike a real date move (087), which does cascade.
+- A `null` upstream leaves the downstream's stored dates where they were; the next real date write on
+  the same upstream moves it again. The edge still schedules; a `null` gives it nothing to schedule from.
 
 - A client that wants a Task to go back to "server picks the date" has no move here: clearing a
   root Task's dates is a dead end, not a pending state. It stays `null`/`null` until something writes a
@@ -741,42 +741,42 @@ A template apply copies a missing edge between two Tasks whose `template_task` a
   kept+created. Probe 092 already showed claimed+claimed, so every pairing of `{kept, claimed,
   created}` a merge apply can produce ends up holding the template's edge.
 
-- **The apply reconciles edges structurally, not by what it just touched.** Case 2 claimed nothing:
-  both Tasks already had `template_task` set, yet the missing edge still appeared. Writing
-  `task_template` compares the template's dependency graph against `template_task` links on the
-  entity's Tasks every time, not just against Tasks the call itself created or claimed.
+- The copy comes from the `task_template` write, not from the claim. In case 1 the `_batch` claim set
+  `y.template_task` and left the pair with no edge; the edge appeared only after the PUT.
 
-- A caller re-running recipe 015 against Tasks that already hold links from an earlier apply gets the
-  edges filled in for free: clearing and re-setting `task_template` is enough, with no need to re-walk
-  the template's dependency list by hand.
+- **The apply fills edges between linked Tasks, not only the ones it just touched.** Case 2 claimed
+  and created nothing: both Tasks already had `template_task` set, yet the missing edge appeared.
 
-- Probe 092's reschedule finding generalizes with it: whichever of these three routes produces the
-  edge, an unpinned downstream Task with dates already set moves to satisfy it the moment the edge
-  exists.
+- Clearing and re-setting `task_template` over Tasks linked by an earlier apply fills a missing edge
+  (case 2), but the same write re-syncs those Tasks' fields to the template (probe 102). It is not a
+  safe way to repair edges alone.
 
 `corpus/findings/099_template_apply_edge_copy_kept.md`
 
 ## 100_duration_write_pin
 
-Writing duration on a dependent Task does not pin it, unlike a date write (087, 093). It stays unpinned and keeps following the upstream, on both ends of the chain.
+Writing duration on a dependent Task does not pin it; a start_date write in the same run does. It keeps following the upstream, and a duration write upstream moves it.
 
 | write | effect on the dependent (`down`) |
 |---|---|
-| `duration` alone on `down` | `pinned` stays `false`; `start_date` recomputes to the day after the upstream ends, `due_date` stretches to hold the new `duration` |
-| upstream moves later, after that | `down` moves with it, `duration` held at 1920: an unpinned dependent, whether or not `duration` was ever written on it |
-| `duration` on the upstream (`up`) | `down` and `down2` both move to absorb the shorter/longer upstream span, same as a date write (087) |
+| `duration` alone on an unlinked Task (`solo`) | `pinned` stays `false`; `start_date` kept, `due_date` stretches to hold the new `duration` |
+| `duration` alone on `down` | the same: `pinned` stays `false`, `start_date` kept (already the day after the upstream ends), `due_date` stretches |
+| upstream moves later, after that | `down` moves with it, `duration` held at 1920 |
+| `duration` on the upstream (`up`) | `up`'s `due_date` moves; `down` and `down2` follow it, same as a date write (087) |
+| `start_date` on `down` (control) | `pinned` turns `true`; `duration` held, `due_date` moves; `down2` follows |
 
-- `duration` is not one of the fields that pins. Only a write to `start_date` or `due_date` on the
-  dependent itself sets `pinned` (`entity_types/Task`, probe 087, probe 093); writing `duration` there
-  recomputes `start_date`/`due_date` from the dependency exactly as it would on an unlinked Task, and
-  the Task keeps following its upstream on every later write.
+- `duration` does not pin. In the same run a `start_date` write on `down` did. `due_date` was not
+  written on the dependent here; that it pins too rests on `entity_types/Task`, 087 and 093.
 
-- `down2` moved on every step, including the `duration`-only write to `down`: a dependent's own
-  `duration` write cascades downstream the same as a date write does.
+- On the dependent, a `duration` write keeps `start_date` and moves `due_date`, the same as on the
+  unlinked `solo`. The dependent then keeps following its upstream.
 
-- Writing `duration` on the upstream end reschedules every unpinned downstream Task, confirming probe
-  087's date-based finding also holds for the third leg of the `start_date`/`due_date`/`duration`
-  triple.
+- `down2` moved on every write that moved `down`, the `duration`-only write included: a dependent's own
+  `duration` write cascades downstream. It stayed put on the no-op `pinned=false` write, where nothing
+  moved.
+
+- Writing `duration` on the upstream end reschedules every unpinned downstream Task, so probe 087's
+  date-based finding holds for `duration` too.
 
 `corpus/findings/100_duration_write_pin.md`
 

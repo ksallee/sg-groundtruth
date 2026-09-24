@@ -46,7 +46,7 @@ up due 03-20      up 03-09..03-20  d1 03-23..03-24  d2 03-25..03-26  pin (held) 
 - **The cascade pulls back as well as pushes.** Shortening the upstream moved d1 and d2 earlier. A Task
   whose dates a person chose and did not pin is overwritten by any upstream write, and by a new edge
   (probe 092).
-- **Writing a dependent's own dates pins it.** The date `PUT` on d1 set `pinned` true (as
+- **Writing a dependent's `start_date` pins it.** The date `PUT` on d1 set `pinned` true (as
   `entity_types/Task` found) and d2 followed d1 to a date before the upstream ends. That `PUT` wrote
   `start_date`; probe 093 found `start_date` is what pins, null or real, and a `due_date` write alone
   does not. A `duration` write does not (probe 100); a Task with no upstream never pins (probe 097).

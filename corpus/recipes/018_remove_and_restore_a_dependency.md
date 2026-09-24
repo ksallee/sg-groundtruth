@@ -75,8 +75,8 @@ POST /entity/task_dependencies/3764?revive=1 -> 200 {"did_revive": true}
 ## Notes
 
 - The revived edge places the Task from the upstream's current dates, not the dates it had when the
-  edge was removed. An undo that wants those dates writes them after the revive, which pins the Task
-  (probe 087).
+  edge was removed. An undo that wants those dates writes them after the revive; the `start_date` write pins the Task
+  (probe 093).
 - A pinned downstream Task keeps its dates through both calls. Its `dependency_violation` reads false
   while the edge is retired and true again after revive if it is still placed too early.
 - If something re-linked the same pair in between, revive is a 400 on the unique index. Delete the new

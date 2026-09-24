@@ -120,7 +120,7 @@ gets. The codes are site configuration, not part of the type.
 - `valid_types` on `entity` does not bind, matching `field_types/entity`. `{"type": "Task", "id": N}`
   was accepted at 200 and read back as a Task.
 - Never PUT two of `start_date`, `due_date`, `duration` expecting both to stand: the third is recomputed,
-  and on a dependent Task a date write also sets `pinned` and can raise `dependency_violation`. A `null`
-  date pins it as well (probe 093); a `duration` write does not (probe 100).
+  and on a dependent Task a `start_date` write, null or real, also sets `pinned` and can raise
+  `dependency_violation`. A `due_date` or `duration` write does not pin (probes 093, 100).
 - `time_logs_sum`, `time_vs_est` and `time_percent_of_est` are read only. Sum `TimeLog.duration` to
   predict them; `Task.color` is not a colour either (`field_types/color`).
