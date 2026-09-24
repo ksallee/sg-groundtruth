@@ -110,6 +110,7 @@ with _lib.Created(c) as made:
               "data": {"template_task": task_ref(tids["zzprobe_099_y"])}}]
     r = c.post("/entity/_batch", json={"requests": claim})
     rows.append(f"  _batch claim y.template_task -> {r.status_code} {T.errs(r) if not r.ok else ''}")
+    edge_state("after claim, before apply", {"x": x1, "y": y1})
     apply(sh1)
     on1 = T.tasks_on(c, sh1, ["content"])
     T.adopt(made, on1)
@@ -139,10 +140,15 @@ with _lib.Created(c) as made:
     rows.append(f"  Tasks on Shot3: {len(on3)} (1 pre-made + however many the apply created)")
     y3 = next((t["id"] for t in on3 if t["attributes"]["content"] == "zzprobe_099_y"), None)
     edge_state("after", {"x": x3, "y": y3})
+    seen = sorted({*tids.values(), x1, y1, x2, y2, x3, *(t["id"] for t in on1 + on2 + on3)})
 
 rows.append("\n=== left clean?")
-rows.append(f"  sandbox Tasks zzprobe_099*: "
-            f"{len(T.search(c, 'tasks', [['project', 'is', P], ['content', 'starts_with', 'zzprobe_099']], ['content']))}")
+rows.append(f"  Tasks zzprobe_099* (site-wide, template tasks included): "
+            f"{len(T.search(c, 'tasks', [['content', 'starts_with', 'zzprobe_099']], ['content']))}")
+refs = [task_ref(i) for i in seen]
+left = {d["id"] for f in ("task", "dependent_task")
+        for d in T.search(c, "task_dependencies", [[f, "in", refs]], ["task"])}
+rows.append(f"  TaskDependency rows touching any of the {len(seen)} Tasks seen: {len(left)}")
 rows.append(f"  TaskTemplates zzprobe_099*: "
             f"{len(T.search(c, 'task_templates', [['code', 'starts_with', 'zzprobe_099']], ['code']))}")
 rows.append(f"  Shots zzprobe_099*: "
