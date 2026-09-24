@@ -20,15 +20,15 @@ An endpoint door holds the edge cases that live on the call and the verdict of e
 
 **schema** 002_schema, 008_custom_entities, 009_status_lists, 019_create_fields, 040_field_revive, 042_spec_coverage, 047_site_facts_and_the_working_week, 056_stock_vs_custom_field, 061_shipped_statuses
 
-**read** 003_query, 005_link_usage, 006_pagination, 007_fill_rates, 018_project_listing, 021_media_resolution, 023_pages, 026_result_order, 048_one_record_beyond_crud, 059_dotted_path_type_check, 060_entity_dict_name, 064_hierarchy_expand_buckets
+**read** 003_query, 005_link_usage, 006_pagination, 007_fill_rates, 018_project_listing, 021_media_resolution, 023_pages, 026_result_order, 048_one_record_beyond_crud, 059_dotted_path_type_check, 060_entity_dict_name, 064_hierarchy_expand_buckets, 088_project_template_defaults
 
 **filter** 016_dotted_multi_entity, 017_filter_operators, 020_summarize, 030_complex_filters, 046_search_without_a_path, 053_text_search_matching, 063_text_search_filter_shape, 068_note_read_state, 071_note_link_name_filter
 
-**write** 011_create_project, 012_create_version, 024_read_after_write, 045_webhooks, 050_webhook_subscriptions, 058_local_storage_roots, 069_client_note, 070_authored_timestamps
+**write** 011_create_project, 012_create_version, 024_read_after_write, 045_webhooks, 050_webhook_subscriptions, 058_local_storage_roots, 069_client_note, 070_authored_timestamps, 083_task_template_on_create, 084_task_template_reapply, 085_task_dependency_types, 086_batch_tasks_with_dependencies, 087_dependency_cascade, 089_task_delete_side_effects
 
 **upload** 013_upload_media, 014_attach_file, 022_sequence_on_version, 039_upload_silent_failures, 044_multipart_upload
 
-**observe** 025_event_log, 043_attention, 049_script_events, 066_user_feed, 067_notes_in_the_stream
+**observe** 025_event_log, 043_attention, 049_script_events, 066_user_feed, 067_notes_in_the_stream, 090_template_task_events
 
 **render** 010_status_icons
 
@@ -38,24 +38,11 @@ calculated, checkbox, color, date, date_time, duration, entity, entity_type, flo
 
 ## Entity types
 
-Asset, Attachment, Cut, CutItem, Delivery, HumanUser, LocalStorage, Note, Playlist, Project, PublishedFile, PublishedFileType, Reply, Sequence, Shot, Step, Task, TimeLog, Version
+Asset, Attachment, Cut, CutItem, Delivery, HumanUser, LocalStorage, Note, Playlist, Project, PublishedFile, PublishedFileType, Reply, Sequence, Shot, Step, Task, TaskTemplate, TimeLog, Version
 
 ## Recipes
 
-- 001_publish_version_with_media — Publish a generated image to Flow PT as a Version, with provenance and the workflow attached
-- 002_batch — Apply many creates, updates and deletes in one atomic call, and match the results back to the requests
-- 003_query_fields_and_pages — Resolve a query field's value, and run the rows a saved Page shows
-- 004_register_published_file — Register the next PublishedFile without overwriting the last one, and write a path the server resolves for every platform
-- 005_propagate_status — Roll a status up from a parent's Tasks and Versions onto the parent, without racing a concurrent write
-- 006_media_round_trip — Take media off one Version and put the same bytes on another, which is what every sync, transfer and hand-off does
-- 007_build_and_reconcile_a_cut — Write a Cut and its CutItems from an edit, read the timeline back, and reconcile a second edit against the Cut already there
-- 008_delivery_progress — Keep a Delivery honest about what a long transfer is doing, including when it is cancelled and when it crashes
-- 009_multi_entity_safely — Add to and remove from a multi_entity field without destroying the links you did not mean to touch
-- 010_status_picker — List the statuses a project actually offers, each with the label, colour and icon needed to draw it
-- 011_audit_webhook_subscriptions — Inventory every webhook subscription on a site, and see which have ever delivered
-- 012_sign_in_as_a_person — Reach the REST API as a person, with no script key and no password, by having them approve a login in their browser
-- 013_publish_file_bytes — Publish a file's bytes onto a PublishedFile when the caller has no LocalStorage root to write under
-- 014_notes_about — Find the Notes about a Shot, Asset or Version by the name of the thing, and read what each Note is linked to
+001_publish_version_with_media, 002_batch, 003_query_fields_and_pages, 004_register_published_file, 005_propagate_status, 006_media_round_trip, 007_build_and_reconcile_a_cut, 008_delivery_progress, 009_multi_entity_safely, 010_status_picker, 011_audit_webhook_subscriptions, 012_sign_in_as_a_person, 013_publish_file_bytes, 014_notes_about, 015_apply_task_template_without_duplicates, 016_create_tasks_with_dependencies
 
 ## Endpoints
 
@@ -188,4 +175,4 @@ POST /internal_api/session
 
 `doors/tags.md` holds the entries under each.
 
-async attachment auth batch browser cache client colour cors cost create custom-entity custom-field cut date delivery dependency destructive discovery dotted-field duration entity-field enumeration error-handling etag event-log fill-rate filter follow header icon image inspector jsonb launcher link list-field media multi-entity multipart note number observe operator page paging path permission pivot-column playlist project protocol provenance published-file query read-only reply schema sequence serializable shot silent sort status step storage sudo summary task timecode token transcode trap upload url user version webhook write
+async attachment auth batch browser cache client colour cors cost create custom-entity custom-field cut date delivery dependency destructive discovery dotted-field duration entity-field enumeration error-handling etag event-log fill-rate filter follow header icon image inspector jsonb launcher link list-field media multi-entity multipart note number observe operator page paging path permission pivot-column playlist project protocol provenance published-file query read-only reply schema sequence serializable shot silent sort status step storage sudo summary task task-template timecode token transcode trap upload url user version webhook write

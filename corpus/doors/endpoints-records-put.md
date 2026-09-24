@@ -35,11 +35,21 @@ Updates and returns the whole record, 77 attribute keys for a Shot. A key left o
   rules: `doors/findings-write`
 - `070_authored_timestamps` (findings) — A create body sets created_at and updated_at and they read back exactly, on Note, Task and Version, though the schema flags both editable false; every PUT on either 400s.  
   rules: `doors/findings-write`
+- `084_task_template_reapply` (findings) — Changing `task_template` on a Shot only adds: one Task per template task not yet linked by `template_task`. Nothing is removed or merged; a hand-made Task of the same content and step is duplicated.  
+  rules: `doors/findings-write`
+- `085_task_dependency_types` (findings) — TaskDependency takes four `dependency_type` values, default `finish-to-start-next-day`; `offset_days` counts working days and snaps the dependent both ways. `shift_ratio` moved nothing.  
+  rules: `doors/findings-write`
+- `087_dependency_cascade` (findings) — An upstream date write reschedules every unpinned downstream Task through the chain, later and earlier alike. A pinned Task stays put and flags `dependency_violation` while it is broken.  
+  rules: `doors/findings-write`
+- `089_task_delete_side_effects` (findings) — Deleting a Task retires its TaskDependency rows, unlinks both neighbours without bridging them, and nulls `Version.sg_task` and `PublishedFile.task`. Revive restores all of it.  
+  rules: `doors/findings-write`
 - `049_script_events` (findings) — A script's writes reach the event log only while its ApiUser has generate_event_log_entries True. The default is False and nothing errors when off. One create logs one row per field plus one _New.  
   rules: `doors/findings-observe`
 - `049_script_events` (findings) — A script's writes reach the event log only while its ApiUser has generate_event_log_entries True. The default is False and nothing errors when off. One create logs one row per field plus one _New.  
   rules: `doors/findings-observe`
 - `067_notes_in_the_stream` (findings) — A Reply reaches every linked stream in 33 s as `create_reply`, creates too; a script's Note create and status changes were absent after 430 s. Write as a person.  
+  rules: `doors/findings-observe`
+- `090_template_task_events` (findings) — A template-generated Task logs like a hand-made one plus a `template_task` change row, `in_create` true, credited to the caller. Filter `attribute_name` `template_task` to find them.  
   rules: `doors/findings-observe`
 - `004_register_published_file` (recipes) — Register the next PublishedFile without overwriting the last one, and write a path the server resolves for every platform  
   rules: `doors/recipes`
@@ -48,6 +58,8 @@ Updates and returns the whole record, 77 attribute keys for a Shot. A key left o
 - `008_delivery_progress` (recipes) — Keep a Delivery honest about what a long transfer is doing, including when it is cancelled and when it crashes  
   rules: `doors/recipes`
 - `009_multi_entity_safely` (recipes) — Add to and remove from a multi_entity field without destroying the links you did not mean to touch  
+  rules: `doors/recipes`
+- `015_apply_task_template_without_duplicates` (recipes) — Apply a task template to an entity that already has Tasks, without duplicating the ones it already holds  
   rules: `doors/recipes`
 - `004_update_mode_ignored_in_query_string` (reports) — multi_entity_update_mode sent as a query parameter is accepted and ignored, and the whole link set is replaced when the caller asked to add.  
   rules: `doors/reports`

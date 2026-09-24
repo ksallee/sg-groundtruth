@@ -42,6 +42,8 @@ The only way to send a filter the query string cannot express, and it refuses `a
   rules: `doors/findings-read`
 - `060_entity_dict_name` (findings) — The `name` in an entity dict is the target's `cached_display_name`, filled on every type measured, single and multi alike. Read it, not the per-type identity field, and expect decoration.  
   rules: `doors/findings-read`
+- `088_project_template_defaults` (findings) — The per-entity-type default is readable at `Project.tracking_settings.default_task_template.<Type>`, a `{type, id, name, valid}` dict. `Project.task_templates` is a separate list, not the default.  
+  rules: `doors/findings-read`
 - `016_dotted_multi_entity` (findings) — A dotted path through a multi_entity field reads back nothing: HTTP 200 with the key silently absent from attributes. Filters on that same path work, including two hops.  
   rules: `doors/findings-filter`
 - `017_filter_operators` (findings) — is/is_not/contains/not_contains/starts_with/ends_with/in/not_in all work, on text fields and through dotted paths; an unknown operator 400s on all 21 data types, naming the valid list on 16.  
@@ -54,11 +56,19 @@ The only way to send a filter the query string cannot express, and it refuses `a
   rules: `doors/findings-filter`
 - `069_client_note` (findings) — `client_note` cannot be set over REST: `true` on create is 400 and any `PUT` is 400 `editable on create only`. `sg_note_type: "Client"` is the one marker a caller can write.  
   rules: `doors/findings-write`
+- `083_task_template_on_create` (findings) — A create with `task_template` makes the Tasks inside the same call, by `POST` and by `_batch`, copying every field set on the template tasks and their dependency types and offsets.  
+  rules: `doors/findings-write`
+- `087_dependency_cascade` (findings) — An upstream date write reschedules every unpinned downstream Task through the chain, later and earlier alike. A pinned Task stays put and flags `dependency_violation` while it is broken.  
+  rules: `doors/findings-write`
+- `089_task_delete_side_effects` (findings) — Deleting a Task retires its TaskDependency rows, unlinks both neighbours without bridging them, and nulls `Version.sg_task` and `PublishedFile.task`. Revive restores all of it.  
+  rules: `doors/findings-write`
 - `014_attach_file` (findings) — Leave the field out of the _upload path and the file is stored as an Attachment on attachment_links; read it back with POST /entity/attachments/_search, never flat filter[].  
   rules: `doors/findings-upload`
 - `025_event_log` (findings) — meta.old_value and meta.new_value answer "what was this before", but meta is unfilterable and unsortable: narrow on entity, event_type and attribute_name, sort -id, read meta yourself.  
   rules: `doors/findings-observe`
 - `049_script_events` (findings) — A script's writes reach the event log only while its ApiUser has generate_event_log_entries True. The default is False and nothing errors when off. One create logs one row per field plus one _New.  
+  rules: `doors/findings-observe`
+- `090_template_task_events` (findings) — A template-generated Task logs like a hand-made one plus a `template_task` change row, `in_create` true, credited to the caller. Filter `attribute_name` `template_task` to find them.  
   rules: `doors/findings-observe`
 - `003_query_fields_and_pages` (recipes) — Resolve a query field's value, and run the rows a saved Page shows  
   rules: `doors/recipes`
@@ -73,6 +83,8 @@ The only way to send a filter the query string cannot express, and it refuses `a
 - `010_status_picker` (recipes) — List the statuses a project actually offers, each with the label, colour and icon needed to draw it  
   rules: `doors/recipes`
 - `014_notes_about` (recipes) — Find the Notes about a Shot, Asset or Version by the name of the thing, and read what each Note is linked to  
+  rules: `doors/recipes`
+- `015_apply_task_template_without_duplicates` (recipes) — Apply a task template to an entity that already has Tasks, without duplicating the ones it already holds  
   rules: `doors/recipes`
 - `003_sort_fails_silently` (reports) — A sort on an unknown or unsortable field answers 200 with the rows in default order, while the same field name in a filter answers 400 and names the reason.  
   rules: `doors/reports`

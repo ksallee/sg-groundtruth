@@ -641,3 +641,43 @@ Find the Notes about a Shot, Asset or Version by the name of the thing, and read
 - Two hops resolve: `note_links.Shot.sg_sequence.Sequence.code` narrows to a sequence.
 
 `corpus/recipes/014_notes_about.md`
+
+## 015_apply_task_template_without_duplicates
+
+Apply a task template to an entity that already has Tasks, without duplicating the ones it already holds
+
+- **The server copies dependencies onto claimed Tasks too.** `paint` and `comp` both existed before
+  the apply, and the apply still wrote the template's `start-to-start` edge between them. A merge by
+  hand would have to copy the edges itself.
+
+- The claim rewrites `template_task`. A Task that pointed at another template's task (`comp` above)
+  now points at this template's, so the provenance of the first apply is lost.
+
+- Nothing is removed. `roto` at the old step stays; deleting what the new template lacks is the
+  caller's decision, and probe 089 lists what a Task delete unlinks.
+
+- The key is `content` plus `step` id. Two Tasks on the entity with the same key keep only the last
+  in `free`, so the other is left unclaimed and a duplicate stays.
+
+- Set fields such as status survive the claim: `paint` kept `ip`. Only `template_task` is written.
+
+`corpus/recipes/015_apply_task_template_without_duplicates.md`
+
+## 016_create_tasks_with_dependencies
+
+Create a set of Tasks and the dependencies between them, with types and offsets, in two calls
+
+- A Task sent with only `duration` gets its dates from its dependency in call 2: `anim` started the
+  working day after `layout` ended and ran its 2400 minutes, five 8-hour days on the probed site.
+
+- `offset_days` is working days: `light` starts two working days after `anim` starts (probe 085).
+
+- The four `dependency_type` values, and the error that lists them, are in probe 085. Omitting the
+  type stores `finish-to-start-next-day`.
+
+- A loop or a repeated pair in call 2 is a 400 and rolls the whole call back; the Tasks from call 1
+  stay. Delete them, or resend call 2 fixed.
+
+- Keep each call under about 200 requests (recipe 002, size note).
+
+`corpus/recipes/016_create_tasks_with_dependencies.md`

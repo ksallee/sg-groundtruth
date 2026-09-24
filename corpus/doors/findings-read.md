@@ -403,3 +403,33 @@ not measured: how the web interface draws the repeated node. Its tree needs a se
   templated off the segment, so the first reads `Shots with no __none__`.
 
 `corpus/findings/064_hierarchy_expand_buckets.md`
+
+## 088_project_template_defaults
+
+The per-entity-type default is readable at `Project.tracking_settings.default_task_template.<Type>`, a `{type, id, name, valid}` dict. `Project.task_templates` is a separate list, not the default. **[partial]**
+
+not measured: Whether a Shot or Asset created over REST without `task_template` gets the default: blocked on the site, since testing it means writing a project's tracking settings.
+
+| where | holds | readable |
+|---|---|---|
+| `Project.tracking_settings.default_task_template.<EntityType>` | the default template for that type, as `{type, id, name, valid}` | yes, `?fields=tracking_settings` |
+| `Project.task_templates` | a list of templates attached to the project | yes |
+| `ProjectTaskTemplateConnection` | the join row behind `task_templates` | yes, `/entity/project_task_template_connections` |
+| `TaskTemplate.projects` | the same list from the other side | yes |
+| `/preferences` | nothing about templates | n/a |
+
+- **The default and the attached list are different data.** On the probed site the one project with a
+  default for Asset does not list that template in `task_templates`. Read the default from
+  `tracking_settings`, never infer it from the list.
+
+- On the probed site `default_task_template` is absent on 16 projects and `{}` on 5. Absent, `{}` and a
+  missing entity-type key all mean no default. `valid` read `"valid"`; no other value was seen.
+
+- `tracking_settings` is a blob: no filter reaches into it (`field_types/serializable`), so finding
+  projects with a default means reading every project's value.
+
+- **Whether the API applies the default is unmeasured.** Probe 083 found `task_template: null` on a
+  create generates nothing in a project with no default. Send `task_template` explicitly rather than
+  rely on the project default.
+
+`corpus/findings/088_project_template_defaults.md`

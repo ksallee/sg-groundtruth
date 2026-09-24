@@ -51,6 +51,8 @@ The only place the unit behind a `duration` field is named. `prefs` narrows it t
 
 - `002_schema` (findings) — Fetch /schema once for the type list, then /schema/<Type>/fields only for types you actually need: it is the expensive call (48KB, ~330ms each) and must never be looped over all types.  
   rules: `doors/findings-schema`
+- `088_project_template_defaults` (findings) — The per-entity-type default is readable at `Project.tracking_settings.default_task_template.<Type>`, a `{type, id, name, valid}` dict. `Project.task_templates` is a separate list, not the default.  
+  rules: `doors/findings-read`
 
 `corpus/endpoints/get_preferences.md`
 
@@ -177,6 +179,8 @@ The site publishes its own OpenAPI v3 document, `json` or `yaml`, and it lists 6
   rules: `doors/findings-protocol`
 - `042_spec_coverage` (findings) — `GET /spec.json` returns the deployment's own OpenAPI v3 document. It advertises 62 operations against the 23 this corpus covers, and it disagrees with the published documentation.  
   rules: `doors/findings-schema`
+- `084_task_template_reapply` (findings) — Changing `task_template` on a Shot only adds: one Task per template task not yet linked by `template_task`. Nothing is removed or merged; a hand-made Task of the same content and step is duplicated.  
+  rules: `doors/findings-write`
 - `007_reference_disagrees_with_spec` (reports) — Four calls in the published REST reference exist under no spelling in the deployment's own OpenAPI document, which names two of them differently.  
   rules: `doors/reports`
 

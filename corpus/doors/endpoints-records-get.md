@@ -93,7 +93,17 @@ One row, and the only read where `fields` is honoured on a single record. A reti
 
 - `060_entity_dict_name` (findings) — The `name` in an entity dict is the target's `cached_display_name`, filled on every type measured, single and multi alike. Read it, not the per-type identity field, and expect decoration.  
   rules: `doors/findings-read`
+- `088_project_template_defaults` (findings) — The per-entity-type default is readable at `Project.tracking_settings.default_task_template.<Type>`, a `{type, id, name, valid}` dict. `Project.task_templates` is a separate list, not the default.  
+  rules: `doors/findings-read`
 - `058_local_storage_roots` (findings) — One create fills every `local_path_*` the storage row defines, whichever platform's root the path was under. The server picks the deepest matching root, and no conditional-write header is honoured.  
+  rules: `doors/findings-write`
+- `083_task_template_on_create` (findings) — A create with `task_template` makes the Tasks inside the same call, by `POST` and by `_batch`, copying every field set on the template tasks and their dependency types and offsets.  
+  rules: `doors/findings-write`
+- `085_task_dependency_types` (findings) — TaskDependency takes four `dependency_type` values, default `finish-to-start-next-day`; `offset_days` counts working days and snaps the dependent both ways. `shift_ratio` moved nothing.  
+  rules: `doors/findings-write`
+- `086_batch_tasks_with_dependencies` (findings) — Tasks and their dependencies take two `_batch` calls: create the Tasks, then create TaskDependency rows. `upstream_tasks` on a create links without rescheduling.  
+  rules: `doors/findings-write`
+- `089_task_delete_side_effects` (findings) — Deleting a Task retires its TaskDependency rows, unlinks both neighbours without bridging them, and nulls `Version.sg_task` and `PublishedFile.task`. Revive restores all of it.  
   rules: `doors/findings-write`
 - `003_query_fields_and_pages` (recipes) — Resolve a query field's value, and run the rows a saved Page shows  
   rules: `doors/recipes`
@@ -107,10 +117,13 @@ One row, and the only read where `fields` is honoured on a single record. A reti
   rules: `doors/recipes`
 - `013_publish_file_bytes` (recipes) — Publish a file's bytes onto a PublishedFile when the caller has no LocalStorage root to write under  
   rules: `doors/recipes`
+- `015_apply_task_template_without_duplicates` (recipes) — Apply a task template to an entity that already has Tasks, without duplicating the ones it already holds  
+  rules: `doors/recipes`
 
 **Silent on this call**
 
 - `058_local_storage_roots` — One create fills every `local_path_*` the storage row defines, whichever platform's root the path was under. The server picks the deepest matching root, and no conditional-write header is honoured.
+- `086_batch_tasks_with_dependencies` — Tasks and their dependencies take two `_batch` calls: create the Tasks, then create TaskDependency rows. `upstream_tasks` on a create links without rescheduling.
 - `005_propagate_status` — Roll a status up from a parent's Tasks and Versions onto the parent, without racing a concurrent write
 - `009_multi_entity_safely` — Add to and remove from a multi_entity field without destroying the links you did not mean to touch
 

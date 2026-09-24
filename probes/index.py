@@ -232,8 +232,10 @@ def index(findings, types, entities, recipes, cards, reports, by_tag, behind, sp
 
     out += ["## Field types", "", names(types) or "none yet", "",
             "## Entity types", "", names(entities) or "none yet", "",
-            "## Recipes", ""]
-    out += [f"- {e['slug']} — {e['summary']}" for e in recipes] or ["none yet"]
+            "## Recipes", "",
+            # Names only: the intent of each is on `doors/recipes.md`, the door the task opens, and
+            # one line of intent per recipe outgrew the 8 KiB cap at 16 recipes.
+            names(recipes) or "none yet"]
 
     out += ["", "## Endpoints", "",
             f"One card per call, {covered} of {len(cards)} with an entry behind them; a card with "
