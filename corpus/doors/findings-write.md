@@ -1007,3 +1007,68 @@ A template apply erases an edge where a linked Task depends on a Task not linked
   same template.
 
 `corpus/findings/109_template_apply_outside_edge.md`
+
+## 110_template_task_after_revive
+
+Revive restores `template_task`. A task_template write while the Task is retired re-creates it, so a later revive leaves two Tasks on one template task. Revive first, then write.
+
+- **Revive restores `template_task`**, on both delete routes. The retired row keeps it: a `_search`
+  with `return_only: retired` reads `template_task` A.x before the revive.
+
+- **A retired Task does not count as linked.** The apply re-creates its template task (probe 084's
+  match key) and copies the template edge onto the copy. Reviving the original afterwards gives two
+  Tasks on A.x, and Y then depends on both, by two edges.
+
+- **Order: revive, then the template write.** Revived first, the Task is linked again and the apply
+  makes nothing. `_batch` takes no revive (recipe 021), so an undo revives by separate calls before
+  its batch (recipe 022).
+
+- Measured with null -> A only. The B -> A write of an undo (probes 096, 104) was not measured here,
+  nor a Task retired from a template other than the one written.
+
+The probe provisions every row; no operator step. Y's Task is the negative control: live throughout,
+never duplicated in any of the four runs.
+
+`corpus/findings/110_template_task_after_revive.md`
+
+## 111_template_undo_outside_edge
+
+An undo's write back to template A erases every edge whose downstream Task is A-linked and that A lacks, pre-merge edges included; recipe 022 DELETEs one such edge, 404s and rolls back.
+
+- **The write back to A applies probe 109's rule: every edge whose downstream Task is A-linked and that
+  A lacks is erased**, whatever the upstream end: extra (R1, roto on x), merge-made (R2), or A-linked (roto
+  on lay). Pre-merge edges the merge kept (roto on x, roto on lay) are lost by the undo. Edges with only
+  the upstream end on A (paint on lay, y on lay) are kept.
+
+- Recipe 022 DELETEs every non-snapshot edge unless both ends go back to A, so a re-created outside edge
+  (R1) 404s the batch and nothing lands. Leave out every edge whose downstream end goes back to an A task.
+
+- **A's own roto on comp was re-created with a new id** on both Shots; probe 104, where roto had no other
+  upstream edge, kept the id. Recipe 019's step 3 sweep then deleted it, leaving W with no edge at all.
+  Which hand edge causes the re-create: not measured.
+
+- Re-create the lost pre-merge edges from a snapshot of ends, type and offset (recipe 016). Doing that
+  inside the undo batch: not measured.
+
+`corpus/findings/111_template_undo_outside_edge.md`
+
+## 112_template_unmerge_linked_twice
+
+Undo relinking two Tasks to one template task: A wires either one (11 of 14 picked the loser), nothing is made. Relink the loser after the task_template write: then it matches the one-link undo.
+
+- **Recipe 022 on this state does not undo.** A's apply re-syncs and wires one of the two Tasks,
+  the server's pick (probe 106): 11 of 14 went to the loser, the Task that held no edge and was
+  unlinked by the merge, and the pick flipped between identical Shots in one run. Nothing is created.
+
+- When the loser is picked, the winner keeps B's fields and loses its edges: both of A's edges now
+  sit on the loser, with new ids. Writing the snapshot's fields back does not move them. Recipe 022's
+  `KEEP` lacks `content`, which A's re-sync renames on the loser: keep it.
+
+- Relink only one Task per template task before the `task_template` write, the one that held the
+  edges, and the others after it in the same batch: a `template_task` write alone changes nothing
+  (probe 096). D3 did so 3 of 3 and ended as the one-link control did.
+
+- Even the control is not the pre-merge state to the id: B's apply erased `xa on w`, a claimed Task
+  on a Task outside B (probe 109), and A's apply recreates it with a new id. Every other id is kept.
+
+`corpus/findings/112_template_unmerge_linked_twice.md`

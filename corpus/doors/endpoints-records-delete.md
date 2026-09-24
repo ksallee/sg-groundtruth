@@ -52,6 +52,12 @@ Retires a row at 204 with an empty body. It is not erased: the row reads 404 nor
   rules: `doors/findings-write`
 - `109_template_apply_outside_edge` (findings) — A template apply erases an edge where a linked Task depends on a Task not linked to the template (root or not, other template, other Shot); it kept the edge with the outside Task downstream.  
   rules: `doors/findings-write`
+- `110_template_task_after_revive` (findings) — Revive restores `template_task`. A task_template write while the Task is retired re-creates it, so a later revive leaves two Tasks on one template task. Revive first, then write.  
+  rules: `doors/findings-write`
+- `111_template_undo_outside_edge` (findings) — An undo's write back to template A erases every edge whose downstream Task is A-linked and that A lacks, pre-merge edges included; recipe 022 DELETEs one such edge, 404s and rolls back.  
+  rules: `doors/findings-write`
+- `112_template_unmerge_linked_twice` (findings) — Undo relinking two Tasks to one template task: A wires either one (11 of 14 picked the loser), nothing is made. Relink the loser after the task_template write: then it matches the one-link undo.  
+  rules: `doors/findings-write`
 - `025_event_log` (findings) — meta.old_value and meta.new_value answer "what was this before", but meta is unfilterable and unsortable: narrow on entity, event_type and attribute_name, sort -id, read meta yourself.  
   rules: `doors/findings-observe`
 - `049_script_events` (findings) — A script's writes reach the event log only while its ApiUser has generate_event_log_entries True. The default is False and nothing errors when off. One create logs one row per field plus one _New.  

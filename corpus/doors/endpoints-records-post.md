@@ -76,6 +76,10 @@ Every call in this family: what the card records, the edge cases that live on th
   rules: `doors/findings-write`
 - `109_template_apply_outside_edge` (findings) — A template apply erases an edge where a linked Task depends on a Task not linked to the template (root or not, other template, other Shot); it kept the edge with the outside Task downstream.  
   rules: `doors/findings-write`
+- `111_template_undo_outside_edge` (findings) — An undo's write back to template A erases every edge whose downstream Task is A-linked and that A lacks, pre-merge edges included; recipe 022 DELETEs one such edge, 404s and rolls back.  
+  rules: `doors/findings-write`
+- `112_template_unmerge_linked_twice` (findings) — Undo relinking two Tasks to one template task: A wires either one (11 of 14 picked the loser), nothing is made. Relink the loser after the task_template write: then it matches the one-link undo.  
+  rules: `doors/findings-write`
 - `025_event_log` (findings) — meta.old_value and meta.new_value answer "what was this before", but meta is unfilterable and unsortable: narrow on entity, event_type and attribute_name, sort -id, read meta yourself.  
   rules: `doors/findings-observe`
 - `049_script_events` (findings) — A script's writes reach the event log only while its ApiUser has generate_event_log_entries True. The default is False and nothing errors when off. One create logs one row per field plus one _New.  
@@ -139,6 +143,8 @@ Revives a retired row. `?revive=1` is required and any JSON body is discarded, s
   rules: `doors/findings-write`
 - `103_batch_delete_revive` (findings) — A `delete` inside `_batch` retires a Task or TaskDependency exactly as `DELETE` does: same retired read-back, and revive returns the same id, fields, edges and `Version.sg_task`.  
   rules: `doors/findings-write`
+- `110_template_task_after_revive` (findings) — Revive restores `template_task`. A task_template write while the Task is retired re-creates it, so a later revive leaves two Tasks on one template task. Revive first, then write.  
+  rules: `doors/findings-write`
 - `018_remove_and_restore_a_dependency` (recipes) — Remove one dependency between two Tasks and put it back on undo, with its type and offset  
   rules: `doors/recipes`
 - `021_undo_a_batch_delete` (recipes) — Delete Tasks or dependencies in one batch and undo it by reviving the same rows  
@@ -193,6 +199,12 @@ The key is `requests`, not `data`, and sending `data` is 400 `requests is missin
   rules: `doors/findings-write`
 - `109_template_apply_outside_edge` (findings) — A template apply erases an edge where a linked Task depends on a Task not linked to the template (root or not, other template, other Shot); it kept the edge with the outside Task downstream.  
   rules: `doors/findings-write`
+- `110_template_task_after_revive` (findings) — Revive restores `template_task`. A task_template write while the Task is retired re-creates it, so a later revive leaves two Tasks on one template task. Revive first, then write.  
+  rules: `doors/findings-write`
+- `111_template_undo_outside_edge` (findings) — An undo's write back to template A erases every edge whose downstream Task is A-linked and that A lacks, pre-merge edges included; recipe 022 DELETEs one such edge, 404s and rolls back.  
+  rules: `doors/findings-write`
+- `112_template_unmerge_linked_twice` (findings) — Undo relinking two Tasks to one template task: A wires either one (11 of 14 picked the loser), nothing is made. Relink the loser after the task_template write: then it matches the one-link undo.  
+  rules: `doors/findings-write`
 - `002_batch` (recipes) — Apply many creates, updates and deletes in one atomic call, and match the results back to the requests  
   rules: `doors/recipes`
 - `005_propagate_status` (recipes) — Roll a status up from a parent's Tasks and Versions onto the parent, without racing a concurrent write  
@@ -210,6 +222,8 @@ The key is `requests`, not `data`, and sending `data` is 400 `requests is missin
 - `021_undo_a_batch_delete` (recipes) — Delete Tasks or dependencies in one batch and undo it by reviving the same rows  
   rules: `doors/recipes`
 - `022_undo_task_template_merge_in_one_batch` (recipes) — Undo a task template merge in one atomic call, returning Tasks, fields and dependencies to their state before it  
+  rules: `doors/recipes`
+- `023_undo_task_template_merge_with_a_task_linked_twice` (recipes) — Undo a task template merge when two Tasks pointed at the same old template task, without the server picking which one gets the edges  
   rules: `doors/recipes`
 - `001_batch_create_skips_validation` (reports) — A create inside POST /entity/_batch skips the required-attribute validation the single-create path applies, and answers 200 with the id of a row no read can reach.  
   rules: `doors/reports`

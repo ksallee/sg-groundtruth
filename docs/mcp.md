@@ -71,9 +71,10 @@ entry for a transcript, a sample or a table. A 2xx that did nothing is under **S
 Sizes are measured against the 178 `scope: api` entries on 2026-09-14, for `phase: read`,
 `doors/findings-read`, `026_result_order` and `POST /entity/<type>/_search`.
 
-A door name is the one on the map: `findings-read`, `endpoints-search`, `endpoints-records-get`,
-`field_types`, `entity_types`, `recipes`, `reports`, `tags`. A family splits by method as it grows, and
-`endpoints-records-get` is that split; the map names both halves.
+A door name is the one on the map: `findings-read`, `endpoints-post-entity-type-search`, `endpoints-records-get`,
+`field_types`, `entity_types`, `recipes`, `reports`, `tags`. A family splits by method as it grows, then
+by call: `endpoints-records-get` is a method door, `endpoints-post-entity-type-search` a call door. The map
+names every one.
 
 `corpus_endpoint` resolves the call the agent is about to make. `POST /entity/shots/_search`,
 `PUT /entity/versions/53`, `GET /entity/shots/1/activity_stream` and a full site URL each reach their
