@@ -396,3 +396,51 @@ under method faults, and the plans were not changed for this run.
 
 `--per-call` prices nothing against generated doors. A door on disk is one file, and `assemble`
 selects blocks only in the built form.
+
+## Task-template tasks (#81)
+
+Re-run on 2026-09-24 on `feat/81-task-template-merge-probes-2` at `e3f99ff`, 238 entries, with five
+tasks added: the questions an agent building a task template tool asks. Before this none of the 13
+tasks required a task-template entry, so the benchmark could not price a trim of one. The caps went
+to 30 entries per tag and 11 KiB for `INDEX.md` in `e3f99ff`; this run is the evidence for the next
+cap decision.
+
+| task | asks | required |
+|---|---|---|
+| `template-merge-one-batch` | apply a template to a Shot with hand-made Tasks, no duplicates, one call | recipe 020, 084, 106 |
+| `template-undo-merge` | undo the merge in one atomic call | recipes 022 and 019 (its snapshot), 104 |
+| `template-apply-erased-edges` | which existing dependencies an apply removes | 102, 109, 101, 105 |
+| `template-permission-check` | can this person make the merge, asked without writing | recipe 017, 094 |
+| `template-resync-overwrites` | which edited fields a re-apply overwrites and which it keeps | 102, 108 |
+
+Two corpora. **Current** is the branch head: `task` on 27 entries, recipe 022's full `intent`,
+`INDEX.md` 10,278 bytes. **Trimmed** applies 0401bff's trims on top, uncommitted: `task` dropped from
+083, 084, 090, 092, 096, 098, 099, 102, 104, 106, 108, the TaskTemplate card and recipes 015, 019,
+020, 022, and recipe 022's `intent` shortened. `INDEX.md` 10,211 bytes.
+
+| task | required | `index` tokens | `doors` recall | `doors` tokens | `follow` recall | `follow` tokens | `grep` recall | `grep` tokens |
+|---|---|---|---|---|---|---|---|---|
+| template-merge-one-batch | 3 | 5,365 | 3/3 (100%) | 61,090 | 3/3 (100%) | 21,511 | 3/3 (100%) | 39,140 |
+| template-undo-merge | 3 | 6,318 | 3/3 (100%) | 54,546 | 3/3 (100%) | 22,356 | 3/3 (100%) | 39,436 |
+| template-apply-erased-edges | 4 | 6,640 | 4/4 (100%) | 47,943 | 4/4 (100%) | 16,390 | 4/4 (100%) | 39,140 |
+| template-permission-check | 2 | 5,574 | 2/2 (100%) | 54,146 | 2/2 (100%) | 18,522 | 2/2 (100%) | 33,436 |
+| template-resync-overwrites | 2 | 5,138 | 2/2 (100%) | 47,591 | 2/2 (100%) | 9,050 | 2/2 (100%) | 29,591 |
+| **all 18, current** | 50 | 115,019 | 49/50 (98%) | 813,092 | 46/50 (92%) | 275,322 | 47/50 (94%) | 571,289 |
+| **all 18, trimmed** | 50 | 114,690 | 49/50 (98%) | 812,072 | 46/50 (92%) | 274,600 | 47/50 (94%) | 571,026 |
+
+| mean tokens per task | current | trimmed |
+|---|---|---|
+| `index` | 6,390 | 6,372 |
+| `doors` | 45,172 | 45,115 |
+| `follow` | 15,296 | 15,256 |
+| `grep` | 31,738 | 31,724 |
+
+Recall is identical per task and per strategy on both corpora, all five new tasks at 100% under every
+strategy; the misses are the 13 older tasks' misses above. The trim saves 0.1 to 0.3% of tokens.
+
+Why the trim costs nothing here: `grep` reaches the template entries through `task-template`, which
+every new plan's `TaskTemplate` matches, and through `endpoints:`; `doors` and `follow` read endpoint
+doors, where tags play no part. A `task` tag on those entries is redundant for any plan that holds
+`TaskTemplate`. A plan holding `Task` and not `TaskTemplate` would reach fewer of them under `grep`
+on the trimmed corpus; none of the 18 plans is written that way, which is the plan fault stated under
+method faults.

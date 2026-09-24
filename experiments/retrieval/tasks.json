@@ -203,5 +203,84 @@
       "corpus/findings/053_text_search_matching.md",
       "corpus/endpoints/post_entity_text_search.md"
     ]
+  },
+  {
+    "id": "template-merge-one-batch",
+    "task": "A Shot already has Tasks, some made by hand. Apply a task template to it in one atomic call: a Task with the same name and step as a template task is kept, not duplicated, and only the missing Tasks are made.",
+    "source": "sg-task-templates, issue #81: the merge",
+    "plan": {
+      "calls": ["POST /entity/<type>/_search", "POST /entity/_batch", "PUT /entity/<type>/<id>"],
+      "entity_types": ["Shot", "Task", "TaskTemplate"],
+      "data_types": ["entity"],
+      "phases": ["write"]
+    },
+    "required": [
+      "corpus/recipes/020_apply_task_template_in_one_batch.md",
+      "corpus/findings/084_task_template_reapply.md",
+      "corpus/findings/106_template_task_linked_twice.md"
+    ]
+  },
+  {
+    "id": "template-undo-merge",
+    "task": "Give the merge an undo: put the Shot's Tasks, their fields and their dependencies back the way they were before the template was applied, in one call that either lands whole or not at all.",
+    "source": "sg-task-templates, issue #81: undo",
+    "plan": {
+      "calls": ["POST /entity/<type>/_search", "GET /entity/<type>/<id>", "POST /entity/_batch"],
+      "entity_types": ["Shot", "Task", "TaskTemplate"],
+      "data_types": [],
+      "phases": ["write"]
+    },
+    "required": [
+      "corpus/recipes/022_undo_task_template_merge_in_one_batch.md",
+      "corpus/recipes/019_undo_task_template_merge.md",
+      "corpus/findings/104_template_unmerge_in_one_batch.md"
+    ]
+  },
+  {
+    "id": "template-apply-erased-edges",
+    "task": "Before applying a template to a Shot, list the dependencies on its existing Tasks that the apply will remove, so the user can confirm or have them put back after.",
+    "source": "sg-task-templates, issue #81: the preview",
+    "plan": {
+      "calls": ["POST /entity/<type>/_search", "PUT /entity/<type>/<id>"],
+      "entity_types": ["Shot", "Task", "TaskTemplate"],
+      "data_types": [],
+      "phases": ["write"]
+    },
+    "required": [
+      "corpus/findings/102_task_template_resync.md",
+      "corpus/findings/109_template_apply_outside_edge.md",
+      "corpus/findings/101_template_edge_conflict.md",
+      "corpus/findings/105_offset_days_null_vs_zero.md"
+    ]
+  },
+  {
+    "id": "template-permission-check",
+    "task": "Disable Apply template for a person who could not complete it. The merge updates Tasks and the Shot and creates Tasks; find out before writing anything, without changing any row.",
+    "source": "sg-task-templates, issue #81: permission",
+    "plan": {
+      "calls": ["GET /schema/<Type>/fields", "PUT /entity/<type>/<id>", "POST /entity/<type>", "POST /entity/_batch"],
+      "entity_types": ["Shot", "Task", "HumanUser"],
+      "data_types": [],
+      "phases": ["auth", "write"]
+    },
+    "required": [
+      "corpus/recipes/017_check_permission_before_writing.md",
+      "corpus/findings/094_permission_preflight.md"
+    ]
+  },
+  {
+    "id": "template-resync-overwrites",
+    "task": "Artists edited the Tasks a template made on a Shot. If we apply that template again, which of their fields does it overwrite and which does it keep?",
+    "source": "sg-task-templates, issue #81: re-sync",
+    "plan": {
+      "calls": ["PUT /entity/<type>/<id>"],
+      "entity_types": ["Shot", "Task", "TaskTemplate"],
+      "data_types": ["number", "checkbox", "duration", "date"],
+      "phases": ["write"]
+    },
+    "required": [
+      "corpus/findings/102_task_template_resync.md",
+      "corpus/findings/108_task_template_resync_empties.md"
+    ]
   }
 ]
