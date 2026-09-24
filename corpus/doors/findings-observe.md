@@ -199,6 +199,32 @@ A Reply reaches every linked stream in 33 s as `create_reply`, creates too; a sc
 
 `corpus/findings/067_notes_in_the_stream.md`
 
+## 077_page_change_stamps
+
+PageSetting has no updated_at; Page.updated_at moves when its layout is saved. Poll Page.updated_at; Shotgun_PageSetting_Change names which setting changed but its entity is null on 131 of 500.
+
+| signal | on | tells you |
+|---|---|---|
+| `Page.updated_at`, `updated_by` | Page | the page or its layout changed; it moved to the second of a layout save |
+| `PageSetting.updated_at` | none | the field does not exist: `?fields` drops it, a filter 400s |
+| `Shotgun_PageSetting_Change` | EventLogEntry | which widget and which setting changed, never the new value |
+| `Shotgun_Page_Change` | EventLogEntry | an attribute change on Page, with `old_value`/`new_value` |
+
+- Cache a layout keyed on `Page.id` plus `Page.updated_at`; one `?fields=updated_at` read tells you whether
+  to refetch the tree.
+
+- `PageSetting.created_at` does not move on an edit, so it cannot stand in for a change stamp.
+
+- A settings event names the Page under `entity` on 369 of 500; on the other 131 `entity` is null and
+  nothing in `meta` names the row or the page, so the event log cannot tie every save to a page.
+
+- `meta.changes` lists `{path, type, setting}` per change. Diff the trees yourself for values.
+
+- A script's own `PUT` on `settings_json` logged a different shape (probe 078): an `attribute_change`
+  whose `old_value` and `new_value` are the whole JSON as strings.
+
+`corpus/findings/077_page_change_stamps.md`
+
 ## 090_template_task_events
 
 A template-generated Task logs like a hand-made one plus a `template_task` change row, `in_create` true, credited to the caller. Filter `attribute_name` `template_task` to find them.

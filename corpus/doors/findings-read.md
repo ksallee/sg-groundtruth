@@ -404,6 +404,159 @@ not measured: how the web interface draws the repeated node. Its tree needs a se
 
 `corpus/findings/064_hierarchy_expand_buckets.md`
 
+## 072_page_layouts
+
+A page's views are root settings.layouts [{name, display_name}], each name a child of the root. Query widgets sit at /body, inside a view, or in tabs: walk the tree, never read /body alone. **[partial]**
+
+not measured: Which name the export's <layout_name> takes: every export on the probed site answers the page-level 422, so layouts[].name and display_name could not be told apart. Blocked on the site.
+
+Every node is `{type, settings, children}`, and `children` is an object keyed by a name the parent's
+settings refer to. Three places hold more than one query widget:
+
+| holder | where the list is | what the names address |
+|---|---|---|
+| views | root `settings.layouts`, `selected_layout` | root children: `body` when there is one view, `layout_N` on a canvas with several |
+| a canvas view | `Canvas.Body.settings.rows`, then `Canvas.Row.settings.column_widgets` | `row_N/child_N/child`, each a widget such as an EntityQueryPage |
+| tabs | `SG.Widget.Tabs.settings.tab_order` | the Tabs widget's children: `tab_N`, `embedded_<type>_query`, `all_fields` |
+
+- A page with no `layouts` key has one view and it is `body`. Recipe 003's `page_query` reads only
+  `/body`, so on the probed site it misses 68 query widgets inside canvas views and every tab.
+
+- An EntityQueryPage always holds its sibling views as children (`list_content`, `thumb_content`,
+  `card_content`, `calendar_content`, `sched_content`, often `browser_content`); `mode` names the one
+  showing (probe 073).
+
+- `allowed_permission_group_codes` and `denied_permission_group_codes` gate a view or a tab by
+  permission group code (`admin`, `artist`, `manager`). A runner acting for a person filters on them.
+
+- On the probed site one system-owned `stream_detail` page holds 3 shared rows; the other 1106 pages
+  hold one. `P.shared` keeps the last, so check the count before trusting one row.
+
+- On the probed site 127 pages hold no query widget at all: app pages (`inbox`, `my_tasks`,
+  `media_center`) whose widget is the whole page.
+
+- The export's `<layout_name>` is either `layouts[].name` or `display_name`. The endpoint answers 422
+  for both and for a name no view has (`endpoints/get_exports_page_id_layout_format`).
+
+`corpus/findings/072_page_layouts.md`
+
+## 073_page_grid_settings
+
+Stored pages group one level deep (one of 438 goes two), summarise a column once in 41 grids, and colour columns by DisplayColumn id, a type REST cannot read. mode is list on 94%.
+
+What a page runner has to implement, by how often the probed site stores it:
+
+| setting | where | stored shape | reproducible over REST |
+|---|---|---|---|
+| `mode` | query widget | `list`, `thumb`, `browser`, `card`, ... | yes; `list` is the grid |
+| `grouping` | query widget | `false`, or a list of `{column, method, direction}` | yes: `_summarize` nests one level per entry (probe 079). `method` is a `_summarize` grouping type (`exact`, `week`) |
+| `sorts` | query widget and `list_content` | lists of `{column, direction}` | the first key via `?sort`; the rest client-side. The two lists disagree on 93 of 383 grids |
+| `pivot_grouping`, `pivot_sorts` | query widget | the rows a pivot column (`step_N`) rolls up | the `step_N` column reads as a field (recipe 003) |
+| `summaries` | `list_content` | `{<column key>: {type, column, value}}` | `status_list` yes; `status_percentage` with a `value` no (probe 079) |
+| `formatting_rules`, `rule_type` `row` | query widget | a `condition` in the web tree shape | yes: convert it like a filter (recipe 003) |
+| `formatting_rules`, `rule_type` `display_column` | query widget | `display_column: {type: "DisplayColumn", id}` | no: the rule names no field, and DisplayColumn is not a REST type |
+| `records_per_page` | `list_content` | 25, 50, 100 | a client paging choice |
+
+- `grouping: false` means none. Test for a list, not for truthiness of the key.
+
+- A summary key can end in a pivot suffix, `shots.Shot.step_0$sg_status_list`, which names no column in
+  the grid's `columns`. The `$` joins a pivot path to the field it summarises.
+
+- A `display_column` rule's `page_id` points at another page on 1700 of 1701 rules: the rules were copied
+  from the page they were first made on. Key a rule on the widget holding it, not on `page_id`.
+
+- `server_side_filters: "my_notes"` names a filter the server applies and the tree does not show; on
+  the probed site one widget uses it.
+
+`corpus/findings/073_page_grid_settings.md`
+
+## 075_page_overrides
+
+A per-user override patches columns, widths, sorts, mode and the filter panel at any spec_path, "" meaning the root. One row per user and page; 3 of 32 patches name a path the shared tree lacks.
+
+| `spec_path` | patches | resolves to |
+|---|---|---|
+| `""` | the root: `filter_panel_filters`, `filter_panel_settings`, a date range | the page widget itself |
+| `body` | `mode`, `sorts`, `group_settings` | the query widget |
+| `body\|list_content` | `columns`, `column_widths`, `wrapped_columns`, `wrap_column_header_text` | the list grid |
+| `layout_N\|row_N\|child_N\|child` | a widget inside a canvas view | whatever that child is |
+
+- Apply a patch by walking the shared tree's `children` along `spec_path` split on `|`, skipping empty
+  segments, then merging `settings` key by key. An empty `spec_path` is the root.
+
+- A person's filter choice is stored under the root as `filter_panel_filters`, not in `body.settings.filters`.
+  A runner honouring an override has to read both.
+
+- A patch can name a child the shared tree does not have (`body|list_content|step_0`, a pivot
+  sub-grid); 3 of 32 do on the probed site. Skip it rather than creating the path.
+
+- Rows per (user, page) were 1 in every case, so no merge order between rows is needed on the probed site.
+
+- A person reads everyone's overrides, not only their own (probe 076).
+
+`corpus/findings/075_page_overrides.md`
+
+## 076_page_visibility
+
+The script user is not the widest reader of Page: an Admin read 2048 pages where the script read 1107 and 404s on the rest. An Artist read 107. Every level reads every person's override.
+
+- **The script user does not see every page.** Every other count in this corpus is an `api_admin`
+  number and the widest read on the site (probe 027); on `Page` an Admin reads 941 more, 41 of them
+  unshared. To list the pages a person sees, read as that person with `sudo_as_login`; the script's list
+  is neither a superset nor theirs.
+
+- A page the script cannot see answers 404 by id, and its PageSetting rows do not come back under
+  `page in [...]` either.
+
+- On the probed site the Artist reads no project page at all and 107 site-level ones, so a Page+ list
+  for an Artist is empty for projects even where probe 027 shows that Artist reading 8 projects.
+
+- **`current_user_can_see` can fail a whole read.** As an Admin, asking for it in `fields` turned two
+  pages of 500 into 400 code 104 `Read failed for entity type [Page]` with `detail` null, and the same
+  rows read fine without it. Leave the field out of listings; read it per page if it matters.
+
+- Overrides are not private over REST. A person reads every other person's PageSetting row, by id and
+  by `_search`, so a column layout is visible site-wide.
+
+`corpus/findings/076_page_visibility.md`
+
+## 081_dotted_image
+
+entity.Shot.image returns the Shot's thumbnail as a presigned S3 URL under attributes, same object, fresh signature, in the same call. image is_not null matched 50 Shots whose image reads null.
+
+- A dotted image column costs nothing extra. It is returned under `attributes` keyed by the dotted name,
+  as the same S3 object the Shot's own `image` names, re-signed for this read (`field_types/image`).
+  Key a cache on the object path, never on the full URL.
+
+- **`image is_not null` and a null read disagree.** On the probed site 50 Shots match `is_not null` and
+  read `null`, and the dotted filter matched all 1500 Tasks while 250 of them read `null`. Filter to
+  narrow, then test the value you read.
+
+- `GET /entity/shots/<id>/image` returns the same URL wrapped in `{"data": ...}`, one call per row.
+  Prefer the dotted field on the row you already fetch.
+
+`corpus/findings/081_dotted_image.md`
+
+## 082_page_size_cap
+
+page[size] takes 1 to 5000 inclusive; 5001 is 400 "size must be less than 5000". Omitted, it is 500. A page costs ~330 ms whatever its size up to 500, so read big pages.
+
+| `page[size]` | result |
+|---|---|
+| omitted | 500 rows |
+| 1 to 5000 | that many rows, or the remainder |
+| 5001 and above | 400 `size must be less than 5000` |
+| 0 or negative | 400 `size must be greater than 0` |
+
+- The message is off by one: 5000 itself is accepted.
+
+- A call's fixed cost dominates. On the probed site 100 and 500 rows cost the same ~330 ms, and 2000
+  cost 468 ms, so reading a whole page of 1900 rows at 2000 a call took 788 ms against 6257 ms at 100.
+
+- Stop on the empty page, not on `links.next` (probe 006): that last empty call is part of every total above.
+
+`corpus/findings/082_page_size_cap.md`
+
 ## 088_project_template_defaults
 
 The per-entity-type default is readable at `Project.tracking_settings.default_task_template.<Type>`, a `{type, id, name, valid}` dict. `Project.task_templates` is a separate list, not the default. **[partial]**

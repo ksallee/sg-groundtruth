@@ -333,6 +333,35 @@ than sending null on a create built by dropping empty values.
 
 `corpus/findings/070_authored_timestamps.md`
 
+## 078_page_setting_write
+
+A script cannot create a Page (HumanUser expected), a person can. settings_json writes only as a JSON string, reads back identical. DELETE on a PageSetting is 400: every created row is permanent. **[partial]**
+
+not measured: What the web interface draws for a person whose override the script wrote: needs a person at a browser. Blocked on the work.
+
+- **A Page needs a person.** A script's create is refused by name (`HumanUser(#...) expected, got ApiUser`).
+  Create as a person with `sudo_as_login`; `page_type` is read only and the server fills it (`canvas`),
+  along with a default tree copied from the type's default page.
+
+- **`settings_json` is written as a string and read as an object.** Send `json.dumps(tree)`. The server
+  validates nothing past "a string": a value with no widget tree is stored at 200, and a second shared
+  row on one page is accepted, so a writer can leave a page the web interface cannot draw.
+
+- **PageSetting rows cannot be deleted.** DELETE is 400 `doesn't respond to retirement`, and deleting the
+  Page leaves its rows behind with `page` reading null. On the probed site 26372 of 30145 PageSetting rows
+  have a null page (probe 023): that is where they come from.
+
+- This probe therefore clears `settings_json` to null on every row it leaves, and runs its row-creating
+  half only with `--litter`.
+
+- A person's override written by the script is stored and read back like one the web interface wrote.
+  Whether the web interface then draws it was not measured.
+
+- On the probed site each run left one PageSetting row, `page` null and `settings_json` null; the runs that
+  measured this finding left 7.
+
+`corpus/findings/078_page_setting_write.md`
+
 ## 083_task_template_on_create
 
 A create with `task_template` makes the Tasks inside the same call, by `POST` and by `_batch`, copying every field set on the template tasks and their dependency types and offsets.

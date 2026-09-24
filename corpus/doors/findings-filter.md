@@ -355,3 +355,76 @@ field: `note_links contains` is 400.
 with the key absent (probe 016). Ask for `note_links` and take `relationships.note_links.data[].name`.
 
 `corpus/findings/071_note_link_name_filter.md`
+
+## 074_page_filter_coverage
+
+Every stored page filter with its tokens filled converts and runs 200 but one, yet recipe 003 kept unticked leaves (active "false"): 11 trees returned the wrong count. Drop them. **[partial]**
+
+not measured: in_calendar_* relations, multi-hop paths and summary-field paths: no stored tree on the probed site uses one. 306 trees whose parent type has no row here. Blocked on the site.
+
+| stored | converts | action |
+|---|---|---|
+| `is`, `is_not`, `contains` with one value | yes | `[path, relation, values[0]]` |
+| `in_last` with `[n, unit]` | yes | `LIST_RELATIONS` keeps the list |
+| a one-hop path, a `step_N` pivot path | yes | send as stored |
+| `active: "false"` on a leaf | yes, and wrongly | drop the leaf: the web interface does not apply an unticked condition |
+| `parent_entity_token` | yes, given the row | its stored `type` is a label (`Entity`, the string `"None"`); send the row's real type |
+| `autocomplete` | no | typed text with no id; refuse the page |
+| a project filter on a type with no `project` | 400 `<Type>.project doesn't exist.` | drop `top_level_project_filter` leaves on such a type |
+| a widget whose `entity_type` is no longer in `GET /schema` | not sent | check the type first; the 400 is about the type, not the filter |
+
+- **The only silent failure is the unticked leaf.** On a site-level page the project condition is stored
+  unticked with a null value; kept, it narrows to `project is null` and returns 0 rows at 200. Recipe 003
+  now drops unticked leaves.
+
+- On the probed site no stored tree uses `in_calendar_*`, a two-hop path or a summary-field path, so the
+  corpus has no evidence for them. Probe 017 enumerates the relations; run one before trusting it.
+
+- `valid` absent on 19 values means a real row, as `"valid"` does: keep `{type, id}`.
+
+`corpus/findings/074_page_filter_coverage.md`
+
+## 079_summarize_multi_grouping
+
+_summarize nests one group level per grouping entry, 3 deep tested, counts summing exactly. status_list rolls a group up to one status; status_percentage ignores any value and is no per-status share.
+
+- **Nested groups are one call.** Each `grouping` entry adds a level: a group holds `groups` with the
+  next field's groups, and the leaf level has no `groups` key. Group headers for a page grouped two or
+  three deep cost one `_summarize`, not a page of rows. Grouping takes a dotted path and the date buckets
+  the web interface stores (`week`, probe 073).
+
+- **`status_list` is the roll-up.** One status alone rolls up to itself; any mix rolls up to `ip`, even
+  `[null, fin, wtg]` where no row is `ip`. On the probed site that is the rule on every group measured.
+  It honours a field's excluded statuses (probe 091).
+
+- **`status_percentage` does not answer "what share is `fin`".** It ignores `value` and every other key
+  sent, returns an integer under both names, and gave 3 on Tasks where 62 of 1900 rows (3.3%) have no
+  status and -1 on a group of `na` Versions. Compute a status share yourself from one grouped count:
+  `rows in status / rows in group`.
+
+- The page grid summary `{"type": "status_percentage", "value": "fin"}` (probe 073) is therefore not a
+  `_summarize` call; reproduce it from the `grouping` on `sg_status_list`.
+
+`corpus/findings/079_summarize_multi_grouping.md`
+
+## 080_query_field_cost
+
+One _summarize with the parent leaf as `in [N rows]`, grouped on that link, reproduced open_notes_count for 300 Shots in 573 ms, against ~290 ms a row one call at a time. **[partial]**
+
+not measured: A Note linked to two Shots: the probed project has none, so crediting one group to several parents is untested. single_record fields have no grouped form. Blocked on the site.
+
+- Rewrite the `parent_entity_token` leaf from `is <row>` to `in [<every row on screen>]`, keep the rest of
+  the query, and group on the same path. Each group is one parent's value; a parent with no group is 0
+  for `record_count`.
+
+- On the probed site that is 573 ms for 300 Shots against ~87 s for 300 per-row calls, and the cost grew
+  from 339 ms to 573 ms between 50 and 300 rows.
+
+- **A multi_entity grouping keys on the whole link list.** `group_value` is a list, and a Note linked to a
+  Shot and a Version lands in a group naming both. Credit a group's value to every parent it names.
+  On the probed site no Note links two Shots, so double-counting under that rule was not observable.
+
+- This covers the aggregating flavours (`record_count`, `sum`, `count`, ...), which group. A
+  `single_record` field (a sorted row 0, recipe 003) has no grouped form: it stays one `_search` per row.
+
+`corpus/findings/080_query_field_cost.md`

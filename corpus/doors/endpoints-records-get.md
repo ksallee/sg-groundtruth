@@ -49,6 +49,8 @@ Pages rows. An entity field is returned under `relationships` and never `attribu
   rules: `doors/findings-read`
 - `059_dotted_path_type_check` (findings) — The middle segment of a dotted path is checked against the field's valid_types in a projection and against the schema alone in a filter: the projection drops the key at 200, the filter 400s.  
   rules: `doors/findings-read`
+- `082_page_size_cap` (findings) — page[size] takes 1 to 5000 inclusive; 5001 is 400 "size must be less than 5000". Omitted, it is 500. A page costs ~330 ms whatever its size up to 500, so read big pages.  
+  rules: `doors/findings-read`
 - `016_dotted_multi_entity` (findings) — A dotted path through a multi_entity field reads back nothing: HTTP 200 with the key silently absent from attributes. Filters on that same path work, including two hops.  
   rules: `doors/findings-filter`
 - `030_complex_filters` (findings) — api3_hash nests and/or groups 265 deep and mixes leaves with sub-groups; api3_array cannot express or, query-string filter[] is ignored on _search, and {path,relation,values} runs nowhere.  
@@ -93,9 +95,15 @@ One row, and the only read where `fields` is honoured on a single record. A reti
 
 - `060_entity_dict_name` (findings) — The `name` in an entity dict is the target's `cached_display_name`, filled on every type measured, single and multi alike. Read it, not the per-type identity field, and expect decoration.  
   rules: `doors/findings-read`
+- `076_page_visibility` (findings) — The script user is not the widest reader of Page: an Admin read 2048 pages where the script read 1107 and 404s on the rest. An Artist read 107. Every level reads every person's override.  
+  rules: `doors/findings-read`
+- `081_dotted_image` (findings) — entity.Shot.image returns the Shot's thumbnail as a presigned S3 URL under attributes, same object, fresh signature, in the same call. image is_not null matched 50 Shots whose image reads null.  
+  rules: `doors/findings-read`
 - `088_project_template_defaults` (findings) — The per-entity-type default is readable at `Project.tracking_settings.default_task_template.<Type>`, a `{type, id, name, valid}` dict. `Project.task_templates` is a separate list, not the default.  
   rules: `doors/findings-read`
 - `058_local_storage_roots` (findings) — One create fills every `local_path_*` the storage row defines, whichever platform's root the path was under. The server picks the deepest matching root, and no conditional-write header is honoured.  
+  rules: `doors/findings-write`
+- `078_page_setting_write` (findings) — A script cannot create a Page (HumanUser expected), a person can. settings_json writes only as a JSON string, reads back identical. DELETE on a PageSetting is 400: every created row is permanent.  
   rules: `doors/findings-write`
 - `083_task_template_on_create` (findings) — A create with `task_template` makes the Tasks inside the same call, by `POST` and by `_batch`, copying every field set on the template tasks and their dependency types and offsets.  
   rules: `doors/findings-write`
@@ -158,6 +166,8 @@ Reads one image or attachment field, and with `?alt` redirects to the bytes. Eve
 **Measured by**
 
 - `048_one_record_beyond_crud` (findings) — POST on one record is revive, not update: `?revive=1` is required and the body is ignored. `/<field>` reads image and attachment fields only, and `relationships/<field>` is the same data, unpaged.  
+  rules: `doors/findings-read`
+- `081_dotted_image` (findings) — entity.Shot.image returns the Shot's thumbnail as a presigned S3 URL under attributes, same object, fresh signature, in the same call. image is_not null matched 50 Shots whose image reads null.  
   rules: `doors/findings-read`
 
 **Silent on this call**

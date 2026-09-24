@@ -283,3 +283,28 @@ Nothing in the schema marks a shipped Status. `system` is true on a minority of 
   a shipped code is still only offered where a type's `valid_values` lists it (probe 009).
 
 `corpus/findings/061_shipped_statuses.md`
+
+## 091_status_summary_exclusions
+
+Excluded statuses are invisible to REST: not in /schema at any scope, not writable by PUT. status_list honours them: fin plus an excluded omt rolls up to fin, omt alone to na. **[partial]**
+
+not measured: status_list with the exclusion removed on the same rows: the setting is not API-writable, so the before state rests on probe 079's rule, not on a toggle. Blocked on the API.
+
+- **The setting is stored where REST cannot read it.** It is `status_list_summary_exclude` inside the
+  field's `DisplayColumn` `data_type_properties`, and DisplayColumn is not a REST type. It is site-wide:
+  the change event names no project, and the schema reads the same with and without `project_id`.
+
+- The one REST trace is `Shotgun_DisplayColumn_Change` in the event log, whose `meta.new_value` holds the
+  list. A client can learn the current list only from the newest such event, if the log still has it.
+
+- **Not writable.** `PUT /schema` rejects the name and enumerates the seven writable properties, so the
+  exclusion is set in the web interface only (Fields, the status field, Summary = Status, Excluded statuses).
+
+- **`status_list` applies it.** Without an exclusion a mix rolls up to `ip` (probe 079: `[fin, wtg]` gives
+  `ip`); with `omt` excluded, `[fin, omt]` gives `fin`, and `omt` alone gives `na`, not `omt`. A client
+  computing its own roll-up from grouped counts must drop the excluded statuses itself, and has to be told
+  which they are.
+
+- `status_percentage` returned 0 on every set here and is not a share of anything (probe 079).
+
+`corpus/findings/091_status_summary_exclusions.md`
