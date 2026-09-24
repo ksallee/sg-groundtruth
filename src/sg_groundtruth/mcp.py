@@ -278,7 +278,7 @@ TOOLS = [
         "name": "corpus_door",
         "description": (
             "One door: a line per entry and that entry's rules, copied whole. Name it as the map "
-            "spells it: findings-read, endpoints-search, endpoints-records-get, field_types, "
+            "spells it: findings-read, endpoints-post-entity-type-search, endpoints-records-get, field_types, "
             "entity_types, recipes, reports, tags. An unknown name returns the list."
         ),
         "inputSchema": {

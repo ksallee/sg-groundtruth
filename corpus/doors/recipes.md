@@ -648,20 +648,57 @@ Find the Notes about a Shot, Asset or Version by the name of the thing, and read
 
 Apply a task template to an entity that already has Tasks, without duplicating the ones it already holds
 
-- **The server copies dependencies onto claimed Tasks too.** `paint` and `comp` both existed before
-  the apply, and the apply still wrote the template's `start-to-start` edge between them. A merge by
-  hand would have to copy the edges itself.
+- **The claim writes only `template_task`; the entity write then overwrites** every Task linked to T,
+  claimed or not (probe 102):
+
+  | field | after step 2 |
+  |---|---|
+  | `content`, `step`, `est_in_mins`, `sg_description`, `sg_sort_order`, `task_reviewers`, `milestone`, a custom field (one list and one checkbox field probed on one site) | T's value, where T sets one |
+  | `task_assignees`, `start_date`, `due_date` | kept; filled from T only when empty |
+  | `duration` | T's on a Task without dates; kept on a dated one; on a Task with only one date, kept null (probe 108) |
+  | `sg_status_list` | kept (`paint` kept `ip`) |
+  | a numeric 0 on T (`est_in_mins`; `duration` on a Task without dates) | 0: it overwrites (probe 108) |
+  | any field T leaves empty: null, a checkbox's false, a text `""` (stored as null) | kept (probe 108) |
+
+  Tasks linked by an earlier apply of T are re-synced too: re-running step 2 wipes their hand edits.
+
+- **The apply resets the edges between Tasks linked to T to T's.** Every pairing of claimed, kept and
+  created ends gets T's missing edges (probes 092, 099): `paint` and `comp` both existed before the
+  apply and still got the `start-to-start` edge.
+
+  | the pair already holds | the apply |
+  |---|---|
+  | no edge, T has one | creates T's |
+  | the edge in T's direction with another type or offset, or the reverse edge | deletes it and creates T's, a new id; the old row is erased, not retired (probes 101, 102) |
+  | T's edge with `offset_days` null where T holds 0, or 0 where T holds null | the same: erased, re-created with T's value (probe 105) |
+  | an edge T lacks, both ends linked to T | deletes it (probe 102) |
+  | an edge T lacks, a Task linked to T depending on a Task not linked to T (unlinked, another template, another entity) | **erases it** (probes 107, 109) |
+  | an edge T lacks, a Task not linked to T depending on one linked to T | keeps it (probes 101, 102, 109) |
+
+  The PUT is 200 in every case. Read each linked Task's `upstream_tasks` before the apply and
+  re-create the outside edges to keep; write `offset_days` on an entity edge exactly as T holds it,
+  null or 0, to keep its id.
+
+- **A copied edge reschedules.** The server moves an unpinned downstream Task to satisfy an edge it
+  copied; a pinned one keeps its dates and flags `dependency_violation` (probe 092). Pin the Tasks
+  whose dates must hold before step 2.
 
 - The claim rewrites `template_task`. A Task that pointed at another template's task (`comp` above)
   now points at this template's, so the provenance of the first apply is lost.
 
-- Nothing is removed. `roto` at the old step stays; deleting what the new template lacks is the
+- No Task is removed. `roto` at the old step stays; deleting what the new template lacks is the
   caller's decision, and probe 089 lists what a Task delete unlinks.
 
 - The key is `content` plus `step` id. Two Tasks on the entity with the same key keep only the last
   in `free`, so the other is left unclaimed and a duplicate stays.
 
-- Set fields such as status survive the claim: `paint` kept `ip`. Only `template_task` is written.
+- **Before an apply, at most one Task per template task may be linked to it.** With two, the apply
+  re-syncs and wires one, the server's pick, not predictable by id, age, name or edges. The other keeps
+  its fields and link; its edges of T's shape were deleted or kept unevenly (probe 106). Unlink the others (`template_task` null) first; `taken` above keeps the
+  claim from making a second link.
+
+- The claims, the clear and the set fit one `_batch`, in that order, with the same result: recipe 020
+  (probe 098). Undo is recipe 019 (probe 096).
 
 `corpus/recipes/015_apply_task_template_without_duplicates.md`
 
@@ -683,3 +720,176 @@ Create a set of Tasks and the dependencies between them, with types and offsets,
 - Keep each call under about 200 requests (recipe 002, size note).
 
 `corpus/recipes/016_create_tasks_with_dependencies.md`
+
+## 017_check_permission_before_writing
+
+Learn whether the signed-in person may update, create or delete a type before writing, with calls that change nothing **[partial]**
+
+not measured: a launcher session (probe 052) of a lower-level person, and the allowed side of a conditional rule; both need a person, the first at a browser
+
+- `editable` `False` in the schema is a refusal without a write, and one call covers every field. `True`
+  can still be refused by a conditional rule, such as an Artist setting `sg_status_list` on a Task
+  they are not assigned to; the 400 then prints the rule's condition tree (probe 094).
+
+- The no-op PUT and the rolled-back update test different things: the first the current value, the
+  second the value about to be written. Use `can_update_to` when a rule may depend on the value.
+
+- Check create with the invalid status, not with a rolled-back batch create: that one moved the parent
+  Shot's `updated_at` a few seconds later in 4 of 15 tries, with no event (probe 094).
+
+- An empty PUT (`{}`), an unknown field and a missing id test nothing: the first passes for everyone,
+  the other two fail before permission is read.
+
+- `record_id` 0 or negative is rejected before the first request runs, so it cannot be the sentinel.
+
+`corpus/recipes/017_check_permission_before_writing.md`
+
+## 018_remove_and_restore_a_dependency
+
+Remove one dependency between two Tasks and put it back on undo, with its type and offset
+
+- The revived edge places the Task from the upstream's current dates, not the dates it had when the
+  edge was removed. An undo that wants those dates writes them after the revive; the `start_date` write pins the Task
+  (probe 093).
+
+- A pinned downstream Task keeps its dates through both calls. Its `dependency_violation` reads false
+  while the edge is retired and true again after revive if it is still placed too early.
+
+- If something re-linked the same pair in between, revive is a 400 on the unique index. Delete the new
+  row first, or keep it and drop the undo entry.
+
+- A `remove` through the `multi_entity` fields has no undo: re-create the row with its type and offset
+  (recipe 016), which gets a new id.
+
+`corpus/recipes/018_remove_and_restore_a_dependency.md`
+
+## 019_undo_task_template_merge
+
+Undo a task template merge, returning an entity's Tasks, fields and dependencies to their state before it
+
+- **Revive before step 2.** A Task retired since the snapshot does not count as linked: step 2
+  re-creates its template task and wires the copy, and a later revive leaves two Tasks on one template
+  task, both upstream of the same Task. Revive restores `template_task` (probe 110).
+
+- Step 4 is what makes it an undo rather than a reapply of A. Status survives both applies, so
+  it is not in `KEEP`. Assignees and dates are only filled where empty (probe 102): add them when the
+  Task had none before. `snapshot` reads `attributes` only; read `step` and
+  `task_reviewers` with `link` if you add them.
+
+- When the entity had no template before, step 2 writes null and the server does nothing. Step 3's
+  dependency sweep is then the only thing that removes the new template's edges between old Tasks.
+
+- The dependency sweep compares ids, so an edge the merge deleted is not restored. A merge deletes an
+  edge between two claimed Tasks that the template lacks, or holds with another type, offset or
+  direction, and erases the row (probes 101, 102): revive cannot bring it back. Snapshot each edge's
+  ends, type and offset and re-create the missing ones (recipe 016).
+
+- Step 2 erases every edge whose downstream Task is on the old template and that the template lacks,
+  pre-merge edges the merge kept included (probe 111). Snapshot ends, type and offset to re-create them.
+
+- The step 3 skip of edges downstream on the old template follows probe 111's read after step 2, where
+  the template's own edge came back under a new id and the unskipped sweep deleted it. Re-run as
+  written, with `content` in `KEEP`, on three sandbox Shots merged by recipe 015:
+
+  | Shot | undo | Tasks, links, fields, status | edges after |
+  |---|---|---|---|
+  | the Response case | ok | equal | roto on comp, same id |
+  | no template before, comp and lay by hand | ok, undo to null | equal | none, as before |
+  | probe 111's W, 3 hand edges before and 3 after the merge | ok | equal | roto on comp, new id |
+
+  The third lost roto on x, roto on lay (step 2) and comp on x (the merge), as the notes above say.
+
+- **In one `_batch` (recipe 022), leave out the edges step 2 removes.** A batch takes its ids before
+  it runs, so it cannot read after step 2 as step 3 does here. A DELETE of an edge the non-null
+  `task_template` write already removed is 404 `Entity of type [TaskDependency] with id=... does not
+  exist.` and rolls back the whole batch (probe 104).
+
+- Undo to null removes nothing, so a batch undo to null keeps those DELETEs (probe 104).
+
+- Events: each write logs like any other (probe 090). The undo leaves `Shotgun_Task_Change` rows
+  for `template_task` behind; the history is not rewritten.
+
+`corpus/recipes/019_undo_task_template_merge.md`
+
+## 020_apply_task_template_in_one_batch
+
+Apply a task template to an entity that already has Tasks, without duplicates, in one atomic call
+
+- Two reads and one write, against recipe 015's two reads and up to four writes. The read of the
+  entity's current `task_template` is gone: the unconditional `null` makes the set always a change.
+
+- The server still re-syncs the claimed Tasks and resets their edges to the template's, as in recipe 015.
+
+- The key caveat of recipe 015 stands: two Tasks with the same `content` and `step` leave one unclaimed.
+
+- As in recipe 015, at most one Task per template task may be linked before the batch: with two, the
+  apply re-syncs and wires the server's pick (probe 106).
+
+- Keep the batch inside the size window of recipe 002 when an entity holds hundreds of Tasks.
+
+`corpus/recipes/020_apply_task_template_in_one_batch.md`
+
+## 021_undo_a_batch_delete
+
+Delete Tasks or dependencies in one batch and undo it by reviving the same rows
+
+- `_batch` takes no revive request (`request_type must be one of: create, update, delete`, recipe 002),
+  so the undo is one call per row.
+
+- Measured one row per batch. A Task and its own edge in the same batch was not measured; the check
+  for an already live row in `undo` covers the edge coming back with its Task (probe 089).
+
+- A revived Task or edge is rescheduled from the upstream's current dates (probes 089, 095).
+
+- If the same pair was re-linked in between, the edge's revive is 400 on `sgcu_task_dependencies`
+  (recipe 018).
+
+`corpus/recipes/021_undo_a_batch_delete.md`
+
+## 022_undo_task_template_merge_in_one_batch
+
+Undo a task template merge in one atomic call, returning Tasks, fields and dependencies to their state before it
+
+- The dependency read happens before the batch, after the merge; recipe 019 reads after step 2 and
+  so never meets the 404.
+
+- Mixed ends (probe 111): an edge re-created after the merge from a Task going back to A onto an
+  unlinked Task is erased by step 2. The earlier version of this recipe, which left out only edges with
+  both ends back on A, DELETEd it and got the 404. An edge whose upstream end alone goes back to A is
+  kept by step 2 and deleted here.
+
+- Step 2 also erases pre-merge edges the merge kept, where the downstream Task is on A and A lacks the
+  edge (probe 111). Snapshot each edge's ends, type and offset and re-create those after the undo.
+
+- **Revive before the batch.** `_batch` takes no revive (recipe 021), and a Task still retired when
+  step 2 runs is re-created from its template task, so its revive leaves two Tasks on one template task
+  (probe 110). Revive by separate calls, then send the batch.
+
+- Two Tasks on one template task in the snapshot: A's apply wires the server's pick of the two, the one
+  that held no edge 11 of 14 times, and renames it with A's `content` (probe 112). Recipe 023 orders
+  the claims for that case.
+
+- `snapshot` stores `template_task` per Task and `task_template` from recipe 019, keyed by Task id.
+
+- Atomic: any failing request rolls back the claims and the template write too (recipe 002), so a
+  rejected batch leaves the merged state, not a half undo. Re-read before a retry.
+
+- The recipe 019 caveats stand: an edge the merge deleted is not restored, and the history of
+  `template_task` writes stays in the event log (probe 090).
+
+`corpus/recipes/022_undo_task_template_merge_in_one_batch.md`
+
+## 023_undo_task_template_merge_with_a_task_linked_twice
+
+Undo a task template merge when two Tasks pointed at the same old template task, without the server picking which one gets the edges
+
+- The end state equals the one-link undo, which is not the pre-merge state to the id: an edge the
+  merge erased, a claimed Task on a Task outside the new template (probe 109), comes back new.
+
+- Only the case of one Task that held A's edges and one that held none was measured. Two Tasks that
+  both held edges: not measured.
+
+- The deferred link leaves the second Task pointing at the template task, so a later apply of A meets
+  the same pick (probe 106). Leave it null instead if nothing reads the link.
+
+`corpus/recipes/023_undo_task_template_merge_with_a_task_linked_twice.md`

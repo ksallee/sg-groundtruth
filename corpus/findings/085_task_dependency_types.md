@@ -61,5 +61,7 @@ task == dependent_task, or the reverse edge -> 400 "... Can't create this depend
 - `PUT` on a live row reschedules at once, so a type or offset can be corrected in place.
 - `shift_ratio` 0.5 was accepted with 201 and changed no date in any of the four types. Its effect is
   unmeasured beyond that.
-- The server rejects a duplicate pair, a self-loop and a two-Task cycle with a 400; longer cycles are
-  unmeasured. `pinned` stayed false throughout (probe 087 for pinned Tasks).
+- The server rejects a duplicate pair, a self-loop and a two-Task cycle with a 400; a three-Task cycle
+  is the same 400, inside `_batch` too (probe 107). `pinned` stayed false throughout (probe 087 for pinned Tasks).
+- `offset_days` null and 0 place the Task alike but are two stored values: a filter on one misses the
+  other, and a template apply treats them as a difference (probe 105).

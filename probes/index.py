@@ -1,7 +1,7 @@
 """Regenerate corpus/INDEX.md and corpus/doors/ — the two cheap tiers, generated from the entries.
 
 The map is the file an agent is told to read first, so it names every entry, groups them the four ways
-a caller can already address them, and says which door to open. It is capped at 10 KiB by
+a caller can already address them, and says which door to open. It is capped at 11 KiB by
 `check_corpus.py`, because a map that grows with the corpus is a fixed cost every session pays before
 asking anything.
 
@@ -181,7 +181,7 @@ def main():
 
     out = ["# By tag", "",
            "Every entry carrying each tag. A tag selects or it is noise: no subject tag is on more "
-           "than 25 entries, and `silent`, `destructive` and `trap` name what kind of failure an "
+           "than 30 entries, and `silent`, `destructive` and `trap` name what kind of failure an "
            "entry is rather than what it is about, so they span.", ""]
     out += [f"- **{t}** — {', '.join(by_tag[t])}" for t in sorted(by_tag)]
     written.add(write("tags.md", out))

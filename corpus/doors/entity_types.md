@@ -363,7 +363,8 @@ A Task is named by `content`, never `code`; a create needs only `project`; `star
   was accepted at 200 and read back as a Task.
 
 - Never PUT two of `start_date`, `due_date`, `duration` expecting both to stand: the third is recomputed,
-  and on a dependent Task a date write also sets `pinned` and can raise `dependency_violation`.
+  and on a dependent Task a `start_date` write, null or real, also sets `pinned` and can raise
+  `dependency_violation`. A `due_date` or `duration` write does not pin (probes 093, 100).
 
 - `time_logs_sum`, `time_vs_est` and `time_percent_of_est` are read only. Sum `TimeLog.duration` to
   predict them; `Task.color` is not a colour either (`field_types/color`).

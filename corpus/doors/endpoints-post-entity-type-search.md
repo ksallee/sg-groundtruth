@@ -1,8 +1,6 @@
-# Endpoints — Search
+# `POST /entity/<type>/_search`
 
 Every call in this family: what the card records, the edge cases that live on the call, and the verdict of every entry that measured it. Each of those lines names the door holding that entry's rules. The map is `corpus/INDEX.md`.
-
-## `POST /entity/<type>/_search`
 
 The only way to send a filter the query string cannot express, and it refuses `application/json` at 415 naming both vendor types. `api3_array` cannot express `or`; `api3_hash` nests.
 
@@ -72,9 +70,51 @@ The only way to send a filter the query string cannot express, and it refuses `a
   rules: `doors/findings-write`
 - `083_task_template_on_create` (findings) — A create with `task_template` makes the Tasks inside the same call, by `POST` and by `_batch`, copying every field set on the template tasks and their dependency types and offsets.  
   rules: `doors/findings-write`
-- `087_dependency_cascade` (findings) — An upstream date write reschedules every unpinned downstream Task through the chain, later and earlier alike. A pinned Task stays put and flags `dependency_violation` while it is broken.  
+- `087_dependency_cascade` (findings) — An upstream date write reschedules every unpinned downstream Task, later and earlier alike; a null one moves none (097). A pinned Task stays put and flags `dependency_violation` while broken.  
   rules: `doors/findings-write`
 - `089_task_delete_side_effects` (findings) — Deleting a Task retires its TaskDependency rows, unlinks both neighbours without bridging them, and nulls `Version.sg_task` and `PublishedFile.task`. Revive restores all of it.  
+  rules: `doors/findings-write`
+- `092_dependency_edge_reschedule` (findings) — A new edge reschedules an unpinned downstream Task at once, whether POSTed or copied by a template apply on claim. A pinned one keeps its dates and flags `dependency_violation`.  
+  rules: `doors/findings-write`
+- `093_clear_dates_pin` (findings) — On a dependent Task a start_date write pins it, null or real; a due_date write never does, null or real. A pinned null Task holds; PUT pinned:false refills both dates.  
+  rules: `doors/findings-write`
+- `094_permission_preflight` (findings) — Ask with a write that cannot land: a no-op PUT per field (update), a POST with a bad status (create), a _batch of [delete, 404 sentinel] (delete). Permission is checked first, and nothing is written.  
+  rules: `doors/findings-write`
+- `095_dependency_remove_undo` (findings) — Remove an edge with `DELETE` on its TaskDependency row: revive restores its type and offset. A `remove` on `upstream_tasks` or `downstream_tasks` erases the row for good.  
+  rules: `doors/findings-write`
+- `096_task_template_unmerge` (findings) — A template write re-syncs every Task linked to it: fields but status reset, edges rewired. Undo: old template_task per Task first, then old task_template, then delete what B made.  
+  rules: `doors/findings-write`
+- `097_null_dates_unpin` (findings) — A Task with no upstream never pins, on a null or a real date write; nulling its dates leaves its downstream unmoved, and pinned:false refills nothing.  
+  rules: `doors/findings-write`
+- `098_template_merge_in_one_batch` (findings) — Recipe 015's merge fits one `_batch`: requests run in order, so a `task_template` write sees claims made earlier in the batch, and `null` then `T` on the same Shot re-runs the apply.  
+  rules: `doors/findings-write`
+- `099_template_apply_edge_copy_kept` (findings) — A template apply copies a missing edge between two Tasks whose `template_task` already match it, whether either was claimed, kept, or created by that same call.  
+  rules: `doors/findings-write`
+- `100_duration_write_pin` (findings) — Writing duration on a dependent Task does not pin it; a start_date write in the same run does. It keeps following the upstream, and a duration write upstream moves it.  
+  rules: `doors/findings-write`
+- `101_template_edge_conflict` (findings) — On a claimed pair, a template apply replaces an existing edge of another type, or the reverse edge, with the template's edge: the old row is erased, not retired, and the PUT is a plain 200.  
+  rules: `doors/findings-write`
+- `102_task_template_resync` (findings) — Writing task_template T re-syncs every Task linked to T: T's non-empty values overwrite, status kept, dates and assignees kept or filled if empty; edges between linked Tasks reset to T's.  
+  rules: `doors/findings-write`
+- `103_batch_delete_revive` (findings) — A `delete` inside `_batch` retires a Task or TaskDependency exactly as `DELETE` does: same retired read-back, and revive returns the same id, fields, edges and `Version.sg_task`.  
+  rules: `doors/findings-write`
+- `104_template_unmerge_in_one_batch` (findings) — Recipe 019's undo fits one `_batch` with the same end state, if the batch skips edges its own task_template write removes: deleting one 404s and rolls back all. Undo to null deletes them.  
+  rules: `doors/findings-write`
+- `105_offset_days_null_vs_zero` (findings) — TaskDependency `offset_days` null and 0 are stored and compared as different: a template apply deletes an entity edge with null against a template 0 (or the reverse) and re-creates it with a new id.  
+  rules: `doors/findings-write`
+- `106_template_task_linked_twice` (findings) — With two Tasks linked to one template task, an apply re-syncs and wires only one of them, picked unpredictably (not by id, age or edges); the other is left as is. No error, nothing duplicated.  
+  rules: `doors/findings-write`
+- `107_dependency_three_task_loop` (findings) — A three-Task loop is a 400 on a direct create and inside `_batch`, which rolls back whole. A template apply deletes a claimed Task's upstream edge from a Task outside the template, loop or not.  
+  rules: `doors/findings-write`
+- `108_task_template_resync_empties` (findings) — Re-sync to T: a numeric 0 on T's task overwrites (est, duration); milestone false and "" (stored null) keep the Task's value; a Task with only start or only due keeps its null duration.  
+  rules: `doors/findings-write`
+- `109_template_apply_outside_edge` (findings) — A template apply erases an edge where a linked Task depends on a Task not linked to the template (root or not, other template, other Shot); it kept the edge with the outside Task downstream.  
+  rules: `doors/findings-write`
+- `110_template_task_after_revive` (findings) — Revive restores `template_task`. A task_template write while the Task is retired re-creates it, so a later revive leaves two Tasks on one template task. Revive first, then write.  
+  rules: `doors/findings-write`
+- `111_template_undo_outside_edge` (findings) — An undo's write back to template A erases every edge whose downstream Task is A-linked and that A lacks, pre-merge edges included; recipe 022 DELETEs one such edge, 404s and rolls back.  
+  rules: `doors/findings-write`
+- `112_template_unmerge_linked_twice` (findings) — Undo relinking two Tasks to one template task: A wires either one (11 of 14 picked the loser), nothing is made. Relink the loser after the task_template write: then it matches the one-link undo.  
   rules: `doors/findings-write`
 - `014_attach_file` (findings) — Leave the field out of the _upload path and the file is stored as an Attachment on attachment_links; read it back with POST /entity/attachments/_search, never flat filter[].  
   rules: `doors/findings-upload`
@@ -102,6 +142,18 @@ The only way to send a filter the query string cannot express, and it refuses `a
   rules: `doors/recipes`
 - `015_apply_task_template_without_duplicates` (recipes) — Apply a task template to an entity that already has Tasks, without duplicating the ones it already holds  
   rules: `doors/recipes`
+- `018_remove_and_restore_a_dependency` (recipes) — Remove one dependency between two Tasks and put it back on undo, with its type and offset  
+  rules: `doors/recipes`
+- `019_undo_task_template_merge` (recipes) — Undo a task template merge, returning an entity's Tasks, fields and dependencies to their state before it  
+  rules: `doors/recipes`
+- `020_apply_task_template_in_one_batch` (recipes) — Apply a task template to an entity that already has Tasks, without duplicates, in one atomic call  
+  rules: `doors/recipes`
+- `021_undo_a_batch_delete` (recipes) — Delete Tasks or dependencies in one batch and undo it by reviving the same rows  
+  rules: `doors/recipes`
+- `022_undo_task_template_merge_in_one_batch` (recipes) — Undo a task template merge in one atomic call, returning Tasks, fields and dependencies to their state before it  
+  rules: `doors/recipes`
+- `023_undo_task_template_merge_with_a_task_linked_twice` (recipes) — Undo a task template merge when two Tasks pointed at the same old template task, without the server picking which one gets the edges  
+  rules: `doors/recipes`
 - `003_sort_fails_silently` (reports) — A sort on an unknown or unsortable field answers 200 with the rows in default order, while the same field name in a filter answers 400 and names the reason.  
   rules: `doors/reports`
 - `008_jsonb_filters_return_everything` (reports) — A filter on PageSetting.settings_json or EventLogEntry.audit_trail is accepted and ignored, so the unfiltered set comes back at 200 and is_null and is_not_null each return every row.  
@@ -124,176 +176,3 @@ The only way to send a filter the query string cannot express, and it refuses `a
 - `009_multi_entity_safely` — Add to and remove from a multi_entity field without destroying the links you did not mean to touch
 
 `corpus/endpoints/post_entity_type_search.md`
-
-## `POST /entity/<type>/_summarize`
-
-Counts without paging rows. One `grouping` returns a field's distinct values and their counts at ~300ms, so rank a shortlist with it and never scan every field.
-
-- Summarizing an unsummarizable field, `image`, answers 200 with a 37-byte body and no summary. It does
-  not 400. Test that the key you asked for is in `summaries` before reading it.
-
-- `group_name` is the rendered label and `group_value` the raw one. For a `timecode` field the rendered
-  form is `HH:MM:SS:FF`, which is how the frame rate is recovered when no field exposes it.
-
-- One call per field at about 300ms. Over 71 fields that is 21 seconds. Rank a shortlist by fill rate
-  first and summarize only the candidates.
-
-**Measured by**
-
-- `028_loud_and_silent` (findings) — A 400 is trustworthy and usually names the legal set, but a 200 proves nothing: an unknown field, sort key or query param is a no-op, and a batch can return an id for a row it never made.  
-  rules: `doors/findings-protocol`
-- `091_status_summary_exclusions` (findings) — Excluded statuses are invisible to REST: not in /schema at any scope, not writable by PUT. status_list honours them: fin plus an excluded omt rolls up to fin, omt alone to na.  
-  rules: `doors/findings-schema`
-- `006_pagination` (findings) — links.next is emitted on every page forever, including zero-row ones, so stop paging when data is empty and never on a missing next.  
-  rules: `doors/findings-read`
-- `021_media_resolution` (findings) — PublishedFile.path is returned with the LocalStorage join already done, so a client never reads LocalStorage or reassembles a root, but a platform whose storage root is unset reads null.  
-  rules: `doors/findings-read`
-- `081_dotted_image` (findings) — entity.Shot.image returns the Shot's thumbnail as a presigned S3 URL under attributes, same object, fresh signature, in the same call. image is_not null matched 50 Shots whose image reads null.  
-  rules: `doors/findings-read`
-- `020_summarize` (findings) — _summarize needs the same vendor Content-Type as _search, and one `grouping` call returns a field's distinct-value count and its empty count. At ~300ms a field, rank a shortlist, never scan.  
-  rules: `doors/findings-filter`
-- `030_complex_filters` (findings) — api3_hash nests and/or groups 265 deep and mixes leaves with sub-groups; api3_array cannot express or, query-string filter[] is ignored on _search, and {path,relation,values} runs nowhere.  
-  rules: `doors/findings-filter`
-- `068_note_read_state` (findings) — read_by_current_user is per person and missing from the schema; `is` and `is_not` are evaluated, while `in`, `not_in` and an unknown `is` value all return the unread rows at 200.  
-  rules: `doors/findings-filter`
-- `071_note_link_name_filter` (findings) — Filter notes about a thing on `note_links.<Type>.cached_display_name`: it resolves for every valid type, `code` 400s on Booking and `name` on all but Department. The path cannot be read back.  
-  rules: `doors/findings-filter`
-- `074_page_filter_coverage` (findings) — Every stored page filter with its tokens filled converts and runs 200 but one, yet recipe 003 kept unticked leaves (active "false"): 11 trees returned the wrong count. Drop them.  
-  rules: `doors/findings-filter`
-- `079_summarize_multi_grouping` (findings) — _summarize nests one group level per grouping entry, 3 deep tested, counts summing exactly. status_list rolls a group up to one status; status_percentage ignores any value and is no per-status share.  
-  rules: `doors/findings-filter`
-- `080_query_field_cost` (findings) — One _summarize with the parent leaf as `in [N rows]`, grouped on that link, reproduced open_notes_count for 300 Shots in 573 ms, against ~290 ms a row one call at a time.  
-  rules: `doors/findings-filter`
-- `077_page_change_stamps` (findings) — PageSetting has no updated_at; Page.updated_at moves when its layout is saved. Poll Page.updated_at; Shotgun_PageSetting_Change names which setting changed but its entity is null on 131 of 500.  
-  rules: `doors/findings-observe`
-- `003_query_fields_and_pages` (recipes) — Resolve a query field's value, and run the rows a saved Page shows  
-  rules: `doors/recipes`
-- `014_notes_about` (recipes) — Find the Notes about a Shot, Asset or Version by the name of the thing, and read what each Note is linked to  
-  rules: `doors/recipes`
-
-**Silent on this call**
-
-- `028_loud_and_silent` — A 400 is trustworthy and usually names the legal set, but a 200 proves nothing: an unknown field, sort key or query param is a no-op, and a batch can return an id for a row it never made.
-- `030_complex_filters` — api3_hash nests and/or groups 265 deep and mixes leaves with sub-groups; api3_array cannot express or, query-string filter[] is ignored on _search, and {path,relation,values} runs nowhere.
-- `068_note_read_state` — read_by_current_user is per person and missing from the schema; `is` and `is_not` are evaluated, while `in`, `not_in` and an unknown `is` value all return the unread rows at 200.
-
-`corpus/endpoints/post_entity_type_summarize.md`
-
-## `POST /entity/_text_search`
-
-Free-text search across several types at once, returning a flattened row that is not the `_search` shape. `entity_types` is required and its value doubles as the per-type filter.
-
-- There is no `fields` parameter. Every row is `name`, `links` and `status`, whatever the type, so a
-  client that needs more re-reads the row by its `links.self`.
-
-- `attributes.links` is a two-element array of strings, the linked row's type and its name, and it is
-  `["", ""]` for a type that links to nothing. It is not an entity reference and cannot be followed.
-
-- `entity_types` maps a type to a filter, so one call can be scoped differently per type. That is the
-  only place in the API where a filter is keyed by the type it applies to.
-
-- The shape is checked per key, so one call cannot mix the two forms. The key holding the value the
-  `Content-Type` does not name decides the 400, and no type answers rows.
-
-- One bad key fails the whole call: a field the type lacks, an operator its data type lacks, or a key
-  no entity type is named by is 400 for every type in the map, not a type dropped from the answer.
-
-- A group under `api3_hash` may hold another group, to at least three levels, and `or` returns the
-  union of its branches. The array form takes basic condition arrays alone, and two of them are the
-  `and` of both.
-
-- The response has no `links`, so paging is `page.number` and there is nothing that says a further
-  page exists. Ask until `data` is empty.
-
-- `text` is matched case-insensitively against the row's name and against the name of the row under
-  `attributes.links`. It is not matched against `description`.
-
-**Measured by**
-
-- `046_search_without_a_path` (findings) — `/hierarchy/_expand` and `/hierarchy/_search` refuse the vendor content types every other POST requires and take `application/json` alone, so one shared POST helper 415s on half the API.  
-  rules: `doors/findings-filter`
-- `053_text_search_matching` (findings) — `page.size` caps at 25 and defaults to 25 with no `links`, so page with `page.number`. Every word must match a case-insensitive substring of the name or of the linked row's name.  
-  rules: `doors/findings-filter`
-- `063_text_search_filter_shape` (findings) — An `entity_types` value follows the request Content-Type: an array of triples under api3_array, a `logical_operator` group under api3_hash, which alone nests. The other shape is 400 code 103.  
-  rules: `doors/findings-filter`
-
-**Silent on this call**
-
-- `post_entity_text_search` — Free-text search across several types at once, returning a flattened row that is not the `_search` shape. `entity_types` is required and its value doubles as the per-type filter.
-- `053_text_search_matching` — `page.size` caps at 25 and defaults to 25 with no `links`, so page with `page.number`. Every word must match a case-insensitive substring of the name or of the linked row's name.
-
-`corpus/endpoints/post_entity_text_search.md`
-
-## `POST /hierarchy/_expand`
-
-Returns one level of the navigation tree the web interface draws. It refuses the vendor content types every other POST requires and accepts only `application/json`.
-
-- **The content type is inverted.** `_search`, `_summarize` and `_text_search` refuse
-  `application/json` and demand a vendor type; `/hierarchy/*` does the exact opposite. A client with one
-  shared POST helper gets 415 on whichever half it did not write first.
-
-- One level per call. `children` names the next paths and `has_children` says which are worth expanding,
-  so walking a project is one call per node.
-
-- Code 107 appears here and nowhere else in the corpus. It is a lookup that found the wrong number of
-  rows, not a malformed request.
-
-- `seed_entity_field` changed nothing on the probed site. Omit it until something shows it matters.
-
-- A child has no `path` when its `ref.kind` is `empty`: `{"label": "No Shots", "ref": {"kind":
-  "empty", "value": null}, "has_children": false}` is the placeholder for a level with nothing under it,
-  and it is a child like any other. Read `path` with a default.
-
-- `ref.kind` is `entity` for a row or a group that is one, `entity_type` for the ungrouped bucket,
-  `list` for a group that is a list value, and `empty` for the placeholder.
-
-- The `__none__` segment is reachable at two spellings. `_expand` writes
-  `<field>/<GroupType>/__none__` and `_search` returns `<field>/__none__`; both answer the same rows,
-  and the label is templated off the segment, so the second reads `Shots with no __none__`.
-
-- A path is answerable whether or not `children` named it. Expanding a level whose grouping field has
-  no rows answers one `empty` child, and the `__none__` path under that level still answers its rows.
-
-**Measured by**
-
-- `064_hierarchy_expand_buckets` (findings) — Dedupe `children` by `path` and keep the first. The `__none__` bucket is repeated once per group, byte-identical every time, and its rows are disjoint from every group's.  
-  rules: `doors/findings-read`
-- `046_search_without_a_path` (findings) — `/hierarchy/_expand` and `/hierarchy/_search` refuse the vendor content types every other POST requires and take `application/json` alone, so one shared POST helper 415s on half the API.  
-  rules: `doors/findings-filter`
-
-`corpus/endpoints/post_hierarchy_expand.md`
-
-## `POST /hierarchy/_search`
-
-Answers where a row sits in the navigation tree. `search_criteria` must be a hash keyed exactly `entity`, and every other shape is the same misleading `size must be 1`.
-
-`size must be 1` does not mean what it says. Every one of these has one key and is refused:
-
-| sent as `search_criteria` | result |
-|---|---|
-| `{"entity": {"type": "Shot", "id": 862}}` | 200 |
-| `{"entity_type": "Shot"}` | 400 `size must be 1` |
-| `{"Shot": 862}` | 400 `size must be 1` |
-| `{"Shot": [862]}` | 400 `size must be 1` |
-| `[{"entity_type": "Shot"}]` | 400 `must be a hash` |
-
-- The key has to be the literal string `entity`. The error counts keys it recognises, not keys you sent,
-  so an unrecognised key reads as a size problem and never names itself.
-
-- `incremental_path` is the breadcrumb, one entry per level, and the last is the row. `path_label` is the
-  same thing rendered for a person and it omits the project.
-
-- The path goes through `sg_sequence`, a field name, so the tree follows the site's own navigation
-  configuration rather than a fixed hierarchy.
-
-- A row with nothing in the grouping field is returned as `/Project/<id>/Shot/sg_sequence/__none__`,
-  without the type segment `_expand` puts there. Both spellings answer the same rows on `_expand`.
-
-**Measured by**
-
-- `064_hierarchy_expand_buckets` (findings) — Dedupe `children` by `path` and keep the first. The `__none__` bucket is repeated once per group, byte-identical every time, and its rows are disjoint from every group's.  
-  rules: `doors/findings-read`
-- `046_search_without_a_path` (findings) — `/hierarchy/_expand` and `/hierarchy/_search` refuse the vendor content types every other POST requires and take `application/json` alone, so one shared POST helper 415s on half the API.  
-  rules: `doors/findings-filter`
-
-`corpus/endpoints/post_hierarchy_search.md`

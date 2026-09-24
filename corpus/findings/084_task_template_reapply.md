@@ -4,7 +4,7 @@ endpoints: [PUT /entity/<type>/<id>, POST /entity/_batch, POST /entity/<type>, D
 phase: write
 scope: api
 measured: sandbox project written, 2 overlapping templates and 4 Shots made and deleted
-verdict: Changing `task_template` on a Shot only adds: one Task per template task not yet linked by `template_task`. Nothing is removed or merged; a hand-made Task of the same content and step is duplicated.
+verdict: Changing `task_template` to T creates a Task per T task no Task links by `template_task`, duplicating a same-name hand-made one, and re-syncs the linked Tasks' fields and edges (probe 102).
 ---
 
 # 084_task_template_reapply
@@ -41,16 +41,18 @@ Shot.task_template schema properties: default_value, summary_default, valid_type
 | on the Shot already | the new template's task | result |
 |---|---|---|
 | nothing | any | created |
-| a Task whose `template_task` is this template task | the same | skipped |
+| a Task whose `template_task` is this template task | the same | not re-created; **re-synced** to it, fields and edges (probe 102) |
 | a Task made from another template, same `content` and `step` | this one | **created: a duplicate** |
 | a Task made from another template, same `content`, other `step` | this one | created |
 | a hand-made Task, same `content` and `step` | this one | **created: a duplicate** |
 | a Task from the old template the new one lacks | none | kept |
 
-- **The match key is `template_task`, not `content` and `step`.** A template task is skipped only when a
-  Task on the entity already points at it. Delete that Task and the next apply re-creates it.
-- **Nothing is ever removed.** Switching templates, and clearing the field, leave every Task in place,
+- **The match key is `template_task`, not `content` and `step`.** A template task is not re-created only
+  when a Task on the entity already points at it. Delete that Task and the next apply re-creates it.
+- **No Task is ever removed.** Switching templates, and clearing the field, leave every Task in place,
   statuses and all. A replace means the caller deletes the Tasks itself (probe 089 for what that breaks).
+- **It does not only add.** The Tasks linked to the new template have their fields overwritten and the
+  edges between them reset to the template's (probes 096, 102 correct this entry's first reading).
 - The apply runs only when the value changes. Sending the stored value again added nothing on Shot E
   although a Task was missing; clear the field first, then set it, as Shot D did.
 - There is no mode. No body key, schema property or documented parameter selects keep, replace or merge.
