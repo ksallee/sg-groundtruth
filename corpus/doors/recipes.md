@@ -663,8 +663,7 @@ Apply a task template to an entity that already has Tasks, without duplicating t
 
 - **The apply resets the edges between Tasks linked to T to T's.** Every pairing of claimed, kept and
   created ends gets T's missing edges (probes 092, 099): `paint` and `comp` both existed before the
-  apply and still got the `start-to-start` edge. Re-running step 2 alone, with nothing to claim, fills
-  in an edge a partial merge is missing.
+  apply and still got the `start-to-start` edge.
 
   | the pair already holds | the apply |
   |---|---|

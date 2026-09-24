@@ -110,8 +110,7 @@ apply_template(shot, tt2) again -> 0 claimed, the same 4 Tasks and 1 dependency
   Tasks linked by an earlier apply of T are re-synced too: re-running step 2 wipes their hand edits.
 - **The apply resets the edges between Tasks linked to T to T's.** Every pairing of claimed, kept and
   created ends gets T's missing edges (probes 092, 099): `paint` and `comp` both existed before the
-  apply and still got the `start-to-start` edge. Re-running step 2 alone, with nothing to claim, fills
-  in an edge a partial merge is missing.
+  apply and still got the `start-to-start` edge.
 
   | the pair already holds | the apply |
   |---|---|
