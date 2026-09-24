@@ -3,7 +3,7 @@ tags: [dependency, task, date, task-template]
 endpoints: [POST /entity/<type>, PUT /entity/<type>/<id>, POST /entity/_batch, POST /entity/<type>/_search]
 phase: write
 scope: api
-measured: sandbox project written, 1 Shot, 6 Tasks, 1 template made and deleted by the probe; 22.4 s, 49 calls
+measured: sandbox project written, 1 Shot, 6 Tasks, 1 template; 25.1 s, 52 calls
 verdict: A new edge reschedules an unpinned downstream Task at once, whether POSTed or copied by a template apply on claim. A pinned one keeps its dates and flags `dependency_violation`.
 ---
 
@@ -14,6 +14,10 @@ does only a date write (probe 087)? Both for a direct create and for the edge th
 claimed Task during a template apply (recipe 015).
 
 **Endpoint** `POST /entity/task_dependencies ; POST /entity/_batch ; PUT /entity/shots/<id> ; POST /entity/tasks/_search`
+
+Provisioned by the probe, no operator step: it makes the Shot, the 6 Tasks, the 3-task template and
+every edge, and deletes them; a read-back after the run finds no Task, template task, TaskDependency,
+template or Shot left.
 
 **Docs claim** Silent on scheduling, and on what a template apply does to Tasks that already exist.
 

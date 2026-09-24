@@ -117,8 +117,15 @@ with _lib.Created(c) as made:
     show("3 s later", B)
 
 rows.append("\n=== left clean?")
-rows.append(f"  sandbox Tasks zzprobe_092*: "
-            f"{len(T.search(c, 'tasks', [['project', 'is', P], ['content', 'starts_with', 'zzprobe_092']], ['content']))}")
+dep_ids = [i for slug, i in made.rows if slug == "task_dependencies"]
+task_ids = [i for slug, i in made.rows if slug == "tasks"]
+rows.append(f"  Tasks zzprobe_092*, any project (template tasks carry none): "
+            f"{len(T.search(c, 'tasks', [['content', 'starts_with', 'zzprobe_092']], ['content']))}")
+rows.append(f"  live TaskDependency rows the probe made or adopted ({len(dep_ids)}): "
+            f"{len(T.search(c, 'task_dependencies', [['id', 'in', dep_ids]], ['id']))}")
+refs = [task_ref(i) for i in task_ids]
+rows.append(f"  live TaskDependency rows touching any of its {len(task_ids)} Tasks: "
+            f"{len({d['id'] for k in ('task', 'dependent_task') for d in T.search(c, 'task_dependencies', [[k, 'in', refs]], ['id'])})}")
 rows.append(f"  TaskTemplates zzprobe_092*: "
             f"{len(T.search(c, 'task_templates', [['code', 'starts_with', 'zzprobe_092']], ['code']))}")
 rows.append(f"  Shots zzprobe_092*: "
