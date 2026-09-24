@@ -3,8 +3,8 @@ tags: [dependency, task, date]
 endpoints: [PUT /entity/<type>/<id>, POST /entity/<type>, POST /entity/<type>/_search]
 phase: write
 scope: api
-measured: sandbox project written, 2 Tasks in one chain made and deleted; wall time and call count unrecorded
-verdict: A null write on a dependent Task's start_date or due_date pins it exactly like a real date; duration is held. Only PUT pinned:false recomputes the nulled date(s) from the dependency.
+measured: sandbox project written, 6 Tasks in one fan-out made and deleted; 19.1 s, 46 calls
+verdict: On a dependent Task a start_date write pins it, null or real; a due_date write never does, null or real. A pinned null Task holds; PUT pinned:false refills both dates.
 ---
 
 # 093_clear_dates_pin
@@ -14,44 +14,43 @@ verdict: A null write on a dependent Task's start_date or due_date pins it exact
 **Endpoint** `PUT /entity/tasks/<id> ; POST /entity/tasks/_search`
 
 **Docs claim** Silent. `entity_types/Task` and probe 087 established that writing a dependent's own
-dates pins it; neither says whether a `null` counts as a write.
+dates pins it; neither says whether a `null` counts as a write, or which date does it.
 
-**Actual**
+**Actual** Provisioned by the probe: one upstream `up`, five dependents on it (`finish-to-start-next-day`),
+all created 2026-03-02..03-03; the server then moved every dependent to 03-04..03-05. Each dependent
+gets one write, then `up` moves to 03-09..03-10. Controls `sreal`/`dreal` write a real date.
 
 ```
-linked: up -FS-> down, both created 03-02..03-03, down unpinned
-PUT down start_date=null, due_date=null
-                down None..None  dur=960  pinned=True
-PUT up 03-09..03-10 (moved later)
-                up 03-09..03-10  down None..None  dur=960  pinned=True (held)
-PUT down pinned=false
-                down 03-11..03-12  dur=960  pinned=False   <- recomputed from null
-PUT down start_date=null only (due_date left 03-12)
-                down None..03-12  dur=960  pinned=True
-PUT up due_date=03-16
-                up 03-09..03-16  down None..03-12  dur=960  pinned=True (held)
-PUT down pinned=false
-                down 03-17..03-18  dur=960  pinned=False   <- both fields recomputed, not just start
-PUT down due_date=null only (start_date left 03-17)
-                down 03-17..None  dur=960  pinned=True
-PUT up start_date=03-20
-                up 03-20..03-27  down 03-30..03-31  pinned=False (followed, unpinned)
+                         both        start       due         sreal       dreal
+first read (linked)      pin=False   pin=False   pin=False   pin=False   pin=False
+PUT each                 start,due   start=null  due=null    start=03-05 due=03-06
+                         =null
+after                    None..None  None..03-05 03-04..None 03-05..03-06 03-04..03-06
+                         pin=True    pin=True    pin=False   pin=True    pin=False dur 960->1440
+PUT up 03-09..03-10      held        held        03-11..03-12 held,      03-11..03-13
+                         viol=False  viol=False  pin=False   viol=True   pin=False
+PUT due due=03-20 (control, same Task)           03-11..03-20 dur=3840 pin=False
+PUT due start=03-16 (control, same Task)         03-16..03-25 pin=True
+PUT each pinned=false    03-11..03-12 03-11..03-12 03-11..03-20 03-11..03-12 03-11..03-13
+                         all pin=False, viol=False
+left clean: 0 Tasks, 0 TaskDependency rows
 ```
 
 **Teaches**
 
-| write on the dependent | result |
-|---|---|
-| `{"start_date": null, "due_date": null}` | `pinned` -> `true`, same as a real date write |
-| one field null, the other untouched | also pins; the untouched field keeps its old value, not null |
-| upstream moves while pinned, dates null | dependent holds `None`/`None`, does not recompute or follow |
-| `duration` | held across every null write; never cleared or recomputed alongside the dates |
-| `PUT {"pinned": false}` | rewrites **both** dates from the dependency at once, even when only one was null |
+| write on a dependent Task | `pinned` after | on the next upstream write |
+|---|---|---|
+| `start_date` null, alone or with `due_date` | `true` | held; the null stays null, `dependency_violation` stays `false` |
+| `start_date` real | `true` (control) | held; `dependency_violation` `true` |
+| `due_date` null alone | `false` | follows: both dates rewritten from the upstream and `duration` |
+| `due_date` real | `false` (control, twice); `duration` recomputed | follows, new `duration` kept |
+| `PUT {"pinned": false}` | `false` | rewrites `start_date` from the upstream, `due_date` from `duration` |
 
-- A `null` is a write, not an absence: the field that goes null is exactly as pinning as a real date,
-  confirming `entity_types/Task`'s "writing a dependent's own dates pins it" for the clear case too.
-- Clearing does not put a Task into a distinguishable "waiting to be scheduled" state. It is `pinned`
-  with a hole in it, and the hole does not fill itself; only unpinning triggers the recompute, and that
-  recompute ignores the surviving field, overwriting it along with the null one (see probe 087, where
-  the same unpin snapped a dependent back behind its upstream).
-- A sync that wants the server to reschedule a Task must set `pinned: false`, not merely null the dates.
+- **`start_date` is the pinning write, not "any date".** The same Task (`due`) stayed unpinned after
+  `due_date` null and after a real `due_date`, then pinned on a real `start_date`. A `due_date` write
+  acts like a `duration` write (probe 100): it resizes, it does not anchor.
+- Nothing unpins a Task by itself: `both` and `start` stayed pinned with a null start across the
+  upstream move. A null start raises no `dependency_violation`, so it is invisible to a violation check.
+- `duration` survives every null write (960 throughout); the unpin recompute uses it to refill `due_date`.
+- A sync that wants the server to reschedule a Task sets `pinned: false`; nulling the dates either pins
+  it (`start_date`) or is overwritten at the next upstream write (`due_date`).
