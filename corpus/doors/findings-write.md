@@ -655,8 +655,9 @@ Remove an edge with `DELETE` on its TaskDependency row: revive restores its type
   measured against the upstream now (probe 085); an undo that wants the old dates writes them, and the `start_date` write pins the Task
   (probe 093).
 
-- In a first run, d pinned at 03-16..03-17, later than its finish-to-finish +1 allows, read
-  `dependency_violation` false. It flags a Task placed earlier than its edge allows, not one placed later.
+- An edge places an unpinned Task exactly, not at the earliest: l1 and l3, written late, were pulled
+  back to the edge. A pinned Task placed later than that reads `dependency_violation` false for both
+  types (l2, l4); only one placed earlier (d) reads true.
 
 `corpus/findings/095_dependency_remove_undo.md`
 
@@ -800,32 +801,30 @@ On a claimed pair, a template apply replaces an existing edge of another type, o
 
 ## 102_task_template_resync
 
-Writing task_template T re-syncs every Task linked to T: T's non-empty values overwrite, status and dates kept, assignees only filled; edges between linked Tasks reset to T's.
+Writing task_template T re-syncs every Task linked to T: T's non-empty values overwrite, status kept, dates and assignees kept or filled if empty; edges between linked Tasks reset to T's.
 
 | on T's task | on the linked Task before | after the write |
 |---|---|---|
-| a value in `content`, `step`, `est_in_mins`, `sg_description`, `sg_sort_order`, `task_reviewers`, `milestone`, a custom field (`sg_priority_1`) | anything | **overwritten with T's**: a renamed Task gets its old name back |
+| a value in `content`, `step`, `est_in_mins`, `sg_description`, `sg_sort_order`, `task_reviewers`, `milestone` | anything | **overwritten with T's**: a renamed Task gets its old name back |
+| a value in a custom field: on the probed site one list field and one checkbox field, both behaved as above | anything | overwritten with T's |
 | `duration` | a Task without dates | overwritten; a Task with start and due keeps its dates and the duration they give |
 | `start_date`, `due_date` | set / empty | kept / filled, then moved by the dependency cascade (probe 087) |
 | `task_assignees` | set / empty | kept / filled |
-| `sg_status_list` | anything | kept |
-| empty | a value | kept: an empty template field never clears |
-| edge, T has it | missing / other type or offset | created / deleted and re-created as T's (new id) |
-| edge T lacks | both ends linked to T / one end unlinked or linked to another template | deleted / kept |
+| `sg_status_list`, `pinned` | anything | kept |
+| empty (a checkbox's False counts as empty) | a value | kept: an empty template field never clears |
+| edge, T has it | missing / other type or offset | created / erased and re-created as T's (new id) |
+| edge T lacks | both ends linked to T / one end unlinked or linked to another template | erased / kept |
 
 - **Every write that changes `task_template` to T re-syncs all Tasks already linked to T**, after a
   clear or from another template, and Tasks claimed a moment earlier (recipe 015) the same as Tasks
   T made. Setting milestone collapses the Task to one day at its due date, duration 0.
 
+- Kept dates are the re-sync's, not a pin's: the unpinned root a1 keeps them. The re-sync leaves
+  `pinned` as it was. An edge it deletes is erased: 404 under `options[return_only]=retired`.
+
 - Writing another template U or null touches no T-linked Task or edge (probe 096 agrees).
 
-- **Probe 084 is wrong** in its verdict ("only adds ... Nothing is removed or merged"), its row "a Task
-  whose `template_task` is this template task → skipped" (it is re-synced), and "Nothing is ever
-  removed ... statuses and all" (Tasks and statuses stay; fields are overwritten, edges deleted).
-
-- **Recipe 015 is wrong** in "the server's own apply then creates only what is missing" and in the last
-  note "Only `template_task` is written": the claim writes only that, the entity write then overwrites
-  the rows above and replaces edges, and its step 2 (clear, then set) re-syncs hand edits away too.
-  Probe 083 holds; reviewers and custom fields copy on create as well.
+- Corrected in probe 084 (it read "only adds", linked Tasks "skipped") and recipe 015 (it read "creates
+  only what is missing" and "Only `template_task` is written"). Probe 083 holds.
 
 `corpus/findings/102_task_template_resync.md`

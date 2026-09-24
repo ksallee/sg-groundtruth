@@ -27,7 +27,8 @@ c = FPT.from_env(load("."))
 ARR = {"Content-Type": "application/vnd+shotgun.api3_array+json"}
 SLUG = {"Shot": "shots", "Asset": "assets", "Sequence": "sequences"}
 # The fields probe 096 saw the apply overwrite. Probe 102 adds content, step, est_in_mins,
-# task_reviewers, milestone and custom fields, when the template sets them: add the ones yours set.
+# task_reviewers, milestone and a custom field (a list and a checkbox field probed), when the
+# template sets them: add the ones yours set.
 KEEP = ["template_task", "sg_sort_order", "sg_description", "duration"]
 
 
