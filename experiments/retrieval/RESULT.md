@@ -441,6 +441,6 @@ strategy; the misses are the 13 older tasks' misses above. The trim saves 0.1 to
 Why the trim costs nothing here: `grep` reaches the template entries through `task-template`, which
 every new plan's `TaskTemplate` matches, and through `endpoints:`; `doors` and `follow` read endpoint
 doors, where tags play no part. A `task` tag on those entries is redundant for any plan that holds
-`TaskTemplate`. A plan holding `Task` and not `TaskTemplate` would reach fewer of them under `grep`
-on the trimmed corpus; none of the 18 plans is written that way, which is the plan fault stated under
-method faults.
+`TaskTemplate`. The trim would cost `grep` only on a plan holding `Task` but neither `TaskTemplate`
+nor a call the entry names; none of the 18 plans is written that way, which is the plan fault stated
+under method faults.
