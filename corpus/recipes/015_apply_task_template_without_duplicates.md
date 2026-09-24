@@ -96,6 +96,9 @@ apply_template(shot, tt2) again -> 0 claimed, the same 4 Tasks and 1 dependency
 - **The server copies dependencies onto claimed Tasks too.** `paint` and `comp` both existed before
   the apply, and the apply still wrote the template's `start-to-start` edge between them. A merge by
   hand would have to copy the edges itself.
+- **The template's edge replaces any edge the claimed pair already holds**, another type in the same
+  direction or the reverse, and the old row is erased, not retired (probe 101). The PUT is still a
+  200. Read the pair's edges before the apply if they matter.
 - The claim rewrites `template_task`. A Task that pointed at another template's task (`comp` above)
   now points at this template's, so the provenance of the first apply is lost.
 - Nothing is removed. `roto` at the old step stays; deleting what the new template lacks is the
