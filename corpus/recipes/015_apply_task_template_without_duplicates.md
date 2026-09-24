@@ -106,3 +106,7 @@ apply_template(shot, tt2) again -> 0 claimed, the same 4 Tasks and 1 dependency
 - **A copied edge reschedules.** The server moves an unpinned claimed Task to satisfy the edge it
   copied; a pinned one keeps its dates and flags `dependency_violation` (probe 092). Pin the Tasks
   whose dates must hold before step 2.
+- **The edge copy does not depend on the claim.** It appears for any pair of Tasks whose
+  `template_task` already matches the template, whether one end was just claimed, both were already
+  linked from an earlier apply, or the apply itself just created one (probe 099). Re-running step 2
+  alone, with no Task to claim, is enough to fill in an edge a prior partial merge is missing.
