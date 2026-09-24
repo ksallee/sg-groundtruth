@@ -101,7 +101,7 @@ apply_template(shot, tt2) again -> 0 claimed, the same 4 Tasks and 1 dependency
 
   | field | after step 2 |
   |---|---|
-  | `content`, `step`, `est_in_mins`, `sg_description`, `sg_sort_order`, `task_reviewers`, `milestone`, custom fields | T's value, where T sets one |
+  | `content`, `step`, `est_in_mins`, `sg_description`, `sg_sort_order`, `task_reviewers`, `milestone`, a custom field (one list and one checkbox field probed on one site) | T's value, where T sets one |
   | `task_assignees`, `start_date`, `due_date` | kept; filled from T only when empty |
   | `duration` | T's on a Task without dates; kept on a dated one |
   | `sg_status_list` | kept (`paint` kept `ip`) |
