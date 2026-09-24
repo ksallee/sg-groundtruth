@@ -389,8 +389,8 @@ Changing `task_template` on a Shot only adds: one Task per template task not yet
   although a Task was missing; clear the field first, then set it, as Shot D did.
 
 - There is no mode. No body key, schema property or documented parameter selects keep, replace or merge.
-  To merge by `content` and `step`, create the missing Tasks yourself (recipe
-  015_apply_task_template_without_duplicates) instead of writing `task_template`.
+  To merge by `content` and `step`, point each matching Task's `template_task` at its template task
+  first, then write `task_template` (recipe 015_apply_task_template_without_duplicates).
 
 `corpus/findings/084_task_template_reapply.md`
 
