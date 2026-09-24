@@ -64,7 +64,7 @@ shape of the type is a parent link out, a child set in:
 | `sg_versions` | multi_entity | `['Version']` | readable, but a Version is linked from `Version.entity` |
 | `notes`, `open_notes` | multi_entity | `['Note']` | `open_notes` is read only |
 | `sg_published_files` | multi_entity | `['PublishedFile']` | publishes, also linked from the child side |
-| `task_template` | entity | `['TaskTemplate']` | on create, copies the template's Tasks onto the Shot within the call (probe 083); a change adds, never removes (probe 084) |
+| `task_template` | entity | `['TaskTemplate']` | on create, copies the template's Tasks onto the Shot within the call (probe 083); a change to T adds the missing Tasks and re-syncs those linked to T, fields and edges; no Task is removed (probes 084, 102) |
 | `created_by`, `updated_by` | entity | `['HumanUser', 'ApiUser']` | read only |
 | `image_source_entity` | entity | every site type | read only |
 

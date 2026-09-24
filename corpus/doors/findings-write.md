@@ -397,22 +397,25 @@ A create with `task_template` makes the Tasks inside the same call, by `POST` an
 
 ## 084_task_template_reapply
 
-Changing `task_template` on a Shot only adds: one Task per template task not yet linked by `template_task`. Nothing is removed or merged; a hand-made Task of the same content and step is duplicated.
+Changing `task_template` to T creates a Task per T task no Task links by `template_task`, duplicating a same-name hand-made one, and re-syncs the linked Tasks' fields and edges (probe 102).
 
 | on the Shot already | the new template's task | result |
 |---|---|---|
 | nothing | any | created |
-| a Task whose `template_task` is this template task | the same | skipped |
+| a Task whose `template_task` is this template task | the same | not re-created; **re-synced** to it, fields and edges (probe 102) |
 | a Task made from another template, same `content` and `step` | this one | **created: a duplicate** |
 | a Task made from another template, same `content`, other `step` | this one | created |
 | a hand-made Task, same `content` and `step` | this one | **created: a duplicate** |
 | a Task from the old template the new one lacks | none | kept |
 
-- **The match key is `template_task`, not `content` and `step`.** A template task is skipped only when a
-  Task on the entity already points at it. Delete that Task and the next apply re-creates it.
+- **The match key is `template_task`, not `content` and `step`.** A template task is not re-created only
+  when a Task on the entity already points at it. Delete that Task and the next apply re-creates it.
 
-- **Nothing is ever removed.** Switching templates, and clearing the field, leave every Task in place,
+- **No Task is ever removed.** Switching templates, and clearing the field, leave every Task in place,
   statuses and all. A replace means the caller deletes the Tasks itself (probe 089 for what that breaks).
+
+- **It does not only add.** The Tasks linked to the new template have their fields overwritten and the
+  edges between them reset to the template's (probes 096, 102 correct this entry's first reading).
 
 - The apply runs only when the value changes. Sending the stored value again added nothing on Shot E
   although a Task was missing; clear the field first, then set it, as Shot D did.
@@ -480,7 +483,7 @@ Tasks and their dependencies take two `_batch` calls: create the Tasks, then cre
 
 ## 087_dependency_cascade
 
-An upstream date write reschedules every unpinned downstream Task through the chain, later and earlier alike. A pinned Task stays put and flags `dependency_violation` while it is broken.
+An upstream date write reschedules every unpinned downstream Task, later and earlier alike; a null one moves none (097). A pinned Task stays put and flags `dependency_violation` while broken.
 
 | the downstream Task | after an upstream date write |
 |---|---|
@@ -488,12 +491,16 @@ An upstream date write reschedules every unpinned downstream Task through the ch
 | `start-to-start` | follows the upstream start; untouched by a due date write |
 | `pinned` true | dates held; `dependency_violation` true while broken, false again once satisfied |
 | downstream of a pinned Task | follows the pinned Task, not the upstream end of the chain |
+| `finish-to-start`, when a Task with no upstream has its dates written `null` | unmoved; the next real date write moves it (probe 097) |
 
 - **The cascade pulls back as well as pushes.** Shortening the upstream moved d1 and d2 earlier. A Task
-  whose dates a person chose and did not pin is overwritten by any upstream write.
+  whose dates a person chose and did not pin is overwritten by any upstream write, and by a new edge
+  (probe 092).
 
-- **Writing a dependent's own dates pins it.** The date `PUT` on d1 set `pinned` true (as
-  `entity_types/Task` found) and d2 followed d1 to a date before the upstream ends.
+- **Writing a dependent's `start_date` pins it.** The date `PUT` on d1 set `pinned` true (as
+  `entity_types/Task` found) and d2 followed d1 to a date before the upstream ends. That `PUT` wrote
+  `start_date`; probe 093 found `start_date` is what pins, null or real, and a `due_date` write alone
+  does not. A `duration` write does not (probe 100); a Task with no upstream never pins (probe 097).
 
 - `PUT {"pinned": false}` reschedules at once: d1 snapped back behind the upstream and d2 with it.
 
@@ -528,3 +535,296 @@ Deleting a Task retires its TaskDependency rows, unlinks both neighbours without
   its Versions (probe 060).
 
 `corpus/findings/089_task_delete_side_effects.md`
+
+## 092_dependency_edge_reschedule
+
+A new edge reschedules an unpinned downstream Task at once, whether POSTed or copied by a template apply on claim. A pinned one keeps its dates and flags `dependency_violation`.
+
+- **An edge is a scheduling write.** Creating one moves an unpinned downstream Task to satisfy it, the
+  same as the upstream date write of probe 087, `duration` held. The upstream Task does not move.
+
+- **A template apply reschedules Tasks it did not create.** The edge it copies between claimed Tasks
+  (recipe 015) moved `b` two days although no date was sent. Pin a Task whose dates a person chose
+  before the apply, or restore its dates after.
+
+- A pinned downstream Task keeps its dates and reads `dependency_violation` true from the moment the
+  edge exists. Neither route sets or clears `pinned`.
+
+- The claim itself (`template_task` written) moves nothing, and the reschedule is done before the
+  `PUT` returns: a read 3 s later matched the first. The template's undated tasks copied no dates.
+
+`corpus/findings/092_dependency_edge_reschedule.md`
+
+## 093_clear_dates_pin
+
+On a dependent Task a start_date write pins it, null or real; a due_date write never does, null or real. A pinned null Task holds; PUT pinned:false refills both dates.
+
+| write on a dependent Task | `pinned` after | on the next upstream write |
+|---|---|---|
+| `start_date` null, alone or with `due_date` | `true` | held; the null stays null, `dependency_violation` stays `false` |
+| `start_date` real | `true` (control) | held; `dependency_violation` `true` |
+| `due_date` null alone | `false` | follows: both dates rewritten from the upstream and `duration` |
+| `due_date` real | `false` (control, twice); `duration` recomputed | follows, new `duration` kept |
+| `PUT {"pinned": false}` | `false` | rewrites `start_date` from the upstream, `due_date` from `duration` |
+
+- **`start_date` is the pinning write, not "any date".** The same Task (`due`) stayed unpinned after
+  `due_date` null and after a real `due_date`, then pinned on a real `start_date`. A `due_date` write
+  acts like a `duration` write (probe 100): it resizes, it does not anchor.
+
+- Nothing unpins a Task by itself: `both` and `start` stayed pinned with a null start across the
+  upstream move. A null start raises no `dependency_violation`, so it is invisible to a violation check.
+
+- `duration` survives every null write (960 throughout); the unpin recompute uses it to refill `due_date`.
+
+- A sync that wants the server to reschedule a Task sets `pinned: false`; nulling the dates either pins
+  it (`start_date`) or is overwritten at the next upstream write (`due_date`).
+
+`corpus/findings/093_clear_dates_pin.md`
+
+## 094_permission_preflight
+
+Ask with a write that cannot land: a no-op PUT per field (update), a POST with a bad status (create), a _batch of [delete, 404 sentinel] (delete). Permission is checked first, and nothing is written. **[partial]**
+
+not measured: a launcher session (probe 052) of a lower-level person, and the allowed side of a conditional rule (an Artist assigned to the Task); both need a person, the first at a browser
+
+- Every refusal is a 400 naming the entity or the field, checked before value validation and before the
+  batch reaches its next request. An allowed caller gets the validation error or the sentinel's 404
+  instead. Nothing reaches the rows either way: no updated_at bump, no EventLogEntry, no retired row.
+
+- `properties.editable` in `GET /schema/<Type>/fields?project_id=` is per caller. `false` is a refusal
+  without a write. `true` can still be refused by a conditional rule (candidate 3), so it means maybe.
+
+- Candidates 5, 7 and 8 answer the same for both callers and test nothing: an empty PUT passes, and an
+  unknown field or a missing id fails before permission is read.
+
+- A no-op PUT tests the current value. A rule can depend on `field_value`, so test the intended value
+  with a `_batch` of [the real update, sentinel] (candidate 11), which rolls back.
+
+**Callers.** The refused person and the allowed person are the script acting through `sudo_as_login`
+(probe 027), which applies that person's permission set. A person signed in with the App Session
+Launcher (probe 052, recipe 012) has the same set on a `HumanUser` bearer; that session was not
+measured as an Artist, because the launcher needs the person to approve at a browser.
+
+**Precondition, declared.** The probe provisions its rows. It cannot provision the refused caller:
+`can_impersonate_this_user` is not writable over REST (probe 027). Its `requires` list names an active
+non-Admin HumanUser with that flag on and in the sandbox project, found by a `_search`, and the probe
+exits with the list when there is none. On the probed site two Artists qualify.
+
+**A conditional refusal prints its rule.** Probe 027 found no rule readable as a row. The 400 for a
+conditional rule returns the rule id and its condition tree: on the probed site an Artist may set
+`Task.sg_status_list` only where `task_assignees` or `task_reviewers` (or a Group in either) holds the
+caller. An unconditional refusal names only the field.
+
+**A late bump on a rolled-back create.** In exploratory runs of the same `_batch` [create a Task under a
+Shot, sentinel] by an allowed caller, the parent Shot's `updated_at` moved a few seconds after the call
+in 4 of 15 rolled-back creates, with `updated_by` unchanged, no EventLogEntry and no Task. The run above
+saw none; one earlier probe run saw one. No other candidate moved a timestamp in any run. Check create
+with the invalid-status POST (candidate 6), which left its parent unchanged in all 3 probe runs.
+
+**Unmeasured.** An Artist assigned to the Task, which is the allowed side of the rule in candidate 3:
+assigning a real person can notify them. Delete is checked per entity type here; a conditional delete
+rule would need the same `_batch` per row. Assets were read in the schema only; the PUT candidates ran
+on a Shot.
+
+`corpus/findings/094_permission_preflight.md`
+
+## 095_dependency_remove_undo
+
+Remove an edge with `DELETE` on its TaskDependency row: revive restores its type and offset. A `remove` on `upstream_tasks` or `downstream_tasks` erases the row for good.
+
+| remove by | the TaskDependency row | undo |
+|---|---|---|
+| `DELETE /entity/task_dependencies/<id>` | retired: 404 on `GET`, listed under `return_only: retired` | `POST .../<id>?revive=1`, same id, type and offset |
+| `remove` on the downstream Task's `upstream_tasks` | erased: not listed as retired | re-create; revive is 404 |
+| `remove` on the upstream Task's `downstream_tasks` | erased, the same | re-create; revive is 404 |
+
+| the downstream Task | after the edge is removed | after revive or re-create |
+|---|---|---|
+| unpinned | dates held where the edge put them; no longer follows the upstream | rescheduled at once from the upstream's current dates |
+| pinned, in violation | dates and `pinned` held; `dependency_violation` false | dates held; `dependency_violation` true again |
+
+- **Delete the row, not the link.** An undo stack that removes an edge by a `multi_entity` `remove`
+  cannot bring it back: the row is gone, and re-adding through `upstream_tasks` writes a new row
+  typed `finish-to-start-next-day` with no offset. Record the row id and `DELETE` it.
+
+- A re-created row with the same type and offset places the Task as the revived row would. The
+  difference is the id, and the retired original then cannot be revived: the pair is unique across
+  live rows, so revive after re-create is the 400 above. Undo by revive, or by re-create, not both.
+
+- Neither route restores the downstream Task's old dates. An unpinned Task snaps to the edge as
+  measured against the upstream now (probe 085); an undo that wants the old dates writes them, and the `start_date` write pins the Task
+  (probe 093).
+
+- An edge places an unpinned Task exactly, not at the earliest: l1 and l3, written late, were pulled
+  back to the edge. A pinned Task placed later than that reads `dependency_violation` false for both
+  types (l2, l4); only one placed earlier (d) reads true.
+
+`corpus/findings/095_dependency_remove_undo.md`
+
+## 096_task_template_unmerge
+
+A template write re-syncs every Task linked to it: fields but status reset, edges rewired. Undo: old template_task per Task first, then old task_template, then delete what B made.
+
+| write | server does |
+|---|---|
+| `template_task` on a Task | nothing but that field |
+| `task_template` changed to T | for every Task pointing at a T task: `sg_sort_order`, `sg_description`, `duration` set to the template task's; `sg_status_list` kept |
+| the same | creates the Tasks no Task points at (probe 084), adds T's missing edges, deletes edges between two T-linked Tasks that T lacks, moves an edge to the Task that now holds its template end |
+| `task_template` null | nothing: no field, Task or edge touched |
+
+- **The apply overwrites hand edits.** It re-syncs every linked Task, not only the new ones: `roto`,
+  never claimed, lost its description and duration. This corrects probe 084's "skipped" and recipe
+  015, which says only `template_task` is written. Status is the one field measured to survive.
+
+- **Order: Tasks first, then the entity.** Entity first, A's apply finds its tasks unclaimed, makes a
+  second comp and lay, and moves A's edge onto them. Pointing the originals back afterwards merges nothing.
+
+- Undo to A needs three kinds of write: old `template_task` per claimed Task, old `task_template`,
+  `DELETE` per Task B made (its edges retire, probe 089). The apply removes B's edges between claimed Tasks.
+
+- Undo to null gets no server help: delete B's edges between claimed Tasks yourself. Either way, write
+  back the hand-edited fields read before the merge; the merge overwrote them and the undo's apply does too.
+
+`corpus/findings/096_task_template_unmerge.md`
+
+## 097_null_dates_unpin
+
+A Task with no upstream never pins, on a null or a real date write; nulling its dates leaves its downstream unmoved, and pinned:false refills nothing.
+
+| the Task | after a date write |
+|---|---|
+| no edges, dates set `null` | `pinned` stays `false`; a null write only pins a Task that has an upstream (093, `entity_types/Task`) |
+| no edges, real dates | `pinned` stays `false` |
+| upstream-only (has downstream, no upstream), `null` or real dates | `pinned` stays `false` |
+| its `finish-to-start` downstream | unmoved by the `null` write; moved by the real one (03-11..03-12), as in 087 |
+
+- **Only a Task with an upstream pins on a date write.** Here neither a `null` nor a real date write set
+  `pinned` on a Task with no upstream, with or without a downstream. 087 and 093 measured the pin on
+  dependents.
+
+- `PUT {"pinned": false}` on a Task that was already `false` is a no-op: the nulls survive it. No
+  fallback anchor filled them: not `duration`, not a project date, not today.
+
+- Sending the nulls and `pinned: false` in one `PUT` read back the same as the nulls alone.
+
+- A `null` upstream leaves the downstream's stored dates where they were; the next real date write on
+  the same upstream moves it again. The edge still schedules; a `null` gives it nothing to schedule from.
+
+- A client that wants a Task to go back to "server picks the date" has no move here: clearing a
+  root Task's dates is a dead end, not a pending state. It stays `null`/`null` until something writes a
+  real date onto it.
+
+`corpus/findings/097_null_dates_unpin.md`
+
+## 098_template_merge_in_one_batch
+
+Recipe 015's merge fits one `_batch`: requests run in order, so a `task_template` write sees claims made earlier in the batch, and `null` then `T` on the same Shot re-runs the apply.
+
+- A batch applies its requests in order and each sees the one before: a claim earlier in the batch
+  stops the apply from duplicating that Task, exactly as when the claim is a call of its own.
+
+- Two updates of the same field on the same record in one batch are not collapsed. `null` then `T`
+  runs the apply, as two PUTs do (probe 084, Shot D); `T` alone on a Shot that holds `T` does not.
+
+- The one-batch merge and recipe 015's split sequence left the same Tasks, statuses and edges; the
+  template's edge was written onto the claimed hand-made Task in both.
+
+- One call instead of three, and atomic: a failing claim rolls the clear and the set back with it
+  (recipe 002). Recipe 020 is this as code.
+
+`corpus/findings/098_template_merge_in_one_batch.md`
+
+## 099_template_apply_edge_copy_kept
+
+A template apply copies a missing edge between two Tasks whose `template_task` already match it, whether either was claimed, kept, or created by that same call.
+
+- The edge is copied in all three cases: kept+claimed, kept+kept with the edge missing, and
+  kept+created. Probe 092 already showed claimed+claimed, so every pairing of `{kept, claimed,
+  created}` a merge apply can produce ends up holding the template's edge.
+
+- The copy comes from the `task_template` write, not from the claim. In case 1 the `_batch` claim set
+  `y.template_task` and left the pair with no edge; the edge appeared only after the PUT.
+
+- **The apply fills edges between linked Tasks, not only the ones it just touched.** Case 2 claimed
+  and created nothing: both Tasks already had `template_task` set, yet the missing edge appeared.
+
+- Clearing and re-setting `task_template` over Tasks linked by an earlier apply fills a missing edge
+  (case 2), but the same write re-syncs those Tasks' fields to the template (probe 102). It is not a
+  safe way to repair edges alone.
+
+`corpus/findings/099_template_apply_edge_copy_kept.md`
+
+## 100_duration_write_pin
+
+Writing duration on a dependent Task does not pin it; a start_date write in the same run does. It keeps following the upstream, and a duration write upstream moves it.
+
+| write | effect on the dependent (`down`) |
+|---|---|
+| `duration` alone on an unlinked Task (`solo`) | `pinned` stays `false`; `start_date` kept, `due_date` stretches to hold the new `duration` |
+| `duration` alone on `down` | the same: `pinned` stays `false`, `start_date` kept (already the day after the upstream ends), `due_date` stretches |
+| upstream moves later, after that | `down` moves with it, `duration` held at 1920 |
+| `duration` on the upstream (`up`) | `up`'s `due_date` moves; `down` and `down2` follow it, same as a date write (087) |
+| `start_date` on `down` (control) | `pinned` turns `true`; `duration` held, `due_date` moves; `down2` follows |
+
+- `duration` does not pin. In the same run a `start_date` write on `down` did. `due_date` was not
+  written on the dependent here; that it pins too rests on `entity_types/Task`, 087 and 093.
+
+- On the dependent, a `duration` write keeps `start_date` and moves `due_date`, the same as on the
+  unlinked `solo`. The dependent then keeps following its upstream.
+
+- `down2` moved on every write that moved `down`, the `duration`-only write included: a dependent's own
+  `duration` write cascades downstream. It stayed put on the no-op `pinned=false` write, where nothing
+  moved.
+
+- Writing `duration` on the upstream end reschedules every unpinned downstream Task, so probe 087's
+  date-based finding holds for `duration` too.
+
+`corpus/findings/100_duration_write_pin.md`
+
+## 101_template_edge_conflict
+
+On a claimed pair, a template apply replaces an existing edge of another type, or the reverse edge, with the template's edge: the old row is erased, not retired, and the PUT is a plain 200.
+
+- **The template's edge wins.** In both cases the pre-existing edge is gone and the template's
+  `b on a finish-to-start-next-day` stands in its place. No error, no skip, no duplicate, no loop.
+
+- **The old row is erased, not retired.** It reads 404 under `options[return_only]=retired`, where a
+  TaskDependency the caller DELETEs reads 200. No retired row is left to find; read the edges first.
+
+- Nothing rolls back: the PUT is 200, `task_template` is stored, and the unclaimed template task `c`
+  is generated. The caller learns of the swap only by reading the edges.
+
+- An edge from a claimed Task to a Task outside the template (`x on a`) is kept. An edge between two
+  claimed Tasks that the template does not link either way is deleted (probe 102).
+
+`corpus/findings/101_template_edge_conflict.md`
+
+## 102_task_template_resync
+
+Writing task_template T re-syncs every Task linked to T: T's non-empty values overwrite, status kept, dates and assignees kept or filled if empty; edges between linked Tasks reset to T's.
+
+| on T's task | on the linked Task before | after the write |
+|---|---|---|
+| a value in `content`, `step`, `est_in_mins`, `sg_description`, `sg_sort_order`, `task_reviewers`, `milestone` | anything | **overwritten with T's**: a renamed Task gets its old name back |
+| a value in a custom field: on the probed site one list field and one checkbox field, both behaved as above | anything | overwritten with T's |
+| `duration` | a Task without dates | overwritten; a Task with start and due keeps its dates and the duration they give |
+| `start_date`, `due_date` | set / empty | kept / filled, then moved by the dependency cascade (probe 087) |
+| `task_assignees` | set / empty | kept / filled |
+| `sg_status_list`, `pinned` | anything | kept |
+| empty (a checkbox's False counts as empty) | a value | kept: an empty template field never clears |
+| edge, T has it | missing / other type or offset | created / erased and re-created as T's (new id) |
+| edge T lacks | both ends linked to T / one end unlinked or linked to another template | erased / kept |
+
+- **Every write that changes `task_template` to T re-syncs all Tasks already linked to T**, after a
+  clear or from another template, and Tasks claimed a moment earlier (recipe 015) the same as Tasks
+  T made. Setting milestone collapses the Task to one day at its due date, duration 0.
+
+- Kept dates are the re-sync's, not a pin's: the unpinned root a1 keeps them. The re-sync leaves
+  `pinned` as it was. An edge it deletes is erased: 404 under `options[return_only]=retired`.
+
+- Writing another template U or null touches no T-linked Task or edge (probe 096 agrees).
+
+- Corrected in probe 084 (it read "only adds", linked Tasks "skipped") and recipe 015 (it read "creates
+  only what is missing" and "Only `template_task` is written"). Probe 083 holds.
+
+`corpus/findings/102_task_template_resync.md`

@@ -179,7 +179,7 @@ The site publishes its own OpenAPI v3 document, `json` or `yaml`, and it lists 6
   rules: `doors/findings-protocol`
 - `042_spec_coverage` (findings) — `GET /spec.json` returns the deployment's own OpenAPI v3 document. It advertises 62 operations against the 23 this corpus covers, and it disagrees with the published documentation.  
   rules: `doors/findings-schema`
-- `084_task_template_reapply` (findings) — Changing `task_template` on a Shot only adds: one Task per template task not yet linked by `template_task`. Nothing is removed or merged; a hand-made Task of the same content and step is duplicated.  
+- `084_task_template_reapply` (findings) — Changing `task_template` to T creates a Task per T task no Task links by `template_task`, duplicating a same-name hand-made one, and re-syncs the linked Tasks' fields and edges (probe 102).  
   rules: `doors/findings-write`
 - `007_reference_disagrees_with_spec` (reports) — Four calls in the published REST reference exist under no spelling in the deployment's own OpenAPI document, which names two of them differently.  
   rules: `doors/reports`
