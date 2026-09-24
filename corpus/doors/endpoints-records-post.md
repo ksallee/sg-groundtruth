@@ -66,6 +66,16 @@ Every call in this family: what the card records, the edge cases that live on th
   rules: `doors/findings-write`
 - `102_task_template_resync` (findings) — Writing task_template T re-syncs every Task linked to T: T's non-empty values overwrite, status kept, dates and assignees kept or filled if empty; edges between linked Tasks reset to T's.  
   rules: `doors/findings-write`
+- `105_offset_days_null_vs_zero` (findings) — TaskDependency `offset_days` null and 0 are stored and compared as different: a template apply deletes an entity edge with null against a template 0 (or the reverse) and re-creates it with a new id.  
+  rules: `doors/findings-write`
+- `106_template_task_linked_twice` (findings) — With two Tasks linked to one template task, an apply re-syncs and wires only one of them, picked unpredictably (not by id, age or edges); the other is left as is. No error, nothing duplicated.  
+  rules: `doors/findings-write`
+- `107_dependency_three_task_loop` (findings) — A three-Task loop is a 400 on a direct create and inside `_batch`, which rolls back whole. A template apply deletes a claimed Task's upstream edge from a Task outside the template, loop or not.  
+  rules: `doors/findings-write`
+- `108_task_template_resync_empties` (findings) — Re-sync to T: a numeric 0 on T's task overwrites (est, duration); milestone false and "" (stored null) keep the Task's value; a Task with only start or only due keeps its null duration.  
+  rules: `doors/findings-write`
+- `109_template_apply_outside_edge` (findings) — A template apply erases an edge where a linked Task depends on a Task not linked to the template (root or not, other template, other Shot); it kept the edge with the outside Task downstream.  
+  rules: `doors/findings-write`
 - `025_event_log` (findings) — meta.old_value and meta.new_value answer "what was this before", but meta is unfilterable and unsortable: narrow on entity, event_type and attribute_name, sort -id, read meta yourself.  
   rules: `doors/findings-observe`
 - `049_script_events` (findings) — A script's writes reach the event log only while its ApiUser has generate_event_log_entries True. The default is False and nothing errors when off. One create logs one row per field plus one _New.  
@@ -127,7 +137,11 @@ Revives a retired row. `?revive=1` is required and any JSON body is discarded, s
   rules: `doors/findings-write`
 - `095_dependency_remove_undo` (findings) — Remove an edge with `DELETE` on its TaskDependency row: revive restores its type and offset. A `remove` on `upstream_tasks` or `downstream_tasks` erases the row for good.  
   rules: `doors/findings-write`
+- `103_batch_delete_revive` (findings) — A `delete` inside `_batch` retires a Task or TaskDependency exactly as `DELETE` does: same retired read-back, and revive returns the same id, fields, edges and `Version.sg_task`.  
+  rules: `doors/findings-write`
 - `018_remove_and_restore_a_dependency` (recipes) — Remove one dependency between two Tasks and put it back on undo, with its type and offset  
+  rules: `doors/recipes`
+- `021_undo_a_batch_delete` (recipes) — Delete Tasks or dependencies in one batch and undo it by reviving the same rows  
   rules: `doors/recipes`
 
 **Silent on this call**
@@ -171,6 +185,14 @@ The key is `requests`, not `data`, and sending `data` is 400 `requests is missin
   rules: `doors/findings-write`
 - `101_template_edge_conflict` (findings) — On a claimed pair, a template apply replaces an existing edge of another type, or the reverse edge, with the template's edge: the old row is erased, not retired, and the PUT is a plain 200.  
   rules: `doors/findings-write`
+- `103_batch_delete_revive` (findings) — A `delete` inside `_batch` retires a Task or TaskDependency exactly as `DELETE` does: same retired read-back, and revive returns the same id, fields, edges and `Version.sg_task`.  
+  rules: `doors/findings-write`
+- `104_template_unmerge_in_one_batch` (findings) — Recipe 019's undo fits one `_batch` with the same end state, if the batch skips edges its own task_template write removes: deleting one 404s and rolls back all. Undo to null deletes them.  
+  rules: `doors/findings-write`
+- `107_dependency_three_task_loop` (findings) — A three-Task loop is a 400 on a direct create and inside `_batch`, which rolls back whole. A template apply deletes a claimed Task's upstream edge from a Task outside the template, loop or not.  
+  rules: `doors/findings-write`
+- `109_template_apply_outside_edge` (findings) — A template apply erases an edge where a linked Task depends on a Task not linked to the template (root or not, other template, other Shot); it kept the edge with the outside Task downstream.  
+  rules: `doors/findings-write`
 - `002_batch` (recipes) — Apply many creates, updates and deletes in one atomic call, and match the results back to the requests  
   rules: `doors/recipes`
 - `005_propagate_status` (recipes) — Roll a status up from a parent's Tasks and Versions onto the parent, without racing a concurrent write  
@@ -184,6 +206,10 @@ The key is `requests`, not `data`, and sending `data` is 400 `requests is missin
 - `017_check_permission_before_writing` (recipes) — Learn whether the signed-in person may update, create or delete a type before writing, with calls that change nothing  
   rules: `doors/recipes`
 - `020_apply_task_template_in_one_batch` (recipes) — Apply a task template to an entity that already has Tasks, without duplicates, in one atomic call  
+  rules: `doors/recipes`
+- `021_undo_a_batch_delete` (recipes) — Delete Tasks or dependencies in one batch and undo it by reviving the same rows  
+  rules: `doors/recipes`
+- `022_undo_task_template_merge_in_one_batch` (recipes) — Undo a task template merge in one atomic call  
   rules: `doors/recipes`
 - `001_batch_create_skips_validation` (reports) — A create inside POST /entity/_batch skips the required-attribute validation the single-create path applies, and answers 200 with the id of a row no read can reach.  
   rules: `doors/reports`

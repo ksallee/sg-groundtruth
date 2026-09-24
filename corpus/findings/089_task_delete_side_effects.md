@@ -50,5 +50,8 @@ after      a 03-02..03-10 down=[b]   b 03-11..03-12 up=[a] down=[c]   c 03-13..0
 - Revive is a full undo on the links measured here: dependencies, `sg_task` and `task` all returned
   with the same row ids. The revived chain is rescheduled at once, so its dates are not the ones it was
   deleted with.
+- A `delete` request inside `_batch` does the same to the Task, its dependency rows, its neighbours
+  and `Version.sg_task`, and revive undoes it the same way (probe 103). `PublishedFile.task` was not
+  measured on that route.
 - Deleting a Task retires only the Task and its dependency rows, unlike deleting a Shot, which retires
   its Versions (probe 060).

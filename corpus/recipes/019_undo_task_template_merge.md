@@ -1,6 +1,6 @@
 ---
 intent: Undo a task template merge, returning an entity's Tasks, fields and dependencies to their state before it
-tags: [task-template, task, dependency, destructive]
+tags: [task-template, dependency, destructive]
 endpoints: [POST /entity/<type>/_search, GET /entity/<type>/<id>, PUT /entity/<type>/<id>, DELETE /entity/<type>/<id>]
 scope: api
 measured: sandbox project written, 2 templates and 1 Shot made and deleted; 43.6 s, 104 calls
@@ -117,5 +117,10 @@ step 4  PUT the snapshot's fields        -> "hand", 99, 1440 back; comp still ip
   edge between two claimed Tasks that the template lacks, or holds with another type, offset or
   direction, and erases the row (probes 101, 102): revive cannot bring it back. Snapshot each edge's
   ends, type and offset and re-create the missing ones (recipe 016).
+- **In one `_batch` (recipe 022), leave out the edges step 2 removes.** A batch takes its ids before
+  it runs, so it cannot read after step 2 as step 3 does here. A DELETE of an edge the non-null
+  `task_template` write already removed is 404 `Entity of type [TaskDependency] with id=... does not
+  exist.` and rolls back the whole batch (probe 104).
+- Undo to null removes nothing, so a batch undo to null keeps those DELETEs (probe 104).
 - Events: each write logs like any other (probe 090). The undo leaves `Shotgun_Task_Change` rows
   for `template_task` behind; the history is not rewritten.

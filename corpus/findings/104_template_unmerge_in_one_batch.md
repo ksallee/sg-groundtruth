@@ -1,5 +1,5 @@
 ---
-tags: [task-template, batch, task, dependency, destructive]
+tags: [task-template, batch, dependency, destructive]
 endpoints: [POST /entity/_batch, PUT /entity/<type>/<id>, DELETE /entity/<type>/<id>, POST /entity/<type>/_search]
 phase: write
 scope: api
@@ -49,4 +49,4 @@ left clean: 0 Shots, 0 Tasks (Shot and template), 0 TaskDependency, 0 templates 
 - So read every id before the batch and leave out edges whose two ends go back to a template task of a
   non-null old template. Undo to null: the server removes nothing, keep the DELETE. Mixed ends: not measured.
 - A Task DELETE in the batch retires its edges, as a DELETE call does (probe 089): paint on lay went
-  with paint in both. Provisioned by the probe; no operator step. Recipe 0XX is this as code.
+  with paint in both. Provisioned by the probe; no operator step. Recipe 022 is this as code.

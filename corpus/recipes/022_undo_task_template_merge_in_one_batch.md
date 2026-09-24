@@ -1,12 +1,12 @@
 ---
-intent: Undo a task template merge in one atomic call, returning Tasks, fields and dependencies to their state before it
-tags: [task-template, batch, task, dependency, destructive]
+intent: Undo a task template merge in one atomic call
+tags: [task-template, batch, dependency, destructive]
 endpoints: [POST /entity/<type>/_search, GET /entity/<type>/<id>, POST /entity/_batch]
 scope: api
 measured: sandbox project written, 2 templates and 4 Shots made and deleted; 42.0 s, 93 calls
 ---
 
-# 0XX_undo_task_template_merge_in_one_batch
+# 022_undo_task_template_merge_in_one_batch
 
 Recipe 019 as a single `_batch`. The requests run in order, so the old `template_task` claims land
 before the old `task_template` write, and that write re-syncs the Tasks and removes the merge's edges

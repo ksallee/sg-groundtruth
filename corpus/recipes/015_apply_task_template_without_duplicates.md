@@ -1,6 +1,6 @@
 ---
 intent: Apply a task template to an entity that already has Tasks, without duplicating the ones it already holds
-tags: [task-template, task, batch, dependency]
+tags: [task-template, batch, dependency]
 endpoints: [POST /entity/<type>/_search, POST /entity/_batch, GET /entity/<type>/<id>, PUT /entity/<type>/<id>]
 scope: api
 measured: sandbox project written, 2 templates and 1 Shot made and deleted
@@ -54,10 +54,13 @@ def apply_template(entity, template_id):
 
     # 1. The apply skips a template task that a Task on the entity already points at (probe 084).
     #    Point each same-name, same-step Task at its template task, so the server skips it.
+    #    Never claim a template task another Task already points at: with two linked, the apply
+    #    re-syncs and wires one of them, picked unpredictably (probe 106).
+    taken = {(link(t, "template_task") or {}).get("id") for t in have}
     free = {key(t): t for t in have if (link(t, "template_task") or {}).get("id") not in mine}
     claim = [{"request_type": "update", "entity": "Task", "record_id": free[key(t)]["id"],
               "data": {"template_task": {"type": "Task", "id": t["id"]}}}
-             for t in tpl if key(t) in free]
+             for t in tpl if key(t) in free and t["id"] not in taken]
     if claim:
         r = c.post("/entity/_batch", json={"requests": claim})
         r.raise_for_status()
@@ -103,9 +106,10 @@ apply_template(shot, tt2) again -> 0 claimed, the same 4 Tasks and 1 dependency
   |---|---|
   | `content`, `step`, `est_in_mins`, `sg_description`, `sg_sort_order`, `task_reviewers`, `milestone`, a custom field (one list and one checkbox field probed on one site) | T's value, where T sets one |
   | `task_assignees`, `start_date`, `due_date` | kept; filled from T only when empty |
-  | `duration` | T's on a Task without dates; kept on a dated one |
+  | `duration` | T's on a Task without dates; kept on a dated one; on a Task with only one date, kept null (probe 108) |
   | `sg_status_list` | kept (`paint` kept `ip`) |
-  | any field T leaves empty | kept |
+  | a numeric 0 on T (`est_in_mins`; `duration` on a Task without dates) | 0: it overwrites (probe 108) |
+  | any field T leaves empty: null, a checkbox's false, a text `""` (stored as null) | kept (probe 108) |
 
   Tasks linked by an earlier apply of T are re-synced too: re-running step 2 wipes their hand edits.
 - **The apply resets the edges between Tasks linked to T to T's.** Every pairing of claimed, kept and
@@ -116,10 +120,14 @@ apply_template(shot, tt2) again -> 0 claimed, the same 4 Tasks and 1 dependency
   |---|---|
   | no edge, T has one | creates T's |
   | the edge in T's direction with another type or offset, or the reverse edge | deletes it and creates T's, a new id; the old row is erased, not retired (probes 101, 102) |
+  | T's edge with `offset_days` null where T holds 0, or 0 where T holds null | the same: erased, re-created with T's value (probe 105) |
   | an edge T lacks, both ends linked to T | deletes it (probe 102) |
-  | an edge to a Task not linked to T | keeps it |
+  | an edge T lacks, a Task linked to T depending on a Task not linked to T (unlinked, another template, another entity) | **erases it** (probes 107, 109) |
+  | an edge T lacks, a Task not linked to T depending on one linked to T | keeps it (probes 101, 102, 109) |
 
-  The PUT is 200 in every case. Read the entity's edges before the apply if they matter.
+  The PUT is 200 in every case. Read each linked Task's `upstream_tasks` before the apply and
+  re-create the outside edges to keep; write `offset_days` on an entity edge exactly as T holds it,
+  null or 0, to keep its id.
 - **A copied edge reschedules.** The server moves an unpinned downstream Task to satisfy an edge it
   copied; a pinned one keeps its dates and flags `dependency_violation` (probe 092). Pin the Tasks
   whose dates must hold before step 2.
@@ -129,5 +137,9 @@ apply_template(shot, tt2) again -> 0 claimed, the same 4 Tasks and 1 dependency
   caller's decision, and probe 089 lists what a Task delete unlinks.
 - The key is `content` plus `step` id. Two Tasks on the entity with the same key keep only the last
   in `free`, so the other is left unclaimed and a duplicate stays.
+- **Before an apply, at most one Task per template task may be linked to it.** With two, the apply
+  re-syncs and wires one, the server's pick, not predictable by id, age, name or edges. The other keeps
+  its fields and link; its edges of T's shape were deleted or kept unevenly (probe 106). Unlink the others (`template_task` null) first; `taken` above keeps the
+  claim from making a second link.
 - The claims, the clear and the set fit one `_batch`, in that order, with the same result: recipe 020
   (probe 098). Undo is recipe 019 (probe 096).

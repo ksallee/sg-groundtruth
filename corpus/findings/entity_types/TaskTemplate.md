@@ -1,5 +1,5 @@
 ---
-tags: [task-template, task, dependency, destructive]
+tags: [task-template, dependency, destructive]
 scope: api
 measured: site-wide read of every template and its Tasks, sandbox project written, 7 templates made and deleted
 summary: A named set of Tasks a Shot, Asset or other entity can be created with.

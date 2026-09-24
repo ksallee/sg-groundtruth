@@ -9,7 +9,8 @@ measured: sandbox project written, 1 Shot and 5 Tasks made and deleted; 23.5 s, 
 # 018_remove_and_restore_a_dependency
 
 `DELETE` on the TaskDependency row retires it, and revive brings back the same row with its
-`dependency_type` and `offset_days`. A `remove` on `upstream_tasks` or `downstream_tasks` erases the
+`dependency_type` and `offset_days`. A `delete` request inside `_batch` retires it the same way
+(probe 103, recipe 021). A `remove` on `upstream_tasks` or `downstream_tasks` erases the
 row, and nothing brings it back (probe 095).
 
 ## Call

@@ -1,5 +1,5 @@
 ---
-tags: [task-template, task, shot, trap]
+tags: [task-template, shot, trap]
 endpoints: [PUT /entity/<type>/<id>, POST /entity/_batch, POST /entity/<type>, DELETE /entity/<type>/<id>, GET /schema/<Type>/fields/<field>, GET /spec.<format>]
 phase: write
 scope: api

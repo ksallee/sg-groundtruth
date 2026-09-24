@@ -119,6 +119,14 @@ One row, and the only read where `fields` is honoured on a single record. A reti
   rules: `doors/findings-write`
 - `101_template_edge_conflict` (findings) — On a claimed pair, a template apply replaces an existing edge of another type, or the reverse edge, with the template's edge: the old row is erased, not retired, and the PUT is a plain 200.  
   rules: `doors/findings-write`
+- `103_batch_delete_revive` (findings) — A `delete` inside `_batch` retires a Task or TaskDependency exactly as `DELETE` does: same retired read-back, and revive returns the same id, fields, edges and `Version.sg_task`.  
+  rules: `doors/findings-write`
+- `105_offset_days_null_vs_zero` (findings) — TaskDependency `offset_days` null and 0 are stored and compared as different: a template apply deletes an entity edge with null against a template 0 (or the reverse) and re-creates it with a new id.  
+  rules: `doors/findings-write`
+- `107_dependency_three_task_loop` (findings) — A three-Task loop is a 400 on a direct create and inside `_batch`, which rolls back whole. A template apply deletes a claimed Task's upstream edge from a Task outside the template, loop or not.  
+  rules: `doors/findings-write`
+- `109_template_apply_outside_edge` (findings) — A template apply erases an edge where a linked Task depends on a Task not linked to the template (root or not, other template, other Shot); it kept the edge with the outside Task downstream.  
+  rules: `doors/findings-write`
 - `003_query_fields_and_pages` (recipes) — Resolve a query field's value, and run the rows a saved Page shows  
   rules: `doors/recipes`
 - `005_propagate_status` (recipes) — Roll a status up from a parent's Tasks and Versions onto the parent, without racing a concurrent write  
@@ -136,6 +144,8 @@ One row, and the only read where `fields` is honoured on a single record. A reti
 - `017_check_permission_before_writing` (recipes) — Learn whether the signed-in person may update, create or delete a type before writing, with calls that change nothing  
   rules: `doors/recipes`
 - `019_undo_task_template_merge` (recipes) — Undo a task template merge, returning an entity's Tasks, fields and dependencies to their state before it  
+  rules: `doors/recipes`
+- `022_undo_task_template_merge_in_one_batch` (recipes) — Undo a task template merge in one atomic call  
   rules: `doors/recipes`
 
 **Silent on this call**

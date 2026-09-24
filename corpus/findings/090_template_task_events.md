@@ -1,5 +1,5 @@
 ---
-tags: [event-log, task-template, task, observe]
+tags: [event-log, task-template, observe]
 endpoints: [POST /entity/<type>/_search, POST /entity/<type>, PUT /entity/<type>/<id>]
 phase: observe
 scope: api

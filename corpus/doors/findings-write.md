@@ -452,8 +452,11 @@ TaskDependency takes four `dependency_type` values, default `finish-to-start-nex
 - `shift_ratio` 0.5 was accepted with 201 and changed no date in any of the four types. Its effect is
   unmeasured beyond that.
 
-- The server rejects a duplicate pair, a self-loop and a two-Task cycle with a 400; longer cycles are
-  unmeasured. `pinned` stayed false throughout (probe 087 for pinned Tasks).
+- The server rejects a duplicate pair, a self-loop and a two-Task cycle with a 400; a three-Task cycle
+  is the same 400, inside `_batch` too (probe 107). `pinned` stayed false throughout (probe 087 for pinned Tasks).
+
+- `offset_days` null and 0 place the Task alike but are two stored values: a filter on one misses the
+  other, and a template apply treats them as a difference (probe 105).
 
 `corpus/findings/085_task_dependency_types.md`
 
@@ -530,6 +533,10 @@ Deleting a Task retires its TaskDependency rows, unlinks both neighbours without
 - Revive is a full undo on the links measured here: dependencies, `sg_task` and `task` all returned
   with the same row ids. The revived chain is rescheduled at once, so its dates are not the ones it was
   deleted with.
+
+- A `delete` request inside `_batch` does the same to the Task, its dependency rows, its neighbours
+  and `Version.sg_task`, and revive undoes it the same way (probe 103). `PublishedFile.task` was not
+  measured on that route.
 
 - Deleting a Task retires only the Task and its dependency rows, unlike deleting a Shot, which retires
   its Versions (probe 060).
@@ -635,6 +642,7 @@ Remove an edge with `DELETE` on its TaskDependency row: revive restores its type
 | remove by | the TaskDependency row | undo |
 |---|---|---|
 | `DELETE /entity/task_dependencies/<id>` | retired: 404 on `GET`, listed under `return_only: retired` | `POST .../<id>?revive=1`, same id, type and offset |
+| a `delete` request on the row inside `_batch` | retired, the same (probe 103) | revive, the same |
 | `remove` on the downstream Task's `upstream_tasks` | erased: not listed as retired | re-create; revive is 404 |
 | `remove` on the upstream Task's `downstream_tasks` | erased, the same | re-create; revive is 404 |
 
@@ -645,7 +653,7 @@ Remove an edge with `DELETE` on its TaskDependency row: revive restores its type
 
 - **Delete the row, not the link.** An undo stack that removes an edge by a `multi_entity` `remove`
   cannot bring it back: the row is gone, and re-adding through `upstream_tasks` writes a new row
-  typed `finish-to-start-next-day` with no offset. Record the row id and `DELETE` it.
+  typed `finish-to-start-next-day` with no offset. Record the row id and delete it, by `DELETE` or in `_batch`.
 
 - A re-created row with the same type and offset places the Task as the revived row would. The
   difference is the id, and the retired original then cannot be revived: the pair is unique across
@@ -794,7 +802,8 @@ On a claimed pair, a template apply replaces an existing edge of another type, o
 - Nothing rolls back: the PUT is 200, `task_template` is stored, and the unclaimed template task `c`
   is generated. The caller learns of the swap only by reading the edges.
 
-- An edge from a claimed Task to a Task outside the template (`x on a`) is kept. An edge between two
+- An edge with a Task outside the template downstream of a claimed one (`x on a`) is kept. The
+  reverse, a claimed Task depending on an outside Task, is erased (probes 107, 109). An edge between two
   claimed Tasks that the template does not link either way is deleted (probe 102).
 
 `corpus/findings/101_template_edge_conflict.md`
@@ -808,12 +817,16 @@ Writing task_template T re-syncs every Task linked to T: T's non-empty values ov
 | a value in `content`, `step`, `est_in_mins`, `sg_description`, `sg_sort_order`, `task_reviewers`, `milestone` | anything | **overwritten with T's**: a renamed Task gets its old name back |
 | a value in a custom field: on the probed site one list field and one checkbox field, both behaved as above | anything | overwritten with T's |
 | `duration` | a Task without dates | overwritten; a Task with start and due keeps its dates and the duration they give |
+| `duration` | only `start_date` or only `due_date` set, duration null | kept: stays null, no date filled (probe 108) |
+| a numeric 0: `est_in_mins`, or `duration` on a Task without dates | a value | **overwritten with 0** (probe 108) |
 | `start_date`, `due_date` | set / empty | kept / filled, then moved by the dependency cascade (probe 087) |
 | `task_assignees` | set / empty | kept / filled |
 | `sg_status_list`, `pinned` | anything | kept |
-| empty (a checkbox's False counts as empty) | a value | kept: an empty template field never clears |
-| edge, T has it | missing / other type or offset | created / erased and re-created as T's (new id) |
-| edge T lacks | both ends linked to T / one end unlinked or linked to another template | erased / kept |
+| empty: null, a checkbox's false, a text `""` (stored as null on the template task) | a value | kept: an empty template field never clears (probe 108) |
+| edge, T has it | missing / other type or offset, `offset_days` null against 0 included (probe 105) | created / erased and re-created as T's (new id) |
+| edge T lacks | both ends linked to T | erased |
+| edge T lacks | downstream end linked to T, upstream end not (unlinked, another template, another entity) | **erased** (probes 107, 109) |
+| edge T lacks | upstream end linked to T, downstream end not | kept: x1 on a1, u2 on a2 here, w on b in probe 109 |
 
 - **Every write that changes `task_template` to T re-syncs all Tasks already linked to T**, after a
   clear or from another template, and Tasks claimed a moment earlier (recipe 015) the same as Tasks
@@ -824,7 +837,173 @@ Writing task_template T re-syncs every Task linked to T: T's non-empty values ov
 
 - Writing another template U or null touches no T-linked Task or edge (probe 096 agrees).
 
+- The edge rows for a Task not linked to T are corrected by probes 107 and 109: this run measured only
+  the outside Task downstream (x1, u2), and first read "one end unlinked → kept" for both directions.
+
+- Two Tasks linked to one template task: only one is re-synced and wired, picked unpredictably (probe 106).
+
 - Corrected in probe 084 (it read "only adds", linked Tasks "skipped") and recipe 015 (it read "creates
   only what is missing" and "Only `template_task` is written"). Probe 083 holds.
 
 `corpus/findings/102_task_template_resync.md`
+
+## 103_batch_delete_revive
+
+A `delete` inside `_batch` retires a Task or TaskDependency exactly as `DELETE` does: same retired read-back, and revive returns the same id, fields, edges and `Version.sg_task`.
+
+- **A batch `delete` is a retire, not an erase.** Every read-back matched the plain `DELETE`: the row
+  lists under `return_only: retired` by `_search` and by `GET options[return_only]=retired`, and
+  `POST /entity/<type>/<id>?revive=1` answers `did_revive: true`.
+
+- The side effects of deleting a Task (probe 089) are the same on both routes: its edges retire with
+  it, the neighbour's link drops, `Version.sg_task` reads null, and revive restores all of it with the
+  same ids.
+
+- An undo stack can record the ids a batch delete returns (`data[i].id`) and revive them one by one;
+  recipe 018 applies to a batch-deleted edge unchanged.
+
+- Not measured: revive inside `_batch` (it accepts only `create`, `update`, `delete`, recipe 002), a
+  Task and its edge deleted in the same batch, and a PublishedFile link.
+
+The probe provisions every row it reads; no operator step. It runs each row through the batch delete
+first and the `DELETE` control second, on the same row, with a full read-back between steps.
+
+`corpus/findings/103_batch_delete_revive.md`
+
+## 104_template_unmerge_in_one_batch
+
+Recipe 019's undo fits one `_batch` with the same end state, if the batch skips edges its own task_template write removes: deleting one 404s and rolls back all. Undo to null deletes them.
+
+- One batch gives the split sequence's end state in both cases measured: no duplicate Task, the old
+  `template_task` links, the old edges with their ids, the snapshot's fields, status kept.
+
+- Requests run in order and the `task_template` A write runs its apply mid-batch (probe 098): it
+  removes B's edge between the two claimed Tasks. A later DELETE of that edge 404s and rolls back the
+  whole batch (recipe 002). Recipe 019's step 3 reads the edges after that write; a batch cannot.
+
+- So read every id before the batch and leave out edges whose two ends go back to a template task of a
+  non-null old template. Undo to null: the server removes nothing, keep the DELETE. Mixed ends: not measured.
+
+- A Task DELETE in the batch retires its edges, as a DELETE call does (probe 089): paint on lay went
+  with paint in both. Provisioned by the probe; no operator step. Recipe 022 is this as code.
+
+`corpus/findings/104_template_unmerge_in_one_batch.md`
+
+## 105_offset_days_null_vs_zero
+
+TaskDependency `offset_days` null and 0 are stored and compared as different: a template apply deletes an entity edge with null against a template 0 (or the reverse) and re-creates it with a new id.
+
+- **Null and 0 are two stored values.** A create with null or with the key omitted reads back null; a
+  create with 0 reads back 0. `offset_days is 0` does not match a null row, and `is null` does not match a 0.
+
+- **The apply compares them as different.** Template 0 against entity null, and template null against
+  entity 0, both end with the entity edge deleted (GET 404) and re-created with the template's value and
+  a new id, the same as a real difference (the `e1` control, 2 against 0). The unchanged `d1` kept its id.
+
+- To keep edge ids through a re-apply, write `offset_days` exactly as the template holds it, null or 0,
+  never one for the other. Anything keyed on a TaskDependency id loses it otherwise (probe 101: the old
+  row is erased, not retired).
+
+- The POST response omits `offset_days` when it is null; read it with a GET or a `_search`.
+
+- Provisioned by the probe; no operator step. Only `finish-to-start-next-day` was measured, and the
+  dates of null against 0 are probe 085's, not measured again here.
+
+`corpus/findings/105_offset_days_null_vs_zero.md`
+
+## 106_template_task_linked_twice
+
+With two Tasks linked to one template task, an apply re-syncs and wires only one of them, picked unpredictably (not by id, age or edges); the other is left as is. No error, nothing duplicated.
+
+- **One Task per template task is re-synced and wired, the others are skipped.** The skipped one keeps
+  its content and fields, still points at X, and gets no edge. No second X is created; w and y are
+  created only when nothing links to them. Every PUT is 200.
+
+- **Which one wins is not predictable from the caller's side.** Across 6 runs the pick flipped on
+  identical setups: not the lowest id, not the oldest `created_at`, not the first by `content`, and
+  not the Task already holding T's edges (Shot4 run 4).
+
+- When the other Task wins, the loser's edges, both of T's shape, are handled unevenly: `y on xb`
+  was deleted, `xb on w` was kept, and the winner got both. Measured once; the cause is not measured.
+
+- Before an apply, leave at most one Task per template task linked: unlink or re-point the others
+  (`template_task` null), or the result depends on the server's pick. Recipe 015's key caveat can
+  produce this state (probe 096 made it by hand).
+
+`corpus/findings/106_template_task_linked_twice.md`
+
+## 107_dependency_three_task_loop
+
+A three-Task loop is a 400 on a direct create and inside `_batch`, which rolls back whole. A template apply deletes a claimed Task's upstream edge from a Task outside the template, loop or not.
+
+- The loop check follows the whole chain: closing a three-Task cycle is the same 400 as the two-Task
+  case (probe 085). Inside `_batch` it counts rows the same batch created earlier, and the batch rolls
+  back with no row left (recipe 002).
+
+- **A template apply never closed the loop because it had already deleted a leg.** The `PUT
+  task_template` erased `a on x`, where a claimed Task depends on a Task outside the template, in the
+  control Shot too, where no loop was possible. No error; the row reads 404 under
+  `options[return_only]=retired`, as in probe 101.
+
+- The reverse, `x on b` (the outside Task downstream of a claimed one), was kept, as probes 101 and 102
+  found. **Probe 102's row "one end unlinked → kept" holds only for that direction.** Read a claimed
+  Task's `upstream_tasks` before the apply and re-create the edges it should keep.
+
+- Not measured: a claimed Task that has an upstream in the template (here `b`) depending on an outside
+  Task, and a loop the apply could close without deleting a leg.
+
+`corpus/findings/107_dependency_three_task_loop.md`
+
+## 108_task_template_resync_empties
+
+Re-sync to T: a numeric 0 on T's task overwrites (est, duration); milestone false and "" (stored null) keep the Task's value; a Task with only start or only due keeps its null duration.
+
+| on T's task | on the linked Task | after the re-sync |
+|---|---|---|
+| `milestone` true (control) | false | overwritten: true |
+| `milestone` false | true | **kept: true**. False is the checkbox's empty |
+| `est_in_mins` 0 | 60 | **overwritten: 0** |
+| `duration` 0 | 1920, no dates | **overwritten: 0** |
+| `duration` 480 (control) | 1920, no dates | overwritten: 480 (102 agrees) |
+| `sg_description` "" | "hand" | kept. The server stored "" as null on T's task, so "" and null are one case |
+| `sg_description` null, `est_in_mins` null (negative control) | a value | kept (102 agrees) |
+| `duration` 960 | only `start_date` set, duration null | kept: duration stays null, no date filled |
+| `duration` 960 | only `due_date` set, duration null | kept: duration stays null, no date filled |
+
+- **0 is a value, false is not.** A numeric 0 on T's task wipes the Task's number; a false checkbox
+  never clears a true one. A merge that means "leave it" must not store 0 on the template.
+
+- **`duration` copies only onto a Task with no dates** (here and in 102). Either date set, alone or
+  with the other, keeps the Task's duration; with one date only, it stays null.
+
+- A text field cannot hold "" on a template task: the write is accepted and reads back null.
+
+- Not measured: "" on the linked Task side; `sg_sort_order` 0; a custom number or checkbox field;
+  `milestone` false on T vs a Task with dates; duration 0 on T vs a dated Task.
+
+`corpus/findings/108_task_template_resync_empties.md`
+
+## 109_template_apply_outside_edge
+
+A template apply erases an edge where a linked Task depends on a Task not linked to the template (root or not, other template, other Shot); it kept the edge with the outside Task downstream.
+
+- **Measured rule: an edge whose downstream end is a Task linked to T and whose upstream end is not
+  linked to T is erased by the apply.** It held for a root (a) and a non-root (b), for an unlinked Task,
+  a Task linked to another template, and a Task on another entity. The claim alone did not touch it;
+  the `PUT task_template` did.
+
+- An edge whose upstream end is linked to T and whose downstream end is not (w on b) was kept, as in
+  probes 101, 102 and 107. One case only.
+
+- Erased, not retired: 404 under `options[return_only]=retired`, where an edge the caller DELETEs reads
+  200 (control in this run; probe 101 too). No error, no row to recover. Read each linked Task's
+  `upstream_tasks` before the apply and re-create the edges to keep.
+
+- Probe 102's "one end unlinked or linked to another template → kept" holds only for the downstream
+  direction.
+
+- Not measured: an outside Task upstream of a Task the apply creates (no edge to that Task can exist
+  before the apply makes it); an outside Task downstream of a root; outside edges on a re-apply of the
+  same template.
+
+`corpus/findings/109_template_apply_outside_edge.md`

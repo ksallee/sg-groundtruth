@@ -6,7 +6,7 @@ scope: api
 measured: sandbox project written, 1 Shot, 3 Tasks, 2 edges and 1 Version made and deleted; 31.0 s, 97 calls
 ---
 
-# 0XX_undo_a_batch_delete
+# 021_undo_a_batch_delete
 
 A `delete` inside `_batch` retires the row as `DELETE` does. Keep the ids the batch answers with:
 revive each one to undo, and it comes back with the same id, fields and links (probe 103).

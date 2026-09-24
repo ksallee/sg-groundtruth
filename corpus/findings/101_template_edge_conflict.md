@@ -43,5 +43,6 @@ left clean: 0 Tasks, Shots, TaskTemplates zzprobe_101_*
   TaskDependency the caller DELETEs reads 200. No retired row is left to find; read the edges first.
 - Nothing rolls back: the PUT is 200, `task_template` is stored, and the unclaimed template task `c`
   is generated. The caller learns of the swap only by reading the edges.
-- An edge from a claimed Task to a Task outside the template (`x on a`) is kept. An edge between two
+- An edge with a Task outside the template downstream of a claimed one (`x on a`) is kept. The
+  reverse, a claimed Task depending on an outside Task, is erased (probes 107, 109). An edge between two
   claimed Tasks that the template does not link either way is deleted (probe 102).
