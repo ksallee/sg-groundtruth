@@ -42,7 +42,22 @@ Asset, Attachment, Cut, CutItem, Delivery, HumanUser, LocalStorage, Note, Playli
 
 ## Recipes
 
-001_publish_version_with_media, 002_batch, 003_query_fields_and_pages, 004_register_published_file, 005_propagate_status, 006_media_round_trip, 007_build_and_reconcile_a_cut, 008_delivery_progress, 009_multi_entity_safely, 010_status_picker, 011_audit_webhook_subscriptions, 012_sign_in_as_a_person, 013_publish_file_bytes, 014_notes_about, 015_apply_task_template_without_duplicates, 016_create_tasks_with_dependencies
+- 001_publish_version_with_media — Publish a generated image to Flow PT as a Version, with provenance and the workflow attached
+- 002_batch — Apply many creates, updates and deletes in one atomic call, and match the results back to the requests
+- 003_query_fields_and_pages — Resolve a query field's value, and run the rows a saved Page shows
+- 004_register_published_file — Register the next PublishedFile without overwriting the last one, and write a path the server resolves for every platform
+- 005_propagate_status — Roll a status up from a parent's Tasks and Versions onto the parent, without racing a concurrent write
+- 006_media_round_trip — Take media off one Version and put the same bytes on another, which is what every sync, transfer and hand-off does
+- 007_build_and_reconcile_a_cut — Write a Cut and its CutItems from an edit, read the timeline back, and reconcile a second edit against the Cut already there
+- 008_delivery_progress — Keep a Delivery honest about what a long transfer is doing, including when it is cancelled and when it crashes
+- 009_multi_entity_safely — Add to and remove from a multi_entity field without destroying the links you did not mean to touch
+- 010_status_picker — List the statuses a project actually offers, each with the label, colour and icon needed to draw it
+- 011_audit_webhook_subscriptions — Inventory every webhook subscription on a site, and see which have ever delivered
+- 012_sign_in_as_a_person — Reach the REST API as a person, with no script key and no password, by having them approve a login in their browser
+- 013_publish_file_bytes — Publish a file's bytes onto a PublishedFile when the caller has no LocalStorage root to write under
+- 014_notes_about — Find the Notes about a Shot, Asset or Version by the name of the thing, and read what each Note is linked to
+- 015_apply_task_template_without_duplicates — Apply a task template to an entity that already has Tasks, without duplicating the ones it already holds
+- 016_create_tasks_with_dependencies — Create a set of Tasks and the dependencies between them, with types and offsets, in two calls
 
 ## Endpoints
 

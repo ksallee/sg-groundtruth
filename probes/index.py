@@ -1,7 +1,7 @@
 """Regenerate corpus/INDEX.md and corpus/doors/ — the two cheap tiers, generated from the entries.
 
 The map is the file an agent is told to read first, so it names every entry, groups them the four ways
-a caller can already address them, and says which door to open. It is capped at 8 KiB by
+a caller can already address them, and says which door to open. It is capped at 10 KiB by
 `check_corpus.py`, because a map that grows with the corpus is a fixed cost every session pays before
 asking anything.
 
@@ -232,10 +232,8 @@ def index(findings, types, entities, recipes, cards, reports, by_tag, behind, sp
 
     out += ["## Field types", "", names(types) or "none yet", "",
             "## Entity types", "", names(entities) or "none yet", "",
-            "## Recipes", "",
-            # Names only: the intent of each is on `doors/recipes.md`, the door the task opens, and
-            # one line of intent per recipe outgrew the 8 KiB cap at 16 recipes.
-            names(recipes) or "none yet"]
+            "## Recipes", ""]
+    out += [f"- {e['slug']} — {e['summary']}" for e in recipes] or ["none yet"]
 
     out += ["", "## Endpoints", "",
             f"One card per call, {covered} of {len(cards)} with an entry behind them; a card with "

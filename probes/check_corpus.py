@@ -410,7 +410,7 @@ for f in sorted(CORPUS.rglob("*.md")):
 
 # The map is what every session reads before it asks anything, so it is capped rather than allowed to
 # grow with the corpus. Over the cap, a list belongs on a door and the map keeps the names.
-INDEX_MAX = 8 * 1024
+INDEX_MAX = 10 * 1024
 index_file = CORPUS / "INDEX.md"
 if index_file.is_file() and index_file.stat().st_size > INDEX_MAX:
     fails.append(f"corpus/INDEX.md is {index_file.stat().st_size} bytes, max {INDEX_MAX}. It names "

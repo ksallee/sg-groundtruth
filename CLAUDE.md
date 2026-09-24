@@ -17,7 +17,7 @@ Derive only from public Flow PT REST docs and this repo's own probes.
 response, the edge cases that live on the call. Produced by probes.
 `corpus/reports/`: behaviour that should change, written for the team that owns the API. Written by hand
 from findings, never by a probe.
-`corpus/INDEX.md`: generated, capped at 8 KB. Read this first, always. It names every entry and which
+`corpus/INDEX.md`: generated, capped at 10 KB. Read this first, always. It names every entry and which
 door answers what you hold.
 `corpus/doors/`: generated. One line per entry and that entry's rules, copied whole: one door per
 findings phase, one for the field types, the entity types, the recipes, the reports and the tags, and
