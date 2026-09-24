@@ -3,7 +3,7 @@ intent: Apply a task template to an entity that already has Tasks, without dupli
 tags: [task-template, batch, task]
 endpoints: [POST /entity/<type>/_search, POST /entity/_batch]
 scope: api
-measured: sandbox project written, 1 template and 5 Shots made and deleted; 30.3 s, 73 calls
+measured: sandbox project written, 1 template and 5 Shots made and deleted; 30.3 s, 73 calls; re-run 2026-09-24, 2 Shots
 ---
 
 # 020_apply_task_template_in_one_batch
@@ -46,10 +46,11 @@ def apply_template(entity, template_id):
     tpl = search("tasks", [["task_template", "is", tpl_ref]], ["content", "step"])
     have = search("tasks", [["entity", "is", entity]], ["content", "step", "template_task"])
     mine = {t["id"] for t in tpl}
+    taken = {(link(t, "template_task") or {}).get("id") for t in have}   # one link per template task (probe 106)
     free = {key(t): t for t in have if (link(t, "template_task") or {}).get("id") not in mine}
     reqs = [{"request_type": "update", "entity": "Task", "record_id": free[key(t)]["id"],
              "data": {"template_task": {"type": "Task", "id": t["id"]}}}
-            for t in tpl if key(t) in free]
+            for t in tpl if key(t) in free and t["id"] not in taken]
     claimed = len(reqs)
     # The apply runs only when the value changes (probe 084); null first makes it change, always.
     for value in (None, tpl_ref):
@@ -73,6 +74,8 @@ after  2 Tasks
   b  step2  template_task=<tt b>  ip     the hand-made Task, claimed, not duplicated
   TaskDependency b on a start-to-start offset_days 1
 the same setup through recipe 015's three calls: the same 2 Tasks, statuses and edge
+re-run, claim skip (probe 106): Shot with a, a both linked to <tt a>, a unlinked, b unlinked: 1 claimed (b), the unlinked a skipped, no new Task
+Shot with a, b unlinked: 2 claimed, no new Task, 1 dependency
 ```
 
 ## Notes
@@ -81,4 +84,6 @@ the same setup through recipe 015's three calls: the same 2 Tasks, statuses and 
   entity's current `task_template` is gone: the unconditional `null` makes the set always a change.
 - The server still re-syncs the claimed Tasks and resets their edges to the template's, as in recipe 015.
 - The key caveat of recipe 015 stands: two Tasks with the same `content` and `step` leave one unclaimed.
+- As in recipe 015, at most one Task per template task may be linked before the batch: with two, the
+  apply re-syncs and wires the server's pick (probe 106).
 - Keep the batch inside the size window of recipe 002 when an entity holds hundreds of Tasks.

@@ -60,12 +60,16 @@ members (reused, never created). It uses the first custom Task checkbox field wh
 | a value in `content`, `step`, `est_in_mins`, `sg_description`, `sg_sort_order`, `task_reviewers`, `milestone` | anything | **overwritten with T's**: a renamed Task gets its old name back |
 | a value in a custom field: on the probed site one list field and one checkbox field, both behaved as above | anything | overwritten with T's |
 | `duration` | a Task without dates | overwritten; a Task with start and due keeps its dates and the duration they give |
+| `duration` | only `start_date` or only `due_date` set, duration null | kept: stays null, no date filled (probe 108) |
+| a numeric 0: `est_in_mins`, or `duration` on a Task without dates | a value | **overwritten with 0** (probe 108) |
 | `start_date`, `due_date` | set / empty | kept / filled, then moved by the dependency cascade (probe 087) |
 | `task_assignees` | set / empty | kept / filled |
 | `sg_status_list`, `pinned` | anything | kept |
-| empty (a checkbox's False counts as empty) | a value | kept: an empty template field never clears |
-| edge, T has it | missing / other type or offset | created / erased and re-created as T's (new id) |
-| edge T lacks | both ends linked to T / one end unlinked or linked to another template | erased / kept |
+| empty: null, a checkbox's false, a text `""` (stored as null on the template task) | a value | kept: an empty template field never clears (probe 108) |
+| edge, T has it | missing / other type or offset, `offset_days` null against 0 included (probe 105) | created / erased and re-created as T's (new id) |
+| edge T lacks | both ends linked to T | erased |
+| edge T lacks | downstream end linked to T, upstream end not (unlinked, another template, another entity) | **erased** (probes 107, 109) |
+| edge T lacks | upstream end linked to T, downstream end not | kept: x1 on a1, u2 on a2 here, w on b in probe 109 |
 
 - **Every write that changes `task_template` to T re-syncs all Tasks already linked to T**, after a
   clear or from another template, and Tasks claimed a moment earlier (recipe 015) the same as Tasks
@@ -73,5 +77,8 @@ members (reused, never created). It uses the first custom Task checkbox field wh
 - Kept dates are the re-sync's, not a pin's: the unpinned root a1 keeps them. The re-sync leaves
   `pinned` as it was. An edge it deletes is erased: 404 under `options[return_only]=retired`.
 - Writing another template U or null touches no T-linked Task or edge (probe 096 agrees).
+- The edge rows for a Task not linked to T are corrected by probes 107 and 109: this run measured only
+  the outside Task downstream (x1, u2), and first read "one end unlinked → kept" for both directions.
+- Two Tasks linked to one template task: only one is re-synced and wired, picked unpredictably (probe 106).
 - Corrected in probe 084 (it read "only adds", linked Tasks "skipped") and recipe 015 (it read "creates
   only what is missing" and "Only `template_task` is written"). Probe 083 holds.

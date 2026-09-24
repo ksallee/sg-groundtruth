@@ -655,9 +655,10 @@ Apply a task template to an entity that already has Tasks, without duplicating t
   |---|---|
   | `content`, `step`, `est_in_mins`, `sg_description`, `sg_sort_order`, `task_reviewers`, `milestone`, a custom field (one list and one checkbox field probed on one site) | T's value, where T sets one |
   | `task_assignees`, `start_date`, `due_date` | kept; filled from T only when empty |
-  | `duration` | T's on a Task without dates; kept on a dated one |
+  | `duration` | T's on a Task without dates; kept on a dated one; on a Task with only one date, kept null (probe 108) |
   | `sg_status_list` | kept (`paint` kept `ip`) |
-  | any field T leaves empty | kept |
+  | a numeric 0 on T (`est_in_mins`; `duration` on a Task without dates) | 0: it overwrites (probe 108) |
+  | any field T leaves empty: null, a checkbox's false, a text `""` (stored as null) | kept (probe 108) |
 
   Tasks linked by an earlier apply of T are re-synced too: re-running step 2 wipes their hand edits.
 
@@ -669,10 +670,14 @@ Apply a task template to an entity that already has Tasks, without duplicating t
   |---|---|
   | no edge, T has one | creates T's |
   | the edge in T's direction with another type or offset, or the reverse edge | deletes it and creates T's, a new id; the old row is erased, not retired (probes 101, 102) |
+  | T's edge with `offset_days` null where T holds 0, or 0 where T holds null | the same: erased, re-created with T's value (probe 105) |
   | an edge T lacks, both ends linked to T | deletes it (probe 102) |
-  | an edge to a Task not linked to T | keeps it |
+  | an edge T lacks, a Task linked to T depending on a Task not linked to T (unlinked, another template, another entity) | **erases it** (probes 107, 109) |
+  | an edge T lacks, a Task not linked to T depending on one linked to T | keeps it (probes 101, 102, 109) |
 
-  The PUT is 200 in every case. Read the entity's edges before the apply if they matter.
+  The PUT is 200 in every case. Read each linked Task's `upstream_tasks` before the apply and
+  re-create the outside edges to keep; write `offset_days` on an entity edge exactly as T holds it,
+  null or 0, to keep its id.
 
 - **A copied edge reschedules.** The server moves an unpinned downstream Task to satisfy an edge it
   copied; a pinned one keeps its dates and flags `dependency_violation` (probe 092). Pin the Tasks
@@ -686,6 +691,11 @@ Apply a task template to an entity that already has Tasks, without duplicating t
 
 - The key is `content` plus `step` id. Two Tasks on the entity with the same key keep only the last
   in `free`, so the other is left unclaimed and a duplicate stays.
+
+- **Before an apply, at most one Task per template task may be linked to it.** With two, the apply
+  re-syncs and wires one, the server's pick, not predictable by id, age, name or edges. The other keeps
+  its fields and link; its edges of T's shape were deleted or kept unevenly (probe 106). Unlink the others (`template_task` null) first; `taken` above keeps the
+  claim from making a second link.
 
 - The claims, the clear and the set fit one `_batch`, in that order, with the same result: recipe 020
   (probe 098). Undo is recipe 019 (probe 096).
@@ -770,6 +780,13 @@ Undo a task template merge, returning an entity's Tasks, fields and dependencies
   direction, and erases the row (probes 101, 102): revive cannot bring it back. Snapshot each edge's
   ends, type and offset and re-create the missing ones (recipe 016).
 
+- **In one `_batch` (recipe 022), leave out the edges step 2 removes.** A batch takes its ids before
+  it runs, so it cannot read after step 2 as step 3 does here. A DELETE of an edge the non-null
+  `task_template` write already removed is 404 `Entity of type [TaskDependency] with id=... does not
+  exist.` and rolls back the whole batch (probe 104).
+
+- Undo to null removes nothing, so a batch undo to null keeps those DELETEs (probe 104).
+
 - Events: each write logs like any other (probe 090). The undo leaves `Shotgun_Task_Change` rows
   for `template_task` behind; the history is not rewritten.
 
@@ -786,6 +803,44 @@ Apply a task template to an entity that already has Tasks, without duplicates, i
 
 - The key caveat of recipe 015 stands: two Tasks with the same `content` and `step` leave one unclaimed.
 
+- As in recipe 015, at most one Task per template task may be linked before the batch: with two, the
+  apply re-syncs and wires the server's pick (probe 106).
+
 - Keep the batch inside the size window of recipe 002 when an entity holds hundreds of Tasks.
 
 `corpus/recipes/020_apply_task_template_in_one_batch.md`
+
+## 021_undo_a_batch_delete
+
+Delete Tasks or dependencies in one batch and undo it by reviving the same rows
+
+- `_batch` takes no revive request (`request_type must be one of: create, update, delete`, recipe 002),
+  so the undo is one call per row.
+
+- Measured one row per batch. A Task and its own edge in the same batch was not measured; the check
+  for an already live row in `undo` covers the edge coming back with its Task (probe 089).
+
+- A revived Task or edge is rescheduled from the upstream's current dates (probes 089, 095).
+
+- If the same pair was re-linked in between, the edge's revive is 400 on `sgcu_task_dependencies`
+  (recipe 018).
+
+`corpus/recipes/021_undo_a_batch_delete.md`
+
+## 022_undo_task_template_merge_in_one_batch
+
+Undo a task template merge in one atomic call, returning Tasks, fields and dependencies to their state before it
+
+- The dependency read happens before the batch, after the merge; recipe 019 reads after step 2 and
+  so never meets the 404. An edge with one end back on a template task and the other on none was
+  not measured: test it before relying on the rule for it.
+
+- `snapshot` stores `template_task` per Task and `task_template` from recipe 019, keyed by Task id.
+
+- Atomic: any failing request rolls back the claims and the template write too (recipe 002), so a
+  rejected batch leaves the merged state, not a half undo. Re-read before a retry.
+
+- The recipe 019 caveats stand: an edge the merge deleted is not restored, and the history of
+  `template_task` writes stays in the event log (probe 090).
+
+`corpus/recipes/022_undo_task_template_merge_in_one_batch.md`

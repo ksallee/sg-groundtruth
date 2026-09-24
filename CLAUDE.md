@@ -17,7 +17,7 @@ Derive only from public Flow PT REST docs and this repo's own probes.
 response, the edge cases that live on the call. Produced by probes.
 `corpus/reports/`: behaviour that should change, written for the team that owns the API. Written by hand
 from findings, never by a probe.
-`corpus/INDEX.md`: generated, capped at 10 KB. Read this first, always. It names every entry and which
+`corpus/INDEX.md`: generated, capped at 11 KB. Read this first, always. It names every entry and which
 door answers what you hold.
 `corpus/doors/`: generated. One line per entry and that entry's rules, copied whole: one door per
 findings phase, one for the field types, the entity types, the recipes, the reports and the tags, and
@@ -69,7 +69,7 @@ queue.
 corpus. Two rules, both enforced: drop a tag every entry in the group already carries (`filter` on a
 field-type card, which has a **Filter** section), and drop one that restates the entry's own name unless
 another entry shares it (`percent` on `percent.md`, but `list-field` stays on `list.md`). An empty tag
-list is a real answer on a matrix card. No subject tag may exceed 25 entries.
+list is a real answer on a matrix card. No subject tag may exceed 30 entries.
 
 `silent`, `destructive` and `trap` are class tags: they name what kind of failure an entry is rather than
 what it is about, so they are meant to span and the cap does not apply. `silent` is a 2xx that did not
@@ -150,7 +150,7 @@ The REST docs are incomplete and sometimes wrong. Probe, record, then code again
 - `python probes/check_corpus.py` then `python probes/index.py` after any probe
 - Tags drive retrieval, so the vocabulary must not drift. Reuse an existing tag from `corpus/doors/tags.md` or add
   one deliberately. Singular, lowercase: `version`, not `versions` or `Version`. The two selection rules
-  above are enforced, and so is the 25-entry cap.
+  above are enforced, and so is the 30-entry cap.
 - Every finding and recipe names its `endpoints:`. A call with no card in `corpus/endpoints/` is a card to
   write there first.
 - Code cites entries: `# probe 004`

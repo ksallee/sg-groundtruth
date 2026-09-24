@@ -18,7 +18,7 @@ Then give an agent one line:
     Read sg-groundtruth/corpus/INDEX.md first.
     Open the door it names for the rules, and an entry only when a rule needs its evidence.
 
-`corpus/INDEX.md` is generated and capped at 10 KB: every entry by name, and which door answers the
+`corpus/INDEX.md` is generated and capped at 11 KB: every entry by name, and which door answers the
 thing you already know. A door under `corpus/doors/` carries one line per entry and that entry's
 rules, copied whole, 2 to 36 KB a file. The entry holds the transcript, the sample and the tables.
 An agent that loads the corpus instead spends its context on the first call.
@@ -44,7 +44,7 @@ The rendered page costs eleven bytes of markup per byte of finding. The twin cos
 | `findings/` | 40 questions, each answered by one probe, grouped by the phase of a session they bite in |
 | `recipes/` | 11 tasks, each with the calls that perform it, the real response, and the errors hit on the way |
 | `reports/` | 9 behaviours that should change, written for the team that owns the API: expected, actual, a runnable repro, and the proposed fix |
-| `INDEX.md` | generated, 10 KB. Read this first |
+| `INDEX.md` | generated, 11 KB. Read this first |
 | `doors/` | generated. One line per entry and its rules, between the map and the entries |
 
 Four ways in, one per thing a caller already knows before making a call: the call itself, the entity

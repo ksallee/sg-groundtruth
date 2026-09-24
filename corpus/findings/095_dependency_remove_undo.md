@@ -55,6 +55,7 @@ revive g's old row beside its new one -> 400 "Revive failed for [TaskDependency 
 | remove by | the TaskDependency row | undo |
 |---|---|---|
 | `DELETE /entity/task_dependencies/<id>` | retired: 404 on `GET`, listed under `return_only: retired` | `POST .../<id>?revive=1`, same id, type and offset |
+| a `delete` request on the row inside `_batch` | retired, the same (probe 103) | revive, the same |
 | `remove` on the downstream Task's `upstream_tasks` | erased: not listed as retired | re-create; revive is 404 |
 | `remove` on the upstream Task's `downstream_tasks` | erased, the same | re-create; revive is 404 |
 
@@ -65,7 +66,7 @@ revive g's old row beside its new one -> 400 "Revive failed for [TaskDependency 
 
 - **Delete the row, not the link.** An undo stack that removes an edge by a `multi_entity` `remove`
   cannot bring it back: the row is gone, and re-adding through `upstream_tasks` writes a new row
-  typed `finish-to-start-next-day` with no offset. Record the row id and `DELETE` it.
+  typed `finish-to-start-next-day` with no offset. Record the row id and delete it, by `DELETE` or in `_batch`.
 - A re-created row with the same type and offset places the Task as the revived row would. The
   difference is the id, and the retired original then cannot be revived: the pair is unique across
   live rows, so revive after re-create is the 400 above. Undo by revive, or by re-create, not both.
