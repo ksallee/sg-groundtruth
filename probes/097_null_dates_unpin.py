@@ -7,6 +7,13 @@ upstream edge at all: one isolated (no edges either way) and one that is only up
 to see whether "pinned" and "recompute on unpin" mean anything without an upstream to satisfy, and
 whether a downstream Task follows a null.
 
+Controls: a real-date PUT on each Task afterwards, reading `pinned` back, so "never pins" is measured
+against a date write and not only a null one; and on the root, reading the downstream after that real
+write, so "a null does not move the downstream" is set against a write that does.
+
+Preconditions: none from an operator. The probe provisions every row it reads (1 Shot, 3 Tasks, 1
+TaskDependency) and `_lib.Created` deletes them, failure included.
+
 Writes only, in the sandbox, behind --write. Every row is deleted.
 """
 import sys
@@ -20,6 +27,16 @@ import _tasktpl as T  # noqa: E402
 t0 = time.monotonic()
 env = _lib.load_env()
 c = _lib.client()
+calls = [0]
+_request = c.request
+
+
+def counted(method, path, **kw):
+    calls[0] += 1
+    return _request(method, path, **kw)
+
+
+c.request = counted
 rows = []
 if not _lib.writes_allowed():
     raise SystemExit("probe 097 writes; run with --write")
@@ -30,35 +47,21 @@ FIELDS = ["content", "start_date", "due_date", "duration", "pinned", "dependency
 
 
 def dep(made, down, up, typ="finish-to-start-next-day"):
-    T.post(c, made, "task_dependencies", {"task": {"type": "Task", "id": down},
-                                          "dependent_task": {"type": "Task", "id": up}, "dependency_type": typ})
-
-
-calls = [0]
-
-
-def count(fn):
-    def wrapped(*a, **kw):
-        calls[0] += 1
-        return fn(*a, **kw)
-    return wrapped
+    return T.post(c, made, "task_dependencies", {"task": {"type": "Task", "id": down},
+                                                 "dependent_task": {"type": "Task", "id": up}, "dependency_type": typ})
 
 
 with _lib.Created(c) as made:
     sh = T.ref(T.post(c, made, "shots", {"project": P, "code": "zzprobe_097_shot"}))
-    calls[0] += 1
 
     def task(name):
-        calls[0] += 1
         return T.post(c, made, "tasks", {"project": P, "entity": sh, "content": f"zzprobe_097_{name}",
                                          "start_date": "2026-03-02", "due_date": "2026-03-03"})["id"]
 
     ids = {n: task(n) for n in ("iso", "root", "down")}
-    dep(made, ids["down"], ids["root"])  # root -FS-> down
-    calls[0] += 1
+    edge = dep(made, ids["down"], ids["root"])["id"]  # root -FS-> down
 
     def show(label, names):
-        calls[0] += 1
         got = {t["attributes"]["content"][12:]: t["attributes"] for t in
                T.search(c, "tasks", [["id", "in", [ids[n] for n in names]]], FIELDS)}
         rows.append(f"  {label}")
@@ -68,7 +71,6 @@ with _lib.Created(c) as made:
                         f"dur={a['duration']!s:<6} pinned={a['pinned']!s:<5} violation={a['dependency_violation']}")
 
     def put(who, body, note):
-        calls[0] += 1
         r = c.put(f"/entity/tasks/{ids[who]}", json=body)
         rows.append(f"\n  PUT {who} {body} -> {r.status_code} {T.errs(r) if not r.ok else ''}  # {note}")
 
@@ -84,6 +86,9 @@ with _lib.Created(c) as made:
     put("iso", {"start_date": None, "due_date": None, "pinned": False}, "nulls + pinned:false in ONE put")
     show("after combined put", ["iso"])
 
+    put("iso", {"start_date": "2026-03-09", "due_date": "2026-03-10"}, "control: a real date on an unlinked Task")
+    show("after real date: does a date write pin a Task with no upstream?", ["iso"])
+
     rows.append("\n=== root Task: no upstream, is upstream of 'down' (root -FS-> down) ===")
     show("root+down created 03-02..03-03, linked, down unpinned", ["root", "down"])
 
@@ -96,10 +101,14 @@ with _lib.Created(c) as made:
     put("root", {"start_date": None, "due_date": None, "pinned": False}, "nulls + pinned:false in ONE put")
     show("after combined put on root: what wins, does down move?", ["root", "down"])
 
+    put("root", {"start_date": "2026-03-09", "due_date": "2026-03-10"}, "control: a real date on root")
+    show("after real date: does root pin? does down follow a real write?", ["root", "down"])
+
 rows.append("\n=== left clean?")
-calls[0] += 1
 rows.append(f"  sandbox Tasks zzprobe_097*: "
             f"{len(T.search(c, 'tasks', [['project', 'is', P], ['content', 'starts_with', 'zzprobe_097']], ['content']))}")
-rows.append(f"\n  calls: {calls[0]}  wall: {time.monotonic() - t0:.1f}s")
+rows.append(f"  TaskDependency root->down still live: "
+            f"{len(T.search(c, 'task_dependencies', [['id', 'is', edge]], ['id']))}")
+rows.append(f"\n  calls: {calls[0]} (deletes included)  wall: {time.monotonic() - t0:.1f}s")
 
 _lib.emit("097_null_dates_unpin", "\n".join(rows), env)

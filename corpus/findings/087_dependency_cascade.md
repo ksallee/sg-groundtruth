@@ -41,7 +41,7 @@ up due 03-20      up 03-09..03-20  d1 03-23..03-24  d2 03-25..03-26  pin (held) 
 | `start-to-start` | follows the upstream start; untouched by a due date write |
 | `pinned` true | dates held; `dependency_violation` true while broken, false again once satisfied |
 | downstream of a pinned Task | follows the pinned Task, not the upstream end of the chain |
-| any, when the upstream's dates are written `null` | unmoved: keeps its dates (probe 097) |
+| `finish-to-start`, when a Task with no upstream has its dates written `null` | unmoved; the next real date write moves it (probe 097) |
 
 - **The cascade pulls back as well as pushes.** Shortening the upstream moved d1 and d2 earlier. A Task
   whose dates a person chose and did not pin is overwritten by any upstream write, and by a new edge
