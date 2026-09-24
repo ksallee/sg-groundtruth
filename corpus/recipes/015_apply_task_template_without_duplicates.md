@@ -3,7 +3,7 @@ intent: Apply a task template to an entity that already has Tasks, without dupli
 tags: [task-template, task, batch, dependency]
 endpoints: [POST /entity/<type>/_search, POST /entity/_batch, GET /entity/<type>/<id>, PUT /entity/<type>/<id>]
 scope: api
-measured: sandbox project written, 2 templates and 1 Shot made and deleted
+measured: sandbox project written, 2 templates and 1 Shot made and deleted; re-run 2026-09-24, 2 Shots
 ---
 
 # 015_apply_task_template_without_duplicates
@@ -95,6 +95,10 @@ after            4 Tasks
   47298 roto   Comp          template_task=<tt2 roto>  wtg   the one new Task
   TaskDependency 47297 on 47296 start-to-start offset_days 1
 apply_template(shot, tt2) again -> 0 claimed, the same 4 Tasks and 1 dependency
+tt: a@step1, b@step2, dep b on a start-to-start offset_days 1 (re-run, the claim skip of probe 106)
+Shot with a, a both linked to <tt a>, a unlinked, b unlinked
+apply_template(shot, tt) -> 1 claimed (b); the unlinked a is skipped, <tt a> stays linked twice, no new Task
+Shot with a, b unlinked: apply_template(shot, tt) -> 2 claimed, no new Task, 1 dependency
 ```
 
 ## Notes

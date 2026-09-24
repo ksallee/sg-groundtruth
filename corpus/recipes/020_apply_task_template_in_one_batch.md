@@ -3,7 +3,7 @@ intent: Apply a task template to an entity that already has Tasks, without dupli
 tags: [task-template, batch, task]
 endpoints: [POST /entity/<type>/_search, POST /entity/_batch]
 scope: api
-measured: sandbox project written, 1 template and 5 Shots made and deleted; 30.3 s, 73 calls
+measured: sandbox project written, 1 template and 5 Shots made and deleted; 30.3 s, 73 calls; re-run 2026-09-24, 2 Shots
 ---
 
 # 020_apply_task_template_in_one_batch
@@ -74,6 +74,8 @@ after  2 Tasks
   b  step2  template_task=<tt b>  ip     the hand-made Task, claimed, not duplicated
   TaskDependency b on a start-to-start offset_days 1
 the same setup through recipe 015's three calls: the same 2 Tasks, statuses and edge
+re-run, claim skip (probe 106): Shot with a, a both linked to <tt a>, a unlinked, b unlinked: 1 claimed (b), the unlinked a skipped, no new Task
+Shot with a, b unlinked: 2 claimed, no new Task, 1 dependency
 ```
 
 ## Notes
