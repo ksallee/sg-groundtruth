@@ -3,7 +3,7 @@ tags: [task-template, dependency, task, batch]
 endpoints: [POST /entity/<type>, PUT /entity/<type>/<id>, POST /entity/_batch, POST /entity/<type>/_search]
 phase: write
 scope: api
-measured: sandbox project written, 3 Shots, 5 hand-made Tasks, 1 template made and deleted
+measured: sandbox project written, 3 Shots, 5 Tasks, 1 template made and deleted; wall time and call count unrecorded
 verdict: A template apply copies a missing edge between two Tasks whose `template_task` already match it, whether either was claimed, kept, or created by that same call.
 ---
 

@@ -3,14 +3,14 @@ intent: Undo a task template merge, returning an entity's Tasks, fields and depe
 tags: [task-template, task, dependency, destructive]
 endpoints: [POST /entity/<type>/_search, GET /entity/<type>/<id>, PUT /entity/<type>/<id>, DELETE /entity/<type>/<id>]
 scope: api
-measured: sandbox project written, 2 templates and 1 Shot made and deleted, 43.6 s, 104 calls
+measured: sandbox project written, 2 templates and 1 Shot made and deleted; 43.6 s, 104 calls
 ---
 
-# 0XX_undo_task_template_merge
+# 019_undo_task_template_merge
 
-A merge (recipe 015_apply_task_template_without_duplicates) cannot be undone from what is left after
-it: the apply overwrote `sg_sort_order`, `sg_description` and `duration` on every Task linked to the
-new template (probe 096). Take a snapshot before the merge. The undo writes the old `template_task` on
+A merge (recipe 015) cannot be undone from what is left after it: the apply overwrote
+`sg_sort_order`, `sg_description` and `duration` on every Task linked to the new template (probe 096),
+and every other field the template sets (probe 102). Take a snapshot before the merge. The undo writes the old `template_task` on
 each Task first, then the old `task_template`, then deletes what the merge made and writes the snapshot's
 fields back. Entity first makes duplicates.
 
@@ -26,7 +26,8 @@ from sg_groundtruth.env import load
 c = FPT.from_env(load("."))
 ARR = {"Content-Type": "application/vnd+shotgun.api3_array+json"}
 SLUG = {"Shot": "shots", "Asset": "assets", "Sequence": "sequences"}
-# The fields the apply overwrites (probe 096). Add any other field your templates set.
+# The fields probe 096 saw the apply overwrite. Probe 102 adds content, step, est_in_mins,
+# task_reviewers, milestone and custom fields, when the template sets them: add the ones yours set.
 KEEP = ["template_task", "sg_sort_order", "sg_description", "duration"]
 
 
@@ -106,10 +107,14 @@ step 4  PUT the snapshot's fields        -> "hand", 99, 1440 back; comp still ip
 ## Notes
 
 - Step 4 is what makes it an undo rather than a reapply of A. Status survives both applies, so
-  it is not in `KEEP`; add `est_in_mins`, assignees or dates if your templates set them, unmeasured.
+  it is not in `KEEP`. Assignees and dates are only filled where empty (probe 102): add them when the
+  Task had none before. `snapshot` reads `attributes` only; read `step` and
+  `task_reviewers` with `link` if you add them.
 - When the entity had no template before, step 2 writes null and the server does nothing. Step 3's
   dependency sweep is then the only thing that removes the new template's edges between old Tasks.
-- The dependency sweep compares ids, so an edge the merge deleted is not restored. Probe 096 saw none
-  deleted by a merge; entity-first order is what deletes one.
+- The dependency sweep compares ids, so an edge the merge deleted is not restored. A merge deletes an
+  edge between two claimed Tasks that the template lacks, or holds with another type, offset or
+  direction, and erases the row (probes 101, 102): revive cannot bring it back. Snapshot each edge's
+  ends, type and offset and re-create the missing ones (recipe 016).
 - Events: each write logs like any other (probe 090). The undo leaves `Shotgun_Task_Change` rows
   for `template_task` behind; the history is not rewritten.

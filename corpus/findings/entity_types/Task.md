@@ -76,6 +76,7 @@ why a Monday-to-Friday span reads back as `2400`.
 | `duration` 2400 | `due_date` 2026-01-09 |
 | `start_date` 2026-02-02 | `due_date` 2026-02-06, `duration` 2400 held |
 | `due_date` 2026-02-13 | `duration` 4800, `start_date` held |
+| `start_date` or `due_date` `null` | the other two held, nothing recomputed (probes 093, 097) |
 | `est_in_mins` 600 | `time_vs_est` 600, which is `est_in_mins - time_logs_sum` |
 | `time_logs_sum` 60 | 400 `API update() Task.time_logs_sum is read only.` |
 | `time_vs_est` 60, `time_percent_of_est` 50 | 400, the same title per field |
@@ -119,6 +120,7 @@ gets. The codes are site configuration, not part of the type.
 - `valid_types` on `entity` does not bind, matching `field_types/entity`. `{"type": "Task", "id": N}`
   was accepted at 200 and read back as a Task.
 - Never PUT two of `start_date`, `due_date`, `duration` expecting both to stand: the third is recomputed,
-  and on a dependent Task a date write also sets `pinned` and can raise `dependency_violation`.
+  and on a dependent Task a date write also sets `pinned` and can raise `dependency_violation`. A `null`
+  date pins it as well (probe 093); a `duration` write does not (probe 100).
 - `time_logs_sum`, `time_vs_est` and `time_percent_of_est` are read only. Sum `TimeLog.duration` to
   predict them; `Task.color` is not a colour either (`field_types/color`).

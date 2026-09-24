@@ -9,6 +9,7 @@ date alone is enough, and whether `duration` survives the clear.
 Writes only, in the sandbox, behind --write. Every row is deleted.
 """
 import sys
+import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -17,6 +18,19 @@ import _tasktpl as T  # noqa: E402
 
 env = _lib.load_env()
 c = _lib.client()
+
+# Count calls without touching _lib (#76 owns that): wrap this client's request.
+CALLS = [0]
+_request = c.request
+
+
+def counted(method, path, **kw):
+    CALLS[0] += 1
+    return _request(method, path, **kw)
+
+
+c.request = counted
+T0 = time.monotonic()
 rows = []
 if not _lib.writes_allowed():
     raise SystemExit("probe 093 writes; run with --write")
@@ -84,4 +98,5 @@ rows.append("\n=== left clean?")
 rows.append(f"  sandbox Tasks zzprobe_093*: "
             f"{len(T.search(c, 'tasks', [['project', 'is', P], ['content', 'starts_with', 'zzprobe_093']], ['content']))}")
 
+rows.append(f"\n  wall {time.monotonic() - T0:.1f} s, {CALLS[0]} calls (token fetch not counted)")
 _lib.emit("093_clear_dates_pin", "\n".join(rows), env)

@@ -45,4 +45,4 @@ left clean: 0 Shots, 0 Tasks, 0 templates zzprobe_098_*
 - The one-batch merge and recipe 015's split sequence left the same Tasks, statuses and edges; the
   template's edge was written onto the claimed hand-made Task in both.
 - One call instead of three, and atomic: a failing claim rolls the clear and the set back with it
-  (recipe 002). Recipe 0XX_apply_task_template_in_one_batch is this as code.
+  (recipe 002). Recipe 020 is this as code.

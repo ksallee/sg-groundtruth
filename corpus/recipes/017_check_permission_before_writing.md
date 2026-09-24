@@ -3,15 +3,17 @@ intent: Learn whether the signed-in person may update, create or delete a type b
 tags: [permission, batch, task, write]
 endpoints: [GET /schema/<Type>/fields, GET /entity/<type>/<id>, PUT /entity/<type>/<id>, POST /entity/<type>, POST /entity/_batch]
 scope: api
-measured: sandbox project written, an Artist and an Admin via sudo_as_login, 1 Shot and 1 Task made and deleted
+measured: sandbox project written, an Artist and an Admin via sudo, 1 Shot and 1 Task made and deleted; 47.5 s, 117 calls
+coverage: partial
+unmeasured: a launcher session (probe 052) of a lower-level person, and the allowed side of a conditional rule; both need a person, the first at a browser
 ---
 
-# 0XX_check_permission_before_writing
+# 017_check_permission_before_writing
 
 No endpoint reports what a caller may do (probe 027), so ask with a write the server refuses before it
 lands. Permission is checked first; an allowed caller gets a different error, and nothing is written
-(probe 094). Works on any client: a script acting through `sudo_as_login`, or a person's bearer from the
-App Session Launcher (recipe 012).
+(probe 094). Measured for a script acting through `sudo_as_login`. A person's bearer from the App
+Session Launcher (recipe 012) has the same permission set, but was not measured as a refused caller.
 
 ## Call
 

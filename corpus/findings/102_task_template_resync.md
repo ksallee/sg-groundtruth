@@ -3,7 +3,7 @@ tags: [task-template, task, dependency, destructive, trap]
 endpoints: [PUT /entity/<type>/<id>, POST /entity/<type>, POST /entity/<type>/_search, DELETE /entity/<type>/<id>]
 phase: write
 scope: api
-measured: sandbox project written, 2 templates, 2 Groups and 2 Shots provisioned by the probe and deleted, 35.2 s, 79 calls
+measured: sandbox project written, 2 templates, 2 Groups, 2 Shots made and deleted by the probe; 35.2 s, 79 calls
 verdict: Writing task_template T re-syncs every Task linked to T: T's non-empty values overwrite, status and dates kept, assignees only filled; edges between linked Tasks reset to T's.
 ---
 

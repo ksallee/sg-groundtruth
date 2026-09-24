@@ -3,7 +3,7 @@ tags: [dependency, task, date]
 endpoints: [PUT /entity/<type>/<id>, POST /entity/<type>, POST /entity/<type>/_search]
 phase: write
 scope: api
-measured: sandbox project written, 2 Tasks in one chain made and deleted
+measured: sandbox project written, 2 Tasks in one chain made and deleted; wall time and call count unrecorded
 verdict: A null write on a dependent Task's start_date or due_date pins it exactly like a real date; duration is held. Only PUT pinned:false recomputes the nulled date(s) from the dependency.
 ---
 

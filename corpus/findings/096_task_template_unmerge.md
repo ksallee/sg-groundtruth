@@ -3,7 +3,7 @@ tags: [task-template, task, dependency, destructive]
 endpoints: [PUT /entity/<type>/<id>, DELETE /entity/<type>/<id>, POST /entity/<type>/_search, GET /entity/<type>/<id>]
 phase: write
 scope: api
-measured: sandbox project written, 2 templates and 1 Shot provisioned and deleted, 43.6 s, 104 calls
+measured: sandbox project written, 2 templates and 1 Shot made and deleted by the probe; 43.6 s, 104 calls
 verdict: A template write re-syncs every Task linked to it: fields but status reset, edges rewired. Undo: old template_task per Task first, then old task_template, then delete what B made.
 ---
 

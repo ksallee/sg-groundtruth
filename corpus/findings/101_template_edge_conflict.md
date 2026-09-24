@@ -3,7 +3,7 @@ tags: [task-template, dependency, destructive]
 endpoints: [PUT /entity/<type>/<id>, POST /entity/_batch, POST /entity/<type>, POST /entity/<type>/_search, GET /entity/<type>/<id>, DELETE /entity/<type>/<id>]
 phase: write
 scope: api
-measured: sandbox project written, 1 template, 2 Shots, 6 Tasks, 4 edges made and deleted by the probe; 26.8 s, 72 calls
+measured: sandbox project written, 1 template, 2 Shots, 6 Tasks, 4 edges made and deleted; 26.8 s, 72 calls
 verdict: On a claimed pair, a template apply replaces an existing edge of another type, or the reverse edge, with the template's edge: the old row is erased, not retired, and the PUT is a plain 200.
 ---
 
@@ -44,4 +44,4 @@ left clean: 0 Tasks, Shots, TaskTemplates zzprobe_101_*
 - Nothing rolls back: the PUT is 200, `task_template` is stored, and the unclaimed template task `c`
   is generated. The caller learns of the swap only by reading the edges.
 - An edge from a claimed Task to a Task outside the template (`x on a`) is kept. An edge between two
-  claimed Tasks that the template does not link either way is unmeasured.
+  claimed Tasks that the template does not link either way is deleted (probe 102).

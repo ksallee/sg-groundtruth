@@ -4,7 +4,7 @@ endpoints: [PUT /entity/<type>/<id>, POST /entity/<type>, POST /entity/<type>/_s
 phase: write
 scope: api
 measured: sandbox project written, 5 Tasks in one chain made and deleted
-verdict: An upstream date write reschedules every unpinned downstream Task through the chain, later and earlier alike. A pinned Task stays put and flags `dependency_violation` while it is broken.
+verdict: An upstream date write reschedules every unpinned downstream Task, later and earlier alike; a null one moves none (097). A pinned Task stays put and flags `dependency_violation` while broken.
 ---
 
 # 087_dependency_cascade
@@ -41,10 +41,13 @@ up due 03-20      up 03-09..03-20  d1 03-23..03-24  d2 03-25..03-26  pin (held) 
 | `start-to-start` | follows the upstream start; untouched by a due date write |
 | `pinned` true | dates held; `dependency_violation` true while broken, false again once satisfied |
 | downstream of a pinned Task | follows the pinned Task, not the upstream end of the chain |
+| any, when the upstream's dates are written `null` | unmoved: keeps its dates (probe 097) |
 
 - **The cascade pulls back as well as pushes.** Shortening the upstream moved d1 and d2 earlier. A Task
-  whose dates a person chose and did not pin is overwritten by any upstream write.
+  whose dates a person chose and did not pin is overwritten by any upstream write, and by a new edge
+  (probe 092).
 - **Writing a dependent's own dates pins it.** The date `PUT` on d1 set `pinned` true (as
-  `entity_types/Task` found) and d2 followed d1 to a date before the upstream ends.
+  `entity_types/Task` found) and d2 followed d1 to a date before the upstream ends. A `null` date pins
+  it too (probe 093); a `duration` write does not (probe 100); a Task with no upstream never pins (probe 097).
 - `PUT {"pinned": false}` reschedules at once: d1 snapped back behind the upstream and d2 with it.
 - `pinned` is writable directly, so a sync can protect a Task before it rewrites the upstream end.

@@ -3,10 +3,10 @@ intent: Apply a task template to an entity that already has Tasks, without dupli
 tags: [task-template, batch, task]
 endpoints: [POST /entity/<type>/_search, POST /entity/_batch]
 scope: api
-measured: sandbox project written, 1 template and 5 Shots made and deleted
+measured: sandbox project written, 1 template and 5 Shots made and deleted; 30.3 s, 73 calls
 ---
 
-# 0XX_apply_task_template_in_one_batch
+# 020_apply_task_template_in_one_batch
 
 Recipe 015 as a single `_batch`. The requests run in order, so the `template_task` claims land before
 the `task_template` write reads them, and a `null` then the template on the same entity re-runs the
@@ -79,6 +79,6 @@ the same setup through recipe 015's three calls: the same 2 Tasks, statuses and 
 
 - Two reads and one write, against recipe 015's two reads and up to four writes. The read of the
   entity's current `task_template` is gone: the unconditional `null` makes the set always a change.
-- The server still writes the template's edges onto claimed Tasks, as in recipe 015.
+- The server still re-syncs the claimed Tasks and resets their edges to the template's, as in recipe 015.
 - The key caveat of recipe 015 stands: two Tasks with the same `content` and `step` leave one unclaimed.
 - Keep the batch inside the size window of recipe 002 when an entity holds hundreds of Tasks.

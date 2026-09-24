@@ -3,10 +3,10 @@ intent: Remove one dependency between two Tasks and put it back on undo, with it
 tags: [task, dependency, destructive]
 endpoints: [POST /entity/<type>/_search, DELETE /entity/<type>/<id>, POST /entity/<type>/<id>]
 scope: api
-measured: sandbox project written, 1 Shot and 5 Tasks made and deleted
+measured: sandbox project written, 1 Shot and 5 Tasks made and deleted; 23.5 s, 65 calls
 ---
 
-# 0XX_remove_and_restore_a_dependency
+# 018_remove_and_restore_a_dependency
 
 `DELETE` on the TaskDependency row retires it, and revive brings back the same row with its
 `dependency_type` and `offset_days`. A `remove` on `upstream_tasks` or `downstream_tasks` erases the

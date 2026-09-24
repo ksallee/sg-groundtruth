@@ -3,7 +3,7 @@ tags: [dependency, task, duration]
 endpoints: [PUT /entity/<type>/<id>, POST /entity/<type>, POST /entity/<type>/_search]
 phase: write
 scope: api
-measured: sandbox project written, 3 Tasks in one chain made and deleted
+measured: sandbox project written, 3 Tasks in one chain made and deleted; wall time and call count unrecorded
 verdict: Writing duration on a dependent Task does not pin it, unlike a date write (087, 093). It stays unpinned and keeps following the upstream, on both ends of the chain.
 ---
 

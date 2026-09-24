@@ -3,7 +3,7 @@ tags: [dependency, task, date]
 endpoints: [PUT /entity/<type>/<id>, POST /entity/<type>, POST /entity/<type>/_search]
 phase: write
 scope: api
-measured: sandbox project written, 3 Tasks made and deleted (1 isolated, 1 upstream-only with 1 downstream)
+measured: sandbox project written, 3 Tasks made and deleted (1 isolated, 1 root, 1 downstream); 10.2 s, 20 calls
 verdict: A Task with no upstream edge never pins on a null date write: pinned stays false, its downstream Tasks hold their dates, and pinned:false has nothing to recompute either null from.
 ---
 
@@ -34,7 +34,6 @@ PUT root pinned=false
 PUT root {start=null,due=null,pinned=false} in ONE put
                      -> root None..None  down 03-04..03-05 (unmoved) pinned=False
 
-calls: 20  wall: 10.2s
 ```
 
 **Teaches**
