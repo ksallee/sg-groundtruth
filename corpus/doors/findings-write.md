@@ -332,3 +332,199 @@ than sending null on a create built by dropping empty values.
   that entry cannot be deleted (probe 025), so a back-dated import leaves a forward-dated audit trail.
 
 `corpus/findings/070_authored_timestamps.md`
+
+## 078_page_setting_write
+
+A script cannot create a Page (HumanUser expected), a person can. settings_json writes only as a JSON string, reads back identical. DELETE on a PageSetting is 400: every created row is permanent. **[partial]**
+
+not measured: What the web interface draws for a person whose override the script wrote: needs a person at a browser. Blocked on the work.
+
+- **A Page needs a person.** A script's create is refused by name (`HumanUser(#...) expected, got ApiUser`).
+  Create as a person with `sudo_as_login`; `page_type` is read only and the server fills it (`canvas`),
+  along with a default tree copied from the type's default page.
+
+- **`settings_json` is written as a string and read as an object.** Send `json.dumps(tree)`. The server
+  validates nothing past "a string": a value with no widget tree is stored at 200, and a second shared
+  row on one page is accepted, so a writer can leave a page the web interface cannot draw.
+
+- **PageSetting rows cannot be deleted.** DELETE is 400 `doesn't respond to retirement`, and deleting the
+  Page leaves its rows behind with `page` reading null. On the probed site 26372 of 30145 PageSetting rows
+  have a null page (probe 023): that is where they come from.
+
+- This probe therefore clears `settings_json` to null on every row it leaves, and runs its row-creating
+  half only with `--litter`.
+
+- A person's override written by the script is stored and read back like one the web interface wrote.
+  Whether the web interface then draws it was not measured.
+
+- On the probed site each run left one PageSetting row, `page` null and `settings_json` null; the runs that
+  measured this finding left 7.
+
+`corpus/findings/078_page_setting_write.md`
+
+## 083_task_template_on_create
+
+A create with `task_template` makes the Tasks inside the same call, by `POST` and by `_batch`, copying every field set on the template tasks and their dependency types and offsets.
+
+| on the template task | on the generated Task |
+|---|---|
+| `content`, `step`, `sg_sort_order`, `sg_status_list` | copied |
+| `duration`, `est_in_mins`, `sg_description`, `milestone` | copied |
+| `task_assignees` | copied |
+| `start_date`, `due_date` | copied as the same calendar dates, not shifted |
+| a TaskDependency with `dependency_type` and `offset_days` | a new TaskDependency between the new Tasks, same type and offset |
+| the template task itself | `template_task` points at it |
+| `task_template` | null on the generated Task; the Shot holds it |
+| `project`, `entity` | the Shot's project, the Shot |
+
+- The Tasks exist before the 201 returns: a read straight after the create found all three, and one 5s
+  later found the same three. There is no background job to poll for.
+
+- The 201 body's `tasks` relationship is `[]` although the Tasks exist. Read them with
+  `["entity", "is", <the Shot>]` on `/entity/tasks/_search`, not off the create response.
+
+- `_batch` applies the template exactly as `POST` does. Recipe 002's rule still holds: the batch cannot
+  name the Tasks it generates, so read them back afterwards.
+
+- `entity_type` on the template is not checked: an `Asset` template on a Shot create generated its Task.
+
+- Dates copy verbatim. A template task dated in March makes a March Task on every entity, whatever day
+  it is created; schedule them afterwards (probe 087 for what a date write then moves).
+
+- Reapplying to a Shot that already has Tasks is probe 084.
+
+`corpus/findings/083_task_template_on_create.md`
+
+## 084_task_template_reapply
+
+Changing `task_template` on a Shot only adds: one Task per template task not yet linked by `template_task`. Nothing is removed or merged; a hand-made Task of the same content and step is duplicated.
+
+| on the Shot already | the new template's task | result |
+|---|---|---|
+| nothing | any | created |
+| a Task whose `template_task` is this template task | the same | skipped |
+| a Task made from another template, same `content` and `step` | this one | **created: a duplicate** |
+| a Task made from another template, same `content`, other `step` | this one | created |
+| a hand-made Task, same `content` and `step` | this one | **created: a duplicate** |
+| a Task from the old template the new one lacks | none | kept |
+
+- **The match key is `template_task`, not `content` and `step`.** A template task is skipped only when a
+  Task on the entity already points at it. Delete that Task and the next apply re-creates it.
+
+- **Nothing is ever removed.** Switching templates, and clearing the field, leave every Task in place,
+  statuses and all. A replace means the caller deletes the Tasks itself (probe 089 for what that breaks).
+
+- The apply runs only when the value changes. Sending the stored value again added nothing on Shot E
+  although a Task was missing; clear the field first, then set it, as Shot D did.
+
+- There is no mode. No body key, schema property or documented parameter selects keep, replace or merge.
+  To merge by `content` and `step`, point each matching Task's `template_task` at its template task
+  first, then write `task_template` (recipe 015_apply_task_template_without_duplicates).
+
+`corpus/findings/084_task_template_reapply.md`
+
+## 085_task_dependency_types
+
+TaskDependency takes four `dependency_type` values, default `finish-to-start-next-day`; `offset_days` counts working days and snaps the dependent both ways. `shift_ratio` moved nothing.
+
+| `dependency_type` | the dependent Task (`task`) is placed so that |
+|---|---|
+| `finish-to-start-next-day` | it starts the working day after `dependent_task` ends |
+| `start-to-start` | it starts the day `dependent_task` starts |
+| `finish-to-finish` | it ends the day `dependent_task` ends |
+| `start-to-finish-next-day` | it ends the working day before `dependent_task` starts |
+
+- **The field names read backwards.** `task` is the downstream Task and `dependent_task` is the one it
+  depends on: the row reads `Task <task> dependent on Task <dependent_task>`, and `task` gets
+  `dependent_task` in its `upstream_tasks`.
+
+- `offset_days` is working days on top of the type and may be negative: `finish-to-start-next-day` with 2 moved Monday
+  to Wednesday, with -1 it put a start on the upstream's Friday and its end on the next Monday.
+
+- **The dependent snaps to the constraint in both directions.** Every D started two weeks early and was
+  moved later; setting `offset_days` back to null moved a D earlier. It is placement, not a minimum.
+
+- `PUT` on a live row reschedules at once, so a type or offset can be corrected in place.
+
+- `shift_ratio` 0.5 was accepted with 201 and changed no date in any of the four types. Its effect is
+  unmeasured beyond that.
+
+- The server rejects a duplicate pair, a self-loop and a two-Task cycle with a 400; longer cycles are
+  unmeasured. `pinned` stayed false throughout (probe 087 for pinned Tasks).
+
+`corpus/findings/085_task_dependency_types.md`
+
+## 086_batch_tasks_with_dependencies
+
+Tasks and their dependencies take two `_batch` calls: create the Tasks, then create TaskDependency rows. `upstream_tasks` on a create links without rescheduling.
+
+| route | calls | dependency type | dependents scheduled |
+|---|---|---|---|
+| one batch with a placeholder id | 1 | n/a | 400, nothing created |
+| Task creates, then `TaskDependency` creates | 2 | any, with `offset_days` | **yes** |
+| Task creates, then `upstream_tasks` updates | 2 | `finish-to-start-next-day` only | yes |
+| level by level, `upstream_tasks` in the create body | one per level | `finish-to-start-next-day` only | **no** |
+
+- **A link made at create time does not schedule.** `upstream_tasks` in a create body, batched or not,
+  writes the TaskDependency row and leaves the dates as sent, with `dependency_violation` false. A later
+  write to another field does not fix them. Write the link as a separate update or row.
+
+- `"entity": "TaskDependency"` is a valid batch entity, so route 1 is the one that takes a type and an
+  offset: it is how to copy a template's edges (probe 085 for what each type does).
+
+- A loop in a dependency batch rolls the whole batch back like any other failure (recipe 002).
+
+- Recipe 016_create_tasks_with_dependencies is route 1 as code.
+
+`corpus/findings/086_batch_tasks_with_dependencies.md`
+
+## 087_dependency_cascade
+
+An upstream date write reschedules every unpinned downstream Task through the chain, later and earlier alike. A pinned Task stays put and flags `dependency_violation` while it is broken.
+
+| the downstream Task | after an upstream date write |
+|---|---|
+| unpinned, any depth | moved to satisfy its dependency, later or earlier, `duration` held |
+| `start-to-start` | follows the upstream start; untouched by a due date write |
+| `pinned` true | dates held; `dependency_violation` true while broken, false again once satisfied |
+| downstream of a pinned Task | follows the pinned Task, not the upstream end of the chain |
+
+- **The cascade pulls back as well as pushes.** Shortening the upstream moved d1 and d2 earlier. A Task
+  whose dates a person chose and did not pin is overwritten by any upstream write.
+
+- **Writing a dependent's own dates pins it.** The date `PUT` on d1 set `pinned` true (as
+  `entity_types/Task` found) and d2 followed d1 to a date before the upstream ends.
+
+- `PUT {"pinned": false}` reschedules at once: d1 snapped back behind the upstream and d2 with it.
+
+- `pinned` is writable directly, so a sync can protect a Task before it rewrites the upstream end.
+
+`corpus/findings/087_dependency_cascade.md`
+
+## 089_task_delete_side_effects
+
+Deleting a Task retires its TaskDependency rows, unlinks both neighbours without bridging them, and nulls `Version.sg_task` and `PublishedFile.task`. Revive restores all of it.
+
+| linked to the deleted Task | after `DELETE` | after revive |
+|---|---|---|
+| its TaskDependency rows | retired: 404 on `GET`, listed under `return_only: retired` | live again |
+| the upstream and downstream neighbours | unlinked from it; **not linked to each other** | relinked |
+| the neighbours' dates | unchanged | the chain rescheduled from the upstream's current dates |
+| `Version.sg_task` | `null`; the Version stays | the Task again |
+| `PublishedFile.task` | `null`; the file stays | the Task again |
+
+- **A PublishedFile loses its Task and nothing says so.** The file stays live with `task` null, so a
+  `["task", "is", ...]` query stops finding it and the publish reads as an orphan. Read what points
+  at a Task before deleting it; the 204 names nothing.
+
+- **The chain is cut, not bridged.** `c` stopped following `a`: moving `a` afterwards left `c` where it
+  was. A sync that removes a middle Task must write the `a -> c` dependency itself if it wants one.
+
+- Revive is a full undo on the links measured here: dependencies, `sg_task` and `task` all returned
+  with the same row ids. The revived chain is rescheduled at once, so its dates are not the ones it was
+  deleted with.
+
+- Deleting a Task retires only the Task and its dependency rows, unlike deleting a Shot, which retires
+  its Versions (probe 060).
+
+`corpus/findings/089_task_delete_side_effects.md`

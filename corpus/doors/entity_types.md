@@ -370,6 +370,22 @@ A Task is named by `content`, never `code`; a create needs only `project`; `star
 
 `corpus/findings/entity_types/Task.md`
 
+## TaskTemplate
+
+A template's tasks are ordinary Tasks with `task_template` set and `project` null; read them with `["task_template", "is", T]`. Deleting a template retires its tasks.
+
+- **`DELETE /entity/task_templates/<id>` retires the template's tasks.** A template task made for the
+  test answered 404 `Task: 47113 not found` after its template was deleted, and the 204 names nothing.
+
+- Filter on `task_template` to read a template, never on `project`: a template task has none, so a
+  project-scoped Task query never returns one.
+
+- `task_count` is a string. Compare it with `int()` or count the Tasks.
+
+- `entity_type` does not bind: probe 083 applied an `Asset` template to a Shot and it generated Tasks.
+
+`corpus/findings/entity_types/TaskTemplate.md`
+
 ## TimeLog
 
 A TimeLog create requires only `project`; `date` defaults to the server's today instead of failing, `entity` takes any type despite valid_types ['Task'], and a script may log for any HumanUser.

@@ -1,7 +1,7 @@
 """Regenerate corpus/INDEX.md and corpus/doors/ — the two cheap tiers, generated from the entries.
 
 The map is the file an agent is told to read first, so it names every entry, groups them the four ways
-a caller can already address them, and says which door to open. It is capped at 8 KiB by
+a caller can already address them, and says which door to open. It is capped at 10 KiB by
 `check_corpus.py`, because a map that grows with the corpus is a fixed cost every session pays before
 asking anything.
 
