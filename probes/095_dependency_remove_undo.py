@@ -6,8 +6,13 @@ An editor with undo removes an edge and must put back exactly what was there. Pr
 deleted Task revives with its dependency rows; this measures the edge on its own, by each route that
 removes one: `DELETE` the row, and a `remove` on `upstream_tasks` or `downstream_tasks`.
 
-Preconditions: none from an operator. The probe makes 1 Shot and 4 Tasks in the sandbox and deletes
-them. Writes only, behind --write.
+A control section asks what `dependency_violation` means for a Task placed later than its edge requires:
+a second upstream Task and four downstream ones dated well after it, one pinned and one unpinned per
+edge type (finish-to-finish +1, finish-to-start-next-day +2).
+
+Preconditions: none from an operator. The probe provisions every row it reads (1 Shot, 10 Tasks and
+their edges) and `_lib.Created` deletes them, failure included. Writes only, behind --write.
+Budget 60 s; wall time and call count are printed.
 """
 import json
 import sys
@@ -101,6 +106,28 @@ with _lib.Created(c) as made:
         rows.append(f"    rows {label}: live={out['active']}")
         rows.append(f"    {' ' * len(label)}   retired={out['retired']}")
 
+    # Control: a Task placed later than its edge requires, pinned and unpinned, per edge type.
+    rows.append("=== late control: u2 03-02..03-06; l1..l4 written 03-23..03-24, well after u2 ends")
+    late = {"u2": task("u2", "2026-03-02", "2026-03-06")}
+    LATE = (("l1", "finish-to-finish", 1, False), ("l2", "finish-to-finish", 1, True),
+            ("l3", "finish-to-start-next-day", 2, False), ("l4", "finish-to-start-next-day", 2, True))
+    for n, typ, off, pin in LATE:
+        late[n] = task(n, "2026-03-23", "2026-03-24")
+        if pin:
+            r = c.put(f"/entity/tasks/{late[n]}", json={"pinned": True})
+            rows.append(f"  PUT {n} pinned=true -> {r.status_code} {'' if r.ok else T.errs(r)}")
+    for n, typ, off, pin in LATE:
+        T.post(c, made, "task_dependencies", {"task": tref(late[n]), "dependent_task": tref(late["u2"]),
+                                              "dependency_type": typ, "offset_days": off})
+    got = {t["id"]: t["attributes"] for t in T.search(c, "tasks", [["id", "in", list(late.values())]],
+                                                       ["start_date", "due_date", "pinned",
+                                                        "dependency_violation"])}
+    for n, i in late.items():
+        a = got[i]
+        edge_s = next((f"{typ} {off:+d}" for m, typ, off, _ in LATE if m == n), "upstream")
+        rows.append(f"    {n:<2} {edge_s:<28} {a['start_date']}..{a['due_date']} pinned={a['pinned']} "
+                    f"violation={a['dependency_violation']}")
+
     rows.append(f"\n=== up={ids['up']} 03-02..03-06; d, g, e, f written 02-16..02-17")
     rows.append(f"    d on up finish-to-finish +1 row {dep['d']}; g finish-to-start-next-day +2 row {dep['g']}; "
                 f"e start-to-start +1 row {dep['e']}; f finish-to-start-next-day +2 row {dep['f']}")
@@ -112,7 +139,7 @@ with _lib.Created(c) as made:
     rows.append("\n=== remove")
     for n in "dg":
         r = c.delete(f"/entity/task_dependencies/{dep[n]}")
-        rows.append(f"  DELETE /entity/task_dependencies/{dep[n]} ({n}) -> {r.status_code} {r.text[:200]!r}")
+        rows.append(f"  DELETE /entity/task_dependencies/{dep[n]} ({n}) -> {r.status_code} {r.text!r}")
     r = c.put(f"/entity/tasks/{ids['e']}",
               json={"upstream_tasks": {"multi_entity_update_mode": "remove", "value": [U]}})
     rows.append(f"  PUT e upstream_tasks remove [up] -> {r.status_code} {'' if r.ok else T.errs(r)}")
@@ -164,9 +191,15 @@ with _lib.Created(c) as made:
             made.add("task_dependencies", x["id"])
 
 rows.append("\n=== left clean?")
-rows.append(f"  sandbox Tasks zzprobe_095*: "
-            f"{len(T.search(c, 'tasks', [['project', 'is', P], ['content', 'starts_with', 'zzprobe_095']], ['content']))}"
+dep_ids = [i for slug, i in made.rows if slug == "task_dependencies"]
+refs = [tref(i) for slug, i in made.rows if slug == "tasks"]
+rows.append(f"  Tasks zzprobe_095*: "
+            f"{len(T.search(c, 'tasks', [['content', 'starts_with', 'zzprobe_095']], ['content']))}"
             f"  Shots: {len(T.search(c, 'shots', [['project', 'is', P], ['code', 'starts_with', 'zzprobe_095']], ['code']))}")
+rows.append(f"  live TaskDependency rows the probe made or adopted ({len(dep_ids)}): "
+            f"{len(T.search(c, 'task_dependencies', [['id', 'in', dep_ids]], ['id']))}")
+rows.append(f"  live TaskDependency rows touching any of its {len(refs)} Tasks: "
+            f"{len({d['id'] for k in ('task', 'dependent_task') for d in T.search(c, 'task_dependencies', [[k, 'in', refs]], ['id'])})}")
 rows.append(f"\n=== run: {time.monotonic() - T0:.1f}s wall, {CALLS[0]} calls")
 
 _lib.emit("095_dependency_remove_undo", "\n".join(rows), env)

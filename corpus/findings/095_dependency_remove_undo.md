@@ -3,7 +3,7 @@ tags: [dependency, task, date, multi-entity, destructive]
 endpoints: [DELETE /entity/<type>/<id>, PUT /entity/<type>/<id>, POST /entity/<type>/<id>, POST /entity/<type>, POST /entity/<type>/_search, GET /entity/<type>/<id>, GET /schema/<Type>/fields]
 phase: write
 scope: api
-measured: sandbox project written, 1 Shot and 5 Tasks made and deleted; 23.5 s wall, 65 calls; no operator step
+measured: sandbox project written, 1 Shot, 10 Tasks and their edges; 32.9 s wall, 89 calls
 verdict: Remove an edge with `DELETE` on its TaskDependency row: revive restores its type and offset. A `remove` on `upstream_tasks` or `downstream_tasks` erases the row for good.
 ---
 
@@ -15,6 +15,9 @@ dates, `pinned` and `dependency_violation`, and can the edge be revived with its
 
 **Endpoint** `DELETE /entity/task_dependencies/<id> ; PUT /entity/tasks/<id> ; POST /entity/task_dependencies/<id>?revive=1 ; POST /entity/task_dependencies ; POST /entity/task_dependencies/_search`
 
+Provisioned by the probe, no operator step: it makes the Shot, the Tasks and every edge, and deletes
+them; a read-back after the run finds no Task, Shot or live TaskDependency row left.
+
 **Docs claim** Silent. The schema lists `upstream_tasks` and `downstream_tasks` as editable `multi_entity`
 fields and says nothing about the rows behind them.
 
@@ -22,6 +25,11 @@ fields and says nothing about the rows behind them.
 
 ```
 Task fields with valid_types Task: upstream_tasks, downstream_tasks (multi_entity, editable); sibling_tasks (not editable)
+late control: u2 03-02..03-06; l1..l4 written 03-23..03-24, l2 and l4 PUT pinned=true, then each edge POSTed
+  l1 finish-to-finish +1          -> 03-06..03-09 pinned=False violation=False   (pulled back)
+  l2 finish-to-finish +1          -> 03-23..03-24 pinned=True  violation=False
+  l3 finish-to-start-next-day +2  -> 03-11..03-12 pinned=False violation=False   (pulled back)
+  l4 finish-to-start-next-day +2  -> 03-23..03-24 pinned=True  violation=False
 up 03-02..03-06; d finish-to-finish +1, g finish-to-start-next-day +2, e start-to-start +1, f finish-to-start-next-day +2
 d written 02-23..02-24 -> pinned=True violation=True       g 03-11..03-12  e 03-03..03-04  f 03-11..03-12
 remove  DELETE row d -> 204, DELETE row g -> 204
@@ -64,5 +72,6 @@ revive g's old row beside its new one -> 400 "Revive failed for [TaskDependency 
 - Neither route restores the downstream Task's old dates. An unpinned Task snaps to the edge as
   measured against the upstream now (probe 085); an undo that wants the old dates writes them, and the `start_date` write pins the Task
   (probe 093).
-- In a first run, d pinned at 03-16..03-17, later than its finish-to-finish +1 allows, read
-  `dependency_violation` false. It flags a Task placed earlier than its edge allows, not one placed later.
+- An edge places an unpinned Task exactly, not at the earliest: l1 and l3, written late, were pulled
+  back to the edge. A pinned Task placed later than that reads `dependency_violation` false for both
+  types (l2, l4); only one placed earlier (d) reads true.
