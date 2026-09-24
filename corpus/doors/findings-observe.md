@@ -198,3 +198,35 @@ A Reply reaches every linked stream in 33 s as `create_reply`, creates too; a sc
 - `read_by_current_user` on the Note read `"unread"` for the script, a string, not a boolean.
 
 `corpus/findings/067_notes_in_the_stream.md`
+
+## 090_template_task_events
+
+A template-generated Task logs like a hand-made one plus a `template_task` change row, `in_create` true, credited to the caller. Filter `attribute_name` `template_task` to find them.
+
+| row | written for |
+|---|---|
+| `Shotgun_Task_New` + one `Shotgun_Task_Change` per set field | every generated Task, as for a hand-made one |
+| `Shotgun_Task_Change` `template_task`, `in_create` true | generated Tasks only |
+| `Shotgun_Task_Change` `upstream_tasks` / `downstream_tasks` | each end of a copied dependency |
+| `Shotgun_TaskDependency_New` + `task` + `dependent_task` Changes | each copied dependency |
+| `Shotgun_Shot_Change` `task_template` | the Shot, on create and on each change |
+| `Shotgun_Shot_Change` `tasks`, `in_create` true | the Shot, once per generated Task, on create and on reapply |
+
+- **The generated rows are credited to whoever wrote `task_template`.** `user` is the ApiUser and
+  `session_uuid` null, the same as the script's own writes (probe 049). Nothing marks them as the
+  server's work.
+
+- **`template_task` is the marker.** The hand-made Task logged no such row, since it leaves
+  `template_task` null, and `attribute_name` is filterable, so pair it with `entity` or `event_type` to list template-made Tasks.
+  `meta.new_value.id` names the template task each one came from.
+
+- `in_create` is true on the Shot's `tasks` row written during a reapply, although the Shot was not
+  being created: it follows the Task's create, so it cannot tell a create-time apply from a reapply.
+  The Shot's `task_template` row can: its `meta` has no `in_create` on the `PUT`.
+
+- One apply of a 2-task, 1-dependency template wrote 21 rows beyond the Shot's own 6: per Task 7 rows
+  plus one `tasks` row on the Shot, per dependency 3 rows plus one link row on each Task.
+
+- Server-set fields log too: `color` and `sg_status_list` were never sent and each has a row.
+
+`corpus/findings/090_template_task_events.md`
