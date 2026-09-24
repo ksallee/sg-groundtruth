@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _lib  # noqa: E402
 import _tasktpl as T  # noqa: E402
 
+T0 = time.monotonic()
 env = _lib.load_env()
 c = _lib.client()
 
@@ -28,8 +29,7 @@ def counted(method, path, **kw):
     return _request(method, path, **kw)
 
 
-c.request = counted
-T0 = time.monotonic()
+c.request = counted  # every call, Created's deletes included, goes through c.request
 rows = []
 if not _lib.writes_allowed():
     raise SystemExit("probe 100 writes; run with --write")
@@ -49,10 +49,11 @@ with _lib.Created(c) as made:
         return T.post(c, made, "tasks", {"project": P, "entity": sh, "content": f"zzprobe_100_{name}",
                                          "start_date": "2026-03-02", "due_date": "2026-03-03"})["id"]
 
-    # up -> down -> down2, a plain finish-to-start chain
-    ids = {n: task(n) for n in ("up", "down", "down2")}
+    # up -> down -> down2, a plain finish-to-start chain; solo has no edge (the unlinked control)
+    ids = {n: task(n) for n in ("up", "down", "down2", "solo")}
     dep(made, ids["down"], ids["up"])
     dep(made, ids["down2"], ids["down"])
+    deps = [i for slug, i in made.rows if slug == "task_dependencies"]
 
     def show(label):
         got = {t["attributes"]["content"][12:]: t["attributes"] for t in
@@ -64,7 +65,12 @@ with _lib.Created(c) as made:
             rows.append(f"    {n:<6} {a['start_date']}..{a['due_date']} dur={a['duration']:<5} "
                         f"pinned={a['pinned']!s:<5} violation={a['dependency_violation']}")
 
-    show("linked: up -FS-> down -FS-> down2, all 03-02..03-03 (dur=960)")
+    show("linked: up -FS-> down -FS-> down2, solo unlinked, all written 03-02..03-03 (dur=960)")
+
+    # 0. Control: duration alone on a Task with no edges. What does an unlinked Task do?
+    r = c.put(f"/entity/tasks/{ids['solo']}", json={"duration": 1920})
+    rows.append(f"\n  PUT solo duration=1920 (no edges) -> {r.status_code} {T.errs(r) if not r.ok else ''}")
+    show("after")
 
     # 1. Write duration alone on the dependent. Does it pin? What happens to its dates?
     r = c.put(f"/entity/tasks/{ids['down']}", json={"duration": 1920})
@@ -86,9 +92,17 @@ with _lib.Created(c) as made:
     rows.append(f"\n  PUT up duration=2880 (upstream, down unpinned) -> {r.status_code}")
     show("after")
 
+    # 5. Positive control: a date write on the dependent, same run. Does it pin?
+    r = c.put(f"/entity/tasks/{ids['down']}", json={"start_date": "2026-03-20"})
+    rows.append(f"\n  PUT down start_date=2026-03-20 (date write, positive control) -> {r.status_code}")
+    show("after")
+
 rows.append("\n=== left clean?")
 rows.append(f"  sandbox Tasks zzprobe_100*: "
             f"{len(T.search(c, 'tasks', [['project', 'is', P], ['content', 'starts_with', 'zzprobe_100']], ['content']))}")
+rows.append(f"  Shots zzprobe_100*: "
+            f"{len(T.search(c, 'shots', [['project', 'is', P], ['code', 'starts_with', 'zzprobe_100']], ['code']))}")
+rows.append(f"  live TaskDependency rows {deps}: {len(T.search(c, 'task_dependencies', [['id', 'in', deps]], ['id']))}")
 
 rows.append(f"\n  wall {time.monotonic() - T0:.1f} s, {CALLS[0]} calls (token fetch not counted)")
 _lib.emit("100_duration_write_pin", "\n".join(rows), env)
