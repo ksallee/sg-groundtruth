@@ -58,6 +58,8 @@ The same export addressed at one named view, needed when a page has several. A l
 
 - `048_one_record_beyond_crud` (findings) — POST on one record is revive, not update: `?revive=1` is required and the body is ignored. `/<field>` reads image and attachment fields only, and `relationships/<field>` is the same data, unpaged.  
   rules: `doors/findings-read`
+- `072_page_layouts` (findings) — A page's views are root settings.layouts [{name, display_name}], each name a child of the root. Query widgets sit at /body, inside a view, or in tabs: walk the tree, never read /body alone.  
+  rules: `doors/findings-read`
 
 **Silent on this call**
 

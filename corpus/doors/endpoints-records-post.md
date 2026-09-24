@@ -34,6 +34,8 @@ Every call in this family: what the card records, the edge cases that live on th
   rules: `doors/findings-write`
 - `070_authored_timestamps` (findings) — A create body sets created_at and updated_at and they read back exactly, on Note, Task and Version, though the schema flags both editable false; every PUT on either 400s.  
   rules: `doors/findings-write`
+- `078_page_setting_write` (findings) — A script cannot create a Page (HumanUser expected), a person can. settings_json writes only as a JSON string, reads back identical. DELETE on a PageSetting is 400: every created row is permanent.  
+  rules: `doors/findings-write`
 - `083_task_template_on_create` (findings) — A create with `task_template` makes the Tasks inside the same call, by `POST` and by `_batch`, copying every field set on the template tasks and their dependency types and offsets.  
   rules: `doors/findings-write`
 - `084_task_template_reapply` (findings) — Changing `task_template` on a Shot only adds: one Task per template task not yet linked by `template_task`. Nothing is removed or merged; a hand-made Task of the same content and step is duplicated.  

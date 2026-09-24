@@ -34,12 +34,18 @@ def convert(node, tokens):
     """The stored condition tree -> the `filters` value of an api3_hash _search."""
     if "conditions" in node:                   # a group holds leaves and sub-groups as siblings
         return {"logical_operator": node.get("logical_operator", "and"),
-                "conditions": [convert(child, tokens) for child in node["conditions"]]}
+                "conditions": [convert(child, tokens) for child in node["conditions"]
+                               if not unticked(child)]}
     values = [substitute(v, tokens) for v in (node.get("values") or [])]
     relation = node["relation"]
     # path, relation, values and nothing else: a leaf's `active` key is a 400.
     return [node["path"], relation,
             values if relation in LIST_RELATIONS else (values[0] if values else None)]
+
+
+def unticked(node):
+    """A leaf unticked in the filter panel is stored with `active` "false" and applies nothing (probe 074)."""
+    return "conditions" not in node and str(node.get("active", "true")).lower() == "false"
 
 
 def substitute(value, tokens):
@@ -49,7 +55,7 @@ def substitute(value, tokens):
     token = value.get("valid")
     if token in tokens:
         return tokens[token]
-    if token and token != "valid":
+    if token and token != "valid":             # `autocomplete` holds typed text and no id (probe 074)
         raise KeyError(f"no substitution for token {token!r}")
     return {"type": value["type"], "id": value["id"]}
 
@@ -76,12 +82,15 @@ def search(entity_type, filters, fields, sort=None, size=500):
         page += 1
 
 
-def summarize(entity_type, filters, field, aggregate):
-    r = c.post(f"/entity/{slug(entity_type)}/_summarize", headers=HASH,
-               json={"filters": filters, "summary_fields": [{"field": field, "type": aggregate}]})
+def summarize(entity_type, filters, field, aggregate, grouping=None):
+    body = {"filters": filters, "summary_fields": [{"field": field, "type": aggregate}]}
+    if grouping:
+        body["grouping"] = grouping
+    r = c.post(f"/entity/{slug(entity_type)}/_summarize", headers=HASH, json=body)
     if not r.ok:
         raise SystemExit(r.text)
-    return r.json()["data"]["summaries"][field]
+    data = r.json()["data"]
+    return data if grouping else data["summaries"][field]
 
 
 # ---- 1. resolve a query field --------------------------------------------------------------
@@ -145,6 +154,57 @@ print("columns ", q["columns"])
 rows = search(q["entity_type"], q["filters"], q["columns"], sort=q["sort"])
 print(len(rows), "rows;", summarize(q["entity_type"], q["filters"], "id", "record_count"), "by record_count")
 print(json.dumps(rows[0]))
+
+
+# ---- 3. resolve a query field for every row on screen, in one call (probe 080) ---------------
+
+PARENT = {"type": "__parent__", "id": 0}      # a marker convert() passes through untouched
+
+
+def widen(node, refs):
+    """The leaf naming the parent row -> one naming every row: `is` -> `in`, `is_not` -> `not_in`."""
+    if isinstance(node, dict):
+        return dict(node, conditions=[widen(x, refs) for x in node["conditions"]])
+    path, relation, value = node
+    if value == PARENT:
+        return [path, {"is": "in", "is_not": "not_in"}[relation], refs]
+    return node
+
+
+def parent_path(node):
+    if isinstance(node, dict):
+        return next((p for p in (parent_path(x) for x in node["conditions"]) if p), None)
+    return node[0] if node[2] == PARENT else None
+
+
+def resolve_query_field_rows(entity_type, field, row_ids):
+    """{row id: value} for an aggregating query field, grouped on the link. Not for single_record."""
+    props = c.get(f"/schema/{entity_type}/fields/{field}").json()["data"]["properties"]
+    query, aggregate = props["query"]["value"], props["summary_default"]["value"]
+    if aggregate == "single_record":
+        raise ValueError("single_record has no grouped form: resolve it one row at a time")
+    column = props["summary_field"]["value"]
+    tree = convert(query["filters"], {"parent_entity_token": PARENT})
+    data = summarize(query["entity_type"], widen(tree, [{"type": entity_type, "id": i} for i in row_ids]),
+                     column, aggregate,
+                     grouping=[{"field": parent_path(tree), "type": "exact", "direction": "asc"}])
+    out = dict.fromkeys(row_ids, 0 if aggregate in ("record_count", "count") else None)
+    for g in data["groups"]:
+        # A multi_entity link groups on the row's whole link list: credit every parent it names.
+        named = g["group_value"] if isinstance(g["group_value"], list) else [g["group_value"]]
+        for ref in named:
+            if isinstance(ref, dict) and ref.get("type") == entity_type and ref["id"] in out:
+                out[ref["id"]] = (out[ref["id"]] or 0) + g["summaries"][column]
+    return out
+
+
+shots = c.get("/entity/shots", params={"filter[project.Project.id]": 70, "fields": "open_notes_count",
+                                       "page[size]": 500}).json()["data"]
+values = resolve_query_field_rows("Shot", "open_notes_count", [s["id"] for s in shots])
+stored = {s["id"]: s["attributes"]["open_notes_count"] for s in shots}
+print(f"\n{len(shots)} Shots, one _summarize; equal to the stored field on "
+      f"{sum(1 for i in values if values[i] == stored[i])} of {len(values)}")
+print(dict(list(values.items())[:5]))
 ```
 
 ## Response
@@ -168,7 +228,13 @@ columns  ['image', 'sg_status_list', 'code', 'sg_sequence', 'description', 'crea
                              "related": "/api/v1/entity/sequences/23"}},
    "created_by":  {"data": {"id": 24, "name": "<user>", "type": "HumanUser"}, "links": {...}}},
  "id": 868, "links": {"self": "/api/v1/entity/shots/868"}}
+
+300 Shots, one _summarize; equal to the stored field on 300 of 300
+{862: 13, 863: 12, 864: 12, 865: 18, 866: 11}
 ```
+
+Section 3 took 821 ms for 300 Shots, the schema read included. One call per row costs ~290 ms each
+(probe 080).
 
 That page's stored tree, before translation, and the two controls it is checked against:
 
@@ -345,3 +411,19 @@ uncomputed. Resolve the hop first, then resolve the field on the row you land on
 lowercase, then pluralise. The `<Type>_<field>_Connection` names already hold an underscore and the
 naive rule doubles it, giving 404 `Entity type 'asset_linked_proj...' does not exist.` on 10 of the
 114 types here. Collapsing the pair makes all 114 answer 200.
+
+### Beyond `/body`
+
+`page_query` reads the one query widget at `children.body`. On the probed site that is 436 of 3468
+query widgets (probe 072). The others, and what else a runner has to decide:
+
+| case | where it is | what to do |
+|---|---|---|
+| several views | root `settings.layouts`, each `name` a root child (`layout_0`, ...) | walk that child's `rows`, `column_widgets`, `child_N/child` down to each EntityQueryPage (probe 072) |
+| tabs on a detail page | `SG.Widget.Tabs.settings.tab_order`, each `name` a child | the tab's query hangs off the detail row: supply `parent_entity_token`; its stored `type` can read `"Entity"` or the string `"None"`, so send the page's `entity_type` |
+| an unticked condition | a leaf with `active` `"false"` | dropped by `unticked()` above; kept, it narrows a site page to 0 rows (probe 074) |
+| a person's override | PageSetting rows with `user` set, `[{spec_path, settings}]` | merge along `spec_path`; their filters sit under the root's `filter_panel_filters` (probe 075) |
+| grouping, group counts, a status roll-up | `body.settings.grouping`, `list_content.settings.summaries` | one `_summarize` with the same `grouping` list; `status_list` for the roll-up, never `status_percentage` (probe 079) |
+| which pages exist | `Page` | list them as the person, `sudo_as_login`: the script does not see every page (probe 076) |
+| has the layout changed | `Page.updated_at` | PageSetting has no `updated_at` (probe 077) |
+| saving a layout | `PUT /entity/page_settings/<id>` | send `settings_json` as `json.dumps(tree)`; a PageSetting can never be deleted (probe 078) |

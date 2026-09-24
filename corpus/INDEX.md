@@ -18,17 +18,17 @@ An endpoint door holds the edge cases that live on the call and the verdict of e
 
 **protocol** 004_array_vs_hash, 028_loud_and_silent, 051_api_version, 062_cors
 
-**schema** 002_schema, 008_custom_entities, 009_status_lists, 019_create_fields, 040_field_revive, 042_spec_coverage, 047_site_facts_and_the_working_week, 056_stock_vs_custom_field, 061_shipped_statuses
+**schema** 002_schema, 008_custom_entities, 009_status_lists, 019_create_fields, 040_field_revive, 042_spec_coverage, 047_site_facts_and_the_working_week, 056_stock_vs_custom_field, 061_shipped_statuses, 091_status_summary_exclusions
 
-**read** 003_query, 005_link_usage, 006_pagination, 007_fill_rates, 018_project_listing, 021_media_resolution, 023_pages, 026_result_order, 048_one_record_beyond_crud, 059_dotted_path_type_check, 060_entity_dict_name, 064_hierarchy_expand_buckets, 088_project_template_defaults
+**read** 003_query, 005_link_usage, 006_pagination, 007_fill_rates, 018_project_listing, 021_media_resolution, 023_pages, 026_result_order, 048_one_record_beyond_crud, 059_dotted_path_type_check, 060_entity_dict_name, 064_hierarchy_expand_buckets, 072_page_layouts, 073_page_grid_settings, 075_page_overrides, 076_page_visibility, 081_dotted_image, 082_page_size_cap, 088_project_template_defaults
 
-**filter** 016_dotted_multi_entity, 017_filter_operators, 020_summarize, 030_complex_filters, 046_search_without_a_path, 053_text_search_matching, 063_text_search_filter_shape, 068_note_read_state, 071_note_link_name_filter
+**filter** 016_dotted_multi_entity, 017_filter_operators, 020_summarize, 030_complex_filters, 046_search_without_a_path, 053_text_search_matching, 063_text_search_filter_shape, 068_note_read_state, 071_note_link_name_filter, 074_page_filter_coverage, 079_summarize_multi_grouping, 080_query_field_cost
 
-**write** 011_create_project, 012_create_version, 024_read_after_write, 045_webhooks, 050_webhook_subscriptions, 058_local_storage_roots, 069_client_note, 070_authored_timestamps, 083_task_template_on_create, 084_task_template_reapply, 085_task_dependency_types, 086_batch_tasks_with_dependencies, 087_dependency_cascade, 089_task_delete_side_effects
+**write** 011_create_project, 012_create_version, 024_read_after_write, 045_webhooks, 050_webhook_subscriptions, 058_local_storage_roots, 069_client_note, 070_authored_timestamps, 078_page_setting_write, 083_task_template_on_create, 084_task_template_reapply, 085_task_dependency_types, 086_batch_tasks_with_dependencies, 087_dependency_cascade, 089_task_delete_side_effects
 
 **upload** 013_upload_media, 014_attach_file, 022_sequence_on_version, 039_upload_silent_failures, 044_multipart_upload
 
-**observe** 025_event_log, 043_attention, 049_script_events, 066_user_feed, 067_notes_in_the_stream, 090_template_task_events
+**observe** 025_event_log, 043_attention, 049_script_events, 066_user_feed, 067_notes_in_the_stream, 077_page_change_stamps, 090_template_task_events
 
 **render** 010_status_icons
 

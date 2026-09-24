@@ -35,6 +35,8 @@ Updates and returns the whole record, 77 attribute keys for a Shot. A key left o
   rules: `doors/findings-write`
 - `070_authored_timestamps` (findings) — A create body sets created_at and updated_at and they read back exactly, on Note, Task and Version, though the schema flags both editable false; every PUT on either 400s.  
   rules: `doors/findings-write`
+- `078_page_setting_write` (findings) — A script cannot create a Page (HumanUser expected), a person can. settings_json writes only as a JSON string, reads back identical. DELETE on a PageSetting is 400: every created row is permanent.  
+  rules: `doors/findings-write`
 - `084_task_template_reapply` (findings) — Changing `task_template` on a Shot only adds: one Task per template task not yet linked by `template_task`. Nothing is removed or merged; a hand-made Task of the same content and step is duplicated.  
   rules: `doors/findings-write`
 - `085_task_dependency_types` (findings) — TaskDependency takes four `dependency_type` values, default `finish-to-start-next-day`; `offset_days` counts working days and snaps the dependent both ways. `shift_ratio` moved nothing.  
