@@ -116,6 +116,8 @@ The only way to send a filter the query string cannot express, and it refuses `a
   rules: `doors/findings-write`
 - `112_template_unmerge_linked_twice` (findings) — Undo relinking two Tasks to one template task: A wires either one (11 of 14 picked the loser), nothing is made. Relink the loser after the task_template write: then it matches the one-link undo.  
   rules: `doors/findings-write`
+- `113_batch_atomic_after_template_write` (findings) — A `_batch` holding a `task_template` apply is atomic: a later or earlier failing request left no Task, no claim, no field write, no edge and no EventLogEntry row.  
+  rules: `doors/findings-write`
 - `014_attach_file` (findings) — Leave the field out of the _upload path and the file is stored as an Attachment on attachment_links; read it back with POST /entity/attachments/_search, never flat filter[].  
   rules: `doors/findings-upload`
 - `025_event_log` (findings) — meta.old_value and meta.new_value answer "what was this before", but meta is unfilterable and unsortable: narrow on entity, event_type and attribute_name, sort -id, read meta yourself.  

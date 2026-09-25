@@ -58,6 +58,8 @@ Retires a row at 204 with an empty body. It is not erased: the row reads 404 nor
   rules: `doors/findings-write`
 - `112_template_unmerge_linked_twice` (findings) — Undo relinking two Tasks to one template task: A wires either one (11 of 14 picked the loser), nothing is made. Relink the loser after the task_template write: then it matches the one-link undo.  
   rules: `doors/findings-write`
+- `113_batch_atomic_after_template_write` (findings) — A `_batch` holding a `task_template` apply is atomic: a later or earlier failing request left no Task, no claim, no field write, no edge and no EventLogEntry row.  
+  rules: `doors/findings-write`
 - `025_event_log` (findings) — meta.old_value and meta.new_value answer "what was this before", but meta is unfilterable and unsortable: narrow on entity, event_type and attribute_name, sort -id, read meta yourself.  
   rules: `doors/findings-observe`
 - `049_script_events` (findings) — A script's writes reach the event log only while its ApiUser has generate_event_log_entries True. The default is False and nothing errors when off. One create logs one row per field plus one _New.  

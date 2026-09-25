@@ -129,6 +129,8 @@ One row, and the only read where `fields` is honoured on a single record. A reti
   rules: `doors/findings-write`
 - `111_template_undo_outside_edge` (findings) — An undo's write back to template A erases every edge whose downstream Task is A-linked and that A lacks, pre-merge edges included; recipe 022 DELETEs one such edge, 404s and rolls back.  
   rules: `doors/findings-write`
+- `113_batch_atomic_after_template_write` (findings) — A `_batch` holding a `task_template` apply is atomic: a later or earlier failing request left no Task, no claim, no field write, no edge and no EventLogEntry row.  
+  rules: `doors/findings-write`
 - `003_query_fields_and_pages` (recipes) — Resolve a query field's value, and run the rows a saved Page shows  
   rules: `doors/recipes`
 - `005_propagate_status` (recipes) — Roll a status up from a parent's Tasks and Versions onto the parent, without racing a concurrent write  

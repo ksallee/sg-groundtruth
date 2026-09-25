@@ -59,7 +59,10 @@ Apply many creates, updates and deletes in one atomic call, and match the result
   | `create` with `sg_not_a_field` | 400 `Invalid field value, update failed [2 - Invalid field name: field [Version.sg_not_a_field] does not exist or user does not have access permission.]` | 0 rows created, `description` still `before` |
   | `create` with `sg_status_list: not_a_status` | 400 `Invalid field value, update failed [5 - Update failed for [Version.sg_status_list]: 'not_a_status' is not a valid status. Valid statuses: 'na', 'rev', 'vwd', 'apr', 'custom', 'fin', 'ip', 'clsd', 'cmpt', 'cfrm', 'pndad', 'pndl', 'pndvs', 'part', 'pass', 'pndng'.]` | 0 rows created, `description` still `before` |
 
-  The rollback is the reason to use the endpoint. A timeout is not covered by it: see the size note.
+  | `create` `TaskDependency` naming a retired Task, after a `task_template` apply in the same batch | 400 `Invalid field value, update failed [5 - Update failed for [TaskDependency.dependent_task]: Value is not legal.]` | no Task made, no claim, `task_template` unchanged, no EventLogEntry row (probe 113) |
+
+  The rollback covers the server-side work a request triggers, a template apply's Tasks and edges
+  included, and the event log. The rollback is the reason to use the endpoint. A timeout is not covered by it: see the size note.
 
 - **A batch create skips the validation a single create applies, and the row it makes is unreadable.**
   `POST /entity/versions` with no `project` is 400 `API create() missing 'project' attribute: {"code" => "v001"}`.
@@ -824,6 +827,10 @@ Apply a task template to an entity that already has Tasks, without duplicates, i
 
 - As in recipe 015, at most one Task per template task may be linked before the batch: with two, the
   apply re-syncs and wires the server's pick (probe 106).
+
+- A request appended to the batch (a field write-back, a re-created edge) that fails takes the apply
+  down with it. A `TaskDependency` naming a Task deleted since the plan was read is 400
+  `Update failed for [TaskDependency.dependent_task]: Value is not legal.`: re-read both ends first.
 
 - Keep the batch inside the size window of recipe 002 when an entity holds hundreds of Tasks.
 

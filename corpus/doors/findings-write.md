@@ -738,7 +738,7 @@ Recipe 015's merge fits one `_batch`: requests run in order, so a `task_template
   template's edge was written onto the claimed hand-made Task in both.
 
 - One call instead of three, and atomic: a failing claim rolls the clear and the set back with it
-  (recipe 002). Recipe 020 is this as code.
+  (recipe 002), and a request failing after the set rolls back the apply's Tasks and edges (probe 113). Recipe 020 is this as code.
 
 `corpus/findings/098_template_merge_in_one_batch.md`
 
@@ -1072,3 +1072,21 @@ Undo relinking two Tasks to one template task: A wires either one (11 of 14 pick
   on a Task outside B (probe 109), and A's apply recreates it with a new id. Every other id is kept.
 
 `corpus/findings/112_template_unmerge_linked_twice.md`
+
+## 113_batch_atomic_after_template_write
+
+A `_batch` holding a `task_template` apply is atomic: a later or earlier failing request left no Task, no claim, no field write, no edge and no EventLogEntry row.
+
+- **The apply rolls back with the batch.** Wherever the failing request sits, a failed batch leaves no
+  claim, no `task_template` change, no generated Task or edge and no field write, and writes no
+  EventLogEntry row. Recipe 002's rollback holds for server-side work.
+
+- An EventLogEntry row showing an apply means a request that committed. A failed batch did not write
+  it; look for a second call (recipe 020 is one batch; any after-apply step is another).
+
+- A `TaskDependency` create naming a retired Task is 400 `Value is not legal.` and takes the batch down.
+  Re-read both ends before re-creating an edge.
+
+- The script key is shared: filter the log on your own rows, as other writers land in the same window.
+
+`corpus/findings/113_batch_atomic_after_template_write.md`
