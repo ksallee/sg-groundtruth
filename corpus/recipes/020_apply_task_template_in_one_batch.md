@@ -10,7 +10,8 @@ measured: sandbox project written, 1 template and 5 Shots made and deleted; 30.3
 
 Recipe 015 as a single `_batch`. The requests run in order, so the `template_task` claims land before
 the `task_template` write reads them, and a `null` then the template on the same entity re-runs the
-apply (probe 098). Nothing lands if any request fails (recipe 002).
+apply (probe 098). Nothing lands if any request fails, the apply's Tasks, edges and event log rows
+included, wherever the failing request sits (recipe 002, probe 113).
 
 ## Call
 
@@ -86,4 +87,7 @@ Shot with a, b unlinked: 2 claimed, no new Task, 1 dependency
 - The key caveat of recipe 015 stands: two Tasks with the same `content` and `step` leave one unclaimed.
 - As in recipe 015, at most one Task per template task may be linked before the batch: with two, the
   apply re-syncs and wires the server's pick (probe 106).
+- A request appended to the batch (a field write-back, a re-created edge) that fails takes the apply
+  down with it. A `TaskDependency` naming a Task deleted since the plan was read is 400
+  `Update failed for [TaskDependency.dependent_task]: Value is not legal.`: re-read both ends first.
 - Keep the batch inside the size window of recipe 002 when an entity holds hundreds of Tasks.
