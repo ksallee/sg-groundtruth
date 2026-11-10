@@ -81,6 +81,8 @@ Every field on one type with its `data_type`, `editable` and `mandatory`. The ex
   rules: `doors/findings-schema`
 - `061_shipped_statuses` (findings) — Nothing in the schema marks a shipped Status. `system` is true on a minority of them; the stock set is `created_by is null`, plus `options[return_only]=retired` for the rows a site retired.  
   rules: `doors/findings-schema`
+- `114_schema_admin_recheck` (findings) — On 2026-11-10 /spec.json names calls to enable, disable and configure a custom entity, all 400 code 111 on the probed site. No call deletes a trashed field forever or writes hidden_values.  
+  rules: `doors/findings-schema`
 - `007_fill_rates` (findings) — On the sample project 30 of 71 Version fields are populated. Rank by fill rate, but drop checkbox, summary and computed fields first: False and 0 are not null and read as 100% filled.  
   rules: `doors/findings-read`
 - `023_pages` (findings) — A page's layout is the PageSetting row whose user is null; settings_json reads back as decoded JSON and body/list_content settings.columns is the column list. Every filter on it is ignored.  
@@ -221,11 +223,17 @@ Revive a retired field, at 204. It is the only way to get a burnt name back, and
 - The revived field keeps its **original** `data_type`. A name burnt as `text` cannot come back as
   `number`, and the `PUT` that would change it is a 200 that does nothing.
 
-- The API named this parameter itself, in the 400 for an empty body. Nothing in the documentation does.
+- The API named this parameter itself, in the 400 for an empty body. `/spec.json` documents the call
+  as of 2026-11-10, with `revive` as a query parameter. The published reference does not.
+
+- It has no opposite. `{"revive": false}` and every delete-forever spelling tried are refused, so a
+  trashed name is freed only from the Trash page in the web interface (probe 114).
 
 **Measured by**
 
 - `040_field_revive` (findings) — A trashed field is revived by POST /schema/<Type>/fields/<name> with {"revive": true} at 204, but it returns at its original data_type, and a PUT changing data_type is a 200 that does nothing.  
+  rules: `doors/findings-schema`
+- `114_schema_admin_recheck` (findings) — On 2026-11-10 /spec.json names calls to enable, disable and configure a custom entity, all 400 code 111 on the probed site. No call deletes a trashed field forever or writes hidden_values.  
   rules: `doors/findings-schema`
 
 **Silent on this call**
@@ -242,6 +250,11 @@ Changes a field's properties. A body changing `data_type` is a 200 that does not
   unchanged. This is the sharpest case of the general rule that a 200 from this API proves the request
   parsed, not that it happened.
 
+- A property the update does not take is a 400 that lists the ones it does. For `hidden_values` on a
+  status field the list was `name`, `visible`, `description`, `summary_default`, `default_value`,
+  `valid_values`, `custom_metadata`, with or without `project_id` (probe 114). `hidden_values` cannot
+  be written over REST.
+
 - Renaming changes the display name only. The programmatic name is fixed at creation, and a rename does
   not free the old one for reuse.
 
@@ -250,6 +263,8 @@ Changes a field's properties. A body changing `data_type` is a 200 that does not
 - `040_field_revive` (findings) — A trashed field is revived by POST /schema/<Type>/fields/<name> with {"revive": true} at 204, but it returns at its original data_type, and a PUT changing data_type is a 200 that does nothing.  
   rules: `doors/findings-schema`
 - `091_status_summary_exclusions` (findings) — Excluded statuses are invisible to REST: not in /schema at any scope, not writable by PUT. status_list honours them: fin plus an excluded omt rolls up to fin, omt alone to na.  
+  rules: `doors/findings-schema`
+- `114_schema_admin_recheck` (findings) — On 2026-11-10 /spec.json names calls to enable, disable and configure a custom entity, all 400 code 111 on the probed site. No call deletes a trashed field forever or writes hidden_values.  
   rules: `doors/findings-schema`
 
 **Silent on this call**
@@ -279,6 +294,8 @@ Retires a field at 204 and burns its programmatic name forever: the same name wi
 - `019_create_fields` (findings) — Custom fields are creatable over REST, but you pass a display name and a duplicate silently becomes <name>_1: an idempotent ensure() must read /schema first, never POST-and-hope.  
   rules: `doors/findings-schema`
 - `040_field_revive` (findings) — A trashed field is revived by POST /schema/<Type>/fields/<name> with {"revive": true} at 204, but it returns at its original data_type, and a PUT changing data_type is a 200 that does nothing.  
+  rules: `doors/findings-schema`
+- `114_schema_admin_recheck` (findings) — On 2026-11-10 /spec.json names calls to enable, disable and configure a custom entity, all 400 code 111 on the probed site. No call deletes a trashed field forever or writes hidden_values.  
   rules: `doors/findings-schema`
 - `006_duplicate_field_name_is_201` (reports) — Creating a custom field whose display name is taken answers 201 for a suffixed field instead of a conflict, and every retry burns a programmatic name no REST call frees.  
   rules: `doors/reports`

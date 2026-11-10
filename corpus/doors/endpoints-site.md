@@ -56,6 +56,67 @@ The only place the unit behind a `duration` field is named. `prefs` narrows it t
 
 `corpus/endpoints/get_preferences.md`
 
+## `PUT /preferences/custom_entity/<entity_type>/activation` **[partial]**
+
+Enables or disables a custom entity slot, per /spec.json. On the probed site every call answered 400 code 111 `Custom entity configuration through the API is not available`.
+
+not measured: the success path. The probed site answers 400 code 111 to every body, so the request and response shapes are /spec.json's and unverified. Blocked on the site.
+
+- The 400 precedes validation. A type that does not exist and a body with no keys get the same answer
+  as a complete request, so the error says nothing about the slot or the body.
+
+- The spec says disabling a slot makes its records unreachable through the web interface and the API,
+  and leaves link fields that point at them as broken references. It refuses a slot with live records
+  unless `force` is `true`.
+
+- No success was attempted on a real slot. A site where this call is available changes its schema for
+  every user when it succeeds.
+
+**Measured by**
+
+- `114_schema_admin_recheck` (findings) — On 2026-11-10 /spec.json names calls to enable, disable and configure a custom entity, all 400 code 111 on the probed site. No call deletes a trashed field forever or writes hidden_values.  
+  rules: `doors/findings-schema`
+
+`corpus/endpoints/put_preferences_custom_entity_entity_type_activation.md`
+
+## `GET /preferences/custom_entity/<entity_type>/configuration` **[partial]**
+
+Reads one custom entity slot's enabled state, display name and feature flags, per /spec.json. On the probed site every type answered 400 code 111.
+
+not measured: the success path. The probed site answers 400 code 111 for every type, so the response shape is /spec.json's and unverified. Blocked on the site.
+
+- On the probed site an enabled slot, a slot absent from `GET /schema`, `Shot` and a type that does not
+  exist all answered the same 400. The refusal precedes any look at the type.
+
+- `entity_config` in the spec holds six booleans: `enable_tasks`, `enable_versions`,
+  `enable_publishes`, `enable_detail_page`, `include_in_search`, `include_in_global_menu`.
+
+- Until this answers 200, read which slots are enabled from `GET /schema` (probe 008).
+
+**Measured by**
+
+- `114_schema_admin_recheck` (findings) — On 2026-11-10 /spec.json names calls to enable, disable and configure a custom entity, all 400 code 111 on the probed site. No call deletes a trashed field forever or writes hidden_values.  
+  rules: `doors/findings-schema`
+
+`corpus/endpoints/get_preferences_custom_entity_entity_type_configuration.md`
+
+## `PUT /preferences/custom_entity/<entity_type>/configuration` **[partial]**
+
+Sets an enabled custom entity slot's display name and feature flags, per /spec.json. On the probed site every call answered 400 code 111.
+
+not measured: the success path. The probed site answers 400 code 111 to every body, so the request and response shapes are /spec.json's and unverified. Blocked on the site.
+
+- It does not enable a slot. The spec sends that to the `/activation` call.
+
+- Only bodies with no keys were sent, so a site where the call is available would have changed nothing.
+
+**Measured by**
+
+- `114_schema_admin_recheck` (findings) — On 2026-11-10 /spec.json names calls to enable, disable and configure a custom entity, all 400 code 111 on the probed site. No call deletes a trashed field forever or writes hidden_values.  
+  rules: `doors/findings-schema`
+
+`corpus/endpoints/put_preferences_custom_entity_entity_type_configuration.md`
+
 ## `PUT /preferences/update`
 
 Enables a custom entity slot and nothing else. On the probed site every body, valid or not, answered 400 code 111 `Updating the preferences is not available`, so the shape stays unverified.
@@ -74,12 +135,18 @@ Enables a custom entity slot and nothing else. On the probed site every body, va
 - The refusal is a 400, not a 403. Whatever gates this call, it is not reported as an authorisation
   failure, so retrying with different credentials is not indicated by the response.
 
+- `/spec.json` has since gained `PUT /preferences/custom_entity/<entity_type>/activation`, which both
+  enables and disables a slot. On 2026-11-10 it was refused on the probed site as well, and this call
+  still answered the same 400, to `disable_entity` too (probe 114).
+
 - Enabling a slot is site configuration. Read which slots are already enabled with
   `PYTHONPATH=src python -m sg_groundtruth.schema entities --custom` rather than probing for them.
 
 **Measured by**
 
 - `047_site_facts_and_the_working_week` (findings) — Three site-fact calls, three different envelopes: `{data, status}`, a bare hash, and JSON:API. Only `/schedule/work_day_rules` reports a bad scope id, and it reports it as a 200.  
+  rules: `doors/findings-schema`
+- `114_schema_admin_recheck` (findings) — On 2026-11-10 /spec.json names calls to enable, disable and configure a custom entity, all 400 code 111 on the probed site. No call deletes a trashed field forever or writes hidden_values.  
   rules: `doors/findings-schema`
 
 **Silent on this call**
