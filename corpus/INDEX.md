@@ -18,7 +18,7 @@ An endpoint door holds the edge cases that live on the call and the verdict of e
 
 **protocol** 004_array_vs_hash, 028_loud_and_silent, 051_api_version, 062_cors
 
-**schema** 002_schema, 008_custom_entities, 009_status_lists, 019_create_fields, 040_field_revive, 042_spec_coverage, 047_site_facts_and_the_working_week, 056_stock_vs_custom_field, 061_shipped_statuses, 091_status_summary_exclusions
+**schema** 002_schema, 008_custom_entities, 009_status_lists, 019_create_fields, 040_field_revive, 042_spec_coverage, 047_site_facts_and_the_working_week, 056_stock_vs_custom_field, 061_shipped_statuses, 091_status_summary_exclusions, 114_schema_admin_recheck
 
 **read** 003_query, 005_link_usage, 006_pagination, 007_fill_rates, 018_project_listing, 021_media_resolution, 023_pages, 026_result_order, 048_one_record_beyond_crud, 059_dotted_path_type_check, 060_entity_dict_name, 064_hierarchy_expand_buckets, 072_page_layouts, 073_page_grid_settings, 075_page_overrides, 076_page_visibility, 081_dotted_image, 082_page_size_cap, 088_project_template_defaults
 
@@ -68,7 +68,7 @@ Asset, Attachment, Cut, CutItem, Delivery, HumanUser, LocalStorage, Note, Playli
 
 ## Endpoints
 
-One card per call, 63 of 69 with an entry behind them; a card with none is the queue. A family's door is `doors/endpoints-<family>.md`, in lower case.
+One card per call, 66 of 72 with an entry behind them; a card with none is the queue. A family's door is `doors/endpoints-<family>.md`, in lower case.
 
 **Session**
 
@@ -84,6 +84,9 @@ PUT /internal_api/app_session_request/<sessionRequestId>
 ```
 GET /license_info
 GET /preferences
+PUT /preferences/custom_entity/<entity_type>/activation
+GET /preferences/custom_entity/<entity_type>/configuration
+PUT /preferences/custom_entity/<entity_type>/configuration
 PUT /preferences/update
 GET /schedule/work_day_rules
 PUT /schedule/work_day_rules
@@ -197,4 +200,4 @@ POST /internal_api/session
 
 `doors/tags.md` holds the entries under each.
 
-async attachment auth batch browser cache client colour cors cost create custom-entity custom-field cut date delivery dependency destructive discovery dotted-field duration entity-field enumeration error-handling etag event-log fill-rate filter follow header icon image inspector jsonb launcher link list-field media multi-entity multipart note number observe operator page paging path permission pivot-column playlist project protocol provenance published-file query read-only reply schema sequence serializable shot silent sort status step storage sudo summary task task-template timecode token transcode trap upload url user version webhook write
+async attachment auth batch browser cache client colour cors cost create custom-entity custom-field cut date delivery dependency destructive discovery dotted-field duration entity-field enumeration error-handling etag event-log fill-rate filter follow header icon image inspector jsonb launcher link list-field media multi-entity multipart note number observe operator page paging path permission pivot-column playlist project protocol provenance published-file query read-only reply schema sequence serializable shot silent sort status status-list step storage sudo summary task task-template timecode token transcode trap upload url user version webhook write

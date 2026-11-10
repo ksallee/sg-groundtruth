@@ -149,6 +149,10 @@ writes to a field that is not the one you asked for.
 - The two upload steps with no operation in the spec are correct as they stand: `links.upload` is a
   presigned storage URL and is not a route on this API at all.
 
+- The document changes without notice. On 2026-11-10 the same call returned 49 paths and 68
+  operations: three under `/preferences/custom_entity` (probe 114) and three under
+  `/schema/permission_groups`, none of them in a release note.
+
 - 191KB is too large to hand an agent. `probes/042_spec_coverage.py` prints the difference between the
   spec and `corpus/endpoints/`, which is the only part that changes.
 
@@ -308,3 +312,19 @@ not measured: status_list with the exclusion removed on the same rows: the setti
 - `status_percentage` returned 0 on every set here and is not a share of anything (probe 079).
 
 `corpus/findings/091_status_summary_exclusions.md`
+
+## 114_schema_admin_recheck
+
+On 2026-11-10 /spec.json names calls to enable, disable and configure a custom entity, all 400 code 111 on the probed site. No call deletes a trashed field forever or writes hidden_values. **[partial]**
+
+not measured: a custom entity call that succeeds. The probed site answers 400 code 111 to all three, so the bodies and responses in /spec.json are unverified. Blocked on the site.
+
+| do | why |
+|---|---|
+| Read `/spec.json` after a release | it named three calls that no release note or reference page mentioned |
+| Treat 400 code 111 from a custom entity call as "not available on this site" | it precedes validation, so it says nothing about the body or the slot |
+| Keep sending users to the web interface to enable a slot or empty the field trash | neither can be done over REST on the probed site |
+| Send `revive` in the query or in the body | both are a 204 |
+| Do not write `hidden_values` | the update lists its seven valid property names and it is not one |
+
+`corpus/findings/114_schema_admin_recheck.md`
