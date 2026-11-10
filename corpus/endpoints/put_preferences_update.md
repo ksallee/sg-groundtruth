@@ -82,12 +82,17 @@ On the probed site all six bodies tried, from `{}` to a complete one, answered t
   with a populated `source`. Read `code`, not the status.
 - The refusal is a 400, not a 403. Whatever gates this call, it is not reported as an authorisation
   failure, so retrying with different credentials is not indicated by the response.
+- `/spec.json` has since gained `PUT /preferences/custom_entity/<entity_type>/activation`, which both
+  enables and disables a slot. On 2026-11-10 it was refused on the probed site as well, and this call
+  still answered the same 400, to `disable_entity` too (probe 114).
 - Enabling a slot is site configuration. Read which slots are already enabled with
   `PYTHONPATH=src python -m sg_groundtruth.schema entities --custom` rather than probing for them.
 
 **Links**
 
 - `endpoints/get_preferences`
+- `endpoints/put_preferences_custom_entity_entity_type_activation`
+- `findings/114_schema_admin_recheck`
 - `endpoints/get_schema`
 - `findings/008_custom_entities`
 - `findings/047_site_facts_and_the_working_week`

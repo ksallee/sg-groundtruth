@@ -18,7 +18,7 @@ back.
 | part | value |
 |---|---|
 | `<field>` | the retired programmatic name |
-| `revive` | `true`. The only key, and it is required |
+| `revive` | `true`, required. In the JSON body or in the query: both are a 204 (probe 114) |
 
 **Sample requests**
 
@@ -49,12 +49,16 @@ r = c.post("/schema/Version/fields/sg_zzprobe_040_revive", json={})
 |---|---|
 | 204 | revived, empty body |
 | 400 | `source: {"revive": ["revive is missing"]}` on a body without it |
+| 400 | `source: {"revive": ["revive must be true"]}` on `{"revive": false}` |
 
 **Edge cases**
 
 - The revived field keeps its **original** `data_type`. A name burnt as `text` cannot come back as
   `number`, and the `PUT` that would change it is a 200 that does nothing.
-- The API named this parameter itself, in the 400 for an empty body. Nothing in the documentation does.
+- The API named this parameter itself, in the 400 for an empty body. `/spec.json` documents the call
+  as of 2026-11-10, with `revive` as a query parameter. The published reference does not.
+- It has no opposite. `{"revive": false}` and every delete-forever spelling tried are refused, so a
+  trashed name is freed only from the Trash page in the web interface (probe 114).
 
 **Links**
 

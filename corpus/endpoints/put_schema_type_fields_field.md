@@ -45,6 +45,10 @@ c.get("/schema/Version/fields/sg_zzprobe_040_revive").json()["data"]["data_type"
 - `data_type` is immutable and the API does not say so. The write answers 200 and the value is
   unchanged. This is the sharpest case of the general rule that a 200 from this API proves the request
   parsed, not that it happened.
+- A property the update does not take is a 400 that lists the ones it does. For `hidden_values` on a
+  status field the list was `name`, `visible`, `description`, `summary_default`, `default_value`,
+  `valid_values`, `custom_metadata`, with or without `project_id` (probe 114). `hidden_values` cannot
+  be written over REST.
 - Renaming changes the display name only. The programmatic name is fixed at creation, and a rename does
   not free the old one for reuse.
 

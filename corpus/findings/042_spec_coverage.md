@@ -55,5 +55,8 @@ cards with no operation in the spec: PUT <links.upload>, POST <links.complete_up
   `api_version` in the root document and the prefix each echoes in its own `links`.
 - The two upload steps with no operation in the spec are correct as they stand: `links.upload` is a
   presigned storage URL and is not a route on this API at all.
+- The document changes without notice. On 2026-11-10 the same call returned 49 paths and 68
+  operations: three under `/preferences/custom_entity` (probe 114) and three under
+  `/schema/permission_groups`, none of them in a release note.
 - 191KB is too large to hand an agent. `probes/042_spec_coverage.py` prints the difference between the
   spec and `corpus/endpoints/`, which is the only part that changes.
