@@ -81,6 +81,8 @@ Revive a retired field, at 204. It is the only way to get a burnt name back, and
   rules: `doors/findings-schema`
 - `119_field_absent_retired_live` (findings) — Revive is 204 only on a retired field: 404 `Retired field ... does not exist.` on an unused name, 400 `... is not retired.` on a live one. A retired field is a 404 to GET, PUT and DELETE.  
   rules: `doors/findings-schema`
+- `121_field_settings_edges` (findings) — A PUT applies all its properties or none, in any order. A description or name cannot be emptied. `valid_types` keeps the sent order, and a lowercase type name is a 500 that retires the field.  
+  rules: `doors/findings-schema`
 
 **Silent on this call**
 

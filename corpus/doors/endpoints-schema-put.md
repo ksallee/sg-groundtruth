@@ -21,6 +21,12 @@ Changes a field's properties. A body changing `data_type` is a 200 that does not
 - Which properties a field takes depends on its `data_type`, and the field says so: each one reads
   `editable: true` in `GET /schema/<Type>/fields/<field>`. Probe 116 has the table.
 
+- One refused property refuses the request: the others are not applied. `valid_values` and
+  `default_value` sent together are checked against each other, in either order (probe 121).
+
+- Changing an `entity` field's `valid_types` creates a field on each type added and retires the one
+  on each type removed. A retired name stays taken (probe 121).
+
 - Renaming changes the display name only. The programmatic name is fixed at creation, and a rename does
   not free the old one for reuse.
 
@@ -41,6 +47,8 @@ Changes a field's properties. A body changing `data_type` is a 200 that does not
 - `118_field_writes_other_types` (findings) — Create, update, per-project `visible`, retire, the retired-name 400 and revive answer on a custom entity and on Tag, which has no `project` field, exactly as on Version.  
   rules: `doors/findings-schema`
 - `119_field_absent_retired_live` (findings) — Revive is 204 only on a retired field: 404 `Retired field ... does not exist.` on an unused name, 400 `... is not retired.` on a live one. A retired field is a 404 to GET, PUT and DELETE.  
+  rules: `doors/findings-schema`
+- `121_field_settings_edges` (findings) — A PUT applies all its properties or none, in any order. A description or name cannot be emptied. `valid_types` keeps the sent order, and a lowercase type name is a 500 that retires the field.  
   rules: `doors/findings-schema`
 - `024_field_visibility_in_a_project` (recipes) — Read which fields of an entity type a project hides, and show or hide one field in one project without touching the others  
   rules: `doors/recipes`

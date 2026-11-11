@@ -4,8 +4,6 @@ endpoints: [POST /schema/<Type>/fields, PUT /schema/<Type>/fields/<field>, GET /
 phase: schema
 scope: api
 measured: site-wide, 2026-11-10; six fields created on Version, updated and retired
-coverage: partial
-unmeasured: a status code the site does not have, in valid_values. Not sent, because what the server does with it is unknown. Blocked on the work.
 verdict: A create takes description, unique, valid_values, default_value and valid_types. `unique` and a multi_entity's valid_types never change afterwards; an entity's valid_types and list values do.
 ---
 
@@ -72,7 +70,7 @@ A `status_list` also has `properties.display_values` and `properties.hidden_valu
 | `checkbox` | `default_value: true` | 201 |
 | `status_list` | name alone | 400, `valid_values` required |
 | `status_list` | `valid_values`, `default_value` | 201, both read back |
-| `entity` | two `valid_types` | 201 |
+| `entity` | two `valid_types` | 201. The event log shows a field made on each valid type, `sg_versions_<n>` (probe 121) |
 | `multi_entity` | two `valid_types` | 400, exactly one |
 | `multi_entity` | one | 201. The event log shows a second field retired with it, `version_sg_zzprobe_116_multi_entity_versions`, the reverse side of the link (probe 056) |
 
@@ -86,12 +84,14 @@ A `status_list` also has `properties.display_values` and `properties.hidden_valu
 | `valid_values` without the current default | `list` | applied, and the default stays, outside the list |
 | `valid_values` without the current default | `status_list` | refused, 400 `must include the 'default_value'` |
 | `valid_values` as `[]` or a string | `list` | refused, 400 |
+| `valid_values` or `default_value` with a status code the site does not have | `status_list` | refused, 400 `invalid/missing 'status_list' string` (probe 121) |
 | `default_value`, a valid value | `list`, `status_list`, `checkbox` | applied |
 | `default_value`, not a valid value | `list`, `status_list` | refused, 400 |
 | `default_value` `null` or `""` | `list`, `status_list`, `checkbox` | refused, 400 `value must be filled`. No request sent cleared a default |
 | `default_value` | `currency` (probe 117) | refused, 400 `default value is read-only for all data types except status_list, list, checkbox` |
 | `default_value` as the string `"false"` | `checkbox` | **applied as the string**: 200 and it reads back `"false"`, not `false` |
-| `valid_types`, added, removed or replaced | `entity` | applied |
+| `valid_types`, added, removed or replaced | `entity` | applied. Each type added creates a field on that type and each removed retires it (probe 121) |
+| `valid_types`, a type name in the wrong case | `entity` | **500, and the field is retired** (probe 121) |
 | `valid_types`, any value | `multi_entity` | refused, 400 `can't update 'valid_types' on this field` |
 | `unique` as a property | `list`, `currency` | refused, 400 `invalid property 'unique'` |
 | `unique` as a property | `text` created unique | refused, 500 `does not support updating 'unique'` |
@@ -108,6 +108,7 @@ A `status_list` also has `properties.display_values` and `properties.hidden_valu
 | Send booleans as booleans | a checkbox default of `"false"` is stored as a string |
 | Remove a list's default before removing its value | a list keeps a default that is no longer a valid value |
 | Do not plan to clear a default | `null` and `""` are both refused |
+| Send `valid_values` and `default_value` in one `PUT` when both change | one request is checked as a whole and applied as a whole (probe 121) |
 
 Probe 019 recorded "two types refused" without the link type. It was `multi_entity`: an `entity` field
 takes several.
