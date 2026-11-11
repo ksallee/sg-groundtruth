@@ -14,7 +14,7 @@ verdict: One field's properties, at 1211 bytes against 48KB for the whole type. 
 | part | value |
 |---|---|
 | `<field>` | the programmatic name, `sg_status_list`. Not the display name |
-| `project_id` | optional, and the only thing that varies by project |
+| `project_id` | optional. With it, `hidden_values` and `visible.value` are that project's (probe 115) |
 
 **Sample requests**
 
@@ -53,7 +53,7 @@ On the probed site and project: 16 `valid_values`, `hidden_values` `['pndl', 'pn
 |---|---|
 | 200 | the field exists on that type |
 | 200, `data: null` | the field is real but the type's field census omits it: `GET /schema/Note/fields/read_by_current_user` |
-| 404 | `Field 'Version.sg_not_a_field' does not exist.` |
+| 404 | `Field 'Version.sg_not_a_field' does not exist.` A retired field answers the same (probe 119) |
 
 **Edge cases**
 

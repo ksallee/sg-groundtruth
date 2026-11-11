@@ -13,7 +13,7 @@ verdict: Every field on one type with its `data_type`, `editable` and `mandatory
 
 | part | value |
 |---|---|
-| `project_id` | optional. Adds `hidden_values` to every list and status field (probe 009) |
+| `project_id` | optional. Adds `hidden_values` to every list and status field (probe 009) and makes every `visible.value` that project's (probe 115) |
 
 **Sample requests**
 
@@ -61,8 +61,10 @@ print([k for k, v in f.items() if v["editable"]["value"]])
 - Every value is wrapped in `{value, editable}`, and the outer `editable` says whether you may change
   the property, not whether you may write the field. `data["code"]["editable"]["value"]` is the one that
   answers "can I write this".
-- Adding `project_id` changes the body by 28 bytes on the probed site: only `hidden_values` appears.
-  Everything else is identical at every scope.
+- Adding `project_id` changes two things: `hidden_values` on list and status fields, and `visible.value`
+  on every field the project hides. On the probed site Version differs by 22 bytes and no `visible`,
+  while Shot reads 12 fields hidden in one project and 15 in another, none at site scope (probe 115).
+- A `project_id` that does not exist is a 200 with every field visible, not an error.
 - 48KB and about 330ms per type. Never loop this over the `/schema` listing.
 
 **Links**
@@ -70,3 +72,4 @@ print([k for k, v in f.items() if v["editable"]["value"]])
 - `endpoints/get_schema_type_fields_field`
 - `findings/002_schema`
 - `findings/012_create_version`
+- `findings/115_field_visibility_per_project`

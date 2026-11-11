@@ -18,7 +18,7 @@ An endpoint door holds the edge cases that live on the call and the verdict of e
 
 **protocol** 004_array_vs_hash, 028_loud_and_silent, 051_api_version, 062_cors
 
-**schema** 002_schema, 008_custom_entities, 009_status_lists, 019_create_fields, 040_field_revive, 042_spec_coverage, 047_site_facts_and_the_working_week, 056_stock_vs_custom_field, 061_shipped_statuses, 091_status_summary_exclusions, 114_schema_admin_recheck
+**schema** 002_schema, 008_custom_entities, 009_status_lists, 019_create_fields, 040_field_revive, 042_spec_coverage, 047_site_facts_and_the_working_week, 056_stock_vs_custom_field, 061_shipped_statuses, 091_status_summary_exclusions, 114_schema_admin_recheck, 115_field_visibility_per_project, 116_field_settings_create_update, 117_field_types_and_names, 118_field_writes_other_types, 119_field_absent_retired_live, 120_field_trash_page
 
 **read** 003_query, 005_link_usage, 006_pagination, 007_fill_rates, 018_project_listing, 021_media_resolution, 023_pages, 026_result_order, 048_one_record_beyond_crud, 059_dotted_path_type_check, 060_entity_dict_name, 064_hierarchy_expand_buckets, 072_page_layouts, 073_page_grid_settings, 075_page_overrides, 076_page_visibility, 081_dotted_image, 082_page_size_cap, 088_project_template_defaults
 
@@ -65,10 +65,11 @@ Asset, Attachment, Cut, CutItem, Delivery, HumanUser, LocalStorage, Note, Playli
 - 021_undo_a_batch_delete — Delete Tasks or dependencies in one batch and undo it by reviving the same rows
 - 022_undo_task_template_merge_in_one_batch — Undo a task template merge in one atomic call, returning Tasks, fields and dependencies to their state before it
 - 023_undo_task_template_merge_with_a_task_linked_twice — Undo a task template merge when two Tasks pointed at the same old template task, without the server picking which one gets the edges
+- 024_field_visibility_in_a_project — Read which fields of an entity type a project hides, and show or hide one field in one project without touching the others
 
 ## Endpoints
 
-One card per call, 66 of 72 with an entry behind them; a card with none is the queue. A family's door is `doors/endpoints-<family>.md`, in lower case.
+One card per call, 69 of 75 with an entry behind them; a card with none is the queue. A family's door is `doors/endpoints-<family>.md`, in lower case.
 
 **Session**
 
@@ -95,7 +96,7 @@ GET /subscription_seat/user_subscriptions
 POST /subscription_seat/user_subscriptions
 ```
 
-**Schema**
+**Schema**, one door per method: `doors/endpoints-schema-<method>.md`
 
 ```
 GET /schema
@@ -106,6 +107,9 @@ GET /schema/<Type>/fields/<field>
 POST /schema/<Type>/fields/<field>
 PUT /schema/<Type>/fields/<field>
 DELETE /schema/<Type>/fields/<field>
+GET /schema/permission_groups
+GET /schema/permission_groups/<code>/entity_types/<Type>
+GET /schema/permission_groups/<code>/entity_types/<Type>/fields
 ```
 
 **Records**, one door per method: `doors/endpoints-records-<method>.md`
