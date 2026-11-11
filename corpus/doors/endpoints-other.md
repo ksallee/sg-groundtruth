@@ -46,6 +46,8 @@ With the session token as the `_session_id` cookie, answers when the session and
 
 - `052_app_session_launcher` (findings) — Post appName and machineId, open url in a browser, PUT the id until approved. The sessionToken spends at grant_type=session_token as that person, and every mint renews the session.  
   rules: `doors/findings-auth`
+- `126_session_idle` (findings) — A session token the site does not accept is 400 code 102 "Can't authenticate session token ending with '<last 4>'" at the token endpoint. No API read exposes the site's session window.  
+  rules: `doors/findings-auth`
 - `062_cors` (findings) — Every path under `/api/v1` answers the preflight and echoes any `Origin`, credentials true. `/internal_api` and the web paths send no CORS header, so a page on another origin proxies those.  
   rules: `doors/findings-protocol`
 

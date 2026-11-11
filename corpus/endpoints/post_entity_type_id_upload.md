@@ -55,7 +55,8 @@ The parent is the only place the new row is named:
 
 - The field form and this one answer identically apart from `upload_type`, `Thumbnail` against
   `Attachment`. Everything in `endpoints/post_entity_type_id_field_upload` applies here unchanged.
-- Not every type has `attachments`. Shot does not; Note and Version do.
+- Not every type has `attachments`. Of the stock types probed only Note does; Shot and Version do not
+  (probe 123). The path with no field segment completes on Version and links through `attachment_links`.
 - Diff the parent's `attachments` before and after to learn the new id. The 201 body is a space.
 
 **Links**

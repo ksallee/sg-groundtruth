@@ -109,3 +109,45 @@ Attachment row answers it.
   The wrapped body the spec declares returns 400 naming all six keys as missing.
 
 `corpus/findings/044_multipart_upload.md`
+
+## 123_photos_per_record
+
+`image` keeps only a 480x320 thumbnail. A url field holds one original, a Note's attachments or a multi_entity to Attachment hold many; all return the bytes unchanged. **[partial]**
+
+not measured: completing a field-less upload on Slate and reading where it links; the web interface itself. Blocked on the work
+
+- Never put a photo that must survive on `image`: the server keeps a 480x320 rendition and no
+  Attachment row, and no REST call returned the original.
+
+- Every other place keeps the exact bytes and answers them at the presigned URL as
+  `binary/octet-stream`, signed for 900 s (probe 125). Store the Attachment id, not the URL.
+
+- Only Note has a stock `attachments` field. Version has none (schema 404), which settles the
+  contradiction in the upload cards: a field-less upload on Version links through
+  `Attachment.attachment_links` (probe 014). Field-less init answers 200 on every type tried.
+
+- For many photos per take with no admin step, use a Note per take or batch; with one schema write,
+  a multi_entity to Attachment on the take type. A Version per photo costs a transcode and two extra
+  Attachments each. `valid_types` is not enforced on `PublishedFile.entity` or `attachment_links`.
+
+`corpus/findings/123_photos_per_record.md`
+
+## 125_upload_host_cors
+
+The presigned upload host answers any Origin with `*`, allows PUT with content-type and exposes `ETag`, so a page can upload, multipart included. A URL is refused after 900 s. **[partial]**
+
+not measured: a real browser run, and a size cap: the largest single PUT sent was 7.6 MB (probe 123). Blocked on the work
+
+- A browser can run the whole upload, multipart included: the ETag that probe 044's completion needs
+  is exposed. Probe 062's caveat that a page cannot read `ETag` holds for `/api/v1`, not this host.
+
+- Fetch the upload URL when the bytes are ready to go, not when the photo is taken: it is signed for
+  15 minutes. Ask for a fresh `_upload` per attempt; a part chain's `get_next_part` mints the next.
+
+- Send the PUT with `credentials: "omit"` (the `fetch` default for cross-origin is `same-origin`,
+  which also omits). `max-age: 0` means every PUT is preflighted.
+
+- Evidence is response headers read by a process, which no CORS rule blocks. A browser applying the
+  standard algorithm to these headers allows the calls above; no browser was run.
+
+`corpus/findings/125_upload_host_cors.md`

@@ -24,6 +24,10 @@ Step one of three. `filename` is a required query parameter and its absence is 4
   rules: `doors/findings-upload`
 - `044_multipart_upload` (findings) — `multipart_upload=true` on the init sets `upload_id` and adds `links.get_next_part`. Every part but the last must be at least 5 MiB, and completion needs an `etags` array inside `upload_info`.  
   rules: `doors/findings-upload`
+- `123_photos_per_record` (findings) — `image` keeps only a 480x320 thumbnail. A url field holds one original, a Note's attachments or a multi_entity to Attachment hold many; all return the bytes unchanged.  
+  rules: `doors/findings-upload`
+- `125_upload_host_cors` (findings) — The presigned upload host answers any Origin with `*`, allows PUT with content-type and exposes `ETag`, so a page can upload, multipart included. A URL is refused after 900 s.  
+  rules: `doors/findings-upload`
 - `001_publish_version_with_media` (recipes) — Publish a generated image to Flow PT as a Version, with provenance and the workflow attached  
   rules: `doors/recipes`
 - `006_media_round_trip` (recipes) — Take media off one Version and put the same bytes on another, which is what every sync, transfer and hand-off does  
@@ -116,6 +120,8 @@ Step two of a multipart transfer, once per part after the first. Walk `links.get
 
 - `044_multipart_upload` (findings) — `multipart_upload=true` on the init sets `upload_id` and adds `links.get_next_part`. Every part but the last must be at least 5 MiB, and completion needs an `etags` array inside `upload_info`.  
   rules: `doors/findings-upload`
+- `125_upload_host_cors` (findings) — The presigned upload host answers any Origin with `*`, allows PUT with content-type and exposes `ETag`, so a page can upload, multipart included. A URL is refused after 900 s.  
+  rules: `doors/findings-upload`
 
 `corpus/endpoints/post_entity_type_id_field_upload_multipart_abort.md`
 
@@ -123,8 +129,10 @@ Step two of a multipart transfer, once per part after the first. Walk `links.get
 
 The same handshake with the field left out of the path, which stores the bytes as an Attachment on `attachment_links` rather than on a field. The type must actually have that field.
 
-- Not every type has `attachments`. Shot does not, and the 404 names the field rather than the route,
-  which is the useful half.
+- Not every type has `attachments`. Shot and Version do not, and the 404 names the field rather than
+  the route, which is the useful half. Leave the segment out instead: `/entity/<type>/<id>/_upload`
+  answers 200 on those types, and the completed file links through `Attachment.attachment_links`
+  (probes 014, 123).
 
 - The Attachment row is created by step three, not by this call. Read the parent's `attachments` back to
   learn its id; nothing in this reply names it.
@@ -134,6 +142,8 @@ The same handshake with the field left out of the path, which stores the bytes a
 - `014_attach_file` (findings) — Leave the field out of the _upload path and the file is stored as an Attachment on attachment_links; read it back with POST /entity/attachments/_search, never flat filter[].  
   rules: `doors/findings-upload`
 - `039_upload_silent_failures` (findings) — complete_upload returns 201 and creates an Attachment even when the bytes were never PUT, and file_size is null on a good upload too, so only fetching the stored file proves it exists.  
+  rules: `doors/findings-upload`
+- `123_photos_per_record` (findings) — `image` keeps only a 480x320 thumbnail. A url field holds one original, a Note's attachments or a multi_entity to Attachment hold many; all return the bytes unchanged.  
   rules: `doors/findings-upload`
 - `001_publish_version_with_media` (recipes) — Publish a generated image to Flow PT as a Version, with provenance and the workflow attached  
   rules: `doors/recipes`
@@ -153,7 +163,8 @@ The fieldless completion, `/entity/<type>/<id>/attachments/_upload`. Same body c
 - The field form and this one answer identically apart from `upload_type`, `Thumbnail` against
   `Attachment`. Everything in `endpoints/post_entity_type_id_field_upload` applies here unchanged.
 
-- Not every type has `attachments`. Shot does not; Note and Version do.
+- Not every type has `attachments`. Of the stock types probed only Note does; Shot and Version do not
+  (probe 123). The path with no field segment completes on Version and links through `attachment_links`.
 
 - Diff the parent's `attachments` before and after to learn the new id. The 201 body is a space.
 
@@ -239,6 +250,12 @@ Step three, at 201 with a body of a single space. Not JSON, and it never names t
   rules: `doors/findings-upload`
 - `039_upload_silent_failures` (findings) — complete_upload returns 201 and creates an Attachment even when the bytes were never PUT, and file_size is null on a good upload too, so only fetching the stored file proves it exists.  
   rules: `doors/findings-upload`
+- `123_photos_per_record` (findings) — `image` keeps only a 480x320 thumbnail. A url field holds one original, a Note's attachments or a multi_entity to Attachment hold many; all return the bytes unchanged.  
+  rules: `doors/findings-upload`
+- `125_upload_host_cors` (findings) — The presigned upload host answers any Origin with `*`, allows PUT with content-type and exposes `ETag`, so a page can upload, multipart included. A URL is refused after 900 s.  
+  rules: `doors/findings-upload`
+- `124_updated_at_bumps` (findings) — `updated_at` moves on a write, a finished upload and its transcode, and on a link set from either end, but not on a no-op PUT and not when a Note names the row in `note_links`.  
+  rules: `doors/findings-observe`
 - `001_publish_version_with_media` (recipes) — Publish a generated image to Flow PT as a Version, with provenance and the workflow attached  
   rules: `doors/recipes`
 - `006_media_round_trip` (recipes) — Take media off one Version and put the same bytes on another, which is what every sync, transfer and hand-off does  
@@ -277,6 +294,10 @@ Step two, to storage rather than to Flow PT, with no Authorization header. It is
 - `014_attach_file` (findings) — Leave the field out of the _upload path and the file is stored as an Attachment on attachment_links; read it back with POST /entity/attachments/_search, never flat filter[].  
   rules: `doors/findings-upload`
 - `039_upload_silent_failures` (findings) — complete_upload returns 201 and creates an Attachment even when the bytes were never PUT, and file_size is null on a good upload too, so only fetching the stored file proves it exists.  
+  rules: `doors/findings-upload`
+- `123_photos_per_record` (findings) — `image` keeps only a 480x320 thumbnail. A url field holds one original, a Note's attachments or a multi_entity to Attachment hold many; all return the bytes unchanged.  
+  rules: `doors/findings-upload`
+- `125_upload_host_cors` (findings) — The presigned upload host answers any Origin with `*`, allows PUT with content-type and exposes `ETag`, so a page can upload, multipart included. A URL is refused after 900 s.  
   rules: `doors/findings-upload`
 - `001_publish_version_with_media` (recipes) — Publish a generated image to Flow PT as a Version, with provenance and the workflow attached  
   rules: `doors/recipes`

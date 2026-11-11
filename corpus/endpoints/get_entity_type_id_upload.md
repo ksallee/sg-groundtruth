@@ -57,14 +57,16 @@ On a type with no such field:
 
 | status | when |
 |---|---|
-| 200 | the type has an `attachments` field |
+| 200 | `/attachments/_upload`: the type has an `attachments` field. With no segment at all, `/entity/<type>/<id>/_upload`: every type probe 123 tried, Shot and Version included |
 | 400 | `filename is missing` |
-| 404 | `Field 'Shot.attachments' does not exist.` Shot has none; Note and Version do |
+| 404 | `Field 'Shot.attachments' does not exist.` on `/attachments/_upload` when the type has no such field. Of the stock types probed only Note has one; Version does not (probe 123) |
 
 **Edge cases**
 
-- Not every type has `attachments`. Shot does not, and the 404 names the field rather than the route,
-  which is the useful half.
+- Not every type has `attachments`. Shot and Version do not, and the 404 names the field rather than
+  the route, which is the useful half. Leave the segment out instead: `/entity/<type>/<id>/_upload`
+  answers 200 on those types, and the completed file links through `Attachment.attachment_links`
+  (probes 014, 123).
 - The Attachment row is created by step three, not by this call. Read the parent's `attachments` back to
   learn its id; nothing in this reply names it.
 

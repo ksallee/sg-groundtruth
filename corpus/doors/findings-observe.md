@@ -256,3 +256,23 @@ A template-generated Task logs like a hand-made one plus a `template_task` chang
 - Server-set fields log too: `color` and `sg_status_list` were never sent and each has a row.
 
 `corpus/findings/090_template_task_events.md`
+
+## 124_updated_at_bumps
+
+`updated_at` moves on a write, a finished upload and its transcode, and on a link set from either end, but not on a no-op PUT and not when a Note names the row in `note_links`.
+
+- A `greater_than` cursor on `updated_at` sees a finished upload twice: once at `complete_upload`
+  and once when the server finishes the thumbnail. Treat the second as a server write, not an edit
+  to merge.
+
+- A link written on one end moves the stamp on both rows: `Shot.sg_scene` and `Scene.shots` each
+  moved the other. On the probed site a Version's `entity` moved the Slate it named; that Slate has
+  a site field `sg_versions` listing the Version, and whether a Slate without it moves is unmeasured.
+
+- A new Note whose `note_links` names a Slate leaves the Slate's stamp alone, although every
+  on-set type has a stock `notes` field (probe 122). Poll Notes by their own `updated_at` or `created_at`, filtered on `note_links`.
+
+- A PUT that sends the stored value is a no-op and does not move the stamp, so the cursor does not
+  echo a client's own idempotent re-sends. Stamps are to the second; probe 024 covers read-after-write.
+
+`corpus/findings/124_updated_at_bumps.md`

@@ -93,7 +93,8 @@ CAPS_OK = {"REST", "API", "URL", "URI", "JSON", "HTTP", "GET", "PUT", "POST", "D
            "UTC", "ID", "IDS", "S3", "PNG", "MP4", "RGB", "CSS", "PDF", "USD", "RV", "SDK", "CLI",
            "MIT", "AGPL", "UI", "OK", "NULL", "TRUE", "FALSE", "AND", "OR", "NOT", "PG", "MIME",
            "CRUD", "CSV", "VFX", "PT", "CORS", "DAY", "HOUR", "WEEK", "MONTH", "YEAR", "YYYY", "MM", "DD",
-           "HTML", "XML", "EDL", "MP4", "PNG", "JPG", "TIF", "EXR", "MOV", "OTIO", "ASCII"}
+           "HTML", "XML", "EDL", "MP4", "PNG", "JPG", "TIF", "EXR", "MOV", "OTIO", "ASCII",
+           "JPEG", "UUID", "MB", "KB"}
 
 # The order a client meets them. index.py groups the findings listing by this, so a phase that is
 # not here renders under "unphased" rather than where a reader is looking.

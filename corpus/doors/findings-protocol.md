@@ -179,3 +179,19 @@ not measured: what a live session cookie authenticates on /api/v1, since allow-c
   page holding `client_credentials`, ships the script key to every visitor.
 
 `corpus/findings/062_cors.md`
+
+## 128_rate_limit
+
+60 GETs from 10 threads in 1.9 s all answered 200 with no rate-limit header of any kind. Code a backoff on 429 and 503 without having seen either. **[partial]**
+
+not measured: the load at which a limit bites, if one exists. The burst was kept small on a shared site. Blocked on the work
+
+- At about 30 requests a second from one script there is no throttling and no header that would
+  announce one, so a client cannot read a budget before it hits it.
+
+- Latency was flat across the burst: the median at 10 threads matched the single-thread one.
+
+- What a limit would answer is unmeasured. Retry 429 and 503 with exponential backoff and honour a
+  `Retry-After` if one ever appears; do not assume any other status means "slow down".
+
+`corpus/findings/128_rate_limit.md`
