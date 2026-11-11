@@ -3,7 +3,7 @@ endpoint: POST /schema/<Type>/fields/<field>
 coverage: measured
 tags: [schema, custom-field, discovery]
 scope: api
-measured: sandbox project written, probe 040
+measured: sandbox project written, probes 040, 114 and 119
 verdict: Revive a retired field, at 204. It is the only way to get a burnt name back, and it returns at its original `data_type` whatever the site wants now.
 ---
 
@@ -50,6 +50,8 @@ r = c.post("/schema/Version/fields/sg_zzprobe_040_revive", json={})
 | 204 | revived, empty body |
 | 400 | `source: {"revive": ["revive is missing"]}` on a body without it |
 | 400 | `source: {"revive": ["revive must be true"]}` on `{"revive": false}` |
+| 400 | `Field <Type>.<field> is not retired.` on a live field, which is left unchanged (probe 119) |
+| 404 | `Retired field <Type>.<field> does not exist.` on a name never used (probe 119) |
 
 **Edge cases**
 
@@ -57,6 +59,8 @@ r = c.post("/schema/Version/fields/sg_zzprobe_040_revive", json={})
   `number`, and the `PUT` that would change it is a 200 that does nothing.
 - The API named this parameter itself, in the 400 for an empty body. `/spec.json` documents the call
   as of 2026-11-10, with `revive` as a query parameter. The published reference does not.
+- The field returns as it was retired: display name, description, default and valid values. Its
+  per-project `visible` does not: a field hidden in a project came back visible there (probe 115).
 - It has no opposite. `{"revive": false}` and every delete-forever spelling tried are refused, so a
   trashed name is freed only from the Trash page in the web interface (probe 114).
 

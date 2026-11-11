@@ -328,3 +328,116 @@ not measured: a custom entity call that succeeds. The probed site answers 400 co
 | Do not write `hidden_values` | the update lists its seven valid property names and it is not one |
 
 `corpus/findings/114_schema_admin_recheck.md`
+
+## 115_field_visibility_per_project
+
+`visible` is per project. Read it with `?project_id=N`; write it with PUT and `project_id` in the body or the query, never without one. A new field is visible in every project.
+
+| do | why |
+|---|---|
+| Read one type's visibility per project with one listing call | `?project_id=N` returns `visible` for all its fields |
+| Treat a new field as visible everywhere | it reads true at site scope and in both projects straight after the create |
+| Send `project_id` with every `visible` write | without it the write is a 400, and there is no site-wide write |
+| Check the project id yourself before a read | a wrong id reads as "everything visible" at 200; only the write refuses it |
+| Write visibility again after a revive | a field hidden in a project, retired and revived, came back visible there |
+| Do not use `visible` to protect data | the hidden field was still returned by `GET /entity/versions?fields=` in that project |
+
+Probes 118 and 119 repeat the write on a custom entity type and on Tag, which has no `project` field:
+the same.
+
+`corpus/findings/115_field_visibility_per_project.md`
+
+## 116_field_settings_create_update
+
+A create takes description, unique, valid_values, default_value and valid_types. `unique` and a multi_entity's valid_types never change afterwards; an entity's valid_types and list values do. **[partial]**
+
+not measured: a status code the site does not have, in valid_values. Not sent, because what the server does with it is unknown. Blocked on the work.
+
+| do | why |
+|---|---|
+| Send every setting in the create | all of them are accepted there, and `unique` and a multi_entity's `valid_types` are accepted nowhere else |
+| Read `<setting>.editable` before planning an update | `unique` reads false on every field and `valid_types` reads false on a multi_entity: both are the refused ones |
+| Give a `status_list` its `valid_values` | a bare create is a 400 |
+| Send booleans as booleans | a checkbox default of `"false"` is stored as a string |
+| Remove a list's default before removing its value | a list keeps a default that is no longer a valid value |
+| Do not plan to clear a default | `null` and `""` are both refused |
+
+Probe 019 recorded "two types refused" without the link type. It was `multi_entity`: an `entity` field
+takes several.
+
+`corpus/findings/116_field_settings_create_update.md`
+
+## 117_field_types_and_names
+
+One non-ASCII character in the display name and the field is named `sg_<data_type>`, at 201. ASCII names are lowercased, every other character becomes `_`, nothing is trimmed or cut. **[partial]**
+
+not measured: a non-ASCII display name on a data type other than currency. Not sent: it would spend sg_<data_type> on the site. Blocked on the work.
+
+| do | why |
+|---|---|
+| Refuse a non-ASCII display name at creation, or create under an ASCII name and rename | the create succeeds under `sg_<data_type>`, and the rename leaves the programmatic name alone (probe 116) |
+| Read the name from `links.self` and compare it with the one you predicted | a 201 does not mean the name you expected |
+| Predict ASCII names with the one-line rule | it held for punctuation, digits, outer spaces, case and 120 characters |
+| Expect a revive to return the field as it was retired | the rename, the default, the values and `summary_default` all came back |
+
+`sg_currency` on Version was spent by this probe and is in the trash under the display name
+`zzprobe 117 Durée Écran ñ`.
+
+`corpus/findings/117_field_types_and_names.md`
+
+## 118_field_writes_other_types
+
+Create, update, per-project `visible`, retire, the retired-name 400 and revive answer on a custom entity and on Tag, which has no `project` field, exactly as on Version. **[partial]**
+
+not measured: a CustomNonProjectEntityNN. None is enabled on the probed site. Blocked on the site.
+
+- The same programmatic name, `sg_zzprobe_118_other_type`, was created on both types: a name is taken
+  per entity type, not per site.
+
+- `links.self` spells the type in snake case, `custom_entityNN` and `tag`, where Version's reads
+  `Version`. Take the last segment for the field name and do not parse the type out of it.
+
+- Per-project `visible` works on a type that has no `project` field. Hiding the Tag field in the
+  sandbox left the site scope and the sample project reading true.
+
+- On the probed site the custom entity is project-scoped and Tag is stock. A `CustomNonProjectEntityNN`
+  was not available to measure.
+
+`corpus/findings/118_field_writes_other_types.md`
+
+## 119_field_absent_retired_live
+
+Revive is 204 only on a retired field: 404 `Retired field ... does not exist.` on an unused name, 400 `... is not retired.` on a live one. A retired field is a 404 to GET, PUT and DELETE. **[partial]**
+
+not measured: a schema write by a person below Admin, and the permission groups as anyone but the script. Both need that person's session; none was available. Blocked on the site.
+
+| do | why |
+|---|---|
+| Treat a revive 404 as "nothing to revive" and a 400 `is not retired` as "already live" | a 204 was only ever returned for a retired field, and the live field was unchanged |
+| Detect a retired name from `source.field_name` on a 400 code 105 | no read distinguishes retired from unused |
+| Treat a 404 on an update as "gone", retired or never there | the two are the same response |
+| Do not look in `/schema/permission_groups` for the right to change the schema | it describes rows and field values |
+
+`corpus/findings/119_field_absent_retired_live.md`
+
+## 120_field_trash_page
+
+The page that lists retired fields is a Page row: `ui_category` "trash", `entity_type` "DisplayColumn", named "Trash - Fields". Its id is per site, so search for it. **[partial]**
+
+not measured: the web address itself. `/page/<id>` is the web interface's scheme, not a REST call, and it was not opened. Blocked on the work: it needs a browser session.
+
+- On the probed site there is one trash page per entity type that has been trashed from, each a
+  site-level `Page` row with no project. The one for fields has `entity_type` `DisplayColumn`, the
+  type a field's own row has in the event log (`Shotgun_DisplayColumn_Retirement`).
+
+- Find it with `filters: [["ui_category", "is", "trash"], ["entity_type", "is", "DisplayColumn"]]`.
+  The id differs per site. All 20 rows were created by a person, so a site where nobody has opened
+  the field trash may have no row: handle zero results by describing the menu path in words.
+
+- The address is `<site>/page/<id>`. That is the web interface's scheme for a `Page` row and is
+  inferred here, not measured: no REST call opens a page.
+
+- `DisplayColumn` is not reachable over REST as a type, so the retired fields themselves stay
+  unlistable (probe 114). The page is the only place they are shown.
+
+`corpus/findings/120_field_trash_page.md`

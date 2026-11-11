@@ -900,3 +900,19 @@ Undo a task template merge when two Tasks pointed at the same old template task,
   the same pick (probe 106). Leave it null instead if nothing reads the link.
 
 `corpus/recipes/023_undo_task_template_merge_with_a_task_linked_twice.md`
+
+## 024_field_visibility_in_a_project
+
+Read which fields of an entity type a project hides, and show or hide one field in one project without touching the others
+
+- A field just created is visible in every project. A field retired and revived is too, whatever it
+  was before (probe 115).
+
+- `project_id` is also accepted in the query. Inside the property object it is not read (probe 119).
+
+- A `project_id` that does not exist reads as a project hiding nothing, at 200. The write refuses it,
+  400 code 105.
+
+- There is no site-wide write and no call that sets several projects: one PUT per field and project.
+
+`corpus/recipes/024_field_visibility_in_a_project.md`

@@ -26,6 +26,8 @@ The only way to send a filter the query string cannot express, and it refuses `a
   rules: `doors/findings-schema`
 - `091_status_summary_exclusions` (findings) — Excluded statuses are invisible to REST: not in /schema at any scope, not writable by PUT. status_list honours them: fin plus an excluded omt rolls up to fin, omt alone to na.  
   rules: `doors/findings-schema`
+- `120_field_trash_page` (findings) — The page that lists retired fields is a Page row: `ui_category` "trash", `entity_type` "DisplayColumn", named "Trash - Fields". Its id is per site, so search for it.  
+  rules: `doors/findings-schema`
 - `003_query` (findings) — A dotted ?fields path comes back flat under literal key "sg_task.Task.content" in attributes; an entity field is returned under relationships as {data, links}. Never read a row from attributes alone.  
   rules: `doors/findings-read`
 - `006_pagination` (findings) — links.next is emitted on every page forever, including zero-row ones, so stop paging when data is empty and never on a missing next.  
