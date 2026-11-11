@@ -349,9 +349,7 @@ the same.
 
 ## 116_field_settings_create_update
 
-A create takes description, unique, valid_values, default_value and valid_types. `unique` and a multi_entity's valid_types never change afterwards; an entity's valid_types and list values do. **[partial]**
-
-not measured: a status code the site does not have, in valid_values. Not sent, because what the server does with it is unknown. Blocked on the work.
+A create takes description, unique, valid_values, default_value and valid_types. `unique` and a multi_entity's valid_types never change afterwards; an entity's valid_types and list values do.
 
 | do | why |
 |---|---|
@@ -361,6 +359,7 @@ not measured: a status code the site does not have, in valid_values. Not sent, b
 | Send booleans as booleans | a checkbox default of `"false"` is stored as a string |
 | Remove a list's default before removing its value | a list keeps a default that is no longer a valid value |
 | Do not plan to clear a default | `null` and `""` are both refused |
+| Send `valid_values` and `default_value` in one `PUT` when both change | one request is checked as a whole and applied as a whole (probe 121) |
 
 Probe 019 recorded "two types refused" without the link type. It was `multi_entity`: an `entity` field
 takes several.
@@ -441,3 +440,21 @@ not measured: the web address itself. `/page/<id>` is the web interface's scheme
   unlistable (probe 114). The page is the only place they are shown.
 
 `corpus/findings/120_field_trash_page.md`
+
+## 121_field_settings_edges
+
+A PUT applies all its properties or none, in any order. A description or name cannot be emptied. `valid_types` keeps the sent order, and a lowercase type name is a 500 that retires the field. **[partial]**
+
+not measured: whether the field the 500 retired can be revived, and the order valid_types take at creation. The first is the site owner's call, the second needs a new name.
+
+| do | why |
+|---|---|
+| Never plan to empty a description, a display name or a list | every form is a 400, and whitespace alone is a 400 too |
+| Send `valid_values` and `default_value` in one `PUT` | the pair is checked together, so a status list moves to new values and a new default in one request |
+| Treat a `PUT` as all or nothing | one refused property left the others unapplied in every case sent |
+| Compare `valid_types` as an ordered list | the order sent is the order read |
+| Add and remove valid types only when the set changes | each added type creates a field on that type and each removed one spends its name |
+| Check every `valid_types` name against `GET /schema`, case included, before sending | an unknown name is a 400, a wrong case is a 500 that takes the field down |
+| Deduplicate a status list's `valid_values` yourself | a repeated code is stored twice |
+
+`corpus/findings/121_field_settings_edges.md`

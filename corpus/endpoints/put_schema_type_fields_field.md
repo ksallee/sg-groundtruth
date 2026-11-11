@@ -3,7 +3,7 @@ endpoint: PUT /schema/<Type>/fields/<field>
 coverage: measured
 tags: [schema, custom-field, silent]
 scope: api
-measured: sandbox project written, probes 040, 115, 116 and 119
+measured: sandbox project written, probes 040, 115, 116, 119 and 121
 verdict: Changes a field's properties. A body changing `data_type` is a 200 that does nothing, so read the field back rather than trusting the status code.
 ---
 
@@ -13,7 +13,7 @@ verdict: Changes a field's properties. A body changing `data_type` is a 200 that
 
 | part | value |
 |---|---|
-| `properties` | a list of `{property_name, value}`, the same shape the create takes. Required and not empty |
+| `properties` | a list of `{property_name, value}`, the same shape the create takes. Required and not empty. Several are applied together or not at all (probe 121) |
 | `project_id` | in the JSON body or the query. Required when `visible` is among the properties, and scopes only `visible` (probe 115) |
 
 **Sample requests**
@@ -43,9 +43,14 @@ c.get("/schema/Version/fields/sg_zzprobe_040_revive").json()["data"]["data_type"
 | 400 | code 104 `The 'visible' property requires a project to be updated.` |
 | 400 | code 105 `The Project with the given project_id does not exist.` |
 | 400 | `invalid property '<name>'`, followed by the valid property names for that field |
-| 400 | `Request Parameters invalid.` with `value must be filled` for a `null`, `""` or `[]` value |
+| 400 | `Request Parameters invalid.` with `value must be filled` for a `null`, `""` or `[]` value, on `description` and `name` as on the rest |
+| 400 | `invalid/missing '<property>' value string` for a `description` or `name` of spaces alone |
+| 400 | `'default_value' not in valid_values` on a `list` or `status_list` |
+| 400 | `invalid/missing 'status_list' string` for a status code the site does not have, the valid codes in `source.status` |
+| 400 | `invalid/missing entity` for a `valid_types` name that is no entity type, every type in `source.entity_type` |
 | 404 | `Field '<Type>.<field>' does not exist.`, for a retired field and an unused name alike (probe 119) |
 | 500 | code 105 `does not support updating 'unique'.` on a `text` field |
+| 500 | code 100 `Shotgun Server Error` for a `valid_types` name in the wrong case, `"shot"`. The field is retired by it (probe 121) |
 
 **Edge cases**
 
@@ -60,6 +65,10 @@ c.get("/schema/Version/fields/sg_zzprobe_040_revive").json()["data"]["data_type"
   "properties": [...]}` is a 200 that applies the properties and leaves `unique` alone (probe 116).
 - Which properties a field takes depends on its `data_type`, and the field says so: each one reads
   `editable: true` in `GET /schema/<Type>/fields/<field>`. Probe 116 has the table.
+- One refused property refuses the request: the others are not applied. `valid_values` and
+  `default_value` sent together are checked against each other, in either order (probe 121).
+- Changing an `entity` field's `valid_types` creates a field on each type added and retires the one
+  on each type removed. A retired name stays taken (probe 121).
 - Renaming changes the display name only. The programmatic name is fixed at creation, and a rename does
   not free the old one for reuse.
 
@@ -70,3 +79,4 @@ c.get("/schema/Version/fields/sg_zzprobe_040_revive").json()["data"]["data_type"
 - `findings/028_loud_and_silent`
 - `findings/115_field_visibility_per_project`
 - `findings/116_field_settings_create_update`
+- `findings/121_field_settings_edges`
