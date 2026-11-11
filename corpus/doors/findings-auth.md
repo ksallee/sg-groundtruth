@@ -192,13 +192,17 @@ not measured: a person clicking deny, and a session left idle past the site's ex
 
 ## 126_session_idle
 
-A session token the site does not accept is 400 code 102 "Can't authenticate session token ending with '<last 4>'" at the token endpoint. No API read exposes the site's session window. **[partial]**
+The token endpoint refuses a session token it does not accept with 400 code 102 in errors[], "Can't authenticate session token ending with '<last 4>'". No API read exposes the session window. **[partial]**
 
 not measured: a real session token left idle past the window. Needs a person to approve 052 --login, then a day of nobody spending it. Blocked on time
 
 - Treat 400 code 102 from `grant_type=session_token` as "send the person through sign-in again".
-  The title quotes the token's last four characters and nothing else, so an expired, revoked or
-  mistyped token cannot be told apart from it. Whether an expired one answers the same is unmeasured.
+  It is in the `errors[]` envelope like every `/api/v1` error; `GET /internal_api/session` answers
+  the same token with a bare `{"message":"Unauthorized"}` (probe 052). The title quotes the token's
+  last four characters and nothing else, so a mistyped token cannot be told from any other refusal.
+
+- Whether an idle-expired token answers the same code and envelope is unmeasured: on 2026-11-11 no
+  saved token existed. `--idle` prints the envelope of both answers beside the never-valid ones.
 
 - The window is not readable: `/preferences` exposes 17 display and scheduling keys and silently
   answers `{}` for any other name. Read `expiresAt` from `GET /internal_api/session` while the token
@@ -208,3 +212,44 @@ not measured: a real session token left idle past the window. Needs a person to 
   on the probed site (probes 047, 114).
 
 `corpus/findings/126_session_idle.md`
+
+## 130_launcher_answers
+
+sessionRequestId is 21 characters of A-Za-z0-9_-. url is on the site's host unless the create call sends X-Forwarded-Host, which url copies: a proxy strips that header. **[partial]**
+
+not measured: the create call on a site with authentication_app_session_launcher_enabled false. The probed site has it on and no preference is changed; blocked on the site
+
+- Validate a `sessionRequestId` as `^[A-Za-z0-9_-]{21}$` on the probed site's nine samples. Treat it as
+  opaque beyond that; nothing documents the shape.
+
+- `url` takes its host from `X-Forwarded-Host` when the create call has one, and a person who opens
+  it lands on a host that is not the site. A proxy forwarding the launcher calls (probe 062) drops
+  that header, and a client checks that `url`'s host equals the site's before opening it.
+
+- `X-Forwarded-Proto`, `X-Forwarded-Port`, `Forwarded`, `Origin` and `Referer` change nothing in `url`.
+
+- `sticky_id` is a second 21-character value, not a copy of the id. Pass `url` through whole.
+
+- A pending request cannot be withdrawn: `DELETE` is 404 code 103 and the request still answers. It
+  is forgotten about five minutes after creation (probe 052).
+
+- On a site with the launcher switched off the answer is unmeasured. Read
+  `authentication_app_session_launcher_enabled` from `GET /api/v1` before offering this sign-in, and
+  measure the create call there with `python probes/130_launcher_answers.py` against such a site.
+
+`corpus/findings/130_launcher_answers.md`
+
+## 131_session_revoke
+
+The REST spec has no revoke or sign-out call. Of five candidate routes only /user/logout answers (302 to login); whether it ends a launcher session is unmeasured. **[partial]**
+
+not measured: whether /user/logout ends a live session and what a bearer minted before it then reads. Needs a person to approve `python probes/131_session_revoke.py --login`. Blocked on the work
+
+- No documented call ends a session. Until `--login` is run, an app's sign-out can only forget the
+  session token; the session on the site then ends one window after the last mint (probe 052).
+
+- `GET /user/logout` is the only route that answers, and a 302 to the login page is its answer with
+  no session at all. Confirm a sign-out by reading `GET /internal_api/session` afterwards: 401 is
+  ended, 200 is not.
+
+`corpus/findings/131_session_revoke.md`

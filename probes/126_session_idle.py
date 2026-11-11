@@ -36,9 +36,23 @@ SAVED = _lib.ROOT / "session_token.local.json"
 rows = []
 
 
+def envelope(r):
+    """`errors[]` (every /api/v1 call) or bare `{"message": ...}` (/internal_api, probe 052)."""
+    try:
+        d = r.json()
+    except ValueError:
+        return "not JSON"
+    if isinstance(d, dict) and isinstance(d.get("errors"), list):
+        e = d["errors"][0] if d["errors"] else {}
+        return f"errors[] status={e.get('status')} code={e.get('code')}"
+    return f"bare, keys {sorted(d) if isinstance(d, dict) else type(d).__name__}"
+
+
 def show(label, r):
     rows.append(f"  {label} -> {r.status_code} {r.headers.get('content-type', '')}")
     rows.append(f"     {r.text.strip()[:500]}")
+    if not r.ok:
+        rows.append(f"     envelope: {envelope(r)}")
     return r
 
 
@@ -86,6 +100,9 @@ if "--idle" in sys.argv:
         m = mint(s["session_token"])
         rows.append(f"  POST /auth/access_token grant_type=session_token -> {m.status_code}")
         rows.append(f"     {m.text.strip()[:500] if not m.ok else '(a bearer; not printed)'}")
+        if not m.ok:
+            rows.append(f"     envelope: {envelope(m)}; same as a never-valid token above if both read "
+                        f"errors[] status=400 code=102")
         show("GET /internal_api/session again",
              requests.get(SESSION, cookies={"_session_id": s["session_token"]}, timeout=30))
         s["idle_check"] = time.time()

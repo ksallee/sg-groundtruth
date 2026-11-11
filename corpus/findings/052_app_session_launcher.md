@@ -31,7 +31,7 @@ hour, day or week old, per the `User Session Expiry` setting.
 GET /api/v1 -> user_authentication_method 'oxygen', authentication_app_session_launcher_enabled True
 
 POST /internal_api/app_session_request, no body      400 {"message":"Missing params: appName, machineId"}
-POST form or json appName+machineId                  200 {"sessionRequestId":"<id>","url":"<site>/app_session_request/<id>?sticky_id=<id>"}
+POST form or json appName+machineId                  200 {"sessionRequestId":"<id>","url":"<site>/app_session_request/<id>?sticky_id=<sticky_id>"}
 GET  url, no cookie                                  302 -> <site>/user/login?return_path=/app_session_request/<id>
 
 PUT /internal_api/app_session_request/<id>  pending  200 {"approved":false}      machineId ignored

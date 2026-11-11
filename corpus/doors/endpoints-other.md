@@ -46,7 +46,9 @@ With the session token as the `_session_id` cookie, answers when the session and
 
 - `052_app_session_launcher` (findings) — Post appName and machineId, open url in a browser, PUT the id until approved. The sessionToken spends at grant_type=session_token as that person, and every mint renews the session.  
   rules: `doors/findings-auth`
-- `126_session_idle` (findings) — A session token the site does not accept is 400 code 102 "Can't authenticate session token ending with '<last 4>'" at the token endpoint. No API read exposes the site's session window.  
+- `126_session_idle` (findings) — The token endpoint refuses a session token it does not accept with 400 code 102 in errors[], "Can't authenticate session token ending with '<last 4>'". No API read exposes the session window.  
+  rules: `doors/findings-auth`
+- `131_session_revoke` (findings) — The REST spec has no revoke or sign-out call. Of five candidate routes only /user/logout answers (302 to login); whether it ends a launcher session is unmeasured.  
   rules: `doors/findings-auth`
 - `062_cors` (findings) — Every path under `/api/v1` answers the preflight and echoes any `Origin`, credentials true. `/internal_api` and the web paths send no CORS header, so a page on another origin proxies those.  
   rules: `doors/findings-protocol`
@@ -73,3 +75,19 @@ Renews the session behind the `_session_id` cookie: `{"message": "OK"}` and `exp
   rules: `doors/findings-protocol`
 
 `corpus/endpoints/post_internal_api_session.md`
+
+## `GET /user/logout` **[untested]**
+
+The web app's sign-out route. Without a live session, GET and POST both answer 302 to `/user/login`. Whether it ends the session behind a launcher token is unmeasured.
+
+not measured: whether it ends a live session. Only answered with no cookie and a cookie no session holds; a live token needs a person to approve 131 --login. Blocked on the work
+
+- A 302 to the login page says nothing about the session. Read `GET /internal_api/session` after it:
+  401 means the session ended, 200 means it did not.
+
+**Measured by**
+
+- `131_session_revoke` (findings) — The REST spec has no revoke or sign-out call. Of five candidate routes only /user/logout answers (302 to login); whether it ends a launcher session is unmeasured.  
+  rules: `doors/findings-auth`
+
+`corpus/endpoints/get_user_logout.md`

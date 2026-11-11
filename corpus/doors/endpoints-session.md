@@ -23,11 +23,15 @@ The site's login configuration, answered without a token. Read `user_authenticat
   rules: `doors/findings-auth`
 - `052_app_session_launcher` (findings) — Post appName and machineId, open url in a browser, PUT the id until approved. The sessionToken spends at grant_type=session_token as that person, and every mint renews the session.  
   rules: `doors/findings-auth`
-- `126_session_idle` (findings) — A session token the site does not accept is 400 code 102 "Can't authenticate session token ending with '<last 4>'" at the token endpoint. No API read exposes the site's session window.  
+- `126_session_idle` (findings) — The token endpoint refuses a session token it does not accept with 400 code 102 in errors[], "Can't authenticate session token ending with '<last 4>'". No API read exposes the session window.  
+  rules: `doors/findings-auth`
+- `130_launcher_answers` (findings) — sessionRequestId is 21 characters of A-Za-z0-9_-. url is on the site's host unless the create call sends X-Forwarded-Host, which url copies: a proxy strips that header.  
   rules: `doors/findings-auth`
 - `051_api_version` (findings) — /api/v1 and /api/v1.1 are the same API. Across 20 read-only calls the only difference is api_version in the root document and the prefix each echoes in its own links. Any other segment is 404.  
   rules: `doors/findings-protocol`
 - `062_cors` (findings) — Every path under `/api/v1` answers the preflight and echoes any `Origin`, credentials true. `/internal_api` and the web paths send no CORS header, so a page on another origin proxies those.  
+  rules: `doors/findings-protocol`
+- `129_hosted_domains` (findings) — The probed site answers only at its own host; its name under shotgunstudio.com is 404 HTML, no redirect. Both domains resolve any name, so allowlist the configured host, not a suffix.  
   rules: `doors/findings-protocol`
 
 `corpus/endpoints/get_root.md`
@@ -54,7 +58,9 @@ Form-encode it. `application/json` is 415 naming the one legal type, and the 600
   rules: `doors/findings-auth`
 - `052_app_session_launcher` (findings) — Post appName and machineId, open url in a browser, PUT the id until approved. The sessionToken spends at grant_type=session_token as that person, and every mint renews the session.  
   rules: `doors/findings-auth`
-- `126_session_idle` (findings) — A session token the site does not accept is 400 code 102 "Can't authenticate session token ending with '<last 4>'" at the token endpoint. No API read exposes the site's session window.  
+- `126_session_idle` (findings) — The token endpoint refuses a session token it does not accept with 400 code 102 in errors[], "Can't authenticate session token ending with '<last 4>'". No API read exposes the session window.  
+  rules: `doors/findings-auth`
+- `131_session_revoke` (findings) — The REST spec has no revoke or sign-out call. Of five candidate routes only /user/logout answers (302 to login); whether it ends a launcher session is unmeasured.  
   rules: `doors/findings-auth`
 - `062_cors` (findings) — Every path under `/api/v1` answers the preflight and echoes any `Origin`, credentials true. `/internal_api` and the web paths send no CORS header, so a page on another origin proxies those.  
   rules: `doors/findings-protocol`
@@ -66,6 +72,14 @@ Form-encode it. `application/json` is 415 naming the one legal type, and the 600
 ## `POST /internal_api/app_session_request`
 
 Send `appName` and `machineId`, form or JSON, with no token and no cookie. The answer is a `sessionRequestId` to poll and a `url` a logged-in person opens in a browser to approve.
+
+- `sessionRequestId` and `sticky_id` are each 21 characters of `A-Za-z0-9_-`, and differ
+  (`130_launcher_answers`).
+
+- `url` takes its host from an `X-Forwarded-Host` request header. A proxy in front of this call strips
+  that header, or the person is sent to the proxy's host (`130_launcher_answers`).
+
+- There is no withdraw: `DELETE /internal_api/app_session_request/<id>` is 404 code 103.
 
 - The error envelope is `{"message": ...}`, not the `errors[]` envelope every `/api/v1` call answers with.
   A client that reads `errors[0].title` reads nothing here.
@@ -83,6 +97,8 @@ Send `appName` and `machineId`, form or JSON, with no token and no cookie. The a
 **Measured by**
 
 - `052_app_session_launcher` (findings) — Post appName and machineId, open url in a browser, PUT the id until approved. The sessionToken spends at grant_type=session_token as that person, and every mint renews the session.  
+  rules: `doors/findings-auth`
+- `130_launcher_answers` (findings) — sessionRequestId is 21 characters of A-Za-z0-9_-. url is on the site's host unless the create call sends X-Forwarded-Host, which url copies: a proxy strips that header.  
   rules: `doors/findings-auth`
 - `062_cors` (findings) — Every path under `/api/v1` answers the preflight and echoes any `Origin`, credentials true. `/internal_api` and the web paths send no CORS header, so a page on another origin proxies those.  
   rules: `doors/findings-protocol`
@@ -110,6 +126,8 @@ Poll it with no body. `{"approved": false}` while pending; once, `{"approved": t
 **Measured by**
 
 - `052_app_session_launcher` (findings) — Post appName and machineId, open url in a browser, PUT the id until approved. The sessionToken spends at grant_type=session_token as that person, and every mint renews the session.  
+  rules: `doors/findings-auth`
+- `130_launcher_answers` (findings) — sessionRequestId is 21 characters of A-Za-z0-9_-. url is on the site's host unless the create call sends X-Forwarded-Host, which url copies: a proxy strips that header.  
   rules: `doors/findings-auth`
 - `062_cors` (findings) — Every path under `/api/v1` answers the preflight and echoes any `Origin`, credentials true. `/internal_api` and the web paths send no CORS header, so a page on another origin proxies those.  
   rules: `doors/findings-protocol`
