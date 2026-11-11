@@ -39,9 +39,23 @@ Display name to programmatic name, measured:
   rules: `doors/findings-schema`
 - `119_field_absent_retired_live` (findings) — Revive is 204 only on a retired field: 404 `Retired field ... does not exist.` on an unused name, 400 `... is not retired.` on a live one. A retired field is a 404 to GET, PUT and DELETE.  
   rules: `doors/findings-schema`
+- `132_field_create_rights` (findings) — An Artist creating a field gets 500 code 105 `User doesn't have permission to create a Field`, with a traceback. An Admin person gets 201. Treat any 500 from a schema write as a possible refusal.  
+  rules: `doors/findings-schema`
+- `142_reverse_field` (findings) — Every entity or multi_entity field makes a visible, editable multi_entity on each linked type. No create property stops it, and DELETE of the reverse field retires the forward field too.  
+  rules: `doors/findings-schema`
 - `127_retry_and_client_uuid` (findings) — A text field created with `unique: true` refuses a second create with the same value, case and outer spaces ignored, in a batch too. It is the only idempotency key: the API has no header for it.  
   rules: `doors/findings-write`
+- `136_unique_scope_retired` (findings) — A deleted row frees its `unique` value: a new row may take it. Reviving the old row while another holds the value is a 400 code 104 PG transaction error, and the row stays retired.  
+  rules: `doors/findings-write`
+- `137_batch_create_coercion` (findings) — A `_batch` create on a custom entity takes a numeric string in a float and honours `created_at`, as a single POST does. It also takes an Integer and `"1e3"`, which a single POST refuses.  
+  rules: `doors/findings-write`
+- `145_time_fields` (findings) — date_time rounds to the second on POST and PUT (.999 goes up, .5 stays) but truncates in a _batch create. A new timecode field has no rate property; it is integer ms rendered at the site's fixed rate.  
+  rules: `doors/findings-write`
 - `123_photos_per_record` (findings) — `image` keeps only a 480x320 thumbnail. A url field holds one original, a Note's attachments or a multi_entity to Attachment hold many; all return the bytes unchanged.  
+  rules: `doors/findings-upload`
+- `134_attachment_field_second_upload` (findings) — A second `_upload` to a multi_entity field to Attachment adds: the field holds both. Each Attachment gets the row's `project` and the row in `attachment_links`, so a project filter finds it.  
+  rules: `doors/findings-upload`
+- `135_attachment_custom_field_filename` (findings) — Attachment takes a custom field over REST. `filename` keeps 90 and 200 characters but stores each space as `_`; `is` and `starts_with` ignore case, so filter on the name with `_` for spaces.  
   rules: `doors/findings-upload`
 - `025_retry_safe_create` (recipes) — Create rows from a client that retries after timeouts, without duplicating any row  
   rules: `doors/recipes`
@@ -88,6 +102,8 @@ Revive a retired field, at 204. It is the only way to get a burnt name back, and
 - `119_field_absent_retired_live` (findings) — Revive is 204 only on a retired field: 404 `Retired field ... does not exist.` on an unused name, 400 `... is not retired.` on a live one. A retired field is a 404 to GET, PUT and DELETE.  
   rules: `doors/findings-schema`
 - `121_field_settings_edges` (findings) — A PUT applies all its properties or none, in any order. A description or name cannot be emptied. `valid_types` keeps the sent order, and a lowercase type name is a 500 that retires the field.  
+  rules: `doors/findings-schema`
+- `132_field_create_rights` (findings) — An Artist creating a field gets 500 code 105 `User doesn't have permission to create a Field`, with a traceback. An Admin person gets 201. Treat any 500 from a schema write as a possible refusal.  
   rules: `doors/findings-schema`
 
 **Silent on this call**

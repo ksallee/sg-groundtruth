@@ -50,6 +50,10 @@ Changes a field's properties. A body changing `data_type` is a 200 that does not
   rules: `doors/findings-schema`
 - `121_field_settings_edges` (findings) — A PUT applies all its properties or none, in any order. A description or name cannot be emptied. `valid_types` keeps the sent order, and a lowercase type name is a 500 that retires the field.  
   rules: `doors/findings-schema`
+- `132_field_create_rights` (findings) — An Artist creating a field gets 500 code 105 `User doesn't have permission to create a Field`, with a traceback. An Admin person gets 201. Treat any 500 from a schema write as a possible refusal.  
+  rules: `doors/findings-schema`
+- `142_reverse_field` (findings) — Every entity or multi_entity field makes a visible, editable multi_entity on each linked type. No create property stops it, and DELETE of the reverse field retires the forward field too.  
+  rules: `doors/findings-schema`
 - `024_field_visibility_in_a_project` (recipes) — Read which fields of an entity type a project hides, and show or hide one field in one project without touching the others  
   rules: `doors/recipes`
 

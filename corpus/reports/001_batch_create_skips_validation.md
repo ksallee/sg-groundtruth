@@ -1,5 +1,5 @@
 ---
-evidence: [recipes/002_batch, findings/028_loud_and_silent]
+evidence: [recipes/002_batch, findings/028_loud_and_silent, findings/137_batch_create_coercion]
 endpoints: [POST /entity/_batch]
 kind: api
 status: unreported
@@ -32,6 +32,9 @@ The same create inside a batch is not:
 | `DELETE /entity/versions/29932` | `204` |
 
 The row exists. The id from the create response is the only thing that reaches it, and only to delete it.
+
+Type checks differ the same way. A float field refuses `1` and `"1e3"` on `POST /entity/<type>`
+(400 code 103) and stores both inside a batch create, as `"1.0"` and `"1000.0"`.
 
 **Reproduce**
 

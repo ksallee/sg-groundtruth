@@ -25,6 +25,8 @@ Pages rows. An entity field is returned under `relationships` and never `attribu
   rules: `doors/findings-auth`
 - `027_auth_permissions` (findings) — The token endpoint accepts password and session_token. Impersonation is the OAuth2 scope sudo_as_login:<login>, never a body field, and a lower level reads far fewer rows and as many fields.  
   rules: `doors/findings-auth`
+- `133_bearer_expiry` (findings) — Every bearer refusal is 401 code 102 `Unauthorized`; only `detail` differs: `Token Expired` past exp, `Token invalid` for a bad signature, null for garbage or none. Re-mint on 401 code 102.  
+  rules: `doors/findings-auth`
 - `004_array_vs_hash` (findings) — api3_array/api3_hash are a POST _search request Content-Type, not a GET Accept header: as Accept they 406, and entity fields are returned under relationships either way.  
   rules: `doors/findings-protocol`
 - `028_loud_and_silent` (findings) — A 400 is trustworthy and usually names the legal set, but a 200 proves nothing: an unknown field, sort key or query param is a no-op, and a batch can return an id for a row it never made.  
@@ -32,6 +34,8 @@ Pages rows. An entity field is returned under `relationships` and never `attribu
 - `051_api_version` (findings) — /api/v1 and /api/v1.1 are the same API. Across 20 read-only calls the only difference is api_version in the root document and the prefix each echoes in its own links. Any other segment is 404.  
   rules: `doors/findings-protocol`
 - `128_rate_limit` (findings) — 60 GETs from 10 threads in 1.9 s all answered 200 with no rate-limit header of any kind. Code a backoff on 429 and 503 without having seen either.  
+  rules: `doors/findings-protocol`
+- `144_rate_limit_burst` (findings) — 300 mixed reads and writes at 28 per second for 10 s all answered 200 with no rate-limit header. Median latency doubled from 0.3 s to 0.6 s instead. Back off on latency, not on a status.  
   rules: `doors/findings-protocol`
 - `061_shipped_statuses` (findings) — Nothing in the schema marks a shipped Status. `system` is true on a minority of them; the stock set is `created_by is null`, plus `options[return_only]=retired` for the rows a site retired.  
   rules: `doors/findings-schema`
@@ -55,11 +59,15 @@ Pages rows. An entity field is returned under `relationships` and never `attribu
   rules: `doors/findings-read`
 - `082_page_size_cap` (findings) — page[size] takes 1 to 5000 inclusive; 5001 is 400 "size must be less than 5000". Omitted, it is 500. A page costs ~330 ms whatever its size up to 500, so read big pages.  
   rules: `doors/findings-read`
+- `138_dotted_custom_field` (findings) — A dotted path reaches an `sg_` field through an `sg_` entity field, on a custom entity and on a built-in one, and across two hops: projection on GET and _search, and filter, all match.  
+  rules: `doors/findings-read`
 - `016_dotted_multi_entity` (findings) — A dotted path through a multi_entity field reads back nothing: HTTP 200 with the key silently absent from attributes. Filters on that same path work, including two hops.  
   rules: `doors/findings-filter`
 - `030_complex_filters` (findings) — api3_hash nests and/or groups 265 deep and mixes leaves with sub-groups; api3_array cannot express or, query-string filter[] is ignored on _search, and {path,relation,values} runs nowhere.  
   rules: `doors/findings-filter`
 - `011_create_project` (findings) — A script user can create a Project with nothing but {"name": ...}, at 201, but the response echoes only 6 attributes, so read the project back if you need anything else.  
+  rules: `doors/findings-write`
+- `136_unique_scope_retired` (findings) — A deleted row frees its `unique` value: a new row may take it. Reviving the old row while another holds the value is a 400 code 104 PG transaction error, and the row stays retired.  
   rules: `doors/findings-write`
 - `010_status_icons` (findings) — Status.icon is an entity link under relationships; display_type picks one of three renderings; url is empty unless image_data is asked for beside it; the stock sprite is in the site's own stylesheet.  
   rules: `doors/findings-render`
@@ -105,6 +113,8 @@ One row, and the only read where `fields` is honoured on a single record. A reti
   rules: `doors/findings-read`
 - `088_project_template_defaults` (findings) — The per-entity-type default is readable at `Project.tracking_settings.default_task_template.<Type>`, a `{type, id, name, valid}` dict. `Project.task_templates` is a separate list, not the default.  
   rules: `doors/findings-read`
+- `138_dotted_custom_field` (findings) — A dotted path reaches an `sg_` field through an `sg_` entity field, on a custom entity and on a built-in one, and across two hops: projection on GET and _search, and filter, all match.  
+  rules: `doors/findings-read`
 - `058_local_storage_roots` (findings) — One create fills every `local_path_*` the storage row defines, whichever platform's root the path was under. The server picks the deepest matching root, and no conditional-write header is honoured.  
   rules: `doors/findings-write`
 - `078_page_setting_write` (findings) — A script cannot create a Page (HumanUser expected), a person can. settings_json writes only as a JSON string, reads back identical. DELETE on a PageSetting is 400: every created row is permanent.  
@@ -135,6 +145,8 @@ One row, and the only read where `fields` is honoured on a single record. A reti
   rules: `doors/findings-write`
 - `113_batch_atomic_after_template_write` (findings) — A `_batch` holding a `task_template` apply is atomic: a later or earlier failing request left no Task, no claim, no field write, no edge and no EventLogEntry row.  
   rules: `doors/findings-write`
+- `134_attachment_field_second_upload` (findings) — A second `_upload` to a multi_entity field to Attachment adds: the field holds both. Each Attachment gets the row's `project` and the row in `attachment_links`, so a project filter finds it.  
+  rules: `doors/findings-upload`
 - `003_query_fields_and_pages` (recipes) — Resolve a query field's value, and run the rows a saved Page shows  
   rules: `doors/recipes`
 - `005_propagate_status` (recipes) — Roll a status up from a parent's Tasks and Versions onto the parent, without racing a concurrent write  
@@ -198,6 +210,10 @@ Reads one image or attachment field, and with `?alt` redirects to the bytes. Eve
 - `081_dotted_image` (findings) — entity.Shot.image returns the Shot's thumbnail as a presigned S3 URL under attributes, same object, fresh signature, in the same call. image is_not null matched 50 Shots whose image reads null.  
   rules: `doors/findings-read`
 - `125_upload_host_cors` (findings) — The presigned upload host answers any Origin with `*`, allows PUT with content-type and exposes `ETag`, so a page can upload, multipart included. A URL is refused after 900 s.  
+  rules: `doors/findings-upload`
+- `140_presigned_put_size` (findings) — One presigned PUT took 1000 MB at 200 and the stored object read back at exactly 1000000000 bytes. No refusal up to there; at about 8 MB/s a 1000 MB PUT took two minutes.  
+  rules: `doors/findings-upload`
+- `141_download_headers` (findings) — A stored file's GET sends Content-Length and Accept-Ranges, answers `*` to any Origin and allows a Range preflight, so a page can show progress, resume with Range and abort. `HEAD` is 403.  
   rules: `doors/findings-upload`
 
 **Silent on this call**

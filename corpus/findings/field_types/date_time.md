@@ -3,7 +3,7 @@ tags: [date]
 scope: api
 measured: first sample project read, one Version written in the sandbox project
 summary: A moment in time, stored and returned in UTC.
-verdict: Stored and read as UTC `YYYY-MM-DDTHH:MM:SSZ`: a written offset is silently normalised, a zoneless string is taken as UTC, and a date-only filter value means midnight UTC, not the whole day.
+verdict: Stored and read as UTC `YYYY-MM-DDTHH:MM:SSZ`, whole seconds: an offset is normalised, a zoneless string is UTC, and `.999` rounds up by PUT or POST but truncates in a `_batch` create.
 ---
 
 # date_time
@@ -25,7 +25,8 @@ schema's `editable` flag.
 
 Always `YYYY-MM-DDTHH:MM:SSZ`: second resolution, literal trailing `Z`, no numeric offset and no
 site-local zone. A Version created at client UTC `2026-09-02T15:58:53.5Z` read back
-`created_at='2026-09-02T15:58:53Z'`: 0.5s truncated, the same instant.
+`created_at='2026-09-02T15:58:53Z'`. Sub-second input is rounded, not dropped: `.999` reads back as
+the next second by `PUT` and `POST`, `.5` stays, and a `_batch` create truncates (probe 145).
 
 **Write** `PUT /entity/versions/<id>` with a JSON string.
 
@@ -35,7 +36,10 @@ site-local zone. A Version created at client UTC `2026-09-02T15:58:53.5Z` read b
 | `"2026-03-04T05:06:07+05:00"` | 200, read back `2026-03-04T00:06:07Z` |
 | `"2026-03-04T05:06:07-08:00"` | 200, read back `2026-03-04T13:06:07Z` |
 | `"2026-03-04T05:06:07"` | 200, read back `2026-03-04T05:06:07Z`; zoneless is UTC |
-| `"2026-03-04T05:06:07.123Z"` | 200, read back `2026-03-04T05:06:07Z`; sub-second dropped |
+| `"2026-03-04T05:06:07.123Z"` | 200, read back `2026-03-04T05:06:07Z` |
+| `"2026-11-11T14:22:05.999Z"` | 200, read back `2026-11-11T14:22:06Z`: rounded up, by `PUT` and by `POST` (probe 145) |
+| `"2026-11-11T14:22:05.5Z"` | 200, read back `2026-11-11T14:22:05Z` |
+| `"2026-11-11T14:22:05.999Z"` in a `_batch` create | 200, read back `2026-11-11T14:22:05Z`: truncated (probe 145) |
 | `"2026-03-04"` | 200, read back `2026-03-04T00:00:00Z` |
 | `"2026-03-04 05:06:07"` | 400 `Invalid date time format: 2026-03-04 05:06:07. Correct format is 2011-01-21T13:26:09Z (UTC), 2011-01-21T13:26:09-07:00 (UTC Offset) or any ISO8601 compatible string.` |
 | `"1772600767"` (epoch string) | 400, same `Invalid date time format` message |

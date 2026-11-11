@@ -97,7 +97,7 @@ A date is the string "YYYY-MM-DD" and nothing else: any timestamp 400s on write 
 
 ## date_time
 
-Stored and read as UTC `YYYY-MM-DDTHH:MM:SSZ`: a written offset is silently normalised, a zoneless string is taken as UTC, and a date-only filter value means midnight UTC, not the whole day.
+Stored and read as UTC `YYYY-MM-DDTHH:MM:SSZ`, whole seconds: an offset is normalised, a zoneless string is UTC, and `.999` rounds up by PUT or POST but truncates in a `_batch` create.
 
 - A written offset is not preserved: `05:06:07+05:00` reads back as `00:06:07Z`. Convert to UTC yourself
   and keep the original zone in your own field if a client must redisplay local wall-clock time.
@@ -181,7 +181,9 @@ An entity_type field is a bare schema-name string in attributes, validated on wr
 
 A float reads back as a JSON string rounded to 6 decimals and rejects Integer on both write and filter: send 1.0 or "1.0", never 1; 0.0 and null stay distinct, and 1e-9 silently becomes 0.0.
 
-- Integer is rejected on both halves: `PUT {"field": 1}` and `["field", "is", 1]`. A client that computed
+- Integer is rejected on both halves: `PUT {"field": 1}` and `["field", "is", 1]`. A `_batch` create
+  is the exception: it stores `1` as `"1.0"` and `"1e3"` as `"1000.0"`, both refused by a single `POST`
+  (probe 137). A client that computed
   an aspect ratio as exactly `2` must send `2.0` or `"2.0"`. `number` is the mirror image; it rejects Float.
 
 - The value is a string, so `row["attributes"][f] > 1.0` raises and `== 1.0` is False. Cast on read.

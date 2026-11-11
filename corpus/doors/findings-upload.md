@@ -151,3 +151,97 @@ not measured: a real browser run, and a size cap: the largest single PUT sent wa
   standard algorithm to these headers allows the calls above; no browser was run.
 
 `corpus/findings/125_upload_host_cors.md`
+
+## 134_attachment_field_second_upload
+
+A second `_upload` to a multi_entity field to Attachment adds: the field holds both. Each Attachment gets the row's `project` and the row in `attachment_links`, so a project filter finds it.
+
+- Upload each photo straight to the field when it is taken. The server appends; a client does not read
+  the field and `PUT` the union back, and a client that does `PUT` a bare list there replaces the
+  set (recipe 009). Use `multi_entity_update_mode: add` if it ever writes the field itself.
+
+- The Attachment gets the row's `project` without being told, and lists the row in
+  `attachment_links` as well as in the field. Either finds a row's files: `attachment_links is
+  <row>`, or the field read on the row.
+
+- A multi_entity field to Attachment creates a reverse field on Attachment named
+  `<slug>_<field>_<slug>s`, where `<slug>` is the source type's REST slug in singular
+  (`custom_entityNN`). Probe 142 covers reverse fields.
+
+`corpus/findings/134_attachment_field_second_upload.md`
+
+## 135_attachment_custom_field_filename
+
+Attachment takes a custom field over REST. `filename` keeps 90 and 200 characters but stores each space as `_`; `is` and `starts_with` ignore case, so filter on the name with `_` for spaces.
+
+- A custom field on Attachment is creatable and writable by the script, so a capture id can sit on
+  the file's own row rather than only in its name.
+
+- `filename` is not always what was sent: each space is stored as `_`, while the `_upload` init
+  echoes the original. Replace spaces with `_` before looking a file up by name, or keep the client's
+  name in a custom field. Non-ASCII letters and 200 characters are kept.
+
+- Text matching on `filename` ignores case, as on every text field (`field_types/text`): a client that
+  names two files differing only in case cannot tell them apart by filter.
+
+`corpus/findings/135_attachment_custom_field_filename.md`
+
+## 139_multipart_lifetime
+
+An upload_id still completed 1230 s after its init, with part 2 minted then. The link's `timestamp` is not age-checked: it is part of the stored key, so another value signs a URL S3 answers 404. **[partial]**
+
+not measured: an upload_id older than 1230 s. Blocked on time: `139 --write --wait <seconds>` measures any age
+
+- A resumed upload keeps its `upload_id`, `timestamp` and the ETags of finished parts, and asks
+  `get_next_part` for a fresh URL per part: every URL dies 900 s after it was minted (probe 125), the
+  `upload_id` did not within 1230 s. Persist the init's whole `data` object with the ETags.
+
+- `timestamp` is an identifier, not a freshness check. A wrong value is accepted at minting and fails
+  only at the part `PUT`, as an S3 404 that blames the upload ID. Send the init's value verbatim.
+
+- A garbage `timestamp` answers a bare `{"status": "error", ...}` body outside the `errors[]`
+  envelope; parse both shapes on this call.
+
+- An init that is never completed nor aborted stays open on storage (probe 044). Its lifetime there
+  is the storage's and was not measured past 1230 s.
+
+`corpus/findings/139_multipart_lifetime.md`
+
+## 140_presigned_put_size
+
+One presigned PUT took 1000 MB at 200 and the stored object read back at exactly 1000000000 bytes. No refusal up to there; at about 8 MB/s a 1000 MB PUT took two minutes. **[partial]**
+
+not measured: sizes above 1000 MB, stopped there by design. S3 documents five gigabytes as one PUT's ceiling
+
+- Size is not what forces multipart, up to 1000 MB at least. Choose multipart for resumability: a single
+  PUT that dies at 90 % starts over, and a 1000 MB PUT here ran two minutes on one connection.
+
+- The upload URL lives 900 s from `_upload` (probe 125). Whether a PUT that starts inside the window
+  and ends after it is accepted was not measured. Mint the URL right before the PUT, and keep a
+  single PUT small enough to finish inside 900 s at the connection's rate.
+
+- Confirm a stored size with `GET` and `Range: bytes=-1`: `Content-Range` gives the total.
+  `file_size` stays null and `HEAD` is refused.
+
+`corpus/findings/140_presigned_put_size.md`
+
+## 141_download_headers
+
+A stored file's GET sends Content-Length and Accept-Ranges, answers `*` to any Origin and allows a Range preflight, so a page can show progress, resume with Range and abort. `HEAD` is 403.
+
+- Show progress from `Content-Length`: it is sent on the 200, and a script may read it under `*`.
+
+- `HEAD` is refused because the URL is signed for `GET`. Read size with `GET` and `Range: bytes=-1`
+  (probe 140), or from the 200's headers before reading the body.
+
+- Abandoning a body is a client-side close; the URL stays usable for a new request until it expires
+  900 s after it was read from the API. What S3 bills for a closed transfer was not measured.
+
+- The stored `Content-Type` is S3's default `binary/octet-stream` when the upload `PUT` sends none,
+  as this one did; the `.jpg` name does not set it. `Content-Type` is not a signed header
+  (probe 125), so a `PUT` may send one; whether the download then answers with it was not measured.
+
+- Evidence is headers read by a process. A browser applying the CORS rules to them allows the above;
+  no browser was run.
+
+`corpus/findings/141_download_headers.md`

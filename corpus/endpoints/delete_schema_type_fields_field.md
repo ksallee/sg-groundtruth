@@ -42,9 +42,14 @@ Creating the same display name again:
 | status | when |
 |---|---|
 | 204 | retired, empty body |
+| 400 | code 104 `User doesn't have permission to retire a Field` for an Artist (probe 132) |
+| 404 | code 103 `Field '<Type>.<field>' does not exist.`, for a retired field or an unused name, checked before permission |
 
 **Edge cases**
 
+- **A link field is one link with two names.** Retiring the reverse field an entity or
+  multi_entity field made on its linked type retires the forward field too, and the reverse goes
+  with the forward (probe 142).
 - **The name is not freed.** The error tells you to empty the Trash page in the web interface, which
   REST cannot do. From an API client the only way back is
   `POST /schema/<Type>/fields/<field>` with `{"revive": true}`, and it returns at the original type.

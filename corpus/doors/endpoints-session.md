@@ -27,6 +27,8 @@ The site's login configuration, answered without a token. Read `user_authenticat
   rules: `doors/findings-auth`
 - `130_launcher_answers` (findings) — sessionRequestId is 21 characters of A-Za-z0-9_-. url is on the site's host unless the create call sends X-Forwarded-Host, which url copies: a proxy strips that header.  
   rules: `doors/findings-auth`
+- `133_bearer_expiry` (findings) — Every bearer refusal is 401 code 102 `Unauthorized`; only `detail` differs: `Token Expired` past exp, `Token invalid` for a bad signature, null for garbage or none. Re-mint on 401 code 102.  
+  rules: `doors/findings-auth`
 - `051_api_version` (findings) — /api/v1 and /api/v1.1 are the same API. Across 20 read-only calls the only difference is api_version in the root document and the prefix each echoes in its own links. Any other segment is 404.  
   rules: `doors/findings-protocol`
 - `062_cors` (findings) — Every path under `/api/v1` answers the preflight and echoes any `Origin`, credentials true. `/internal_api` and the web paths send no CORS header, so a page on another origin proxies those.  
@@ -61,6 +63,8 @@ Form-encode it. `application/json` is 415 naming the one legal type, and the 600
 - `126_session_idle` (findings) — The token endpoint refuses a session token it does not accept with 400 code 102 in errors[], "Can't authenticate session token ending with '<last 4>'". No API read exposes the session window.  
   rules: `doors/findings-auth`
 - `131_session_revoke` (findings) — The REST spec has no revoke or sign-out call. Of five candidate routes only /user/logout answers (302 to login); whether it ends a launcher session is unmeasured.  
+  rules: `doors/findings-auth`
+- `133_bearer_expiry` (findings) — Every bearer refusal is 401 code 102 `Unauthorized`; only `detail` differs: `Token Expired` past exp, `Token invalid` for a bad signature, null for garbage or none. Re-mint on 401 code 102.  
   rules: `doors/findings-auth`
 - `062_cors` (findings) — Every path under `/api/v1` answers the preflight and echoes any `Origin`, credentials true. `/internal_api` and the web paths send no CORS header, so a page on another origin proxies those.  
   rules: `doors/findings-protocol`

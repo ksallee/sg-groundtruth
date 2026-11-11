@@ -28,6 +28,8 @@ Step one of three. `filename` is a required query parameter and its absence is 4
   rules: `doors/findings-upload`
 - `125_upload_host_cors` (findings) — The presigned upload host answers any Origin with `*`, allows PUT with content-type and exposes `ETag`, so a page can upload, multipart included. A URL is refused after 900 s.  
   rules: `doors/findings-upload`
+- `134_attachment_field_second_upload` (findings) — A second `_upload` to a multi_entity field to Attachment adds: the field holds both. Each Attachment gets the row's `project` and the row in `attachment_links`, so a project filter finds it.  
+  rules: `doors/findings-upload`
 - `001_publish_version_with_media` (recipes) — Publish a generated image to Flow PT as a Version, with provenance and the workflow attached  
   rules: `doors/recipes`
 - `006_media_round_trip` (recipes) — Take media off one Version and put the same bytes on another, which is what every sync, transfer and hand-off does  
@@ -79,6 +81,11 @@ The `storage_service: "sg"` upload target, on the Flow PT host. A site on `s3` r
 ## `GET /entity/<type>/<id>/<field>/_upload/multipart`
 
 Step two of a multipart transfer, once per part after the first. Walk `links.get_next_part` rather than building it: each reply holds the part's presigned `upload` and the link to the part after.
+
+- **The `timestamp` is not checked for age, it is part of the key.** `2020-01-01T00:00:00Z` answers
+  200 with a URL whose path differs from the init's, and the part PUT is S3 404 `NoSuchUpload`.
+  `zz` is 400 `{"status": "error", "error": "no time information in \"zz UTC\""}`, outside the
+  `errors[]` envelope; omitted is 400 `timestamp is missing` (probe 139).
 
 - `upload_id` is required and is the one parameter the validator does not check for. Omitting it
   produces `Could not generate upload url. Check the site settings.`, which points at site
@@ -145,6 +152,14 @@ The same handshake with the field left out of the path, which stores the bytes a
   rules: `doors/findings-upload`
 - `123_photos_per_record` (findings) — `image` keeps only a 480x320 thumbnail. A url field holds one original, a Note's attachments or a multi_entity to Attachment hold many; all return the bytes unchanged.  
   rules: `doors/findings-upload`
+- `135_attachment_custom_field_filename` (findings) — Attachment takes a custom field over REST. `filename` keeps 90 and 200 characters but stores each space as `_`; `is` and `starts_with` ignore case, so filter on the name with `_` for spaces.  
+  rules: `doors/findings-upload`
+- `139_multipart_lifetime` (findings) — An upload_id still completed 1230 s after its init, with part 2 minted then. The link's `timestamp` is not age-checked: it is part of the stored key, so another value signs a URL S3 answers 404.  
+  rules: `doors/findings-upload`
+- `140_presigned_put_size` (findings) — One presigned PUT took 1000 MB at 200 and the stored object read back at exactly 1000000000 bytes. No refusal up to there; at about 8 MB/s a 1000 MB PUT took two minutes.  
+  rules: `doors/findings-upload`
+- `141_download_headers` (findings) — A stored file's GET sends Content-Length and Accept-Ranges, answers `*` to any Origin and allows a Range preflight, so a page can show progress, resume with Range and abort. `HEAD` is 403.  
+  rules: `doors/findings-upload`
 - `001_publish_version_with_media` (recipes) — Publish a generated image to Flow PT as a Version, with provenance and the workflow attached  
   rules: `doors/recipes`
 - `008_delivery_progress` (recipes) — Keep a Delivery honest about what a long transfer is doing, including when it is cancelled and when it crashes  
@@ -191,6 +206,11 @@ The fieldless part chain, `/entity/<type>/<id>/attachments/_upload/multipart`. S
 
 - The 5 MiB floor on every part but the last is the same here. See `findings/044_multipart_upload`.
 
+**Measured by**
+
+- `139_multipart_lifetime` (findings) — An upload_id still completed 1230 s after its init, with part 2 minted then. The link's `timestamp` is not age-checked: it is part of the stored key, so another value signs a URL S3 answers 404.  
+  rules: `doors/findings-upload`
+
 `corpus/endpoints/get_entity_type_id_upload_multipart.md`
 
 ## `POST /entity/<type>/<id>/_upload/multipart_abort`
@@ -199,6 +219,11 @@ The fieldless abort, `/entity/<type>/<id>/attachments/_upload/multipart_abort`. 
 
 - `endpoints/post_entity_type_id_field_upload_multipart_abort` holds the edge cases; both forms
   answered identically at every input measured.
+
+**Measured by**
+
+- `139_multipart_lifetime` (findings) — An upload_id still completed 1230 s after its init, with part 2 minted then. The link's `timestamp` is not age-checked: it is part of the stored key, so another value signs a URL S3 answers 404.  
+  rules: `doors/findings-upload`
 
 `corpus/endpoints/post_entity_type_id_upload_multipart_abort.md`
 
@@ -254,6 +279,16 @@ Step three, at 201 with a body of a single space. Not JSON, and it never names t
   rules: `doors/findings-upload`
 - `125_upload_host_cors` (findings) — The presigned upload host answers any Origin with `*`, allows PUT with content-type and exposes `ETag`, so a page can upload, multipart included. A URL is refused after 900 s.  
   rules: `doors/findings-upload`
+- `134_attachment_field_second_upload` (findings) — A second `_upload` to a multi_entity field to Attachment adds: the field holds both. Each Attachment gets the row's `project` and the row in `attachment_links`, so a project filter finds it.  
+  rules: `doors/findings-upload`
+- `135_attachment_custom_field_filename` (findings) — Attachment takes a custom field over REST. `filename` keeps 90 and 200 characters but stores each space as `_`; `is` and `starts_with` ignore case, so filter on the name with `_` for spaces.  
+  rules: `doors/findings-upload`
+- `139_multipart_lifetime` (findings) — An upload_id still completed 1230 s after its init, with part 2 minted then. The link's `timestamp` is not age-checked: it is part of the stored key, so another value signs a URL S3 answers 404.  
+  rules: `doors/findings-upload`
+- `140_presigned_put_size` (findings) — One presigned PUT took 1000 MB at 200 and the stored object read back at exactly 1000000000 bytes. No refusal up to there; at about 8 MB/s a 1000 MB PUT took two minutes.  
+  rules: `doors/findings-upload`
+- `141_download_headers` (findings) — A stored file's GET sends Content-Length and Accept-Ranges, answers `*` to any Origin and allows a Range preflight, so a page can show progress, resume with Range and abort. `HEAD` is 403.  
+  rules: `doors/findings-upload`
 - `124_updated_at_bumps` (findings) — `updated_at` moves on a write, a finished upload and its transcode, and on a link set from either end, but not on a no-op PUT and not when a Note names the row in `note_links`.  
   rules: `doors/findings-observe`
 - `001_publish_version_with_media` (recipes) — Publish a generated image to Flow PT as a Version, with provenance and the workflow attached  
@@ -298,6 +333,14 @@ Step two, to storage rather than to Flow PT, with no Authorization header. It is
 - `123_photos_per_record` (findings) — `image` keeps only a 480x320 thumbnail. A url field holds one original, a Note's attachments or a multi_entity to Attachment hold many; all return the bytes unchanged.  
   rules: `doors/findings-upload`
 - `125_upload_host_cors` (findings) — The presigned upload host answers any Origin with `*`, allows PUT with content-type and exposes `ETag`, so a page can upload, multipart included. A URL is refused after 900 s.  
+  rules: `doors/findings-upload`
+- `134_attachment_field_second_upload` (findings) — A second `_upload` to a multi_entity field to Attachment adds: the field holds both. Each Attachment gets the row's `project` and the row in `attachment_links`, so a project filter finds it.  
+  rules: `doors/findings-upload`
+- `139_multipart_lifetime` (findings) — An upload_id still completed 1230 s after its init, with part 2 minted then. The link's `timestamp` is not age-checked: it is part of the stored key, so another value signs a URL S3 answers 404.  
+  rules: `doors/findings-upload`
+- `140_presigned_put_size` (findings) — One presigned PUT took 1000 MB at 200 and the stored object read back at exactly 1000000000 bytes. No refusal up to there; at about 8 MB/s a 1000 MB PUT took two minutes.  
+  rules: `doors/findings-upload`
+- `141_download_headers` (findings) — A stored file's GET sends Content-Length and Accept-Ranges, answers `*` to any Origin and allows a Range preflight, so a page can show progress, resume with Range and abort. `HEAD` is 403.  
   rules: `doors/findings-upload`
 - `001_publish_version_with_media` (recipes) — Publish a generated image to Flow PT as a Version, with provenance and the workflow attached  
   rules: `doors/recipes`

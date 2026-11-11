@@ -1112,3 +1112,93 @@ not measured: whether `unique` spans projects, and whether a deleted row's value
   `<br> `. Code 104 is the general create failure, so match on it plus the display name in the title.
 
 `corpus/findings/127_retry_and_client_uuid.md`
+
+## 136_unique_scope_retired
+
+A deleted row frees its `unique` value: a new row may take it. Reviving the old row while another holds the value is a 400 code 104 PG transaction error, and the row stays retired. **[partial]**
+
+not measured: uniqueness across two projects. Probes write only into the sandbox and a project entity refuses a row with no project. Blocked on the site: needs a second writable project
+
+| row state | holds K for uniqueness |
+|---|---|
+| live | yes: a create with K is 400 code 104 |
+| retired (deleted) | no: a create with K is 201, and the retired row still stores K |
+| revived while a live row holds K | the revive fails, 400 code 104, row stays retired |
+| revived while nothing holds K | 200; the row holds K again and blocks the next create |
+
+- A lookup by key must search live rows only (the default) and treat a retired match as absent. A
+  client that undoes a delete by reviving must expect the revive to fail when the key was reused,
+  and the error names a Postgres transaction, not uniqueness.
+
+- The duplicate refusal names the field's display name, not its `sg_` name, and ends in `<br> `.
+
+- Whether two projects can hold the same value is unmeasured. The refusal says "required to be
+  unique" and names no scope; key on a value that is unique across the site (a UUID) and the
+  question does not arise.
+
+`corpus/findings/136_unique_scope_retired.md`
+
+## 137_batch_create_coercion
+
+A `_batch` create on a custom entity takes a numeric string in a float and honours `created_at`, as a single POST does. It also takes an Integer and `"1e3"`, which a single POST refuses.
+
+- Send floats as strings in either path: `"1.5"` is accepted by both and reads back as a string.
+
+- `created_at` and `updated_at` in a batch create are stored as sent, offsets normalised to UTC, as on
+  a single `POST` (probe 070). Stamp capture time this way.
+
+- The batch path is wider than the single one: an Integer and an exponent string both store. Code
+  that is tested by batch can fail by single `POST`, so validate before sending rather than relying
+  on either (report 001).
+
+- A refused batch value is code 104 `Value is not legal.` naming the field; the single path's code
+  103 says which types it takes. Debug a batch refusal by sending that request alone.
+
+`corpus/findings/137_batch_create_coercion.md`
+
+## 143_nonadmin_rows
+
+On the probed site an Artist may not create, edit or delete custom-entity rows (status only) and may create but not delete an Attachment, its own included. The group rights call predicts each answer. **[partial]**
+
+not measured: Manager and Vendor writes; rights read, not exercised. Blocked on the site: impersonation on for one of each in the sandbox, then `143 --write`
+
+- Read the caller's own group with `GET /schema/permission_groups` then `.../entity_types/<Type>`
+  before writing: every Artist answer above matched the table, the `sg_status_list` exception
+  included. A person sees only their own group; an Admin sees all.
+
+- A refusal is a 400 code 104 naming the type or the field, as on Task and Shot (probe 094).
+
+- On the probed site a capture app run by an Artist cannot make its own rows on custom entities and
+  cannot remove a photo it uploaded. Either the people get Manager, the site's Artist rules change,
+  or the app writes through a script key.
+
+- Manager's rights were read, not exercised; a conditional rule can still refuse a write the table
+  lists as allowed (probe 094).
+
+`corpus/findings/143_nonadmin_rows.md`
+
+## 145_time_fields
+
+date_time rounds to the second on POST and PUT (.999 goes up, .5 stays) but truncates in a _batch create. A new timecode field has no rate property; it is integer ms rendered at the site's fixed rate.
+
+- `date_time` keeps whole seconds and the path decides which second. Round to the second yourself
+  before sending, then every path stores the same value. A `.999` capture time sent by `_batch` is
+  one second earlier than the same value sent by `POST`.
+
+- The rounding is not half-up: `.5` stayed on its second and `.999` went to the next. Where the cut
+  lies between was not measured. A filter value is rounded the same way as a write, so filtering
+  with the value that was sent finds the row.
+
+- A timecode field has no rate anywhere: the create refuses a rate property, the schema shows none,
+  and the value is milliseconds of wall-clock time. `01:00:00:12` therefore means `3600000 +
+  12 * 1000 / fps` ms, rounded to an integer, and `3600500` and `3600501` both render as frame 12.
+
+- Milliseconds are fine enough for frames (one frame at 23.976 is 41.7 ms), but the field stores no
+  rate, so a reader cannot tell which rate a value was written at, and the server renders every
+  value at its own fixed rate (`field_types/timecode`). Store a frame count in a `number` field and the rate beside it, or the `HH:MM:SS:FF`
+  string in `text`, as the stock cut fields do.
+
+- A new duration field behaves as the stock one: integer minutes, a float or numeric string
+  truncated toward zero, a clock string refused.
+
+`corpus/findings/145_time_fields.md`

@@ -217,3 +217,19 @@ not measured: a site created under shotgunstudio.com, and a European-hosted site
   European-hosted site keeps its `shotgrid.autodesk.com` host is unmeasured.
 
 `corpus/findings/129_hosted_domains.md`
+
+## 144_rate_limit_burst
+
+300 mixed reads and writes at 28 per second for 10 s all answered 200 with no rate-limit header. Median latency doubled from 0.3 s to 0.6 s instead. Back off on latency, not on a status. **[partial]**
+
+not measured: the load at which a limit bites, if one exists. The burst was capped at about 30/s on a shared site. Blocked on the work
+
+- At 30 requests a second sustained for 10 s, mixed reads and writes, nothing is refused and nothing
+  announces a budget. The limit answer is still unseen; code a backoff on 429 and 503 and honour a
+  `Retry-After` if one appears (probe 128).
+
+- The cost of load showed as latency: the median was 0.29 s for 60 GETs from 10 threads (probe 128)
+  and 0.6 s here. A drain loop that watches its own latency and narrows its concurrency when it rises
+  is the signal this site gives.
+
+`corpus/findings/144_rate_limit_burst.md`
