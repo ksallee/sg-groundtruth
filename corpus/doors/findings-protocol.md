@@ -195,3 +195,25 @@ not measured: the load at which a limit bites, if one exists. The burst was kept
   `Retry-After` if one ever appears; do not assume any other status means "slow down".
 
 `corpus/findings/128_rate_limit.md`
+
+## 129_hosted_domains
+
+The probed site answers only at its own host; its name under shotgunstudio.com is 404 HTML, no redirect. Both domains resolve any name, so allowlist the configured host, not a suffix. **[partial]**
+
+not measured: a site created under shotgunstudio.com, and a European-hosted site's hostname. The probed site is neither; blocked on the site
+
+- On the probed site, the site answers at one host. Its name under `shotgunstudio.com` is not a
+  redirect to `shotgrid.autodesk.com`: it is the same 404 a name no site holds gets. Store the host the
+  person typed and call that; do not rewrite one domain to the other.
+
+- Both `shotgrid.autodesk.com` and `shotgunstudio.com` resolve any name under them. A proxy that
+  forwards to any host matching either suffix forwards to hosts no site serves. Allowlist the
+  configured site's exact host.
+
+- A host with no site answers `/api/v1` with `404 text/html`, not JSON. Treat an HTML 404 from
+  `GET /api/v1` as "no site at this address" before parsing.
+
+- No name under `shotgun.autodesk.com` resolves. No regional hostname is documented; whether a
+  European-hosted site keeps its `shotgrid.autodesk.com` host is unmeasured.
+
+`corpus/findings/129_hosted_domains.md`

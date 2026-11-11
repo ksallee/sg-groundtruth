@@ -14,9 +14,9 @@ An endpoint door holds the edge cases that live on the call and the verdict of e
 
 ## Findings
 
-**auth** 001_auth, 027_auth_permissions, 052_app_session_launcher, 126_session_idle
+**auth** 001_auth, 027_auth_permissions, 052_app_session_launcher, 126_session_idle, 130_launcher_answers, 131_session_revoke
 
-**protocol** 004_array_vs_hash, 028_loud_and_silent, 051_api_version, 062_cors, 128_rate_limit
+**protocol** 004_array_vs_hash, 028_loud_and_silent, 051_api_version, 062_cors, 128_rate_limit, 129_hosted_domains
 
 **schema** 002_schema, 008_custom_entities, 009_status_lists, 019_create_fields, 040_field_revive, 042_spec_coverage, 047_site_facts_and_the_working_week, 056_stock_vs_custom_field, 061_shipped_statuses, 091_status_summary_exclusions, 114_schema_admin_recheck, 115_field_visibility_per_project, 116_field_settings_create_update, 117_field_types_and_names, 118_field_writes_other_types, 119_field_absent_retired_live, 120_field_trash_page, 121_field_settings_edges, 122_onset_entity_types
 
@@ -70,7 +70,7 @@ Asset, Attachment, Cut, CutItem, Delivery, HumanUser, LocalStorage, Note, Playli
 
 ## Endpoints
 
-One card per call, 69 of 75 with an entry behind them; a card with none is the queue. A family's door is `doors/endpoints-<family>.md`, in lower case.
+One card per call, 70 of 76 with an entry behind them; a card with none is the queue. A family's door is `doors/endpoints-<family>.md`, in lower case.
 
 **Session**
 
@@ -195,6 +195,7 @@ GET /exports/page/<page_id>/<layout_name>.<format>
 POST /internal_api/autodesk_identity/license_renewal
 GET /internal_api/session
 POST /internal_api/session
+GET /user/logout
 ```
 
 ## Reports

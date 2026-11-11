@@ -3,10 +3,10 @@ tags: [auth, token, launcher, error-handling]
 endpoints: [POST /auth/access_token, GET /internal_api/session, GET /preferences, GET /]
 phase: auth
 scope: api
-measured: site-wide, 2026-11-11; three never-valid session tokens, no person's token
+measured: site-wide, 2026-11-11 (twice); three never-valid session tokens, no person's token
 coverage: partial
 unmeasured: a real session token left idle past the window. Needs a person to approve 052 --login, then a day of nobody spending it. Blocked on time
-verdict: A session token the site does not accept is 400 code 102 "Can't authenticate session token ending with '<last 4>'" at the token endpoint. No API read exposes the site's session window.
+verdict: The token endpoint refuses a session token it does not accept with 400 code 102 in errors[], "Can't authenticate session token ending with '<last 4>'". No API read exposes the session window.
 ---
 
 # 126_session_idle
@@ -25,7 +25,8 @@ reference is silent on reading it.
 ```
 POST /auth/access_token grant_type=session_token
   session_token "0000...0000" (32) -> 400
-    {"status":400,"code":102,"title":"Can't authenticate session token ending with '0000'","source":{}}
+    {"errors":[{"id":"<uuid>","status":400,"code":102,
+      "title":"Can't authenticate session token ending with '0000'","source":{},"detail":null,"meta":null}]}
   session_token ""                 -> 400  code 102 "Can't authenticate session token ending with ''"
   session_token <32 random hex>    -> 400  code 102 "Can't authenticate session token ending with 'd93d'"
 GET /internal_api/session  cookie _session_id=<32 random hex>  -> 401 {"message":"Unauthorized"}
@@ -49,8 +50,11 @@ answers whole. The token stays in the gitignored `session_token.local.json`.
 
 **Teaches**
 - Treat 400 code 102 from `grant_type=session_token` as "send the person through sign-in again".
-  The title quotes the token's last four characters and nothing else, so an expired, revoked or
-  mistyped token cannot be told apart from it. Whether an expired one answers the same is unmeasured.
+  It is in the `errors[]` envelope like every `/api/v1` error; `GET /internal_api/session` answers
+  the same token with a bare `{"message":"Unauthorized"}` (probe 052). The title quotes the token's
+  last four characters and nothing else, so a mistyped token cannot be told from any other refusal.
+- Whether an idle-expired token answers the same code and envelope is unmeasured: on 2026-11-11 no
+  saved token existed. `--idle` prints the envelope of both answers beside the never-valid ones.
 - The window is not readable: `/preferences` exposes 17 display and scheduling keys and silently
   answers `{}` for any other name. Read `expiresAt` from `GET /internal_api/session` while the token
   is live (probe 052) instead.
