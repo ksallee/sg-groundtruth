@@ -28,6 +28,8 @@ The enabled type list, and the enablement test for a `CustomEntityNN`: a slot ab
   rules: `doors/findings-schema`
 - `115_field_visibility_per_project` (findings) — `visible` is per project. Read it with `?project_id=N`; write it with PUT and `project_id` in the body or the query, never without one. A new field is visible in every project.  
   rules: `doors/findings-schema`
+- `122_onset_entity_types` (findings) — Slate, Camera, MocapTake, ShootDay and Scene create like Version: `project` required, `code` generated. None has `attachments`, and only Version.entity and Note.note_links reach them all.  
+  rules: `doors/findings-schema`
 - `074_page_filter_coverage` (findings) — Every stored page filter with its tokens filled converts and runs 200 but one, yet recipe 003 kept unticked leaves (active "false"): 11 trees returned the wrong count. Drop them.  
   rules: `doors/findings-filter`
 
@@ -48,6 +50,8 @@ One type's display name without its 48KB of fields, and the cheapest existence c
 - `028_loud_and_silent` (findings) — A 400 is trustworthy and usually names the legal set, but a 200 proves nothing: an unknown field, sort key or query param is a no-op, and a batch can return an id for a row it never made.  
   rules: `doors/findings-protocol`
 - `002_schema` (findings) — Fetch /schema once for the type list, then /schema/<Type>/fields only for types you actually need: it is the expensive call (48KB, ~330ms each) and must never be looped over all types.  
+  rules: `doors/findings-schema`
+- `122_onset_entity_types` (findings) — Slate, Camera, MocapTake, ShootDay and Scene create like Version: `project` required, `code` generated. None has `attachments`, and only Version.entity and Note.note_links reach them all.  
   rules: `doors/findings-schema`
 
 **Silent on this call**
@@ -89,6 +93,8 @@ Every field on one type with its `data_type`, `editable` and `mandatory`. The ex
 - `114_schema_admin_recheck` (findings) — On 2026-11-10 /spec.json names calls to enable, disable and configure a custom entity, all 400 code 111 on the probed site. No call deletes a trashed field forever or writes hidden_values.  
   rules: `doors/findings-schema`
 - `115_field_visibility_per_project` (findings) — `visible` is per project. Read it with `?project_id=N`; write it with PUT and `project_id` in the body or the query, never without one. A new field is visible in every project.  
+  rules: `doors/findings-schema`
+- `122_onset_entity_types` (findings) — Slate, Camera, MocapTake, ShootDay and Scene create like Version: `project` required, `code` generated. None has `attachments`, and only Version.entity and Note.note_links reach them all.  
   rules: `doors/findings-schema`
 - `007_fill_rates` (findings) — On the sample project 30 of 71 Version fields are populated. Rank by fill rate, but drop checkbox, summary and computed fields first: False and 0 are not null and read as 100% filled.  
   rules: `doors/findings-read`
@@ -179,6 +185,8 @@ One field's properties, at 1211 bytes against 48KB for the whole type. Pass `pro
   rules: `doors/findings-filter`
 - `084_task_template_reapply` (findings) — Changing `task_template` to T creates a Task per T task no Task links by `template_task`, duplicating a same-name hand-made one, and re-syncs the linked Tasks' fields and edges (probe 102).  
   rules: `doors/findings-write`
+- `123_photos_per_record` (findings) — `image` keeps only a 480x320 thumbnail. A url field holds one original, a Note's attachments or a multi_entity to Attachment hold many; all return the bytes unchanged.  
+  rules: `doors/findings-upload`
 - `049_script_events` (findings) — A script's writes reach the event log only while its ApiUser has generate_event_log_entries True. The default is False and nothing errors when off. One create logs one row per field plus one _New.  
   rules: `doors/findings-observe`
 - `003_query_fields_and_pages` (recipes) — Resolve a query field's value, and run the rows a saved Page shows  

@@ -189,3 +189,22 @@ not measured: a person clicking deny, and a session left idle past the site's ex
   `GET /internal_api/session` for the expiry rather than assume the preference.
 
 `corpus/findings/052_app_session_launcher.md`
+
+## 126_session_idle
+
+A session token the site does not accept is 400 code 102 "Can't authenticate session token ending with '<last 4>'" at the token endpoint. No API read exposes the site's session window. **[partial]**
+
+not measured: a real session token left idle past the window. Needs a person to approve 052 --login, then a day of nobody spending it. Blocked on time
+
+- Treat 400 code 102 from `grant_type=session_token` as "send the person through sign-in again".
+  The title quotes the token's last four characters and nothing else, so an expired, revoked or
+  mistyped token cannot be told apart from it. Whether an expired one answers the same is unmeasured.
+
+- The window is not readable: `/preferences` exposes 17 display and scheduling keys and silently
+  answers `{}` for any other name. Read `expiresAt` from `GET /internal_api/session` while the token
+  is live (probe 052) instead.
+
+- Writing the window was not tried: `PUT /preferences/update` is 400 code 111 for every preference
+  on the probed site (probes 047, 114).
+
+`corpus/findings/126_session_idle.md`

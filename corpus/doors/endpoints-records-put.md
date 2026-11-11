@@ -23,6 +23,8 @@ Updates and returns the whole record, 77 attribute keys for a Shot. A key left o
 
 - `028_loud_and_silent` (findings) — A 400 is trustworthy and usually names the legal set, but a 200 proves nothing: an unknown field, sort key or query param is a no-op, and a batch can return an id for a row it never made.  
   rules: `doors/findings-protocol`
+- `122_onset_entity_types` (findings) — Slate, Camera, MocapTake, ShootDay and Scene create like Version: `project` required, `code` generated. None has `attachments`, and only Version.entity and Note.note_links reach them all.  
+  rules: `doors/findings-schema`
 - `060_entity_dict_name` (findings) — The `name` in an entity dict is the target's `cached_display_name`, filled on every type measured, single and multi alike. Read it, not the per-type identity field, and expect decoration.  
   rules: `doors/findings-read`
 - `068_note_read_state` (findings) — read_by_current_user is per person and missing from the schema; `is` and `is_not` are evaluated, while `in`, `not_in` and an unknown `is` value all return the unread rows at 200.  
@@ -83,6 +85,8 @@ Updates and returns the whole record, 77 attribute keys for a Shot. A key left o
   rules: `doors/findings-write`
 - `111_template_undo_outside_edge` (findings) — An undo's write back to template A erases every edge whose downstream Task is A-linked and that A lacks, pre-merge edges included; recipe 022 DELETEs one such edge, 404s and rolls back.  
   rules: `doors/findings-write`
+- `123_photos_per_record` (findings) — `image` keeps only a 480x320 thumbnail. A url field holds one original, a Note's attachments or a multi_entity to Attachment hold many; all return the bytes unchanged.  
+  rules: `doors/findings-upload`
 - `049_script_events` (findings) — A script's writes reach the event log only while its ApiUser has generate_event_log_entries True. The default is False and nothing errors when off. One create logs one row per field plus one _New.  
   rules: `doors/findings-observe`
 - `049_script_events` (findings) — A script's writes reach the event log only while its ApiUser has generate_event_log_entries True. The default is False and nothing errors when off. One create logs one row per field plus one _New.  
@@ -90,6 +94,8 @@ Updates and returns the whole record, 77 attribute keys for a Shot. A key left o
 - `067_notes_in_the_stream` (findings) — A Reply reaches every linked stream in 33 s as `create_reply`, creates too; a script's Note create and status changes were absent after 430 s. Write as a person.  
   rules: `doors/findings-observe`
 - `090_template_task_events` (findings) — A template-generated Task logs like a hand-made one plus a `template_task` change row, `in_create` true, credited to the caller. Filter `attribute_name` `template_task` to find them.  
+  rules: `doors/findings-observe`
+- `124_updated_at_bumps` (findings) — `updated_at` moves on a write, a finished upload and its transcode, and on a link set from either end, but not on a no-op PUT and not when a Note names the row in `note_links`.  
   rules: `doors/findings-observe`
 - `004_register_published_file` (recipes) — Register the next PublishedFile without overwriting the last one, and write a path the server resolves for every platform  
   rules: `doors/recipes`

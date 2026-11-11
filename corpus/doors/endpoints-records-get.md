@@ -31,7 +31,11 @@ Pages rows. An entity field is returned under `relationships` and never `attribu
   rules: `doors/findings-protocol`
 - `051_api_version` (findings) — /api/v1 and /api/v1.1 are the same API. Across 20 read-only calls the only difference is api_version in the root document and the prefix each echoes in its own links. Any other segment is 404.  
   rules: `doors/findings-protocol`
+- `128_rate_limit` (findings) — 60 GETs from 10 threads in 1.9 s all answered 200 with no rate-limit header of any kind. Code a backoff on 429 and 503 without having seen either.  
+  rules: `doors/findings-protocol`
 - `061_shipped_statuses` (findings) — Nothing in the schema marks a shipped Status. `system` is true on a minority of them; the stock set is `created_by is null`, plus `options[return_only]=retired` for the rows a site retired.  
+  rules: `doors/findings-schema`
+- `122_onset_entity_types` (findings) — Slate, Camera, MocapTake, ShootDay and Scene create like Version: `project` required, `code` generated. None has `attachments`, and only Version.entity and Note.note_links reach them all.  
   rules: `doors/findings-schema`
 - `003_query` (findings) — A dotted ?fields path comes back flat under literal key "sg_task.Task.content" in attributes; an entity field is returned under relationships as {data, links}. Never read a row from attributes alone.  
   rules: `doors/findings-read`
@@ -193,6 +197,8 @@ Reads one image or attachment field, and with `?alt` redirects to the bytes. Eve
   rules: `doors/findings-read`
 - `081_dotted_image` (findings) — entity.Shot.image returns the Shot's thumbnail as a presigned S3 URL under attributes, same object, fresh signature, in the same call. image is_not null matched 50 Shots whose image reads null.  
   rules: `doors/findings-read`
+- `125_upload_host_cors` (findings) — The presigned upload host answers any Origin with `*`, allows PUT with content-type and exposes `ETag`, so a page can upload, multipart included. A URL is refused after 900 s.  
+  rules: `doors/findings-upload`
 
 **Silent on this call**
 

@@ -1090,3 +1090,25 @@ A `_batch` holding a `task_template` apply is atomic: a later or earlier failing
 - The script key is shared: filter the log on your own rows, as other writers land in the same window.
 
 `corpus/findings/113_batch_atomic_after_template_write.md`
+
+## 127_retry_and_client_uuid
+
+A text field created with `unique: true` refuses a second create with the same value, case and outer spaces ignored, in a batch too. It is the only idempotency key: the API has no header for it. **[partial]**
+
+not measured: whether `unique` spans projects, and whether a deleted row's value frees. One project only. Blocked on the work
+
+- A client read timeout says nothing about the server: the abandoned batch committed all 20 rows,
+  readable under two seconds later (recipe 002 saw the same at 1001 rows). Look up before re-sending.
+
+- Create one text field with `unique: true` for the client UUID and send it on every create. The
+  retry of a committed create then fails with code 104 instead of duplicating; treat that 400 as
+  "already there" and read the row by the UUID. `unique` can only be set at create (probe 116).
+
+- Uniqueness ignores case and surrounding spaces, so a UUID is safe but a human code is not a fit.
+  The check runs inside `_batch` as well, and a refusal rolls the whole batch back (recipe 002),
+  including two rows of the same batch that collide with each other.
+
+- The error title is the field's display name, not its programmatic name, and ends in a literal
+  `<br> `. Code 104 is the general create failure, so match on it plus the display name in the title.
+
+`corpus/findings/127_retry_and_client_uuid.md`

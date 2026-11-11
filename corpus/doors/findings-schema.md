@@ -458,3 +458,25 @@ not measured: whether the field the 500 retired can be revived, and the order va
 | Deduplicate a status list's `valid_values` yourself | a repeated code is stored twice |
 
 `corpus/findings/121_field_settings_edges.md`
+
+## 122_onset_entity_types
+
+Slate, Camera, MocapTake, ShootDay and Scene create like Version: `project` required, `code` generated. None has `attachments`, and only Version.entity and Note.note_links reach them all. **[partial]**
+
+not measured: a stock site, and enabling a hidden type: Element is off on the probed site and only the web UI turns a type on. Blocked on the site
+
+- Create every on-set row with `project`; `code` is optional and `"New <Display Name> <id>"` when
+  omitted, exactly as Version (entity_types/Version).
+
+- `/schema` is the switch: a hidden built-in type is absent from it and 404s by name everywhere,
+  while its connection types stay listed. No API call turns it on; the 400 code 111 of probe 114
+  answers for stock types and renames too, so plan for an admin turning the type on in the web interface (not measured: no setting was changed).
+
+- Link a take to its Shot through a Version (`Version.entity`) or a site field; stock Slate has no
+  Shot link. `valid_types` is not enforced on `Version.entity` or `Shot.sg_scene`
+  (field_types/entity), so check the type on the client.
+
+- `mocap_takes` and `shoot_days` are the slugs: the CamelCase name also resolves, the run-together
+  plural does not.
+
+`corpus/findings/122_onset_entity_types.md`

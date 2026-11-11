@@ -916,3 +916,21 @@ Read which fields of an entity type a project hides, and show or hide one field 
 - There is no site-wide write and no call that sets several projects: one PUT per field and project.
 
 `corpus/recipes/024_field_visibility_in_a_project.md`
+
+## 025_retry_safe_create
+
+Create rows from a client that retries after timeouts, without duplicating any row **[partial]**
+
+not measured: whether `unique` spans projects and whether deleting a row frees its value (probe 127). Blocked on the work
+
+- Generate the UUID when the record is captured and keep it with the local record, so every retry,
+  on any day, sends the same value.
+
+- Uniqueness ignores case and outer spaces; a UUID is unaffected, a human-typed code is.
+
+- In a batch, one collision rolls back every request in it. On a 104 from `_batch`, look up each
+  UUID and re-send only the ones not found.
+
+- The title names the field by display name and ends in `<br> `; match code 104 and the phrase.
+
+`corpus/recipes/025_retry_safe_create.md`

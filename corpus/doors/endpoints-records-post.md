@@ -20,6 +20,8 @@ Every call in this family: what the card records, the edge cases that live on th
 
 **Measured by**
 
+- `122_onset_entity_types` (findings) — Slate, Camera, MocapTake, ShootDay and Scene create like Version: `project` required, `code` generated. None has `attachments`, and only Version.entity and Note.note_links reach them all.  
+  rules: `doors/findings-schema`
 - `060_entity_dict_name` (findings) — The `name` in an entity dict is the target's `cached_display_name`, filled on every type measured, single and multi alike. Read it, not the per-type identity field, and expect decoration.  
   rules: `doors/findings-read`
 - `011_create_project` (findings) — A script user can create a Project with nothing but {"name": ...}, at 201, but the response echoes only 6 attributes, so read the project back if you need anything else.  
@@ -82,6 +84,8 @@ Every call in this family: what the card records, the edge cases that live on th
   rules: `doors/findings-write`
 - `113_batch_atomic_after_template_write` (findings) — A `_batch` holding a `task_template` apply is atomic: a later or earlier failing request left no Task, no claim, no field write, no edge and no EventLogEntry row.  
   rules: `doors/findings-write`
+- `127_retry_and_client_uuid` (findings) — A text field created with `unique: true` refuses a second create with the same value, case and outer spaces ignored, in a batch too. It is the only idempotency key: the API has no header for it.  
+  rules: `doors/findings-write`
 - `025_event_log` (findings) — meta.old_value and meta.new_value answer "what was this before", but meta is unfilterable and unsortable: narrow on entity, event_type and attribute_name, sort -id, read meta yourself.  
   rules: `doors/findings-observe`
 - `049_script_events` (findings) — A script's writes reach the event log only while its ApiUser has generate_event_log_entries True. The default is False and nothing errors when off. One create logs one row per field plus one _New.  
@@ -89,6 +93,8 @@ Every call in this family: what the card records, the edge cases that live on th
 - `067_notes_in_the_stream` (findings) — A Reply reaches every linked stream in 33 s as `create_reply`, creates too; a script's Note create and status changes were absent after 430 s. Write as a person.  
   rules: `doors/findings-observe`
 - `090_template_task_events` (findings) — A template-generated Task logs like a hand-made one plus a `template_task` change row, `in_create` true, credited to the caller. Filter `attribute_name` `template_task` to find them.  
+  rules: `doors/findings-observe`
+- `124_updated_at_bumps` (findings) — `updated_at` moves on a write, a finished upload and its transcode, and on a link set from either end, but not on a no-op PUT and not when a Note names the row in `note_links`.  
   rules: `doors/findings-observe`
 - `001_publish_version_with_media` (recipes) — Publish a generated image to Flow PT as a Version, with provenance and the workflow attached  
   rules: `doors/recipes`
@@ -101,6 +107,8 @@ Every call in this family: what the card records, the edge cases that live on th
 - `013_publish_file_bytes` (recipes) — Publish a file's bytes onto a PublishedFile when the caller has no LocalStorage root to write under  
   rules: `doors/recipes`
 - `017_check_permission_before_writing` (recipes) — Learn whether the signed-in person may update, create or delete a type before writing, with calls that change nothing  
+  rules: `doors/recipes`
+- `025_retry_safe_create` (recipes) — Create rows from a client that retries after timeouts, without duplicating any row  
   rules: `doors/recipes`
 
 **Silent on this call**
@@ -209,6 +217,8 @@ The key is `requests`, not `data`, and sending `data` is 400 `requests is missin
   rules: `doors/findings-write`
 - `113_batch_atomic_after_template_write` (findings) — A `_batch` holding a `task_template` apply is atomic: a later or earlier failing request left no Task, no claim, no field write, no edge and no EventLogEntry row.  
   rules: `doors/findings-write`
+- `127_retry_and_client_uuid` (findings) — A text field created with `unique: true` refuses a second create with the same value, case and outer spaces ignored, in a batch too. It is the only idempotency key: the API has no header for it.  
+  rules: `doors/findings-write`
 - `002_batch` (recipes) — Apply many creates, updates and deletes in one atomic call, and match the results back to the requests  
   rules: `doors/recipes`
 - `005_propagate_status` (recipes) — Roll a status up from a parent's Tasks and Versions onto the parent, without racing a concurrent write  
@@ -228,6 +238,8 @@ The key is `requests`, not `data`, and sending `data` is 400 `requests is missin
 - `022_undo_task_template_merge_in_one_batch` (recipes) — Undo a task template merge in one atomic call, returning Tasks, fields and dependencies to their state before it  
   rules: `doors/recipes`
 - `023_undo_task_template_merge_with_a_task_linked_twice` (recipes) — Undo a task template merge when two Tasks pointed at the same old template task, without the server picking which one gets the edges  
+  rules: `doors/recipes`
+- `025_retry_safe_create` (recipes) — Create rows from a client that retries after timeouts, without duplicating any row  
   rules: `doors/recipes`
 - `001_batch_create_skips_validation` (reports) — A create inside POST /entity/_batch skips the required-attribute validation the single-create path applies, and answers 200 with the id of a row no read can reach.  
   rules: `doors/reports`

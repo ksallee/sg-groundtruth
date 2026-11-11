@@ -49,7 +49,11 @@ The only place the unit behind a `duration` field is named. `prefs` narrows it t
 
 **Measured by**
 
+- `126_session_idle` (findings) — A session token the site does not accept is 400 code 102 "Can't authenticate session token ending with '<last 4>'" at the token endpoint. No API read exposes the site's session window.  
+  rules: `doors/findings-auth`
 - `002_schema` (findings) — Fetch /schema once for the type list, then /schema/<Type>/fields only for types you actually need: it is the expensive call (48KB, ~330ms each) and must never be looped over all types.  
+  rules: `doors/findings-schema`
+- `122_onset_entity_types` (findings) — Slate, Camera, MocapTake, ShootDay and Scene create like Version: `project` required, `code` generated. None has `attachments`, and only Version.entity and Note.note_links reach them all.  
   rules: `doors/findings-schema`
 - `088_project_template_defaults` (findings) — The per-entity-type default is readable at `Project.tracking_settings.default_task_template.<Type>`, a `{type, id, name, valid}` dict. `Project.task_templates` is a separate list, not the default.  
   rules: `doors/findings-read`
@@ -76,6 +80,8 @@ not measured: the success path. The probed site answers 400 code 111 to every bo
 
 - `114_schema_admin_recheck` (findings) — On 2026-11-10 /spec.json names calls to enable, disable and configure a custom entity, all 400 code 111 on the probed site. No call deletes a trashed field forever or writes hidden_values.  
   rules: `doors/findings-schema`
+- `122_onset_entity_types` (findings) — Slate, Camera, MocapTake, ShootDay and Scene create like Version: `project` required, `code` generated. None has `attachments`, and only Version.entity and Note.note_links reach them all.  
+  rules: `doors/findings-schema`
 
 `corpus/endpoints/put_preferences_custom_entity_entity_type_activation.md`
 
@@ -97,6 +103,8 @@ not measured: the success path. The probed site answers 400 code 111 for every t
 
 - `114_schema_admin_recheck` (findings) — On 2026-11-10 /spec.json names calls to enable, disable and configure a custom entity, all 400 code 111 on the probed site. No call deletes a trashed field forever or writes hidden_values.  
   rules: `doors/findings-schema`
+- `122_onset_entity_types` (findings) — Slate, Camera, MocapTake, ShootDay and Scene create like Version: `project` required, `code` generated. None has `attachments`, and only Version.entity and Note.note_links reach them all.  
+  rules: `doors/findings-schema`
 
 `corpus/endpoints/get_preferences_custom_entity_entity_type_configuration.md`
 
@@ -113,6 +121,8 @@ not measured: the success path. The probed site answers 400 code 111 to every bo
 **Measured by**
 
 - `114_schema_admin_recheck` (findings) — On 2026-11-10 /spec.json names calls to enable, disable and configure a custom entity, all 400 code 111 on the probed site. No call deletes a trashed field forever or writes hidden_values.  
+  rules: `doors/findings-schema`
+- `122_onset_entity_types` (findings) — Slate, Camera, MocapTake, ShootDay and Scene create like Version: `project` required, `code` generated. None has `attachments`, and only Version.entity and Note.note_links reach them all.  
   rules: `doors/findings-schema`
 
 `corpus/endpoints/put_preferences_custom_entity_entity_type_configuration.md`
