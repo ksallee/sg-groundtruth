@@ -21,7 +21,11 @@ Updates and returns the whole record, 77 attribute keys for a Shot. A key left o
 
 **Measured by**
 
+- `133_bearer_expiry` (findings) — Every bearer refusal is 401 code 102 `Unauthorized`; only `detail` differs: `Token Expired` past exp, `Token invalid` for a bad signature, null for garbage or none. Re-mint on 401 code 102.  
+  rules: `doors/findings-auth`
 - `028_loud_and_silent` (findings) — A 400 is trustworthy and usually names the legal set, but a 200 proves nothing: an unknown field, sort key or query param is a no-op, and a batch can return an id for a row it never made.  
+  rules: `doors/findings-protocol`
+- `144_rate_limit_burst` (findings) — 300 mixed reads and writes at 28 per second for 10 s all answered 200 with no rate-limit header. Median latency doubled from 0.3 s to 0.6 s instead. Back off on latency, not on a status.  
   rules: `doors/findings-protocol`
 - `122_onset_entity_types` (findings) — Slate, Camera, MocapTake, ShootDay and Scene create like Version: `project` required, `code` generated. None has `attachments`, and only Version.entity and Note.note_links reach them all.  
   rules: `doors/findings-schema`
@@ -85,7 +89,13 @@ Updates and returns the whole record, 77 attribute keys for a Shot. A key left o
   rules: `doors/findings-write`
 - `111_template_undo_outside_edge` (findings) — An undo's write back to template A erases every edge whose downstream Task is A-linked and that A lacks, pre-merge edges included; recipe 022 DELETEs one such edge, 404s and rolls back.  
   rules: `doors/findings-write`
+- `143_nonadmin_rows` (findings) — On the probed site an Artist may not create, edit or delete custom-entity rows (status only) and may create but not delete an Attachment, its own included. The group rights call predicts each answer.  
+  rules: `doors/findings-write`
+- `145_time_fields` (findings) — date_time rounds to the second on POST and PUT (.999 goes up, .5 stays) but truncates in a _batch create. A new timecode field has no rate property; it is integer ms rendered at the site's fixed rate.  
+  rules: `doors/findings-write`
 - `123_photos_per_record` (findings) — `image` keeps only a 480x320 thumbnail. A url field holds one original, a Note's attachments or a multi_entity to Attachment hold many; all return the bytes unchanged.  
+  rules: `doors/findings-upload`
+- `135_attachment_custom_field_filename` (findings) — Attachment takes a custom field over REST. `filename` keeps 90 and 200 characters but stores each space as `_`; `is` and `starts_with` ignore case, so filter on the name with `_` for spaces.  
   rules: `doors/findings-upload`
 - `049_script_events` (findings) — A script's writes reach the event log only while its ApiUser has generate_event_log_entries True. The default is False and nothing errors when off. One create logs one row per field plus one _New.  
   rules: `doors/findings-observe`

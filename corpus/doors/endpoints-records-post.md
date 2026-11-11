@@ -86,6 +86,14 @@ Every call in this family: what the card records, the edge cases that live on th
   rules: `doors/findings-write`
 - `127_retry_and_client_uuid` (findings) — A text field created with `unique: true` refuses a second create with the same value, case and outer spaces ignored, in a batch too. It is the only idempotency key: the API has no header for it.  
   rules: `doors/findings-write`
+- `136_unique_scope_retired` (findings) — A deleted row frees its `unique` value: a new row may take it. Reviving the old row while another holds the value is a 400 code 104 PG transaction error, and the row stays retired.  
+  rules: `doors/findings-write`
+- `137_batch_create_coercion` (findings) — A `_batch` create on a custom entity takes a numeric string in a float and honours `created_at`, as a single POST does. It also takes an Integer and `"1e3"`, which a single POST refuses.  
+  rules: `doors/findings-write`
+- `143_nonadmin_rows` (findings) — On the probed site an Artist may not create, edit or delete custom-entity rows (status only) and may create but not delete an Attachment, its own included. The group rights call predicts each answer.  
+  rules: `doors/findings-write`
+- `145_time_fields` (findings) — date_time rounds to the second on POST and PUT (.999 goes up, .5 stays) but truncates in a _batch create. A new timecode field has no rate property; it is integer ms rendered at the site's fixed rate.  
+  rules: `doors/findings-write`
 - `025_event_log` (findings) — meta.old_value and meta.new_value answer "what was this before", but meta is unfilterable and unsortable: narrow on entity, event_type and attribute_name, sort -id, read meta yourself.  
   rules: `doors/findings-observe`
 - `049_script_events` (findings) — A script's writes reach the event log only while its ApiUser has generate_event_log_entries True. The default is False and nothing errors when off. One create logs one row per field plus one _New.  
@@ -155,6 +163,8 @@ Revives a retired row. `?revive=1` is required and any JSON body is discarded, s
   rules: `doors/findings-write`
 - `110_template_task_after_revive` (findings) — Revive restores `template_task`. A task_template write while the Task is retired re-creates it, so a later revive leaves two Tasks on one template task. Revive first, then write.  
   rules: `doors/findings-write`
+- `136_unique_scope_retired` (findings) — A deleted row frees its `unique` value: a new row may take it. Reviving the old row while another holds the value is a 400 code 104 PG transaction error, and the row stays retired.  
+  rules: `doors/findings-write`
 - `018_remove_and_restore_a_dependency` (recipes) — Remove one dependency between two Tasks and put it back on undo, with its type and offset  
   rules: `doors/recipes`
 - `021_undo_a_batch_delete` (recipes) — Delete Tasks or dependencies in one batch and undo it by reviving the same rows  
@@ -218,6 +228,10 @@ The key is `requests`, not `data`, and sending `data` is 400 `requests is missin
 - `113_batch_atomic_after_template_write` (findings) — A `_batch` holding a `task_template` apply is atomic: a later or earlier failing request left no Task, no claim, no field write, no edge and no EventLogEntry row.  
   rules: `doors/findings-write`
 - `127_retry_and_client_uuid` (findings) — A text field created with `unique: true` refuses a second create with the same value, case and outer spaces ignored, in a batch too. It is the only idempotency key: the API has no header for it.  
+  rules: `doors/findings-write`
+- `137_batch_create_coercion` (findings) — A `_batch` create on a custom entity takes a numeric string in a float and honours `created_at`, as a single POST does. It also takes an Integer and `"1e3"`, which a single POST refuses.  
+  rules: `doors/findings-write`
+- `145_time_fields` (findings) — date_time rounds to the second on POST and PUT (.999 goes up, .5 stays) but truncates in a _batch create. A new timecode field has no rate property; it is integer ms rendered at the site's fixed rate.  
   rules: `doors/findings-write`
 - `002_batch` (recipes) — Apply many creates, updates and deletes in one atomic call, and match the results back to the requests  
   rules: `doors/recipes`

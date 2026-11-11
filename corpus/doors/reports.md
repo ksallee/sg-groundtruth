@@ -3,7 +3,7 @@
 Behaviour that should change, addressed to the team that owns the API. Each names the entries that measured it, states what was expected, and proposes the fix. It is also the re-probe queue: each one dates the last time the behaviour was seen.
 
 - **001_batch_create_skips_validation** [api, unreported] — A create inside POST /entity/_batch skips the required-attribute validation the single-create path applies, and answers 200 with the id of a row no read can reach.  
-  evidence: recipes/002_batch, findings/028_loud_and_silent, confirmed 2026-09-04  
+  evidence: recipes/002_batch, findings/028_loud_and_silent, findings/137_batch_create_coercion, confirmed 2026-09-04  
   `corpus/reports/001_batch_create_skips_validation.md`
 - **002_complete_upload_without_bytes** [api, unreported] — POST links.complete_upload answers 201 and creates an Attachment when the presigned PUT never happened, and nothing on the row separates it from a good upload.  
   evidence: findings/039_upload_silent_failures, findings/013_upload_media, confirmed 2026-09-04  

@@ -14,19 +14,19 @@ An endpoint door holds the edge cases that live on the call and the verdict of e
 
 ## Findings
 
-**auth** 001_auth, 027_auth_permissions, 052_app_session_launcher, 126_session_idle, 130_launcher_answers, 131_session_revoke
+**auth** 001_auth, 027_auth_permissions, 052_app_session_launcher, 126_session_idle, 130_launcher_answers, 131_session_revoke, 133_bearer_expiry
 
-**protocol** 004_array_vs_hash, 028_loud_and_silent, 051_api_version, 062_cors, 128_rate_limit, 129_hosted_domains
+**protocol** 004_array_vs_hash, 028_loud_and_silent, 051_api_version, 062_cors, 128_rate_limit, 129_hosted_domains, 144_rate_limit_burst
 
-**schema** 002_schema, 008_custom_entities, 009_status_lists, 019_create_fields, 040_field_revive, 042_spec_coverage, 047_site_facts_and_the_working_week, 056_stock_vs_custom_field, 061_shipped_statuses, 091_status_summary_exclusions, 114_schema_admin_recheck, 115_field_visibility_per_project, 116_field_settings_create_update, 117_field_types_and_names, 118_field_writes_other_types, 119_field_absent_retired_live, 120_field_trash_page, 121_field_settings_edges, 122_onset_entity_types
+**schema** 002_schema, 008_custom_entities, 009_status_lists, 019_create_fields, 040_field_revive, 042_spec_coverage, 047_site_facts_and_the_working_week, 056_stock_vs_custom_field, 061_shipped_statuses, 091_status_summary_exclusions, 114_schema_admin_recheck, 115_field_visibility_per_project, 116_field_settings_create_update, 117_field_types_and_names, 118_field_writes_other_types, 119_field_absent_retired_live, 120_field_trash_page, 121_field_settings_edges, 122_onset_entity_types, 132_field_create_rights, 142_reverse_field
 
-**read** 003_query, 005_link_usage, 006_pagination, 007_fill_rates, 018_project_listing, 021_media_resolution, 023_pages, 026_result_order, 048_one_record_beyond_crud, 059_dotted_path_type_check, 060_entity_dict_name, 064_hierarchy_expand_buckets, 072_page_layouts, 073_page_grid_settings, 075_page_overrides, 076_page_visibility, 081_dotted_image, 082_page_size_cap, 088_project_template_defaults
+**read** 003_query, 005_link_usage, 006_pagination, 007_fill_rates, 018_project_listing, 021_media_resolution, 023_pages, 026_result_order, 048_one_record_beyond_crud, 059_dotted_path_type_check, 060_entity_dict_name, 064_hierarchy_expand_buckets, 072_page_layouts, 073_page_grid_settings, 075_page_overrides, 076_page_visibility, 081_dotted_image, 082_page_size_cap, 088_project_template_defaults, 138_dotted_custom_field
 
 **filter** 016_dotted_multi_entity, 017_filter_operators, 020_summarize, 030_complex_filters, 046_search_without_a_path, 053_text_search_matching, 063_text_search_filter_shape, 068_note_read_state, 071_note_link_name_filter, 074_page_filter_coverage, 079_summarize_multi_grouping, 080_query_field_cost
 
-**write** 011_create_project, 012_create_version, 024_read_after_write, 045_webhooks, 050_webhook_subscriptions, 058_local_storage_roots, 069_client_note, 070_authored_timestamps, 078_page_setting_write, 083_task_template_on_create, 084_task_template_reapply, 085_task_dependency_types, 086_batch_tasks_with_dependencies, 087_dependency_cascade, 089_task_delete_side_effects, 092_dependency_edge_reschedule, 093_clear_dates_pin, 094_permission_preflight, 095_dependency_remove_undo, 096_task_template_unmerge, 097_null_dates_unpin, 098_template_merge_in_one_batch, 099_template_apply_edge_copy_kept, 100_duration_write_pin, 101_template_edge_conflict, 102_task_template_resync, 103_batch_delete_revive, 104_template_unmerge_in_one_batch, 105_offset_days_null_vs_zero, 106_template_task_linked_twice, 107_dependency_three_task_loop, 108_task_template_resync_empties, 109_template_apply_outside_edge, 110_template_task_after_revive, 111_template_undo_outside_edge, 112_template_unmerge_linked_twice, 113_batch_atomic_after_template_write, 127_retry_and_client_uuid
+**write** 011_create_project, 012_create_version, 024_read_after_write, 045_webhooks, 050_webhook_subscriptions, 058_local_storage_roots, 069_client_note, 070_authored_timestamps, 078_page_setting_write, 083_task_template_on_create, 084_task_template_reapply, 085_task_dependency_types, 086_batch_tasks_with_dependencies, 087_dependency_cascade, 089_task_delete_side_effects, 092_dependency_edge_reschedule, 093_clear_dates_pin, 094_permission_preflight, 095_dependency_remove_undo, 096_task_template_unmerge, 097_null_dates_unpin, 098_template_merge_in_one_batch, 099_template_apply_edge_copy_kept, 100_duration_write_pin, 101_template_edge_conflict, 102_task_template_resync, 103_batch_delete_revive, 104_template_unmerge_in_one_batch, 105_offset_days_null_vs_zero, 106_template_task_linked_twice, 107_dependency_three_task_loop, 108_task_template_resync_empties, 109_template_apply_outside_edge, 110_template_task_after_revive, 111_template_undo_outside_edge, 112_template_unmerge_linked_twice, 113_batch_atomic_after_template_write, 127_retry_and_client_uuid, 136_unique_scope_retired, 137_batch_create_coercion, 143_nonadmin_rows, 145_time_fields
 
-**upload** 013_upload_media, 014_attach_file, 022_sequence_on_version, 039_upload_silent_failures, 044_multipart_upload, 123_photos_per_record, 125_upload_host_cors
+**upload** 013_upload_media, 014_attach_file, 022_sequence_on_version, 039_upload_silent_failures, 044_multipart_upload, 123_photos_per_record, 125_upload_host_cors, 134_attachment_field_second_upload, 135_attachment_custom_field_filename, 139_multipart_lifetime, 140_presigned_put_size, 141_download_headers
 
 **observe** 025_event_log, 043_attention, 049_script_events, 066_user_feed, 067_notes_in_the_stream, 077_page_change_stamps, 090_template_task_events, 124_updated_at_bumps
 
@@ -70,7 +70,7 @@ Asset, Attachment, Cut, CutItem, Delivery, HumanUser, LocalStorage, Note, Playli
 
 ## Endpoints
 
-One card per call, 70 of 76 with an entry behind them; a card with none is the queue. A family's door is `doors/endpoints-<family>.md`, in lower case.
+One card per call, 72 of 76 with an entry behind them; a card with none is the queue. A family's door is `doors/endpoints-<family>.md`, in lower case.
 
 **Session**
 

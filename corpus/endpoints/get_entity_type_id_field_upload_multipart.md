@@ -19,7 +19,7 @@ comes back root-relative with `/api/v1` already on it and every parameter filled
 |---|---|
 | `filename` | required. `filename is missing` when absent |
 | `upload_type` | required. `Attachment` or `Thumbnail`, from the init |
-| `timestamp` | required. The init's `timestamp`, verbatim |
+| `timestamp` | required. The init's `timestamp`, verbatim: it is part of the stored object's key, so any other value signs a URL for an upload that does not exist (probe 139) |
 | `part_number` | required. The part this URL will hold |
 | `upload_id` | not listed as missing by the 400, and its absence still fails. See **Edge cases** |
 
@@ -74,6 +74,10 @@ An `upload_id` that was never minted:
 
 **Edge cases**
 
+- **The `timestamp` is not checked for age, it is part of the key.** `2020-01-01T00:00:00Z` answers
+  200 with a URL whose path differs from the init's, and the part PUT is S3 404 `NoSuchUpload`.
+  `zz` is 400 `{"status": "error", "error": "no time information in \"zz UTC\""}`, outside the
+  `errors[]` envelope; omitted is 400 `timestamp is missing` (probe 139).
 - `upload_id` is required and is the one parameter the validator does not check for. Omitting it
   produces `Could not generate upload url. Check the site settings.`, which points at site
   configuration and not at the missing parameter.

@@ -253,3 +253,24 @@ not measured: whether /user/logout ends a live session and what a bearer minted 
   ended, 200 is not.
 
 `corpus/findings/131_session_revoke.md`
+
+## 133_bearer_expiry
+
+Every bearer refusal is 401 code 102 `Unauthorized`; only `detail` differs: `Token Expired` past exp, `Token invalid` for a bad signature, null for garbage or none. Re-mint on 401 code 102.
+
+- `exp` is honoured to the second: 200 at 20 s before it, 401 at 5 s after. No grace period. Mint a
+  new bearer when the decoded `exp` (probe 027) is near, or on any 401 code 102, and retry once.
+
+- `detail` tells the cases apart; `status`, `code` and `title` do not. `Token Expired` is the one
+  a client fixes by minting. `Token invalid` (a token edited or from elsewhere) and `null` (no
+  token, or not three segments) mean the client is sending the wrong thing, and minting may not help.
+
+- A write past `exp` is refused before the row is looked up: the `PUT` named an id that does not
+  exist and still got the 401, not a 404.
+
+- No `WWW-Authenticate` header is sent, so read the body, not the header, to classify a 401.
+
+- A session token refused at the token endpoint is a 400 code 102 instead (probe 126). Code 102 is
+  "authentication failed" at both doors; the status says which door.
+
+`corpus/findings/133_bearer_expiry.md`
