@@ -33,11 +33,11 @@ written by hand.
 
 ## Cheap index, expensive body
 
-Three tiers, and only the first is read every session. `corpus/INDEX.md` is generated, capped at 8 KB, and names
-every entry and the door for each thing a caller already holds. A door under `corpus/doors/` carries one line per
-entry and that entry's rules, copied whole. The entry holds the transcript, the sample and the tables. An agent
-that must read the corpus to answer one question burns its context on the first call and is useless for the rest
-of the session.
+Three tiers, and only the first is read every session. `corpus/INDEX.md` is generated, capped at 13 KiB
+(`INDEX_MAX` in `probes/check_corpus.py`), and names every entry and the door for each thing a caller already
+holds. A door under `corpus/doors/` carries one line per entry and that entry's rules, copied whole. The entry
+holds the transcript, the sample and the tables. An agent that must read the corpus to answer one question burns
+its context on the first call and is useless for the rest of the session.
 
 The split already existed inside every entry, under a different label per group: `Teaches` on a finding, `Traps`
 on a matrix card, `Notes` on a recipe, `Edge cases` on an endpoint card. `src/sg_groundtruth/corpus.py` spells
