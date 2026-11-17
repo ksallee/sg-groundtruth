@@ -1202,3 +1202,85 @@ date_time rounds to the second on POST and PUT (.999 goes up, .5 stays) but trun
   truncated toward zero, a clock string refused.
 
 `corpus/findings/145_time_fields.md`
+
+## 146_note_unique_key
+
+A `unique: true` text field works on Note as on Version (probe 127), and refuses a duplicate on PUT and under sudo too. A `Note.meta` key is found by `contains`, case-sensitive, and enforces nothing. **[partial]**
+
+not measured: uniqueness across two projects. Probes write only into the sandbox. Blocked on the site: run `146 --write --second-project <name>` with a second writable project
+
+- Note takes a unique field as Version and custom entities do; case, outer spaces and the `is` lookup
+  behave as probe 127 measured. The refusal is the same code 104 under `sudo_as_login` and on a `PUT`,
+  so a person's retry fails the same way: treat it as "already there" and read the Note by the key.
+
+- `meta` is a working lookup with no admin step: seed `{"onset_uuid": ...}` in the create, find it with
+  `contains`. It does not stop a retry from making a second Note, so look up before every create, and
+  send the key in the case it was minted in.
+
+- `content` and the other fields stay editable on a Note found by `meta`; only `meta` itself is fixed.
+
+- Whether two projects can hold the same key is unmeasured (probe 136 stopped at the same place). A UUID
+  key makes the answer moot.
+
+`corpus/findings/146_note_unique_key.md`
+
+## 148_note_author_fields
+
+`user` and `created_by` are both honoured on a Note or Version create, though the schema flags `created_by` read only; a PUT to it is 400. Under sudo_as_login all three author fields are the person. **[partial]**
+
+not measured: a launcher session bearer (auth_type session_token). Needs a person: `052 --login`, then `148 --write --session`
+
+- `created_by` is writable once, on create, like `created_at` (probe 070) and `Note.meta`
+  (`field_types/jsonb`). The schema's `editable: false` describes the update path only. Any caller
+  can name another person as creator, so `created_by` is not proof of who wrote a row.
+
+- Under `sudo_as_login` the person is `created_by`, `updated_by` and `user` with nothing sent. A
+  script sending `user` alone still leaves itself in `created_by` and `updated_by`.
+
+- The launcher bearer's claim is `user: HumanUser` with `auth_type: session_token` (probe 052), unlike
+  the sudo bearer, whose `user` stays the ApiUser. What it records here is unmeasured. Run
+  `052 --login`, approve in the browser, then `148 --write --session`.
+
+`corpus/findings/148_note_author_fields.md`
+
+## 154_batch_multi_entity_mode
+
+`multi_entity_update_mode` in a `_batch` update's `data` adds, removes and sets as on a PUT, and several updates of one record in one batch apply in request order, each row echoing the state after it.
+
+- Write the mode inside `data` exactly as in a `PUT` body (recipe 009). A bare list still replaces the
+  set, in a batch as on a `PUT`.
+
+- Requests on one record run in order, each on the result of the one before: `add` then `set` ends at
+  the `set`, `set` then `add` keeps both. Each result row is the whole record after that request
+  (recipe 002), so the last row for a record is its final state.
+
+- Several link edits to one row can share a batch with no read in between.
+
+`corpus/findings/154_batch_multi_entity_mode.md`
+
+## 156_action_menu_item
+
+An ActionMenuItem creates from `{}` at 201 though `title` is flagged mandatory, and `url` is not validated. An Artist is refused; `permissions_groups` does not filter what the API returns. **[partial]**
+
+not measured: what the web interface sends to the URL, and Manager rights. Needs a person: `156 --write --listen 8765 --hold 900`, then run the items on a Shot
+
+- Send `title`, `url`, `entity_type` and `projects` yourself: the server takes a row with none of
+  them, and checks only `entity_type` (`field_types/entity_type`) and the list fields.
+
+- Creating one is an administrator's call on the probed site: Admin 201, Artist 400 code 104.
+  Manager was not reachable (probe 132), so do not infer it.
+
+- `permissions_groups` is not a read filter: an Artist reads rows restricted to Admin. Whether it
+  hides the item in the web interface is the browser step below.
+
+- `secret_token` is write-only through the API; keep the value on the client that checks signatures.
+
+**Needs a person**
+
+| question | step |
+|---|---|
+| the request the web interface sends: method, content type, fields, new window or overlay | `156 --write --listen 8765 --hold 900` on the machine with the browser; sign in, right-click a Shot in the sandbox project, run `zzprobe 156 recorder form` and `... json`, with one Shot selected and then two. The probe prints each request whole |
+| a custom-protocol `url` opening an app | the same run: `zzprobe 156 protocol` points at `sgonset://shot/1` |
+| Manager rights | turn on `can_impersonate_this_user` for an active Manager, run `156 --write` |
+
+`corpus/findings/156_action_menu_item.md`

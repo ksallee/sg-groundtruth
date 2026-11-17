@@ -468,6 +468,9 @@ Add to and remove from a multi_entity field without destroying the links you did
   The loss is a success response, so the mode is only ever correct in the body
   (`field_types/multi_entity`, probe 028).
 
+- The same body works as a `_batch` update's `data`, and several edits to one row in one batch apply
+  in request order (probe 154).
+
 - **The lost-update race.** Read-then-PUT is not an append. A bare list replaces, the window between
   the read and the write is open, and no conditional write closes it: `If-Match`,
   `If-Unmodified-Since` and `If-None-Match` are ignored at 200 and `updated_at` echoed back is
@@ -934,3 +937,39 @@ not measured: whether `unique` spans projects and whether deleting a row frees i
 - The title names the field by display name and ends in `<br> `; match code 104 and the phrase.
 
 `corpus/recipes/025_retry_safe_create.md`
+
+## 026_note_per_shot
+
+Keep one Note per Shot, addressed to the people on the Shot's Tasks, found again by a client key and updated in place **[partial]**
+
+not measured: the Inbox the addressees see, and a launcher bearer as the writer. Needs a browser and a person (probes 147, 148, 149)
+
+- A bare list on `addressings_to` replaces the set (`field_types/multi_entity`); the call sends the
+  whole current list each sync. Whether someone dropped from it stops following is unmeasured; on a
+  Task, a member removed from the Group kept following (probe 150).
+
+- The create is the only stream row; edits write none (probe 149). A feed polls `updated_at`.
+
+- For a key the server enforces, add a `unique: true` text field to Note (an administrator's call,
+  probe 132) and send it on create; a duplicate is then 400 code 104 (probe 146).
+
+`corpus/recipes/026_note_per_shot.md`
+
+## 027_media_on_a_take
+
+Put a video or audio clip on a custom entity row so a browser can play it, and know when it is ready
+
+- `sg_uploaded_movie` keeps the original byte for byte; play `sg_uploaded_movie_mp4`, and store
+  ids, not URLs (probe 125).
+
+- Audio has no thumbnail: `image` goes from the transient placeholder to null. Draw the icon yourself.
+
+- The stored `content_type` is the server's: an Opus `.webm` reads `video/webm`. Tell audio from video
+  on the client.
+
+- Any custom slot is accepted as `Version.entity` at 201, `valid_types` or not (probe 122,
+  `field_types/entity`). A type with an `sg_versions` field also lists the Version there (probe 122).
+
+- A large clip goes up in parts (probe 044) and each part URL lives 900 s (probes 125, 153).
+
+`corpus/recipes/027_media_on_a_take.md`

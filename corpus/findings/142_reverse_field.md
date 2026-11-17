@@ -1,9 +1,9 @@
 ---
 tags: [schema, custom-field, entity-field, multi-entity, destructive, trap]
-endpoints: [POST /schema/<Type>/fields, GET /schema/<Type>/fields, GET /schema/<Type>/fields/<field>, DELETE /schema/<Type>/fields/<field>, PUT /schema/<Type>/fields/<field>]
+endpoints: [POST /schema/<Type>/fields, GET /schema/<Type>/fields, GET /schema/<Type>/fields/<field>, DELETE /schema/<Type>/fields/<field>, PUT /schema/<Type>/fields/<field>, PUT /entity/<type>/<id>, POST /entity/<type>/_search]
 phase: schema
 scope: api
-measured: site-wide, 2026-11-11; three link fields created on one custom slot and retired, with four reverse fields; no rows
+measured: site-wide, 2026-11-11 and 2026-11-17; four link fields retired with their reverse fields; Slate rows in the sandbox
 verdict: Every entity or multi_entity field makes a visible, editable multi_entity on each linked type. No create property stops it, and DELETE of the reverse field retires the forward field too.
 ---
 
@@ -46,6 +46,23 @@ DELETE of a forward field -> its reverse field retired with it (multi_entity mea
 |---|---|
 | `entity` | `sg_<source type's display name, lowercased, plural>`, display name `<source display name> <-> <field display name>` |
 | `multi_entity` | `<source slug>_<field>_<source slug>s`, `<source slug>` the REST slug in singular, e.g. `custom_entityNN` |
+
+The `multi_entity` rule holds on stock source types too:
+
+| source, field | reverse field on the linked type |
+|---|---|
+| Version, `sg_zzprobe_116_multi_entity` | `version_sg_zzprobe_116_multi_entity_versions` (probe 116) |
+| Slate, `sg_zzprobe_155_shots`, `valid_types: ["Shot"]` | `slate_sg_zzprobe_155_shots_slates` on Shot, display name `Slates <-> zzprobe 155 shots`, editable, visible (probe 155) |
+
+By that rule a field `sg_shots` on Slate gets `slate_sg_shots_slates` on Shot.
+
+**One link, written from either end** (probe 155, a Slate and three Shots)
+
+| write | read back |
+|---|---|
+| `POST /entity/slates {<field>: [S1]}` | S1's reverse field holds the Slate |
+| `PUT /entity/shots/<S3> {<reverse>: [<the slate>]}` | the Slate's `<field>` holds S3 |
+| `POST /entity/shots/_search [[<reverse>, "is", <the slate>]]` | the Slate's Shots, without reading the Slate |
 
 **Teaches**
 - Plan for a field on every linked type: one per type in `valid_types` (probe 121), each

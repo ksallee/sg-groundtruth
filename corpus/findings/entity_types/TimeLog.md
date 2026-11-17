@@ -91,7 +91,8 @@ accepted at 201 and read back as their own type. `user` is enforced.
 | `user` = `null` | 201, reads back `null` |
 | `entity` = a Shot, `entity` = a Project | 201 each, stored as sent |
 
-A tool can log on someone's behalf: set `user`, and `created_by` records the script that did it. `user` is
+A tool can log on someone's behalf: set `user`, and `created_by` records the script that did it, unless
+the create sends `created_by` too, which Note and Version accept (probe 148). `user` is
 optional, and an omitted one is not filled in from the credentials. On the probed site 452 of 1012 TimeLogs
 have no `user` at all, so filter `["user", "is_not", null]` before attributing time to anyone.
 

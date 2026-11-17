@@ -53,6 +53,6 @@ GET /api/v1/entity/attachments/<id>/this_file         -> 200 JSON: content_type,
   900 s after it was read from the API. What S3 bills for a closed transfer was not measured.
 - The stored `Content-Type` is S3's default `binary/octet-stream` when the upload `PUT` sends none,
   as this one did; the `.jpg` name does not set it. `Content-Type` is not a signed header
-  (probe 125), so a `PUT` may send one; whether the download then answers with it was not measured.
+  (probe 125), so a `PUT` may send one, and the download then answers with it (probe 152).
 - Evidence is headers read by a process. A browser applying the CORS rules to them allows the above;
   no browser was run.

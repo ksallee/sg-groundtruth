@@ -167,9 +167,9 @@ Post appName and machineId, open url in a browser, PUT the id until approved. Th
 not measured: a person clicking deny, and a session left idle past the site's expiry window; both wait on time and on the site, not on the probe
 
 - A person reaches the REST API with no script key and no password: two unauthenticated calls, a
-  browser, and a click. The bearer is a `HumanUser`, so `created_by` and `Version.user` are the person
-  without `sudo_as_login` and without an administrator granting `can_impersonate_this_user`
-  (probe 027).
+  browser, and a click. The bearer's `user` claim is the `HumanUser`, with no `sudo_as_login` and no
+  `can_impersonate_this_user` needed (probe 027). Whether its writes record that person in
+  `created_by` and `Version.user` was never measured; probe 148 measured it under `sudo_as_login` only.
 
 - The session token is the credential; the bearer is disposable. Hold the session token, mint a 600s
   bearer whenever one is needed, and each mint moves the session's expiry to now plus the site's

@@ -57,6 +57,7 @@ two upload URLs minted together: PUT at 840 s -> 200; PUT at 910 s -> 403
 
 **Lifetime**: 900 s from the `_upload` call, as `X-Amz-Expires` says. A PUT at 840 s succeeded and
 one at 910 s was refused with 403 `Request has expired`, an S3 XML body rather than `errors[]`.
+A PUT that started at once and ended at 965 s was stored (probe 153).
 
 **Teaches**
 - A browser can run the whole upload, multipart included: the ETag that probe 044's completion needs

@@ -39,6 +39,8 @@ Retires a field at 204 and burns its programmatic name forever: the same name wi
   rules: `doors/findings-schema`
 - `127_retry_and_client_uuid` (findings) — A text field created with `unique: true` refuses a second create with the same value, case and outer spaces ignored, in a batch too. It is the only idempotency key: the API has no header for it.  
   rules: `doors/findings-write`
+- `146_note_unique_key` (findings) — A `unique: true` text field works on Note as on Version (probe 127), and refuses a duplicate on PUT and under sudo too. A `Note.meta` key is found by `contains`, case-sensitive, and enforces nothing.  
+  rules: `doors/findings-write`
 - `006_duplicate_field_name_is_201` (reports) — Creating a custom field whose display name is taken answers 201 for a suffixed field instead of a conflict, and every retry burns a programmatic name no REST call frees.  
   rules: `doors/reports`
 

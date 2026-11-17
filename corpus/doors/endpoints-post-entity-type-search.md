@@ -32,6 +32,8 @@ The only way to send a filter the query string cannot express, and it refuses `a
   rules: `doors/findings-schema`
 - `120_field_trash_page` (findings) — The page that lists retired fields is a Page row: `ui_category` "trash", `entity_type` "DisplayColumn", named "Trash - Fields". Its id is per site, so search for it.  
   rules: `doors/findings-schema`
+- `142_reverse_field` (findings) — Every entity or multi_entity field makes a visible, editable multi_entity on each linked type. No create property stops it, and DELETE of the reverse field retires the forward field too.  
+  rules: `doors/findings-schema`
 - `003_query` (findings) — A dotted ?fields path comes back flat under literal key "sg_task.Task.content" in attributes; an entity field is returned under relationships as {data, links}. Never read a row from attributes alone.  
   rules: `doors/findings-read`
 - `006_pagination` (findings) — links.next is emitted on every page forever, including zero-row ones, so stop paging when data is empty and never on a missing next.  
@@ -73,6 +75,8 @@ The only way to send a filter the query string cannot express, and it refuses `a
 - `068_note_read_state` (findings) — read_by_current_user is per person and missing from the schema; `is` and `is_not` are evaluated, while `in`, `not_in` and an unknown `is` value all return the unread rows at 200.  
   rules: `doors/findings-filter`
 - `071_note_link_name_filter` (findings) — Filter notes about a thing on `note_links.<Type>.cached_display_name`: it resolves for every valid type, `code` 400s on Booking and `name` on all but Department. The path cannot be read back.  
+  rules: `doors/findings-filter`
+- `150_group_resolution` (findings) — `task_assignees is <person>` misses a Task assigned to their Group; filter `task_assignees.Group.users`. Group assignment makes the members followers once, and an Artist reads Groups and members.  
   rules: `doors/findings-filter`
 - `069_client_note` (findings) — `client_note` cannot be set over REST: `true` on create is 400 and any `PUT` is 400 `editable on create only`. `sg_note_type: "Client"` is the one marker a caller can write.  
   rules: `doors/findings-write`
@@ -132,6 +136,10 @@ The only way to send a filter the query string cannot express, and it refuses `a
   rules: `doors/findings-write`
 - `145_time_fields` (findings) — date_time rounds to the second on POST and PUT (.999 goes up, .5 stays) but truncates in a _batch create. A new timecode field has no rate property; it is integer ms rendered at the site's fixed rate.  
   rules: `doors/findings-write`
+- `146_note_unique_key` (findings) — A `unique: true` text field works on Note as on Version (probe 127), and refuses a duplicate on PUT and under sudo too. A `Note.meta` key is found by `contains`, case-sensitive, and enforces nothing.  
+  rules: `doors/findings-write`
+- `156_action_menu_item` (findings) — An ActionMenuItem creates from `{}` at 201 though `title` is flagged mandatory, and `url` is not validated. An Artist is refused; `permissions_groups` does not filter what the API returns.  
+  rules: `doors/findings-write`
 - `014_attach_file` (findings) — Leave the field out of the _upload path and the file is stored as an Attachment on attachment_links; read it back with POST /entity/attachments/_search, never flat filter[].  
   rules: `doors/findings-upload`
 - `123_photos_per_record` (findings) — `image` keeps only a 480x320 thumbnail. A url field holds one original, a Note's attachments or a multi_entity to Attachment hold many; all return the bytes unchanged.  
@@ -149,6 +157,8 @@ The only way to send a filter the query string cannot express, and it refuses `a
 - `090_template_task_events` (findings) — A template-generated Task logs like a hand-made one plus a `template_task` change row, `in_create` true, credited to the caller. Filter `attribute_name` `template_task` to find them.  
   rules: `doors/findings-observe`
 - `124_updated_at_bumps` (findings) — `updated_at` moves on a write, a finished upload and its transcode, and on a link set from either end, but not on a no-op PUT and not when a Note names the row in `note_links`.  
+  rules: `doors/findings-observe`
+- `147_note_addressing` (findings) — A Note's To and cc people, and every member of an addressed Group, become its followers at create, with the author. Find a person's Notes with `addressings_to.Group.users` as well as `addressings_to`.  
   rules: `doors/findings-observe`
 - `003_query_fields_and_pages` (recipes) — Resolve a query field's value, and run the rows a saved Page shows  
   rules: `doors/recipes`
@@ -179,6 +189,8 @@ The only way to send a filter the query string cannot express, and it refuses `a
 - `023_undo_task_template_merge_with_a_task_linked_twice` (recipes) — Undo a task template merge when two Tasks pointed at the same old template task, without the server picking which one gets the edges  
   rules: `doors/recipes`
 - `025_retry_safe_create` (recipes) — Create rows from a client that retries after timeouts, without duplicating any row  
+  rules: `doors/recipes`
+- `026_note_per_shot` (recipes) — Keep one Note per Shot, addressed to the people on the Shot's Tasks, found again by a client key and updated in place  
   rules: `doors/recipes`
 - `003_sort_fails_silently` (reports) — A sort on an unknown or unsortable field answers 200 with the rows in default order, while the same field name in a filter answers 400 and names the reason.  
   rules: `doors/reports`

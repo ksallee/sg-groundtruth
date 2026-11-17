@@ -51,6 +51,8 @@ Display name to programmatic name, measured:
   rules: `doors/findings-write`
 - `145_time_fields` (findings) — date_time rounds to the second on POST and PUT (.999 goes up, .5 stays) but truncates in a _batch create. A new timecode field has no rate property; it is integer ms rendered at the site's fixed rate.  
   rules: `doors/findings-write`
+- `146_note_unique_key` (findings) — A `unique: true` text field works on Note as on Version (probe 127), and refuses a duplicate on PUT and under sudo too. A `Note.meta` key is found by `contains`, case-sensitive, and enforces nothing.  
+  rules: `doors/findings-write`
 - `123_photos_per_record` (findings) — `image` keeps only a 480x320 thumbnail. A url field holds one original, a Note's attachments or a multi_entity to Attachment hold many; all return the bytes unchanged.  
   rules: `doors/findings-upload`
 - `134_attachment_field_second_upload` (findings) — A second `_upload` to a multi_entity field to Attachment adds: the field holds both. Each Attachment gets the row's `project` and the row in `attachment_links`, so a project filter finds it.  

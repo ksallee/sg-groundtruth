@@ -35,8 +35,8 @@ HEAD on this_file.url -> 403 (the URL is signed for GET; probe 141)
 **Teaches**
 - Size is not what forces multipart, up to 1000 MB at least. Choose multipart for resumability: a single
   PUT that dies at 90 % starts over, and a 1000 MB PUT here ran two minutes on one connection.
-- The upload URL lives 900 s from `_upload` (probe 125). Whether a PUT that starts inside the window
-  and ends after it is accepted was not measured. Mint the URL right before the PUT, and keep a
-  single PUT small enough to finish inside 900 s at the connection's rate.
+- The upload URL lives 900 s from `_upload` (probe 125). A PUT started at once may end after that,
+  while one started at 600 s or later and ending past 900 s is refused (probe 153). Mint the URL
+  right before the PUT and start it at once; past 900 s at the connection's rate, use parts.
 - Confirm a stored size with `GET` and `Range: bytes=-1`: `Content-Range` gives the total.
   `file_size` stays null and `HEAD` is refused.

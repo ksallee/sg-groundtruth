@@ -1,7 +1,7 @@
 ---
 intent: Add to and remove from a multi_entity field without destroying the links you did not mean to touch
 tags: [write, multi-entity, entity-field, playlist, note, version, filter, silent, destructive]
-endpoints: [GET /entity/<type>/<id>, PUT /entity/<type>/<id>, POST /entity/<type>/_search]
+endpoints: [GET /entity/<type>/<id>, PUT /entity/<type>/<id>, POST /entity/<type>/_search, POST /entity/_batch]
 scope: api
 measured: all sample projects read, sandbox project written
 ---
@@ -163,6 +163,8 @@ Clearing, measured on both fields:
   `?options[multi_entity_update_modes][<field>]=add` both answer 200 having replaced the whole list.
   The loss is a success response, so the mode is only ever correct in the body
   (`field_types/multi_entity`, probe 028).
+- The same body works as a `_batch` update's `data`, and several edits to one row in one batch apply
+  in request order (probe 154).
 - **The lost-update race.** Read-then-PUT is not an append. A bare list replaces, the window between
   the read and the write is open, and no conditional write closes it: `If-Match`,
   `If-Unmodified-Since` and `If-None-Match` are ignored at 200 and `updated_at` echoed back is

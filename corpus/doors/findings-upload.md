@@ -120,7 +120,11 @@ not measured: completing a field-less upload on Slate and reading where it links
   Attachment row, and no REST call returned the original.
 
 - Every other place keeps the exact bytes and answers them at the presigned URL as
-  `binary/octet-stream`, signed for 900 s (probe 125). Store the Attachment id, not the URL.
+  `binary/octet-stream`, signed for 900 s (probe 125). Store the Attachment id, not the URL. That type
+  is because these PUTs sent none: a PUT's `Content-Type` is what the GET serves (probe 152).
+
+- The `_2Dlod.jpeg` Attachment of (d) was added for a JPEG; a video on the same field got only the
+  `<hash>_<name>.mp4` (probe 151).
 
 - Only Note has a stock `attachments` field. Version has none (schema 404), which settles the
   contradiction in the upload cards: a field-less upload on Version links through
@@ -216,9 +220,9 @@ not measured: sizes above 1000 MB, stopped there by design. S3 documents five gi
 - Size is not what forces multipart, up to 1000 MB at least. Choose multipart for resumability: a single
   PUT that dies at 90 % starts over, and a 1000 MB PUT here ran two minutes on one connection.
 
-- The upload URL lives 900 s from `_upload` (probe 125). Whether a PUT that starts inside the window
-  and ends after it is accepted was not measured. Mint the URL right before the PUT, and keep a
-  single PUT small enough to finish inside 900 s at the connection's rate.
+- The upload URL lives 900 s from `_upload` (probe 125). A PUT started at once may end after that,
+  while one started at 600 s or later and ending past 900 s is refused (probe 153). Mint the URL
+  right before the PUT and start it at once; past 900 s at the connection's rate, use parts.
 
 - Confirm a stored size with `GET` and `Range: bytes=-1`: `Content-Range` gives the total.
   `file_size` stays null and `HEAD` is refused.
@@ -239,9 +243,84 @@ A stored file's GET sends Content-Length and Accept-Ranges, answers `*` to any O
 
 - The stored `Content-Type` is S3's default `binary/octet-stream` when the upload `PUT` sends none,
   as this one did; the `.jpg` name does not set it. `Content-Type` is not a signed header
-  (probe 125), so a `PUT` may send one; whether the download then answers with it was not measured.
+  (probe 125), so a `PUT` may send one, and the download then answers with it (probe 152).
 
 - Evidence is headers read by a process. A browser applying the CORS rules to them allows the above;
   no browser was run.
 
 `corpus/findings/141_download_headers.md`
+
+## 151_video_on_take
+
+On `sg_uploaded_movie` an `HEVC` .mov becomes an H.264 mp4 with a thumbnail and a filmstrip, ready in under a minute. As a plain Attachment, video gets a 480 px thumbnail and nothing else. **[partial]**
+
+not measured: playback in the web interface and an upload from iPad Safari. Needs a browser and a person with an iPad, see below
+
+- Only a Version gives a playable transcode. An `HEVC` `.mov` from an iPhone or iPad is stored as sent
+  and its `sg_uploaded_movie_mp4` is H.264, which every browser plays. As a plain Attachment the same
+  file gets a thumbnail and nothing a browser without `HEVC` can play.
+
+- Wait for `sg_uploaded_movie_transcoding_status` 1 on a fresh Version, under a minute for these
+  clips, and expect `image` to move a second time (probe 124).
+
+- The server added one `<hash>_<name>.mp4` Attachment per Version and no `_2Dlod.jpeg`, which probe
+  123 saw for a JPEG on the same field. Each outlived its Version's `DELETE` and answered its own with
+  204, so delete them yourself.
+
+**Needs a browser or a person**
+
+| question | step |
+|---|---|
+| what the web interface plays inline for each row | `151 --write --hold 900`, then open the take and the Versions in the web interface |
+| an upload from iPad Safari, Content-Type and size as sent | upload one recorded clip from sg-onset on an iPad, then read the Attachment and Version as this probe does |
+
+`corpus/findings/151_video_on_take.md`
+
+## 152_audio_on_take
+
+Audio on `sg_uploaded_movie` transcodes to an audio-only mp4 (`aac`), status 1, no thumbnail. The stored `content_type` is not the PUT's: an Opus `.webm` sent as `audio/webm` reads `video/webm`. **[partial]**
+
+not measured: playback in the web interface and a recording from iPad Safari. Needs a browser and a person with an iPad, see below
+
+- A Version holds audio: status reaches 1 as for video (probe 151), and `sg_uploaded_movie_mp4` is an
+  `aac` mp4 every browser plays, Opus from Chrome's MediaRecorder included. There is no frame rate,
+  filmstrip or thumbnail, so draw the row's icon yourself.
+
+- `image` reads the transient placeholder until processing ends and then null. A client waiting for a
+  thumbnail on audio waits for nothing; wait on `processing_status` or the transcoding status.
+
+- The stored `content_type` is set by the server, not taken from the PUT: the `.webm` reads
+  `video/webm` although the PUT said `audio/webm`. Extension or bytes is not separated: a WebM
+  container is the same for both. Decide audio or video on the client, not from `content_type`.
+
+- The presigned GET serves back the PUT's `Content-Type`; probe 123 saw `binary/octet-stream` with
+  none sent.
+
+**Needs a browser or a person**
+
+| question | step |
+|---|---|
+| does the web interface play an audio Version, and with what player | `152 --write --hold 900`, then open each Version in the web interface |
+| what iPad Safari's MediaRecorder writes, container and Content-Type | record a sound note in sg-onset on an iPad and read the Attachment and Version as this probe does |
+
+`corpus/findings/152_audio_on_take.md`
+
+## 153_presigned_put_slow
+
+A presigned PUT started at once and ending at 965 s was stored, 3 runs of 3. Every PUT started at 600 s or later and ending past 900 s was 403 `Request has expired`, whatever it sent first. **[partial]**
+
+not measured: a PUT started between 4 s and 600 s, and a real upload at Wi-Fi speed. Blocked on time: each run takes 17 minutes
+
+- Neither the start nor the end decides alone. E sent its headers 300 s before the URL expired and
+  was refused after its last byte, `ServerTime` 61 s past `Expires`. A sent its headers at 2 s,
+  ended 63 s past expiry, and was stored at the bytes sent.
+
+- Where between 4 s and 600 s a start stops being accepted is unmeasured.
+
+- Sending more up front did not help a late start: 64 KiB, 256 KiB and 1 MiB at 861 s were all
+  refused at the end.
+
+- Call `_upload` right before the PUT and start it at once. An upload that may run past 900 s goes
+  up in parts, each part URL minted when its part is sent (probes 044, 139).
+
+`corpus/findings/153_presigned_put_slow.md`
