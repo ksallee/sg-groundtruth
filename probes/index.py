@@ -202,7 +202,7 @@ def main():
 def index(findings, types, entities, recipes, cards, reports, by_tag, behind, split):
     """The map: every entry by name, and the door to open for each way in.
 
-    Capped at 8 KiB by `check_corpus.py`. Every session pays for this file before it asks
+    Capped at 13 KiB by `INDEX_MAX` in `check_corpus.py`. Every session pays for this file before it asks
     anything, so a line here has to earn its place against the door it points at.
     """
     covered = sum(1 for e in cards if behind.get(e["endpoint"]))
