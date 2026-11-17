@@ -28,6 +28,8 @@ The enabled type list, and the enablement test for a `CustomEntityNN`: a slot ab
   rules: `doors/findings-schema`
 - `115_field_visibility_per_project` (findings) — `visible` is per project. Read it with `?project_id=N`; write it with PUT and `project_id` in the body or the query, never without one. A new field is visible in every project.  
   rules: `doors/findings-schema`
+- `122_onset_entity_types` (findings) — Slate, Camera, MocapTake, ShootDay and Scene create like Version: `project` required, `code` generated. None has `attachments`, and only Version.entity and Note.note_links reach them all.  
+  rules: `doors/findings-schema`
 - `074_page_filter_coverage` (findings) — Every stored page filter with its tokens filled converts and runs 200 but one, yet recipe 003 kept unticked leaves (active "false"): 11 trees returned the wrong count. Drop them.  
   rules: `doors/findings-filter`
 
@@ -48,6 +50,8 @@ One type's display name without its 48KB of fields, and the cheapest existence c
 - `028_loud_and_silent` (findings) — A 400 is trustworthy and usually names the legal set, but a 200 proves nothing: an unknown field, sort key or query param is a no-op, and a batch can return an id for a row it never made.  
   rules: `doors/findings-protocol`
 - `002_schema` (findings) — Fetch /schema once for the type list, then /schema/<Type>/fields only for types you actually need: it is the expensive call (48KB, ~330ms each) and must never be looped over all types.  
+  rules: `doors/findings-schema`
+- `122_onset_entity_types` (findings) — Slate, Camera, MocapTake, ShootDay and Scene create like Version: `project` required, `code` generated. None has `attachments`, and only Version.entity and Note.note_links reach them all.  
   rules: `doors/findings-schema`
 
 **Silent on this call**
@@ -89,6 +93,10 @@ Every field on one type with its `data_type`, `editable` and `mandatory`. The ex
 - `114_schema_admin_recheck` (findings) — On 2026-11-10 /spec.json names calls to enable, disable and configure a custom entity, all 400 code 111 on the probed site. No call deletes a trashed field forever or writes hidden_values.  
   rules: `doors/findings-schema`
 - `115_field_visibility_per_project` (findings) — `visible` is per project. Read it with `?project_id=N`; write it with PUT and `project_id` in the body or the query, never without one. A new field is visible in every project.  
+  rules: `doors/findings-schema`
+- `122_onset_entity_types` (findings) — Slate, Camera, MocapTake, ShootDay and Scene create like Version: `project` required, `code` generated. None has `attachments`, and only Version.entity and Note.note_links reach them all.  
+  rules: `doors/findings-schema`
+- `142_reverse_field` (findings) — Every entity or multi_entity field makes a visible, editable multi_entity on each linked type. No create property stops it, and DELETE of the reverse field retires the forward field too.  
   rules: `doors/findings-schema`
 - `007_fill_rates` (findings) — On the sample project 30 of 71 Version fields are populated. Rank by fill rate, but drop checkbox, summary and computed fields first: False and 0 are not null and read as 100% filled.  
   rules: `doors/findings-read`
@@ -171,6 +179,8 @@ One field's properties, at 1211 bytes against 48KB for the whole type. Pass `pro
   rules: `doors/findings-schema`
 - `121_field_settings_edges` (findings) — A PUT applies all its properties or none, in any order. A description or name cannot be emptied. `valid_types` keeps the sent order, and a lowercase type name is a 500 that retires the field.  
   rules: `doors/findings-schema`
+- `142_reverse_field` (findings) — Every entity or multi_entity field makes a visible, editable multi_entity on each linked type. No create property stops it, and DELETE of the reverse field retires the forward field too.  
+  rules: `doors/findings-schema`
 - `060_entity_dict_name` (findings) — The `name` in an entity dict is the target's `cached_display_name`, filled on every type measured, single and multi alike. Read it, not the per-type identity field, and expect decoration.  
   rules: `doors/findings-read`
 - `068_note_read_state` (findings) — read_by_current_user is per person and missing from the schema; `is` and `is_not` are evaluated, while `in`, `not_in` and an unknown `is` value all return the unread rows at 200.  
@@ -179,6 +189,8 @@ One field's properties, at 1211 bytes against 48KB for the whole type. Pass `pro
   rules: `doors/findings-filter`
 - `084_task_template_reapply` (findings) — Changing `task_template` to T creates a Task per T task no Task links by `template_task`, duplicating a same-name hand-made one, and re-syncs the linked Tasks' fields and edges (probe 102).  
   rules: `doors/findings-write`
+- `123_photos_per_record` (findings) — `image` keeps only a 480x320 thumbnail. A url field holds one original, a Note's attachments or a multi_entity to Attachment hold many; all return the bytes unchanged.  
+  rules: `doors/findings-upload`
 - `049_script_events` (findings) — A script's writes reach the event log only while its ApiUser has generate_event_log_entries True. The default is False and nothing errors when off. One create logs one row per field plus one _New.  
   rules: `doors/findings-observe`
 - `003_query_fields_and_pages` (recipes) — Resolve a query field's value, and run the rows a saved Page shows  
@@ -201,9 +213,9 @@ One field's properties, at 1211 bytes against 48KB for the whole type. Pass `pro
 
 ## `GET /schema/permission_groups` **[partial]**
 
-Lists the permission groups the caller may inspect. The script saw one, its own `api_admin`, and no HumanUser group. In `/spec.json` since 2026-11-10, in no reference page.
+Lists the permission groups the caller may inspect: the script and an Artist see only their own, an Admin person sees every HumanUser group. In `/spec.json` since 2026-11-10, in no reference page.
 
-not measured: the call as a person, and as a caller with `set_permissions`. Only the script was measured. Blocked on the site: it needs that person's session.
+not measured: a Manager or Vendor person; on the probed site none has impersonation on. Blocked on the site
 
 - `/spec.json` says a caller without `set_permissions` sees only its own group. The script, an API
   Admin, got its own group and an empty list for `HumanUser`.
@@ -214,23 +226,34 @@ not measured: the call as a person, and as a caller with `set_permissions`. Only
 
 - `119_field_absent_retired_live` (findings) — Revive is 204 only on a retired field: 404 `Retired field ... does not exist.` on an unused name, 400 `... is not retired.` on a live one. A retired field is a 404 to GET, PUT and DELETE.  
   rules: `doors/findings-schema`
+- `132_field_create_rights` (findings) — An Artist creating a field gets 500 code 105 `User doesn't have permission to create a Field`, with a traceback. An Admin person gets 201. Treat any 500 from a schema write as a possible refusal.  
+  rules: `doors/findings-schema`
 
 `corpus/endpoints/get_schema_permission_groups.md`
 
-## `GET /schema/permission_groups/<code>/entity_types/<Type>` **[partial]**
+## `GET /schema/permission_groups/<code>/entity_types/<Type>`
 
 One permission group's rights on one entity type's rows: read, create, update, retire, delete, each `allowed`, `denied` or `conditional`. Nothing about changing the schema.
-
-not measured: a group other than the caller's own, and a `conditional` or `denied` access. Only `api_admin` was readable. Blocked on the site.
 
 - The actions are about rows. No key reports whether the group may create, update or retire a field.
 
 - A group the caller cannot see is reported as unknown, not as forbidden.
 
+- An Admin person reads every group; an Artist only its own (probe 132). An Artist's answers matched
+  every refusal it got on custom-entity rows and Attachments (probe 143), so this is the preflight to
+  read before writing as a person.
+
+- `update.field_exceptions` lists the fields an update rule allows or denies against the type's
+  default, e.g. `allow: ["sg_status_list"]` where `update` is `denied`.
+
 **Measured by**
 
 - `119_field_absent_retired_live` (findings) — Revive is 204 only on a retired field: 404 `Retired field ... does not exist.` on an unused name, 400 `... is not retired.` on a live one. A retired field is a 404 to GET, PUT and DELETE.  
   rules: `doors/findings-schema`
+- `132_field_create_rights` (findings) — An Artist creating a field gets 500 code 105 `User doesn't have permission to create a Field`, with a traceback. An Admin person gets 201. Treat any 500 from a schema write as a possible refusal.  
+  rules: `doors/findings-schema`
+- `143_nonadmin_rows` (findings) — On the probed site an Artist may not create, edit or delete custom-entity rows (status only) and may create but not delete an Attachment, its own included. The group rights call predicts each answer.  
+  rules: `doors/findings-write`
 
 `corpus/endpoints/get_schema_permission_groups_code_entity_types_type.md`
 

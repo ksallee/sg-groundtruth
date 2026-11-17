@@ -428,3 +428,19 @@ not measured: A Note linked to two Shots: the probed project has none, so credit
   `single_record` field (a sorted row 0, recipe 003) has no grouped form: it stays one `_search` per row.
 
 `corpus/findings/080_query_field_cost.md`
+
+## 150_group_resolution
+
+`task_assignees is <person>` misses a Task assigned to their Group; filter `task_assignees.Group.users`. Group assignment makes the members followers once, and an Artist reads Groups and members.
+
+- A Group assignee is stored as the Group. `task_assignees is <person>` and `in [...]` match only
+  direct assignments, and `task_assignees.HumanUser.groups` walks the human assignees' groups, not the
+  group assignees. Expand a Group with `Group.users` before addressing anyone.
+
+- Assigning a Group adds its members as followers at that moment. Removing a member later leaves them
+  following, so the follower list drifts from the Group.
+
+- On the probed site an Artist reads every Group, its `users`, and other people's rows, so an app
+  signed in as an Artist can expand assignees itself. `sg_people` is the site's own field and was empty.
+
+`corpus/findings/150_group_resolution.md`

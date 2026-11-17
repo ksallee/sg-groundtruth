@@ -586,3 +586,22 @@ not measured: Whether a Shot or Asset created over REST without `task_template` 
   rely on the project default.
 
 `corpus/findings/088_project_template_defaults.md`
+
+## 138_dotted_custom_field
+
+A dotted path reaches an `sg_` field through an `sg_` entity field, on a custom entity and on a built-in one, and across two hops: projection on GET and _search, and filter, all match.
+
+- `sg_` fields behave like stock ones in a dotted path: write the path as
+  `<field>.<Type>.<field>`, with the custom entity's schema name (`CustomEntityNN`), never its
+  display name.
+
+- Two hops work in a projection and in a filter, so a list of Versions can return the lens or camera
+  detail of the take they belong to in one `_search`.
+
+- The single-type entity field was chosen so the middle segment is certain. Through a field listing
+  several types, the projection drops a path whose type is not in `valid_types` (probe 059).
+
+- Through a stock multi_entity field a dotted projection is silently empty while the filter works
+  (probe 016). An `sg_` multi_entity field was not measured here.
+
+`corpus/findings/138_dotted_custom_field.md`

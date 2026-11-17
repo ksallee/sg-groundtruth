@@ -1,10 +1,9 @@
 ---
 endpoint: GET /schema/permission_groups/<code>/entity_types/<Type>
-coverage: partial
-unmeasured: a group other than the caller's own, and a `conditional` or `denied` access. Only `api_admin` was readable. Blocked on the site.
+coverage: measured
 tags: [schema, permission, discovery]
 scope: api
-measured: site-wide, as the script, probe 119
+measured: site-wide; the script (probe 119), an Admin and an Artist via sudo, every group on six types (probes 132, 143)
 verdict: One permission group's rights on one entity type's rows: read, create, update, retire, delete, each `allowed`, `denied` or `conditional`. Nothing about changing the schema.
 ---
 
@@ -48,6 +47,14 @@ r = c.get("/schema/permission_groups/artist/entity_types/Version")
              "detail": "Unknown permission group code 'artist'"}]}
 ```
 
+An update with exceptions, read by an Admin person for the `vendor` group on Attachment (probe 143):
+
+```json
+"actions": {"read": {"access": "conditional"}, "create": {"access": "allowed"},
+            "update": {"access": "conditional", "field_exceptions": {"allow": ["attachment_links", "project"], "deny": []}},
+            "retire": {"access": "denied"}, "delete": {"access": "denied"}}
+```
+
 **Response codes**
 
 | status | when |
@@ -60,6 +67,11 @@ r = c.get("/schema/permission_groups/artist/entity_types/Version")
 
 - The actions are about rows. No key reports whether the group may create, update or retire a field.
 - A group the caller cannot see is reported as unknown, not as forbidden.
+- An Admin person reads every group; an Artist only its own (probe 132). An Artist's answers matched
+  every refusal it got on custom-entity rows and Attachments (probe 143), so this is the preflight to
+  read before writing as a person.
+- `update.field_exceptions` lists the fields an update rule allows or denies against the type's
+  default, e.g. `allow: ["sg_status_list"]` where `update` is `denied`.
 
 **Links**
 

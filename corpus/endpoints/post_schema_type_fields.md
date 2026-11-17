@@ -67,6 +67,8 @@ That error is what two or more types answers on a `multi_entity`, where one elem
 | 400 | code 105, `schema_field_create() failed, there is a retired field with the same field_name: <name>`, with `source.field_name` |
 | 500 | bare `checkbox`, `Only true or false allowed in checkbox` |
 | 500 | `calculated`, `NoMethodError` |
+| 500 | code 105 `API schema_field_create() RuntimeError: User doesn't have permission to create a Field`, with a traceback in `detail`, for an Artist (probe 132) |
+| 400 | code 103 `invalid property '<name>'` and `Valid property names: [...]` for that data type (probes 142, 145) |
 
 **Edge cases**
 

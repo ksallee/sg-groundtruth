@@ -167,9 +167,9 @@ Post appName and machineId, open url in a browser, PUT the id until approved. Th
 not measured: a person clicking deny, and a session left idle past the site's expiry window; both wait on time and on the site, not on the probe
 
 - A person reaches the REST API with no script key and no password: two unauthenticated calls, a
-  browser, and a click. The bearer is a `HumanUser`, so `created_by` and `Version.user` are the person
-  without `sudo_as_login` and without an administrator granting `can_impersonate_this_user`
-  (probe 027).
+  browser, and a click. The bearer's `user` claim is the `HumanUser`, with no `sudo_as_login` and no
+  `can_impersonate_this_user` needed (probe 027). Whether its writes record that person in
+  `created_by` and `Version.user` was never measured; probe 148 measured it under `sudo_as_login` only.
 
 - The session token is the credential; the bearer is disposable. Hold the session token, mint a 600s
   bearer whenever one is needed, and each mint moves the session's expiry to now plus the site's
@@ -189,3 +189,88 @@ not measured: a person clicking deny, and a session left idle past the site's ex
   `GET /internal_api/session` for the expiry rather than assume the preference.
 
 `corpus/findings/052_app_session_launcher.md`
+
+## 126_session_idle
+
+The token endpoint refuses a session token it does not accept with 400 code 102 in errors[], "Can't authenticate session token ending with '<last 4>'". No API read exposes the session window. **[partial]**
+
+not measured: a real session token left idle past the window. Needs a person to approve 052 --login, then a day of nobody spending it. Blocked on time
+
+- Treat 400 code 102 from `grant_type=session_token` as "send the person through sign-in again".
+  It is in the `errors[]` envelope like every `/api/v1` error; `GET /internal_api/session` answers
+  the same token with a bare `{"message":"Unauthorized"}` (probe 052). The title quotes the token's
+  last four characters and nothing else, so a mistyped token cannot be told from any other refusal.
+
+- Whether an idle-expired token answers the same code and envelope is unmeasured: on 2026-11-11 no
+  saved token existed. `--idle` prints the envelope of both answers beside the never-valid ones.
+
+- The window is not readable: `/preferences` exposes 17 display and scheduling keys and silently
+  answers `{}` for any other name. Read `expiresAt` from `GET /internal_api/session` while the token
+  is live (probe 052) instead.
+
+- Writing the window was not tried: `PUT /preferences/update` is 400 code 111 for every preference
+  on the probed site (probes 047, 114).
+
+`corpus/findings/126_session_idle.md`
+
+## 130_launcher_answers
+
+sessionRequestId is 21 characters of A-Za-z0-9_-. url is on the site's host unless the create call sends X-Forwarded-Host, which url copies: a proxy strips that header. **[partial]**
+
+not measured: the create call on a site with authentication_app_session_launcher_enabled false. The probed site has it on and no preference is changed; blocked on the site
+
+- Validate a `sessionRequestId` as `^[A-Za-z0-9_-]{21}$` on the probed site's nine samples. Treat it as
+  opaque beyond that; nothing documents the shape.
+
+- `url` takes its host from `X-Forwarded-Host` when the create call has one, and a person who opens
+  it lands on a host that is not the site. A proxy forwarding the launcher calls (probe 062) drops
+  that header, and a client checks that `url`'s host equals the site's before opening it.
+
+- `X-Forwarded-Proto`, `X-Forwarded-Port`, `Forwarded`, `Origin` and `Referer` change nothing in `url`.
+
+- `sticky_id` is a second 21-character value, not a copy of the id. Pass `url` through whole.
+
+- A pending request cannot be withdrawn: `DELETE` is 404 code 103 and the request still answers. It
+  is forgotten about five minutes after creation (probe 052).
+
+- On a site with the launcher switched off the answer is unmeasured. Read
+  `authentication_app_session_launcher_enabled` from `GET /api/v1` before offering this sign-in, and
+  measure the create call there with `python probes/130_launcher_answers.py` against such a site.
+
+`corpus/findings/130_launcher_answers.md`
+
+## 131_session_revoke
+
+The REST spec has no revoke or sign-out call. Of five candidate routes only /user/logout answers (302 to login); whether it ends a launcher session is unmeasured. **[partial]**
+
+not measured: whether /user/logout ends a live session and what a bearer minted before it then reads. Needs a person to approve `python probes/131_session_revoke.py --login`. Blocked on the work
+
+- No documented call ends a session. Until `--login` is run, an app's sign-out can only forget the
+  session token; the session on the site then ends one window after the last mint (probe 052).
+
+- `GET /user/logout` is the only route that answers, and a 302 to the login page is its answer with
+  no session at all. Confirm a sign-out by reading `GET /internal_api/session` afterwards: 401 is
+  ended, 200 is not.
+
+`corpus/findings/131_session_revoke.md`
+
+## 133_bearer_expiry
+
+Every bearer refusal is 401 code 102 `Unauthorized`; only `detail` differs: `Token Expired` past exp, `Token invalid` for a bad signature, null for garbage or none. Re-mint on 401 code 102.
+
+- `exp` is honoured to the second: 200 at 20 s before it, 401 at 5 s after. No grace period. Mint a
+  new bearer when the decoded `exp` (probe 027) is near, or on any 401 code 102, and retry once.
+
+- `detail` tells the cases apart; `status`, `code` and `title` do not. `Token Expired` is the one
+  a client fixes by minting. `Token invalid` (a token edited or from elsewhere) and `null` (no
+  token, or not three segments) mean the client is sending the wrong thing, and minting may not help.
+
+- A write past `exp` is refused before the row is looked up: the `PUT` named an id that does not
+  exist and still got the 401, not a 404.
+
+- No `WWW-Authenticate` header is sent, so read the body, not the header, to classify a 401.
+
+- A session token refused at the token endpoint is a 400 code 102 instead (probe 126). Code 102 is
+  "authentication failed" at both doors; the status says which door.
+
+`corpus/findings/133_bearer_expiry.md`

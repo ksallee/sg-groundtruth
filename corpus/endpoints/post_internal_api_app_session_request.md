@@ -36,7 +36,7 @@ r = requests.post(f"{site}/internal_api/app_session_request",
 ```
 
 ```json
-{"sessionRequestId": "<id>", "url": "<site>/app_session_request/<id>?sticky_id=<id>"}
+{"sessionRequestId": "<id>", "url": "<site>/app_session_request/<id>?sticky_id=<sticky_id>"}
 ```
 
 The same call with nothing in the body:
@@ -55,6 +55,11 @@ The same call with nothing in the body:
 
 **Edge cases**
 
+- `sessionRequestId` and `sticky_id` are each 21 characters of `A-Za-z0-9_-`, and differ
+  (`130_launcher_answers`).
+- `url` takes its host from an `X-Forwarded-Host` request header. A proxy in front of this call strips
+  that header, or the person is sent to the proxy's host (`130_launcher_answers`).
+- There is no withdraw: `DELETE /internal_api/app_session_request/<id>` is 404 code 103.
 - The error envelope is `{"message": ...}`, not the `errors[]` envelope every `/api/v1` call answers with.
   A client that reads `errors[0].title` reads nothing here.
 - `url` opened without a site cookie answers 302 to the site's login page with the approval page as
@@ -72,3 +77,4 @@ The same call with nothing in the body:
 - `endpoints/get_root`
 - `findings/052_app_session_launcher`
 - `findings/062_cors`
+- `findings/130_launcher_answers`

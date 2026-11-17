@@ -46,7 +46,7 @@ to it returns 200 and changes nothing, and when `content` is null it reads `"-"`
 | `entity` | entity | yes | `Asset`, `Level`, `MocapSetup`, `MocapTake`, `MocapTakeRange`, `ShootDay`, `Shot`, `Sequence` |
 | `step` | entity | yes | `Step` |
 | `project` | entity | yes | `Project` |
-| `task_assignees`, `task_reviewers` | multi_entity | yes | `Group`, `HumanUser` |
+| `task_assignees`, `task_reviewers` | multi_entity | yes | `Group`, `HumanUser`; a Group stays a Group: find a person's group Tasks with `task_assignees.Group.users` (probe 150) |
 | `upstream_tasks`, `downstream_tasks` | multi_entity | yes | `Task` |
 | `sibling_tasks` | multi_entity | no | `Task` |
 | `template_task` | entity | yes | `Task` |

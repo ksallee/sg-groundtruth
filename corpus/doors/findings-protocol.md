@@ -179,3 +179,57 @@ not measured: what a live session cookie authenticates on /api/v1, since allow-c
   page holding `client_credentials`, ships the script key to every visitor.
 
 `corpus/findings/062_cors.md`
+
+## 128_rate_limit
+
+60 GETs from 10 threads in 1.9 s all answered 200 with no rate-limit header of any kind. Code a backoff on 429 and 503 without having seen either. **[partial]**
+
+not measured: the load at which a limit bites, if one exists. The burst was kept small on a shared site. Blocked on the work
+
+- At about 30 requests a second from one script there is no throttling and no header that would
+  announce one, so a client cannot read a budget before it hits it.
+
+- Latency was flat across the burst: the median at 10 threads matched the single-thread one.
+
+- What a limit would answer is unmeasured. Retry 429 and 503 with exponential backoff and honour a
+  `Retry-After` if one ever appears; do not assume any other status means "slow down".
+
+`corpus/findings/128_rate_limit.md`
+
+## 129_hosted_domains
+
+The probed site answers only at its own host; its name under shotgunstudio.com is 404 HTML, no redirect. Both domains resolve any name, so allowlist the configured host, not a suffix. **[partial]**
+
+not measured: a site created under shotgunstudio.com, and a European-hosted site's hostname. The probed site is neither; blocked on the site
+
+- On the probed site, the site answers at one host. Its name under `shotgunstudio.com` is not a
+  redirect to `shotgrid.autodesk.com`: it is the same 404 a name no site holds gets. Store the host the
+  person typed and call that; do not rewrite one domain to the other.
+
+- Both `shotgrid.autodesk.com` and `shotgunstudio.com` resolve any name under them. A proxy that
+  forwards to any host matching either suffix forwards to hosts no site serves. Allowlist the
+  configured site's exact host.
+
+- A host with no site answers `/api/v1` with `404 text/html`, not JSON. Treat an HTML 404 from
+  `GET /api/v1` as "no site at this address" before parsing.
+
+- No name under `shotgun.autodesk.com` resolves. No regional hostname is documented; whether a
+  European-hosted site keeps its `shotgrid.autodesk.com` host is unmeasured.
+
+`corpus/findings/129_hosted_domains.md`
+
+## 144_rate_limit_burst
+
+300 mixed reads and writes at 28 per second for 10 s all answered 200 with no rate-limit header. Median latency doubled from 0.3 s to 0.6 s instead. Back off on latency, not on a status. **[partial]**
+
+not measured: the load at which a limit bites, if one exists. The burst was capped at about 30/s on a shared site. Blocked on the work
+
+- At 30 requests a second sustained for 10 s, mixed reads and writes, nothing is refused and nothing
+  announces a budget. The limit answer is still unseen; code a backoff on 429 and 503 and honour a
+  `Retry-After` if one appears (probe 128).
+
+- The cost of load showed as latency: the median was 0.29 s for 60 GETs from 10 threads (probe 128)
+  and 0.6 s here. A drain loop that watches its own latency and narrows its concurrency when it rises
+  is the signal this site gives.
+
+`corpus/findings/144_rate_limit_burst.md`

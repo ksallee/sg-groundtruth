@@ -458,3 +458,68 @@ not measured: whether the field the 500 retired can be revived, and the order va
 | Deduplicate a status list's `valid_values` yourself | a repeated code is stored twice |
 
 `corpus/findings/121_field_settings_edges.md`
+
+## 122_onset_entity_types
+
+Slate, Camera, MocapTake, ShootDay and Scene create like Version: `project` required, `code` generated. None has `attachments`, and only Version.entity and Note.note_links reach them all. **[partial]**
+
+not measured: a stock site, and enabling a hidden type: Element is off on the probed site and only the web UI turns a type on. Blocked on the site
+
+- Create every on-set row with `project`; `code` is optional and `"New <Display Name> <id>"` when
+  omitted, exactly as Version (entity_types/Version).
+
+- `/schema` is the switch: a hidden built-in type is absent from it and 404s by name everywhere,
+  while its connection types stay listed. No API call turns it on; the 400 code 111 of probe 114
+  answers for stock types and renames too, so plan for an admin turning the type on in the web interface (not measured: no setting was changed).
+
+- Link a take to its Shot through a Version (`Version.entity`) or a site field; stock Slate has no
+  Shot link. `valid_types` is not enforced on `Version.entity` or `Shot.sg_scene`
+  (field_types/entity), so check the type on the client.
+
+- `mocap_takes` and `shoot_days` are the slugs: the CamelCase name also resolves, the run-together
+  plural does not.
+
+`corpus/findings/122_onset_entity_types.md`
+
+## 132_field_create_rights
+
+An Artist creating a field gets 500 code 105 `User doesn't have permission to create a Field`, with a traceback. An Admin person gets 201. Treat any 500 from a schema write as a possible refusal. **[partial]**
+
+not measured: Manager, Vendor and the site's Artist variant: nobody active in them has impersonation on. Blocked on the site; then run `132 --write --only Manager,Vendor`
+
+- The three schema writes refuse in three shapes: create and configure are 500 code 105 with
+  `RuntimeError` in the title, retire is 400 code 104. A client retrying 5xx would retry a refusal
+  forever; match `doesn't have permission` in the title before retrying.
+
+- Permission is checked after the field is looked up: an absent field is a 404 for the Artist too,
+  so a probe on a made-up name tells a caller nothing about its rights.
+
+- No call answers "may I create a field" without trying. The permission group calls describe rows
+  only, and an Artist sees only its own group. On the probed site the Admin person read every
+  group's row rights (probe 143 lists them); none of them names fields.
+
+- Field creation is a site-administration right on the probed site: Admin yes, Artist no. Whether
+  Manager has it was not reachable, so a client should not infer it from Manager's row rights.
+
+`corpus/findings/132_field_create_rights.md`
+
+## 142_reverse_field
+
+Every entity or multi_entity field makes a visible, editable multi_entity on each linked type. No create property stops it, and DELETE of the reverse field retires the forward field too.
+
+- Plan for a field on every linked type: one per type in `valid_types` (probe 121), each
+  `visible: true` and `editable: true` in that type's schema.
+
+- The entity case is named after the source type's **display name**, not its schema name, so a
+  slot's reverse fields change name pattern with what the site calls it. What the server picks for a
+  second entity field from the same source to the same target was not measured.
+
+- No create property suppresses it. The 400 lists the accepted properties for an entity field, and
+  none is about the reverse.
+
+- **Retiring a reverse field retires its forward field.** It is one link with two names: delete
+  either and both go, and both names stay spent until the Trash is emptied (probe 019). Hide a
+  reverse field rather than deleting it; whether `visible: false` is accepted on one was not
+  measured, because the reverse was gone by then.
+
+`corpus/findings/142_reverse_field.md`

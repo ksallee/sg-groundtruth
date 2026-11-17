@@ -6,6 +6,10 @@ Every call in this family: what the card records, the edge cases that live on th
 
 Retires a field at 204 and burns its programmatic name forever: the same name will not create again, only revive. Treat this as irreversible from REST.
 
+- **A link field is one link with two names.** Retiring the reverse field an entity or
+  multi_entity field made on its linked type retires the forward field too, and the reverse goes
+  with the forward (probe 142).
+
 - **The name is not freed.** The error tells you to empty the Trash page in the web interface, which
   REST cannot do. From an API client the only way back is
   `POST /schema/<Type>/fields/<field>` with `{"revive": true}`, and it returns at the original type.
@@ -29,6 +33,14 @@ Retires a field at 204 and burns its programmatic name forever: the same name wi
   rules: `doors/findings-schema`
 - `119_field_absent_retired_live` (findings) — Revive is 204 only on a retired field: 404 `Retired field ... does not exist.` on an unused name, 400 `... is not retired.` on a live one. A retired field is a 404 to GET, PUT and DELETE.  
   rules: `doors/findings-schema`
+- `132_field_create_rights` (findings) — An Artist creating a field gets 500 code 105 `User doesn't have permission to create a Field`, with a traceback. An Admin person gets 201. Treat any 500 from a schema write as a possible refusal.  
+  rules: `doors/findings-schema`
+- `142_reverse_field` (findings) — Every entity or multi_entity field makes a visible, editable multi_entity on each linked type. No create property stops it, and DELETE of the reverse field retires the forward field too.  
+  rules: `doors/findings-schema`
+- `127_retry_and_client_uuid` (findings) — A text field created with `unique: true` refuses a second create with the same value, case and outer spaces ignored, in a batch too. It is the only idempotency key: the API has no header for it.  
+  rules: `doors/findings-write`
+- `146_note_unique_key` (findings) — A `unique: true` text field works on Note as on Version (probe 127), and refuses a duplicate on PUT and under sudo too. A `Note.meta` key is found by `contains`, case-sensitive, and enforces nothing.  
+  rules: `doors/findings-write`
 - `006_duplicate_field_name_is_201` (reports) — Creating a custom field whose display name is taken answers 201 for a suffixed field instead of a conflict, and every retry burns a programmatic name no REST call frees.  
   rules: `doors/reports`
 

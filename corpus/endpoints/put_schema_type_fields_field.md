@@ -50,6 +50,7 @@ c.get("/schema/Version/fields/sg_zzprobe_040_revive").json()["data"]["data_type"
 | 400 | `invalid/missing entity` for a `valid_types` name that is no entity type, every type in `source.entity_type` |
 | 404 | `Field '<Type>.<field>' does not exist.`, for a retired field and an unused name alike (probe 119) |
 | 500 | code 105 `does not support updating 'unique'.` on a `text` field |
+| 500 | code 105 `API schema_field_update() RuntimeError: User doesn't have permission to configure Field properties.` for an Artist (probe 132) |
 | 500 | code 100 `Shotgun Server Error` for a `valid_types` name in the wrong case, `"shot"`. The field is retired by it (probe 121) |
 
 **Edge cases**

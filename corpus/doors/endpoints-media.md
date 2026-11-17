@@ -24,11 +24,23 @@ Step one of three. `filename` is a required query parameter and its absence is 4
   rules: `doors/findings-upload`
 - `044_multipart_upload` (findings) — `multipart_upload=true` on the init sets `upload_id` and adds `links.get_next_part`. Every part but the last must be at least 5 MiB, and completion needs an `etags` array inside `upload_info`.  
   rules: `doors/findings-upload`
+- `123_photos_per_record` (findings) — `image` keeps only a 480x320 thumbnail. A url field holds one original, a Note's attachments or a multi_entity to Attachment hold many; all return the bytes unchanged.  
+  rules: `doors/findings-upload`
+- `125_upload_host_cors` (findings) — The presigned upload host answers any Origin with `*`, allows PUT with content-type and exposes `ETag`, so a page can upload, multipart included. A URL is refused after 900 s.  
+  rules: `doors/findings-upload`
+- `134_attachment_field_second_upload` (findings) — A second `_upload` to a multi_entity field to Attachment adds: the field holds both. Each Attachment gets the row's `project` and the row in `attachment_links`, so a project filter finds it.  
+  rules: `doors/findings-upload`
+- `151_video_on_take` (findings) — On `sg_uploaded_movie` an `HEVC` .mov becomes an H.264 mp4 with a thumbnail and a filmstrip, ready in under a minute. As a plain Attachment, video gets a 480 px thumbnail and nothing else.  
+  rules: `doors/findings-upload`
+- `152_audio_on_take` (findings) — Audio on `sg_uploaded_movie` transcodes to an audio-only mp4 (`aac`), status 1, no thumbnail. The stored `content_type` is not the PUT's: an Opus `.webm` sent as `audio/webm` reads `video/webm`.  
+  rules: `doors/findings-upload`
 - `001_publish_version_with_media` (recipes) — Publish a generated image to Flow PT as a Version, with provenance and the workflow attached  
   rules: `doors/recipes`
 - `006_media_round_trip` (recipes) — Take media off one Version and put the same bytes on another, which is what every sync, transfer and hand-off does  
   rules: `doors/recipes`
 - `013_publish_file_bytes` (recipes) — Publish a file's bytes onto a PublishedFile when the caller has no LocalStorage root to write under  
+  rules: `doors/recipes`
+- `027_media_on_a_take` (recipes) — Put a video or audio clip on a custom entity row so a browser can play it, and know when it is ready  
   rules: `doors/recipes`
 
 `corpus/endpoints/get_entity_type_id_field_upload.md`
@@ -76,6 +88,11 @@ The `storage_service: "sg"` upload target, on the Flow PT host. A site on `s3` r
 
 Step two of a multipart transfer, once per part after the first. Walk `links.get_next_part` rather than building it: each reply holds the part's presigned `upload` and the link to the part after.
 
+- **The `timestamp` is not checked for age, it is part of the key.** `2020-01-01T00:00:00Z` answers
+  200 with a URL whose path differs from the init's, and the part PUT is S3 404 `NoSuchUpload`.
+  `zz` is 400 `{"status": "error", "error": "no time information in \"zz UTC\""}`, outside the
+  `errors[]` envelope; omitted is 400 `timestamp is missing` (probe 139).
+
 - `upload_id` is required and is the one parameter the validator does not check for. Omitting it
   produces `Could not generate upload url. Check the site settings.`, which points at site
   configuration and not at the missing parameter.
@@ -116,6 +133,8 @@ Step two of a multipart transfer, once per part after the first. Walk `links.get
 
 - `044_multipart_upload` (findings) — `multipart_upload=true` on the init sets `upload_id` and adds `links.get_next_part`. Every part but the last must be at least 5 MiB, and completion needs an `etags` array inside `upload_info`.  
   rules: `doors/findings-upload`
+- `125_upload_host_cors` (findings) — The presigned upload host answers any Origin with `*`, allows PUT with content-type and exposes `ETag`, so a page can upload, multipart included. A URL is refused after 900 s.  
+  rules: `doors/findings-upload`
 
 `corpus/endpoints/post_entity_type_id_field_upload_multipart_abort.md`
 
@@ -123,8 +142,10 @@ Step two of a multipart transfer, once per part after the first. Walk `links.get
 
 The same handshake with the field left out of the path, which stores the bytes as an Attachment on `attachment_links` rather than on a field. The type must actually have that field.
 
-- Not every type has `attachments`. Shot does not, and the 404 names the field rather than the route,
-  which is the useful half.
+- Not every type has `attachments`. Shot and Version do not, and the 404 names the field rather than
+  the route, which is the useful half. Leave the segment out instead: `/entity/<type>/<id>/_upload`
+  answers 200 on those types, and the completed file links through `Attachment.attachment_links`
+  (probes 014, 123).
 
 - The Attachment row is created by step three, not by this call. Read the parent's `attachments` back to
   learn its id; nothing in this reply names it.
@@ -134,6 +155,18 @@ The same handshake with the field left out of the path, which stores the bytes a
 - `014_attach_file` (findings) — Leave the field out of the _upload path and the file is stored as an Attachment on attachment_links; read it back with POST /entity/attachments/_search, never flat filter[].  
   rules: `doors/findings-upload`
 - `039_upload_silent_failures` (findings) — complete_upload returns 201 and creates an Attachment even when the bytes were never PUT, and file_size is null on a good upload too, so only fetching the stored file proves it exists.  
+  rules: `doors/findings-upload`
+- `123_photos_per_record` (findings) — `image` keeps only a 480x320 thumbnail. A url field holds one original, a Note's attachments or a multi_entity to Attachment hold many; all return the bytes unchanged.  
+  rules: `doors/findings-upload`
+- `135_attachment_custom_field_filename` (findings) — Attachment takes a custom field over REST. `filename` keeps 90 and 200 characters but stores each space as `_`; `is` and `starts_with` ignore case, so filter on the name with `_` for spaces.  
+  rules: `doors/findings-upload`
+- `139_multipart_lifetime` (findings) — An upload_id still completed 1230 s after its init, with part 2 minted then. The link's `timestamp` is not age-checked: it is part of the stored key, so another value signs a URL S3 answers 404.  
+  rules: `doors/findings-upload`
+- `140_presigned_put_size` (findings) — One presigned PUT took 1000 MB at 200 and the stored object read back at exactly 1000000000 bytes. No refusal up to there; at about 8 MB/s a 1000 MB PUT took two minutes.  
+  rules: `doors/findings-upload`
+- `141_download_headers` (findings) — A stored file's GET sends Content-Length and Accept-Ranges, answers `*` to any Origin and allows a Range preflight, so a page can show progress, resume with Range and abort. `HEAD` is 403.  
+  rules: `doors/findings-upload`
+- `153_presigned_put_slow` (findings) — A presigned PUT started at once and ending at 965 s was stored, 3 runs of 3. Every PUT started at 600 s or later and ending past 900 s was 403 `Request has expired`, whatever it sent first.  
   rules: `doors/findings-upload`
 - `001_publish_version_with_media` (recipes) — Publish a generated image to Flow PT as a Version, with provenance and the workflow attached  
   rules: `doors/recipes`
@@ -153,7 +186,8 @@ The fieldless completion, `/entity/<type>/<id>/attachments/_upload`. Same body c
 - The field form and this one answer identically apart from `upload_type`, `Thumbnail` against
   `Attachment`. Everything in `endpoints/post_entity_type_id_field_upload` applies here unchanged.
 
-- Not every type has `attachments`. Shot does not; Note and Version do.
+- Not every type has `attachments`. Of the stock types probed only Note does; Shot and Version do not
+  (probe 123). The path with no field segment completes on Version and links through `attachment_links`.
 
 - Diff the parent's `attachments` before and after to learn the new id. The 201 body is a space.
 
@@ -180,6 +214,11 @@ The fieldless part chain, `/entity/<type>/<id>/attachments/_upload/multipart`. S
 
 - The 5 MiB floor on every part but the last is the same here. See `findings/044_multipart_upload`.
 
+**Measured by**
+
+- `139_multipart_lifetime` (findings) — An upload_id still completed 1230 s after its init, with part 2 minted then. The link's `timestamp` is not age-checked: it is part of the stored key, so another value signs a URL S3 answers 404.  
+  rules: `doors/findings-upload`
+
 `corpus/endpoints/get_entity_type_id_upload_multipart.md`
 
 ## `POST /entity/<type>/<id>/_upload/multipart_abort`
@@ -188,6 +227,11 @@ The fieldless abort, `/entity/<type>/<id>/attachments/_upload/multipart_abort`. 
 
 - `endpoints/post_entity_type_id_field_upload_multipart_abort` holds the edge cases; both forms
   answered identically at every input measured.
+
+**Measured by**
+
+- `139_multipart_lifetime` (findings) — An upload_id still completed 1230 s after its init, with part 2 minted then. The link's `timestamp` is not age-checked: it is part of the stored key, so another value signs a URL S3 answers 404.  
+  rules: `doors/findings-upload`
 
 `corpus/endpoints/post_entity_type_id_upload_multipart_abort.md`
 
@@ -239,6 +283,28 @@ Step three, at 201 with a body of a single space. Not JSON, and it never names t
   rules: `doors/findings-upload`
 - `039_upload_silent_failures` (findings) — complete_upload returns 201 and creates an Attachment even when the bytes were never PUT, and file_size is null on a good upload too, so only fetching the stored file proves it exists.  
   rules: `doors/findings-upload`
+- `123_photos_per_record` (findings) — `image` keeps only a 480x320 thumbnail. A url field holds one original, a Note's attachments or a multi_entity to Attachment hold many; all return the bytes unchanged.  
+  rules: `doors/findings-upload`
+- `125_upload_host_cors` (findings) — The presigned upload host answers any Origin with `*`, allows PUT with content-type and exposes `ETag`, so a page can upload, multipart included. A URL is refused after 900 s.  
+  rules: `doors/findings-upload`
+- `134_attachment_field_second_upload` (findings) — A second `_upload` to a multi_entity field to Attachment adds: the field holds both. Each Attachment gets the row's `project` and the row in `attachment_links`, so a project filter finds it.  
+  rules: `doors/findings-upload`
+- `135_attachment_custom_field_filename` (findings) — Attachment takes a custom field over REST. `filename` keeps 90 and 200 characters but stores each space as `_`; `is` and `starts_with` ignore case, so filter on the name with `_` for spaces.  
+  rules: `doors/findings-upload`
+- `139_multipart_lifetime` (findings) — An upload_id still completed 1230 s after its init, with part 2 minted then. The link's `timestamp` is not age-checked: it is part of the stored key, so another value signs a URL S3 answers 404.  
+  rules: `doors/findings-upload`
+- `140_presigned_put_size` (findings) — One presigned PUT took 1000 MB at 200 and the stored object read back at exactly 1000000000 bytes. No refusal up to there; at about 8 MB/s a 1000 MB PUT took two minutes.  
+  rules: `doors/findings-upload`
+- `141_download_headers` (findings) — A stored file's GET sends Content-Length and Accept-Ranges, answers `*` to any Origin and allows a Range preflight, so a page can show progress, resume with Range and abort. `HEAD` is 403.  
+  rules: `doors/findings-upload`
+- `151_video_on_take` (findings) — On `sg_uploaded_movie` an `HEVC` .mov becomes an H.264 mp4 with a thumbnail and a filmstrip, ready in under a minute. As a plain Attachment, video gets a 480 px thumbnail and nothing else.  
+  rules: `doors/findings-upload`
+- `152_audio_on_take` (findings) — Audio on `sg_uploaded_movie` transcodes to an audio-only mp4 (`aac`), status 1, no thumbnail. The stored `content_type` is not the PUT's: an Opus `.webm` sent as `audio/webm` reads `video/webm`.  
+  rules: `doors/findings-upload`
+- `153_presigned_put_slow` (findings) — A presigned PUT started at once and ending at 965 s was stored, 3 runs of 3. Every PUT started at 600 s or later and ending past 900 s was 403 `Request has expired`, whatever it sent first.  
+  rules: `doors/findings-upload`
+- `124_updated_at_bumps` (findings) — `updated_at` moves on a write, a finished upload and its transcode, and on a link set from either end, but not on a no-op PUT and not when a Note names the row in `note_links`.  
+  rules: `doors/findings-observe`
 - `001_publish_version_with_media` (recipes) — Publish a generated image to Flow PT as a Version, with provenance and the workflow attached  
   rules: `doors/recipes`
 - `006_media_round_trip` (recipes) — Take media off one Version and put the same bytes on another, which is what every sync, transfer and hand-off does  
@@ -246,6 +312,8 @@ Step three, at 201 with a body of a single space. Not JSON, and it never names t
 - `008_delivery_progress` (recipes) — Keep a Delivery honest about what a long transfer is doing, including when it is cancelled and when it crashes  
   rules: `doors/recipes`
 - `013_publish_file_bytes` (recipes) — Publish a file's bytes onto a PublishedFile when the caller has no LocalStorage root to write under  
+  rules: `doors/recipes`
+- `027_media_on_a_take` (recipes) — Put a video or audio clip on a custom entity row so a browser can play it, and know when it is ready  
   rules: `doors/recipes`
 - `002_complete_upload_without_bytes` (reports) — POST links.complete_upload answers 201 and creates an Attachment when the presigned PUT never happened, and nothing on the row separates it from a good upload.  
   rules: `doors/reports`
@@ -278,6 +346,24 @@ Step two, to storage rather than to Flow PT, with no Authorization header. It is
   rules: `doors/findings-upload`
 - `039_upload_silent_failures` (findings) — complete_upload returns 201 and creates an Attachment even when the bytes were never PUT, and file_size is null on a good upload too, so only fetching the stored file proves it exists.  
   rules: `doors/findings-upload`
+- `123_photos_per_record` (findings) — `image` keeps only a 480x320 thumbnail. A url field holds one original, a Note's attachments or a multi_entity to Attachment hold many; all return the bytes unchanged.  
+  rules: `doors/findings-upload`
+- `125_upload_host_cors` (findings) — The presigned upload host answers any Origin with `*`, allows PUT with content-type and exposes `ETag`, so a page can upload, multipart included. A URL is refused after 900 s.  
+  rules: `doors/findings-upload`
+- `134_attachment_field_second_upload` (findings) — A second `_upload` to a multi_entity field to Attachment adds: the field holds both. Each Attachment gets the row's `project` and the row in `attachment_links`, so a project filter finds it.  
+  rules: `doors/findings-upload`
+- `139_multipart_lifetime` (findings) — An upload_id still completed 1230 s after its init, with part 2 minted then. The link's `timestamp` is not age-checked: it is part of the stored key, so another value signs a URL S3 answers 404.  
+  rules: `doors/findings-upload`
+- `140_presigned_put_size` (findings) — One presigned PUT took 1000 MB at 200 and the stored object read back at exactly 1000000000 bytes. No refusal up to there; at about 8 MB/s a 1000 MB PUT took two minutes.  
+  rules: `doors/findings-upload`
+- `141_download_headers` (findings) — A stored file's GET sends Content-Length and Accept-Ranges, answers `*` to any Origin and allows a Range preflight, so a page can show progress, resume with Range and abort. `HEAD` is 403.  
+  rules: `doors/findings-upload`
+- `151_video_on_take` (findings) — On `sg_uploaded_movie` an `HEVC` .mov becomes an H.264 mp4 with a thumbnail and a filmstrip, ready in under a minute. As a plain Attachment, video gets a 480 px thumbnail and nothing else.  
+  rules: `doors/findings-upload`
+- `152_audio_on_take` (findings) — Audio on `sg_uploaded_movie` transcodes to an audio-only mp4 (`aac`), status 1, no thumbnail. The stored `content_type` is not the PUT's: an Opus `.webm` sent as `audio/webm` reads `video/webm`.  
+  rules: `doors/findings-upload`
+- `153_presigned_put_slow` (findings) — A presigned PUT started at once and ending at 965 s was stored, 3 runs of 3. Every PUT started at 600 s or later and ending past 900 s was 403 `Request has expired`, whatever it sent first.  
+  rules: `doors/findings-upload`
 - `001_publish_version_with_media` (recipes) — Publish a generated image to Flow PT as a Version, with provenance and the workflow attached  
   rules: `doors/recipes`
 - `006_media_round_trip` (recipes) — Take media off one Version and put the same bytes on another, which is what every sync, transfer and hand-off does  
@@ -285,6 +371,8 @@ Step two, to storage rather than to Flow PT, with no Authorization header. It is
 - `008_delivery_progress` (recipes) — Keep a Delivery honest about what a long transfer is doing, including when it is cancelled and when it crashes  
   rules: `doors/recipes`
 - `013_publish_file_bytes` (recipes) — Publish a file's bytes onto a PublishedFile when the caller has no LocalStorage root to write under  
+  rules: `doors/recipes`
+- `027_media_on_a_take` (recipes) — Put a video or audio clip on a custom entity row so a browser can play it, and know when it is ready  
   rules: `doors/recipes`
 
 **Silent on this call**

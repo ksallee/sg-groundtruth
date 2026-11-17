@@ -1,11 +1,11 @@
 ---
 endpoint: GET /schema/permission_groups
 coverage: partial
-unmeasured: the call as a person, and as a caller with `set_permissions`. Only the script was measured. Blocked on the site: it needs that person's session.
+unmeasured: a Manager or Vendor person; on the probed site none has impersonation on. Blocked on the site
 tags: [schema, permission, discovery]
 scope: api
-measured: site-wide, as the script, probe 119
-verdict: Lists the permission groups the caller may inspect. The script saw one, its own `api_admin`, and no HumanUser group. In `/spec.json` since 2026-11-10, in no reference page.
+measured: site-wide; the script (probe 119), an Admin and an Artist via sudo (probe 132)
+verdict: Lists the permission groups the caller may inspect: the script and an Artist see only their own, an Admin person sees every HumanUser group. In `/spec.json` since 2026-11-10, in no reference page.
 ---
 
 # GET /schema/permission_groups
@@ -43,6 +43,14 @@ r = c.get("/schema/permission_groups", params={"permission_rule_set_entity_type"
 | status | when |
 |---|---|
 | 200 | always seen, with an empty `data` for a kind the caller may not inspect |
+
+As a person, through `sudo_as_login` (probe 132), `?permission_rule_set_entity_type=HumanUser`:
+
+| caller | groups listed |
+|---|---|
+| script, `api_admin` | none |
+| Admin person | every HumanUser group; five on the probed site |
+| Artist | `artist` only |
 
 **Edge cases**
 

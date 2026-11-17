@@ -110,7 +110,9 @@ Equality is usable: the comparison rounds to the same 6 decimals the store does.
 | | | `1.4999999` | 1 |
 
 **Traps**
-- Integer is rejected on both halves: `PUT {"field": 1}` and `["field", "is", 1]`. A client that computed
+- Integer is rejected on both halves: `PUT {"field": 1}` and `["field", "is", 1]`. A `_batch` create
+  is the exception: it stores `1` as `"1.0"` and `"1e3"` as `"1000.0"`, both refused by a single `POST`
+  (probe 137). A client that computed
   an aspect ratio as exactly `2` must send `2.0` or `"2.0"`. `number` is the mirror image; it rejects Float.
 - The value is a string, so `row["attributes"][f] > 1.0` raises and `== 1.0` is False. Cast on read.
 - Precision is 6 decimal places, applied on write, at 200 and without warning. `1e-9` stores as `0.0` and

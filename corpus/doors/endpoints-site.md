@@ -49,7 +49,11 @@ The only place the unit behind a `duration` field is named. `prefs` narrows it t
 
 **Measured by**
 
+- `126_session_idle` (findings) — The token endpoint refuses a session token it does not accept with 400 code 102 in errors[], "Can't authenticate session token ending with '<last 4>'". No API read exposes the session window.  
+  rules: `doors/findings-auth`
 - `002_schema` (findings) — Fetch /schema once for the type list, then /schema/<Type>/fields only for types you actually need: it is the expensive call (48KB, ~330ms each) and must never be looped over all types.  
+  rules: `doors/findings-schema`
+- `122_onset_entity_types` (findings) — Slate, Camera, MocapTake, ShootDay and Scene create like Version: `project` required, `code` generated. None has `attachments`, and only Version.entity and Note.note_links reach them all.  
   rules: `doors/findings-schema`
 - `088_project_template_defaults` (findings) — The per-entity-type default is readable at `Project.tracking_settings.default_task_template.<Type>`, a `{type, id, name, valid}` dict. `Project.task_templates` is a separate list, not the default.  
   rules: `doors/findings-read`
@@ -76,6 +80,8 @@ not measured: the success path. The probed site answers 400 code 111 to every bo
 
 - `114_schema_admin_recheck` (findings) — On 2026-11-10 /spec.json names calls to enable, disable and configure a custom entity, all 400 code 111 on the probed site. No call deletes a trashed field forever or writes hidden_values.  
   rules: `doors/findings-schema`
+- `122_onset_entity_types` (findings) — Slate, Camera, MocapTake, ShootDay and Scene create like Version: `project` required, `code` generated. None has `attachments`, and only Version.entity and Note.note_links reach them all.  
+  rules: `doors/findings-schema`
 
 `corpus/endpoints/put_preferences_custom_entity_entity_type_activation.md`
 
@@ -97,6 +103,8 @@ not measured: the success path. The probed site answers 400 code 111 for every t
 
 - `114_schema_admin_recheck` (findings) — On 2026-11-10 /spec.json names calls to enable, disable and configure a custom entity, all 400 code 111 on the probed site. No call deletes a trashed field forever or writes hidden_values.  
   rules: `doors/findings-schema`
+- `122_onset_entity_types` (findings) — Slate, Camera, MocapTake, ShootDay and Scene create like Version: `project` required, `code` generated. None has `attachments`, and only Version.entity and Note.note_links reach them all.  
+  rules: `doors/findings-schema`
 
 `corpus/endpoints/get_preferences_custom_entity_entity_type_configuration.md`
 
@@ -113,6 +121,8 @@ not measured: the success path. The probed site answers 400 code 111 to every bo
 **Measured by**
 
 - `114_schema_admin_recheck` (findings) — On 2026-11-10 /spec.json names calls to enable, disable and configure a custom entity, all 400 code 111 on the probed site. No call deletes a trashed field forever or writes hidden_values.  
+  rules: `doors/findings-schema`
+- `122_onset_entity_types` (findings) — Slate, Camera, MocapTake, ShootDay and Scene create like Version: `project` required, `code` generated. None has `attachments`, and only Version.entity and Note.note_links reach them all.  
   rules: `doors/findings-schema`
 
 `corpus/endpoints/put_preferences_custom_entity_entity_type_configuration.md`
@@ -242,6 +252,8 @@ The site publishes its own OpenAPI v3 document, `json` or `yaml`, and it lists 6
 
 **Measured by**
 
+- `131_session_revoke` (findings) — The REST spec has no revoke or sign-out call. Of five candidate routes only /user/logout answers (302 to login); whether it ends a launcher session is unmeasured.  
+  rules: `doors/findings-auth`
 - `051_api_version` (findings) — /api/v1 and /api/v1.1 are the same API. Across 20 read-only calls the only difference is api_version in the root document and the prefix each echoes in its own links. Any other segment is 404.  
   rules: `doors/findings-protocol`
 - `042_spec_coverage` (findings) — `GET /spec.json` returns the deployment's own OpenAPI v3 document. It advertises 62 operations against the 23 this corpus covers, and it disagrees with the published documentation.  
