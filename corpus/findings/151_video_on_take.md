@@ -3,7 +3,7 @@ tags: [on-set, upload, transcode, version, attachment, media]
 endpoints: [POST /entity/<type>, GET /entity/<type>/<id>, GET /entity/<type>/<id>/<field>/_upload, PUT <links.upload>, POST <links.complete_upload>]
 phase: upload
 scope: api
-measured: sandbox project written, 2026-11-17 (twice); a take row, 2 Versions and 6 Attachments per run, deleted
+measured: sandbox project written, 2026-11-17 (twice); a take row, a row per custom slot, 9 Versions, 6 Attachments, deleted
 coverage: partial
 unmeasured: playback in the web interface and an upload from iPad Safari. Needs a browser and a person with an iPad, see below
 verdict: On `sg_uploaded_movie` an `HEVC` .mov becomes an H.264 mp4 with a thumbnail and a filmstrip, ready in under a minute. As a plain Attachment, video gets a 480 px thumbnail and nothing else.
@@ -41,6 +41,8 @@ stored, read back through ffprobe
   sg_uploaded_movie_mp4 of the .mov    <hash>_<name>.mp4, video/mp4, h264 1280x720 24/1 + aac
   Attachments the server added         one <hash>_<name>.mp4 per Version, attachment_links [Version]
   the take row's own image             null after both uploads
+
+cleanup: each Version DELETE -> 204, then each of the 6 Attachments DELETE -> 204, the 2 transcodes included
 ```
 
 **What the server makes of a video**

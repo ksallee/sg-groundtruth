@@ -967,8 +967,8 @@ Put a video or audio clip on a custom entity row so a browser can play it, and k
 - The stored `content_type` is the server's: an Opus `.webm` reads `video/webm`. Tell audio from video
   on the client.
 
-- A row type turned on for Versions in the web interface also lists the Version in its `sg_versions`
-  field; any custom slot is accepted at 201 without it, readable from the Version only (probe 151).
+- Any custom slot is accepted as `Version.entity` at 201, `valid_types` or not (probe 122,
+  `field_types/entity`). A type with an `sg_versions` field also lists the Version there (probe 122).
 
 - A large clip goes up in parts (probe 044) and each part URL lives 900 s (probes 125, 153).
 
