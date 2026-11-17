@@ -973,3 +973,21 @@ Put a video or audio clip on a custom entity row so a browser can play it, and k
 - A large clip goes up in parts (probe 044) and each part URL lives 900 s (probes 125, 153).
 
 `corpus/recipes/027_media_on_a_take.md`
+
+## 028_settings_on_project
+
+Keep an app's settings for a project as JSON on the Project row, written by an Admin and read by everyone in the project **[partial]**
+
+not measured: a Manager's create and write (probes 157, 159). Blocked on the site: nobody active in Manager has impersonation on
+
+- Compare parsed values, never the raw string: a leading or trailing newline is stripped on write.
+
+- An Artist cannot save settings. Show them read-only when `can_write` is false, or send the write
+  through the script.
+
+- A field on Project is site-wide: creating it adds it to every project. The value is per project.
+
+- `GET /entity/projects/<id>` with no `fields` returns the whole settings string, so every other
+  client reading a Project without `fields` pays for its size.
+
+`corpus/recipes/028_settings_on_project.md`

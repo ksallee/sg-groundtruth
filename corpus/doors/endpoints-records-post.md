@@ -102,6 +102,8 @@ Every call in this family: what the card records, the edge cases that live on th
   rules: `doors/findings-write`
 - `156_action_menu_item` (findings) — An ActionMenuItem creates from `{}` at 201 and `url` is not checked; an Artist is refused. Run from the web interface, an http `url` got a form POST in a new tab, `json` or not, with no token.  
   rules: `doors/findings-write`
+- `161_link_to_deleted_row` (findings) — A link to a deleted row is hidden, not removed: it reads null or drops out, and returns on revive, even after a replace. A write naming a deleted row is 400 code 104 `Value is not legal.`  
+  rules: `doors/findings-write`
 - `151_video_on_take` (findings) — On `sg_uploaded_movie` an `HEVC` .mov becomes an H.264 mp4 with a thumbnail and a filmstrip, ready in under a minute. As a plain Attachment, video gets a 480 px thumbnail and nothing else.  
   rules: `doors/findings-upload`
 - `152_audio_on_take` (findings) — Audio on `sg_uploaded_movie` transcodes to an audio-only mp4 (`aac`), status 1, no thumbnail. The stored `content_type` is not the PUT's: an Opus `.webm` sent as `audio/webm` reads `video/webm`.  
@@ -185,6 +187,8 @@ Revives a retired row. `?revive=1` is required and any JSON body is discarded, s
   rules: `doors/findings-write`
 - `136_unique_scope_retired` (findings) — A deleted row frees its `unique` value: a new row may take it. Reviving the old row while another holds the value is a 400 code 104 PG transaction error, and the row stays retired.  
   rules: `doors/findings-write`
+- `161_link_to_deleted_row` (findings) — A link to a deleted row is hidden, not removed: it reads null or drops out, and returns on revive, even after a replace. A write naming a deleted row is 400 code 104 `Value is not legal.`  
+  rules: `doors/findings-write`
 - `018_remove_and_restore_a_dependency` (recipes) — Remove one dependency between two Tasks and put it back on undo, with its type and offset  
   rules: `doors/recipes`
 - `021_undo_a_batch_delete` (recipes) — Delete Tasks or dependencies in one batch and undo it by reviving the same rows  
@@ -254,6 +258,8 @@ The key is `requests`, not `data`, and sending `data` is 400 `requests is missin
 - `145_time_fields` (findings) — date_time rounds to the second on POST and PUT (.999 goes up, .5 stays) but truncates in a _batch create. A new timecode field has no rate property; it is integer ms rendered at the site's fixed rate.  
   rules: `doors/findings-write`
 - `154_batch_multi_entity_mode` (findings) — `multi_entity_update_mode` in a `_batch` update's `data` adds, removes and sets as on a PUT, and several updates of one record in one batch apply in request order, each row echoing the state after it.  
+  rules: `doors/findings-write`
+- `161_link_to_deleted_row` (findings) — A link to a deleted row is hidden, not removed: it reads null or drops out, and returns on revive, even after a replace. A write naming a deleted row is 400 code 104 `Value is not legal.`  
   rules: `doors/findings-write`
 - `002_batch` (recipes) — Apply many creates, updates and deletes in one atomic call, and match the results back to the requests  
   rules: `doors/recipes`

@@ -95,6 +95,10 @@ shows, so a picker that filters on it hides real projects (probe 018).
   on cannot be set by a script user. `archived` is editable.
 - `start_date`, `end_date` and `duration` are read only and derived. On the probed site all three are null on
   every project read, so do not filter or sort a project listing on them.
+- A custom field on Project is site-wide. An Admin creates and writes it; an Artist in the project
+  reads it, and a PUT is 400 code 104 `The field is not editable for this user` (probes 157, 159).
+- `GET /entity/projects/<id>` with no `fields` returns every field, custom ones included, at any size;
+  the listing returns ids only (probe 158). Name `fields`.
 - `landing_page_url` is a path, not a URL: `"/detail/Project/N?legacy=true"`. Prefix the site URL yourself.
 - On the probed site `GET /schema/Project/fields` returns 42 fields, 15 of them not editable
   (`created_at`, `created_by`, `duration`, `end_date`, `id`, `image_blur_hash`, `image_source_entity`,

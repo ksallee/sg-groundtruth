@@ -355,7 +355,8 @@ the only two ways to name a Task, since `name` and `code` do not exist on it (`e
 `?fields=name` is the silent drop probe 004 records: a client that asks for `name` on a Version gets 200
 and nothing, which reads as "no display name" rather than "wrong field".
 
-**A gone target is dropped, never stale.** Nothing holds a dead `{id, name, type}`.
+**A gone target is dropped, never stale.** Nothing holds a dead `{id, name, type}`. The link is
+hidden, not removed: a revive brings it back, and a write naming the deleted row is a 400 (probe 161).
 
 | the link | after the target is deleted |
 |---|---|
