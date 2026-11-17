@@ -100,7 +100,7 @@ Every call in this family: what the card records, the edge cases that live on th
   rules: `doors/findings-write`
 - `148_note_author_fields` (findings) — `user` and `created_by` are both honoured on a Note or Version create, though the schema flags `created_by` read only; a PUT to it is 400. Under sudo_as_login all three author fields are the person.  
   rules: `doors/findings-write`
-- `156_action_menu_item` (findings) — An ActionMenuItem creates from `{}` at 201 though `title` is flagged mandatory, and `url` is not validated. An Artist is refused; `permissions_groups` does not filter what the API returns.  
+- `156_action_menu_item` (findings) — An ActionMenuItem creates from `{}` at 201 and `url` is not checked; an Artist is refused. Run from the web interface, an http `url` got a form POST in a new tab, `json` or not, with no token.  
   rules: `doors/findings-write`
 - `151_video_on_take` (findings) — On `sg_uploaded_movie` an `HEVC` .mov becomes an H.264 mp4 with a thumbnail and a filmstrip, ready in under a minute. As a plain Attachment, video gets a 480 px thumbnail and nothing else.  
   rules: `doors/findings-upload`

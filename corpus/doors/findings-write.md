@@ -1260,9 +1260,9 @@ not measured: a launcher session bearer (auth_type session_token). Needs a perso
 
 ## 156_action_menu_item
 
-An ActionMenuItem creates from `{}` at 201 though `title` is flagged mandatory, and `url` is not validated. An Artist is refused; `permissions_groups` does not filter what the API returns. **[partial]**
+An ActionMenuItem creates from `{}` at 201 and `url` is not checked; an Artist is refused. Run from the web interface, an http `url` got a form POST in a new tab, `json` or not, with no token. **[partial]**
 
-not measured: what the web interface sends to the URL, and Manager rights. Needs a person: `156 --write --listen 8765 --hold 900`, then run the items on a Shot
+not measured: a custom-protocol `url` opening an app, whether `permissions_groups` hides an item in the web interface, and Manager rights. Each needs a person, steps below. Blocked on the work
 
 - Send `title`, `url`, `entity_type` and `projects` yourself: the server takes a row with none of
   them, and checks only `entity_type` (`field_types/entity_type`) and the list fields.
@@ -1271,16 +1271,29 @@ not measured: what the web interface sends to the URL, and Manager rights. Needs
   Manager was not reachable (probe 132), so do not infer it.
 
 - `permissions_groups` is not a read filter: an Artist reads rows restricted to Admin. Whether it
-  hides the item in the web interface is the browser step below.
+  hides the item in the web interface is unmeasured.
 
 - `secret_token` is write-only through the API; keep the value on the client that checks signatures.
+
+- Parse the request as a form. With `payload_content_type` `json`, the browser posted the same
+  `application/x-www-form-urlencoded` body to an http `url` as with `form`, field for field, in this run.
+
+- Act on `selected_ids`, split on commas. `ids` is every row on the page, selected or not, and `title`
+  is the string `undefined`.
+
+- Check who sent it yourself. The body names a person (`user_id`, `user_login`) and holds no token,
+  key or password, so any client that can reach the `url` can post the same form. Whether
+  `secret_token` adds a signature was not measured.
+
+- Accept a cross-site navigation: `Origin: null`, `Sec-Fetch-Site: cross-site`, no `Referer`. A server
+  that refuses cross-origin form posts refuses every run. Its response is the page the new tab shows.
 
 **Needs a person**
 
 | question | step |
 |---|---|
-| the request the web interface sends: method, content type, fields, new window or overlay | `156 --write --listen 8765 --hold 900` on the machine with the browser; sign in, right-click a Shot in the sandbox project, run `zzprobe 156 recorder form` and `... json`, with one Shot selected and then two. The probe prints each request whole |
-| a custom-protocol `url` opening an app | the same run: `zzprobe 156 protocol` points at `sgonset://shot/1` |
+| a custom-protocol `url` opening an app | `156 --write --listen 8765 --hold 900` on the machine with the browser; sign in, right-click a Shot in the sandbox project, run `zzprobe 156 protocol`, which points at `sgonset://shot/1` |
+| whether `permissions_groups` hides an item in the web interface | the same run, signed in as an Artist: which of `zzprobe 156 for admin`, `... for artist` and `... for everyone` a Shot's menu lists |
 | Manager rights | turn on `can_impersonate_this_user` for an active Manager, run `156 --write` |
 
 `corpus/findings/156_action_menu_item.md`
