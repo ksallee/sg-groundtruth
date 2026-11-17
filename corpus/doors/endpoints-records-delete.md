@@ -64,7 +64,7 @@ Retires a row at 204 with an empty body. It is not erased: the row reads 404 nor
   rules: `doors/findings-write`
 - `143_nonadmin_rows` (findings) — On the probed site an Artist may not create, edit or delete custom-entity rows (status only) and may create but not delete an Attachment, its own included. The group rights call predicts each answer.  
   rules: `doors/findings-write`
-- `156_action_menu_item` (findings) — An ActionMenuItem creates from `{}` at 201 though `title` is flagged mandatory, and `url` is not validated. An Artist is refused; `permissions_groups` does not filter what the API returns.  
+- `156_action_menu_item` (findings) — An ActionMenuItem creates from `{}` at 201 and `url` is not checked; an Artist is refused. Run from the web interface, an http `url` got a form POST in a new tab, `json` or not, with no token.  
   rules: `doors/findings-write`
 - `025_event_log` (findings) — meta.old_value and meta.new_value answer "what was this before", but meta is unfilterable and unsortable: narrow on entity, event_type and attribute_name, sort -id, read meta yourself.  
   rules: `doors/findings-observe`

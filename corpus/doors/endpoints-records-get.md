@@ -153,7 +153,7 @@ One row, and the only read where `fields` is honoured on a single record. A reti
   rules: `doors/findings-write`
 - `154_batch_multi_entity_mode` (findings) — `multi_entity_update_mode` in a `_batch` update's `data` adds, removes and sets as on a PUT, and several updates of one record in one batch apply in request order, each row echoing the state after it.  
   rules: `doors/findings-write`
-- `156_action_menu_item` (findings) — An ActionMenuItem creates from `{}` at 201 though `title` is flagged mandatory, and `url` is not validated. An Artist is refused; `permissions_groups` does not filter what the API returns.  
+- `156_action_menu_item` (findings) — An ActionMenuItem creates from `{}` at 201 and `url` is not checked; an Artist is refused. Run from the web interface, an http `url` got a form POST in a new tab, `json` or not, with no token.  
   rules: `doors/findings-write`
 - `134_attachment_field_second_upload` (findings) — A second `_upload` to a multi_entity field to Attachment adds: the field holds both. Each Attachment gets the row's `project` and the row in `attachment_links`, so a project filter finds it.  
   rules: `doors/findings-upload`
