@@ -1257,3 +1257,30 @@ not measured: a launcher session bearer (auth_type session_token). Needs a perso
 - Several link edits to one row can share a batch with no read in between.
 
 `corpus/findings/154_batch_multi_entity_mode.md`
+
+## 156_action_menu_item
+
+An ActionMenuItem creates from `{}` at 201 though `title` is flagged mandatory, and `url` is not validated. An Artist is refused; `permissions_groups` does not filter what the API returns. **[partial]**
+
+not measured: what the web interface sends to the URL, and Manager rights. Needs a person: `156 --write --listen 8765 --hold 900`, then run the items on a Shot
+
+- Send `title`, `url`, `entity_type` and `projects` yourself: the server takes a row with none of
+  them, and checks only `entity_type` and the list fields.
+
+- Creating one is an administrator's call on the probed site: Admin 201, Artist 400 code 104.
+  Manager was not reachable (probe 132), so do not infer it.
+
+- `permissions_groups` is not a read filter: an Artist reads rows restricted to Admin. Whether it
+  hides the item in the web interface is the browser step below.
+
+- `secret_token` is write-only through the API; keep the value on the client that checks signatures.
+
+**Needs a person**
+
+| question | step |
+|---|---|
+| the request the web interface sends: method, content type, fields, new window or overlay | `156 --write --listen 8765 --hold 900` on the machine with the browser; sign in, right-click a Shot in the sandbox project, run `zzprobe 156 recorder form` and `... json`, with one Shot selected and then two. The probe prints each request whole |
+| a custom-protocol `url` opening an app | the same run: `zzprobe 156 protocol` points at `sgonset://shot/1` |
+| Manager rights | turn on `can_impersonate_this_user` for an active Manager, run `156 --write` |
+
+`corpus/findings/156_action_menu_item.md`
