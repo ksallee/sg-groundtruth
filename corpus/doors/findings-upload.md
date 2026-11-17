@@ -216,9 +216,9 @@ not measured: sizes above 1000 MB, stopped there by design. S3 documents five gi
 - Size is not what forces multipart, up to 1000 MB at least. Choose multipart for resumability: a single
   PUT that dies at 90 % starts over, and a 1000 MB PUT here ran two minutes on one connection.
 
-- The upload URL lives 900 s from `_upload` (probe 125). Whether a PUT that starts inside the window
-  and ends after it is accepted was not measured. Mint the URL right before the PUT, and keep a
-  single PUT small enough to finish inside 900 s at the connection's rate.
+- The upload URL lives 900 s from `_upload` (probe 125). A PUT started at once may end after that,
+  while one started at 600 s or later and ending past 900 s is refused (probe 153). Mint the URL
+  right before the PUT and start it at once; past 900 s at the connection's rate, use parts.
 
 - Confirm a stored size with `GET` and `Range: bytes=-1`: `Content-Range` gives the total.
   `file_size` stays null and `HEAD` is refused.
@@ -303,3 +303,23 @@ not measured: playback in the web interface and a recording from iPad Safari. Ne
 | what iPad Safari's MediaRecorder writes, container and Content-Type | record a sound note in sg-onset on an iPad and read the Attachment and Version as this probe does |
 
 `corpus/findings/152_audio_on_take.md`
+
+## 153_presigned_put_slow
+
+A presigned PUT started at once and ending at 965 s was stored, 3 runs of 3. Every PUT started at 600 s or later and ending past 900 s was 403 `Request has expired`, whatever it sent first. **[partial]**
+
+not measured: a PUT started between 4 s and 600 s, and a real upload at Wi-Fi speed. Blocked on time: each run takes 17 minutes
+
+- The expiry is not checked against the moment a PUT starts: E sent its headers 300 s before the
+  URL expired and was refused after its last byte, `ServerTime` 61 s past `Expires`.
+
+- A PUT started at once may outlast the URL: A ended 63 s past expiry and the stored object read
+  back at the bytes sent. Where between 4 s and 600 s a start stops being safe is unmeasured.
+
+- Sending more up front did not help a late start: 64 KiB, 256 KiB and 1 MiB at 861 s were all
+  refused at the end.
+
+- Call `_upload` right before the PUT and start it at once. An upload that may run past 900 s goes
+  up in parts, each part URL minted when its part is sent (probes 044, 139).
+
+`corpus/findings/153_presigned_put_slow.md`

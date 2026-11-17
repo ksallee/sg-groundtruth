@@ -166,6 +166,8 @@ The same handshake with the field left out of the path, which stores the bytes a
   rules: `doors/findings-upload`
 - `141_download_headers` (findings) — A stored file's GET sends Content-Length and Accept-Ranges, answers `*` to any Origin and allows a Range preflight, so a page can show progress, resume with Range and abort. `HEAD` is 403.  
   rules: `doors/findings-upload`
+- `153_presigned_put_slow` (findings) — A presigned PUT started at once and ending at 965 s was stored, 3 runs of 3. Every PUT started at 600 s or later and ending past 900 s was 403 `Request has expired`, whatever it sent first.  
+  rules: `doors/findings-upload`
 - `001_publish_version_with_media` (recipes) — Publish a generated image to Flow PT as a Version, with provenance and the workflow attached  
   rules: `doors/recipes`
 - `008_delivery_progress` (recipes) — Keep a Delivery honest about what a long transfer is doing, including when it is cancelled and when it crashes  
@@ -299,6 +301,8 @@ Step three, at 201 with a body of a single space. Not JSON, and it never names t
   rules: `doors/findings-upload`
 - `152_audio_on_take` (findings) — Audio on `sg_uploaded_movie` transcodes to an audio-only mp4 (`aac`), status 1, no thumbnail. The stored `content_type` is not the PUT's: an Opus `.webm` sent as `audio/webm` reads `video/webm`.  
   rules: `doors/findings-upload`
+- `153_presigned_put_slow` (findings) — A presigned PUT started at once and ending at 965 s was stored, 3 runs of 3. Every PUT started at 600 s or later and ending past 900 s was 403 `Request has expired`, whatever it sent first.  
+  rules: `doors/findings-upload`
 - `124_updated_at_bumps` (findings) — `updated_at` moves on a write, a finished upload and its transcode, and on a link set from either end, but not on a no-op PUT and not when a Note names the row in `note_links`.  
   rules: `doors/findings-observe`
 - `001_publish_version_with_media` (recipes) — Publish a generated image to Flow PT as a Version, with provenance and the workflow attached  
@@ -357,6 +361,8 @@ Step two, to storage rather than to Flow PT, with no Authorization header. It is
 - `151_video_on_take` (findings) — A Version takes a custom entity row as `entity`. On `sg_uploaded_movie` an `HEVC` .mov becomes an H.264 mp4 with thumbnail and filmstrip; as a plain Attachment, video gets a 480 px thumbnail only.  
   rules: `doors/findings-upload`
 - `152_audio_on_take` (findings) — Audio on `sg_uploaded_movie` transcodes to an audio-only mp4 (`aac`), status 1, no thumbnail. The stored `content_type` is not the PUT's: an Opus `.webm` sent as `audio/webm` reads `video/webm`.  
+  rules: `doors/findings-upload`
+- `153_presigned_put_slow` (findings) — A presigned PUT started at once and ending at 965 s was stored, 3 runs of 3. Every PUT started at 600 s or later and ending past 900 s was 403 `Request has expired`, whatever it sent first.  
   rules: `doors/findings-upload`
 - `001_publish_version_with_media` (recipes) — Publish a generated image to Flow PT as a Version, with provenance and the workflow attached  
   rules: `doors/recipes`
