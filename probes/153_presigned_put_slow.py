@@ -80,7 +80,7 @@ def slow_put(url, t0, start_at, label, burst=0):
     conn.close()
     out(f"{label}: headers sent at {first:.0f} s, {sent} of {size} bytes, last byte at {last:.0f} s"
         + (f", send error {err}" if err else "")
-        + f"\n   PUT -> {status} at {time.time() - t0:.0f} s  {body.strip()[:400]}")
+        + f"\n   PUT -> {status} at {time.time() - t0:.0f} s  {body.strip()}")
     return status, size
 
 

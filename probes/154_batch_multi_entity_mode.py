@@ -68,7 +68,7 @@ with _lib.Created(c) as made:
                   ((row.get("data") or row).get("relationships", {}).get("note_links", {}).get("data") or [])]
                  for row in body["data"]])
         else:
-            echo = "; " + json.dumps(body.get("errors"))[:400]
+            echo = "; " + json.dumps(body.get("errors"))
         out(f"[S1] + {label} -> {r.status_code}; reads back note_links {links}"
             + (f", content {a['attributes']['content']!r}" if "content" in label else "") + echo)
     _lib.emit("154_batch_multi_entity_mode", "\n".join(rows), env)

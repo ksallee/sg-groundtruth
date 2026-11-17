@@ -2,9 +2,9 @@
 server add on Shot, and does a link written from either end read back from the other?
 
 sg-onset links a Slate to the Shots it covers. Probe 142 measured the reverse field of a multi_entity
-field between two custom slots as `<source slug>_<field>_<source slug>s`; Slate is a stock type with
-a display name of its own, so the rule is checked here. The field is named `sg_zzprobe_155_shots`
-(the litter prefix, `docs/quirks.md`) so that `sg_shots` stays free for the app.
+field between two custom slots as `<source slug>_<field>_<source slug>s`, probe 116 on Version; this
+checks it on Slate. Its results are rows in finding 142; it has no finding of its own. The field is
+named `sg_zzprobe_155_shots` (the litter prefix, `docs/quirks.md`) so that `sg_shots` stays free.
 
 Steps: diff Shot's schema around `POST /schema/Slate/fields`; then a Slate linked to Shot S1 on
 create, S2 added in a `_batch` update with the mode in the body (probe 154), and S3 linked from the
@@ -41,7 +41,7 @@ def said(r):
         e = r.json()["errors"][0]
         return f"{r.status_code} code {e.get('code')} {e.get('title')!r}"
     except (ValueError, KeyError, IndexError):
-        return f"{r.status_code} {r.text[:300]}"
+        return f"{r.status_code} {r.text}"
 
 
 def linked(slug, rid, field):

@@ -62,7 +62,10 @@ e. PublishedFile {project, code, entity: Slate}                 -> 201 (valid_ty
 - Never put a photo that must survive on `image`: the server keeps a 480x320 rendition and no
   Attachment row, and no REST call returned the original.
 - Every other place keeps the exact bytes and answers them at the presigned URL as
-  `binary/octet-stream`, signed for 900 s (probe 125). Store the Attachment id, not the URL.
+  `binary/octet-stream`, signed for 900 s (probe 125). Store the Attachment id, not the URL. That type
+  is because these PUTs sent none: a PUT's `Content-Type` is what the GET serves (probe 152).
+- The `_2Dlod.jpeg` Attachment of (d) was added for a JPEG; a video on the same field got only the
+  `<hash>_<name>.mp4` (probe 151).
 - Only Note has a stock `attachments` field. Version has none (schema 404), which settles the
   contradiction in the upload cards: a field-less upload on Version links through
   `Attachment.attachment_links` (probe 014). Field-less init answers 200 on every type tried.

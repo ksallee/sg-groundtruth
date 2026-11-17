@@ -103,14 +103,14 @@ def upload(c, path, f):
     """The three calls of probe 013, the PUT carrying the browser's Content-Type for the extension."""
     i = c.get(f"{path}/_upload", params={"filename": f.name})
     if not i.ok:
-        return {"init": i.status_code, "error": i.text[:300]}
+        return {"init": i.status_code, "error": i.text}
     b = i.json()
     mime = MIME[f.name]
     put = requests.put(b["links"]["upload"], data=f.read_bytes(), headers={"Content-Type": mime}, timeout=300)
     cr = c.post(b["links"]["complete_upload"], json={"upload_info": b["data"], "upload_data": {}})
     return {"init": i.status_code, "upload_type": b["data"].get("upload_type"), "put": put.status_code,
             "put_content_type": mime, "complete": cr.status_code,
-            "complete_body": "" if cr.ok else cr.text[:300]}
+            "complete_body": "" if cr.ok else cr.text}
 
 
 def image_state(v):
@@ -197,7 +197,7 @@ def entity_on_every_slot(c, proj, tag, vt, made, out):
         row = made.add(s, c.post(f"/entity/{s}", json={"project": proj, "code": f"{tag}_slot"}).json()["data"]["id"])
         r = c.post("/entity/versions", json={"project": proj, "code": f"{tag}_slot", "entity": {"type": t, "id": row}})
         if not r.ok:
-            out(f"  <slot {t[12:]}> in valid_types {t in vt}: POST /entity/versions -> {r.status_code} {r.text[:300]}")
+            out(f"  <slot {t[12:]}> in valid_types {t in vt}: POST /entity/versions -> {r.status_code} {r.text}")
             continue
         vid = made.add("versions", r.json()["data"]["id"])
         ent = r.json()["data"]["relationships"]["entity"]["data"] or {}

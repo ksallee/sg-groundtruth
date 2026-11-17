@@ -39,10 +39,10 @@ A: complete_upload -> 201; GET Range bytes=-1 -> 206 Content-Range bytes 98815-9
 ```
 
 **Teaches**
-- The expiry is not checked against the moment a PUT starts: E sent its headers 300 s before the
-  URL expired and was refused after its last byte, `ServerTime` 61 s past `Expires`.
-- A PUT started at once may outlast the URL: A ended 63 s past expiry and the stored object read
-  back at the bytes sent. Where between 4 s and 600 s a start stops being safe is unmeasured.
+- Neither the start nor the end decides alone. E sent its headers 300 s before the URL expired and
+  was refused after its last byte, `ServerTime` 61 s past `Expires`. A sent its headers at 2 s,
+  ended 63 s past expiry, and was stored at the bytes sent.
+- Where between 4 s and 600 s a start stops being accepted is unmeasured.
 - Sending more up front did not help a late start: 64 KiB, 256 KiB and 1 MiB at 861 s were all
   refused at the end.
 - Call `_upload` right before the PUT and start it at once. An upload that may run past 900 s goes

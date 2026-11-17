@@ -22,8 +22,6 @@ Every call in this family: what the card records, the edge cases that live on th
 
 - `122_onset_entity_types` (findings) — Slate, Camera, MocapTake, ShootDay and Scene create like Version: `project` required, `code` generated. None has `attachments`, and only Version.entity and Note.note_links reach them all.  
   rules: `doors/findings-schema`
-- `155_slate_shots_reverse` (findings) — A multi_entity `<field>` on Slate to Shot makes `slate_<field>_slates` on Shot, editable and visible; by that rule `sg_shots` gives `slate_sg_shots_slates`. A link written at either end reads at both.  
-  rules: `doors/findings-schema`
 - `060_entity_dict_name` (findings) — The `name` in an entity dict is the target's `cached_display_name`, filled on every type measured, single and multi alike. Read it, not the per-type identity field, and expect decoration.  
   rules: `doors/findings-read`
 - `150_group_resolution` (findings) — `task_assignees is <person>` misses a Task assigned to their Group; filter `task_assignees.Group.users`. Group assignment makes the members followers once, and an Artist reads Groups and members.  
@@ -98,13 +96,13 @@ Every call in this family: what the card records, the edge cases that live on th
   rules: `doors/findings-write`
 - `145_time_fields` (findings) — date_time rounds to the second on POST and PUT (.999 goes up, .5 stays) but truncates in a _batch create. A new timecode field has no rate property; it is integer ms rendered at the site's fixed rate.  
   rules: `doors/findings-write`
-- `146_note_unique_key` (findings) — A `unique: true` text field on Note refuses a duplicate on create and on PUT, for a person too, case and outer spaces ignored. `Note.meta` with `contains` finds a key too, but enforces nothing.  
+- `146_note_unique_key` (findings) — A `unique: true` text field works on Note as on Version (probe 127), and refuses a duplicate on PUT and under sudo too. A `Note.meta` key is found by `contains`, case-sensitive, and enforces nothing.  
   rules: `doors/findings-write`
 - `148_note_author_fields` (findings) — `user` and `created_by` are both honoured on a Note or Version create, though the schema flags `created_by` read only; a PUT to it is 400. Under sudo_as_login all three author fields are the person.  
   rules: `doors/findings-write`
 - `156_action_menu_item` (findings) — An ActionMenuItem creates from `{}` at 201 though `title` is flagged mandatory, and `url` is not validated. An Artist is refused; `permissions_groups` does not filter what the API returns.  
   rules: `doors/findings-write`
-- `151_video_on_take` (findings) — A Version takes a custom entity row as `entity`. On `sg_uploaded_movie` an `HEVC` .mov becomes an H.264 mp4 with thumbnail and filmstrip; as a plain Attachment, video gets a 480 px thumbnail only.  
+- `151_video_on_take` (findings) — On `sg_uploaded_movie` an `HEVC` .mov becomes an H.264 mp4 with a thumbnail and a filmstrip, ready in under a minute. As a plain Attachment, video gets a 480 px thumbnail and nothing else.  
   rules: `doors/findings-upload`
 - `152_audio_on_take` (findings) — Audio on `sg_uploaded_movie` transcodes to an audio-only mp4 (`aac`), status 1, no thumbnail. The stored `content_type` is not the PUT's: an Opus `.webm` sent as `audio/webm` reads `video/webm`.  
   rules: `doors/findings-upload`
@@ -215,8 +213,6 @@ The key is `requests`, not `data`, and sending `data` is 400 `requests is missin
 
 - `028_loud_and_silent` (findings) — A 400 is trustworthy and usually names the legal set, but a 200 proves nothing: an unknown field, sort key or query param is a no-op, and a batch can return an id for a row it never made.  
   rules: `doors/findings-protocol`
-- `155_slate_shots_reverse` (findings) — A multi_entity `<field>` on Slate to Shot makes `slate_<field>_slates` on Shot, editable and visible; by that rule `sg_shots` gives `slate_sg_shots_slates`. A link written at either end reads at both.  
-  rules: `doors/findings-schema`
 - `024_read_after_write` (findings) — Every write ignores ?fields. A create returns what you sent plus the server defaults, an update returns the whole record, and neither resolves a dotted path, so re-read for those and after an upload.  
   rules: `doors/findings-write`
 - `083_task_template_on_create` (findings) — A create with `task_template` makes the Tasks inside the same call, by `POST` and by `_batch`, copying every field set on the template tasks and their dependency types and offsets.  

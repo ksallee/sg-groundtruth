@@ -56,7 +56,7 @@ def said(r):
         e = r.json()["errors"][0]
         return f"{r.status_code} code {e.get('code')} {e.get('title')!r}"
     except (ValueError, KeyError, IndexError):
-        return f"{r.status_code} {r.text[:300]}"
+        return f"{r.status_code} {r.text}"
 
 
 author = FPT.from_env(env, sudo_as_login=LOGIN)

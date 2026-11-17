@@ -18,6 +18,7 @@ may create one, and what does the web interface send to its URL when a person ru
 
 **Docs claim** Silent. The schema flags `title` mandatory and nothing else. There is no `configure_as`
 field: what a menu item does is `url`, `payload_content_type` and the checkboxes below.
+`field_types/entity_type` measured `ActionMenuItem.entity_type`; this measures the rest of the row.
 
 **Actual**
 
@@ -30,10 +31,6 @@ POST /entity/action_menu_items
   every editable field set              -> 201, each reads back as sent;
     secret_token reads "*******"
   url "sgonset://shot/1" | "not a url"  -> 201
-  entity_type "<custom slot>"           -> 201
-  entity_type "NotAType"                -> 400 code 104 "... 'NotAType' is not a valid entity type.
-                                           Valid entity types: 'Asset', 'Shot', 'Scene', ... [every type,
-                                           enabled or not, connection types included]"
   payload_content_type "xml"            -> 400 code 104 "... Valid list values: 'form', 'json'."
 
 as an Admin person (sudo_as_login)      create -> 201
@@ -49,7 +46,7 @@ three rows, permissions_groups [admin], [artist], none
 | field | type | values, as measured |
 |---|---|---|
 | `title`, `url`, `folder` | text | stored as sent; `url` takes any string |
-| `entity_type` | entity_type | a type name, checked against every type on the site |
+| `entity_type` | entity_type | a schema type name, validated as `field_types/entity_type` describes |
 | `projects` | multi_entity | `Project` rows; empty when not sent |
 | `permissions_groups` | multi_entity | `PermissionRuleSet` rows; empty when not sent |
 | `list_order` | number | null when not sent |
@@ -61,7 +58,7 @@ three rows, permissions_groups [admin], [artist], none
 
 **Teaches**
 - Send `title`, `url`, `entity_type` and `projects` yourself: the server takes a row with none of
-  them, and checks only `entity_type` and the list fields.
+  them, and checks only `entity_type` (`field_types/entity_type`) and the list fields.
 - Creating one is an administrator's call on the probed site: Admin 201, Artist 400 code 104.
   Manager was not reachable (probe 132), so do not infer it.
 - `permissions_groups` is not a read filter: an Artist reads rows restricted to Admin. Whether it

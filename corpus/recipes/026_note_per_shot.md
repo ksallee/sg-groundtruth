@@ -10,8 +10,8 @@ unmeasured: the Inbox the addressees see, and a launcher bearer as the writer. N
 
 # 026_note_per_shot
 
-Write as the person (a launcher bearer, probe 052, or `sudo_as_login`): a script's Note never streams
-(probe 067). Key the Note on a client UUID in `meta`, which needs no schema change (probe 146).
+Write as the person (a launcher bearer, probe 052, or `sudo_as_login`): a script's Note create was
+absent from every stream after 430 s (probe 067). Key the Note on a client UUID in `meta`, which needs no schema change (probe 146).
 Expand Group assignees before addressing (probe 150).
 
 ## Call

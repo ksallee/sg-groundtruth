@@ -1205,13 +1205,13 @@ date_time rounds to the second on POST and PUT (.999 goes up, .5 stays) but trun
 
 ## 146_note_unique_key
 
-A `unique: true` text field on Note refuses a duplicate on create and on PUT, for a person too, case and outer spaces ignored. `Note.meta` with `contains` finds a key too, but enforces nothing. **[partial]**
+A `unique: true` text field works on Note as on Version (probe 127), and refuses a duplicate on PUT and under sudo too. A `Note.meta` key is found by `contains`, case-sensitive, and enforces nothing. **[partial]**
 
 not measured: uniqueness across two projects. Probes write only into the sandbox. Blocked on the site: run `146 --write --second-project <name>` with a second writable project
 
-- Note takes a unique field as Version and custom entities do (probe 127). The refusal is the same code
-  104 under `sudo_as_login`, so a person's retry fails the same way: treat it as "already there" and read
-  the Note by the key. The title names the field's display name and ends in `<br> `.
+- Note takes a unique field as Version and custom entities do; case, outer spaces and the `is` lookup
+  behave as probe 127 measured. The refusal is the same code 104 under `sudo_as_login` and on a `PUT`,
+  so a person's retry fails the same way: treat it as "already there" and read the Note by the key.
 
 - `meta` is a working lookup with no admin step: seed `{"onset_uuid": ...}` in the create, find it with
   `contains`. It does not stop a retry from making a second Note, so look up before every create, and
@@ -1265,7 +1265,7 @@ An ActionMenuItem creates from `{}` at 201 though `title` is flagged mandatory, 
 not measured: what the web interface sends to the URL, and Manager rights. Needs a person: `156 --write --listen 8765 --hold 900`, then run the items on a Shot
 
 - Send `title`, `url`, `entity_type` and `projects` yourself: the server takes a row with none of
-  them, and checks only `entity_type` and the list fields.
+  them, and checks only `entity_type` (`field_types/entity_type`) and the list fields.
 
 - Creating one is an administrator's call on the probed site: Admin 201, Artist 400 code 104.
   Manager was not reachable (probe 132), so do not infer it.

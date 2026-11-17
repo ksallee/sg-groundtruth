@@ -157,6 +157,8 @@ neither filtered nor sorted (`field_types/summary`).
 | `"zzznope"` | 400 `Update failed for [Note.read_by_current_user]: 'zzznope' is not a valid list value. Valid list values: 'read', 'unread'.` |
 | `["read_by_current_user", "is", "unread"]` | the caller's unread Notes |
 | `["read_by_current_user", "in", ["read"]]` | 200 and the caller's unread Notes; the filter is not evaluated |
+| a person's `PUT content` or Reply on a Note an addressee had read | `unread` again for the addressee, with no stream row for the `PUT` (probe 149) |
+| `GET /entity/notes/<id>/followers` after create | the To and cc people, each member of an addressed Group, and the author (probe 147) |
 
 **Traps**
 - **`client_note` cannot be set over the API**, on create or after. Every update answers `400 API update() Note.client_note is editable on create only.` A client-facing Note over REST is `sg_note_type: "Client"`, an editable `list`, and nothing else; it leaves `client_note` false (probe 069).

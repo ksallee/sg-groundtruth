@@ -523,19 +523,3 @@ Every entity or multi_entity field makes a visible, editable multi_entity on eac
   measured, because the reverse was gone by then.
 
 `corpus/findings/142_reverse_field.md`
-
-## 155_slate_shots_reverse
-
-A multi_entity `<field>` on Slate to Shot makes `slate_<field>_slates` on Shot, editable and visible; by that rule `sg_shots` gives `slate_sg_shots_slates`. A link written at either end reads at both.
-
-- The reverse name is `<source slug, singular>_<field>_<source slug, singular>s`, as probe 142 found on
-  custom slots: for Slate, `slate_<field>_slates`. By that rule `sg_shots` gets `slate_sg_shots_slates`.
-  Its display name is `<source display name, plural> <-> <field display name>`.
-
-- It is one link with two names. Write it from the Slate or from the Shot and it reads back at both;
-  filter Shots by the reverse field to find a Slate's Shots without reading the Slate.
-
-- Retiring the forward field retired the reverse with it (probe 142). Both names stay taken until the
-  Trash page is emptied. This probe used the `sg_zzprobe_155_` prefix, so `sg_shots` is still free.
-
-`corpus/findings/155_slate_shots_reverse.md`

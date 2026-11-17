@@ -1,8 +1,8 @@
 """Q: what does creating an ActionMenuItem by API take, which of its fields hold what was sent, who may
 create one, and what does the web interface send to its URL when a person runs it?
 
-sg-onset wants an entry in a Shot's right-click menu that opens the app on that Shot. The corpus
-lists `ActionMenuItem` in the schema and nothing more.
+sg-onset wants an entry in a Shot's right-click menu that opens the app on that Shot.
+`field_types/entity_type` measured `ActionMenuItem.entity_type`; nothing measured the rest of the row.
 
 Steps, writes only behind `--write`, every row scoped to the sandbox project where the field allows:
 
@@ -57,9 +57,9 @@ def said(r):
         return str(r.status_code)
     try:
         e = r.json()["errors"][0]
-        return f"{r.status_code} code {e.get('code')} {e.get('title')!r} source {json.dumps(e.get('source'))[:300]}"
+        return f"{r.status_code} code {e.get('code')} {e.get('title')!r} source {json.dumps(e.get('source'))}"
     except (ValueError, KeyError, IndexError):
-        return f"{r.status_code} {r.text[:300]}"
+        return f"{r.status_code} {r.text}"
 
 
 def readback(rid):

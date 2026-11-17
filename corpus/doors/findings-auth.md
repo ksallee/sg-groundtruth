@@ -171,6 +171,9 @@ not measured: a person clicking deny, and a session left idle past the site's ex
   without `sudo_as_login` and without an administrator granting `can_impersonate_this_user`
   (probe 027).
 
+- That attribution was never measured with this bearer; probe 148 measured it under `sudo_as_login`
+  and keeps the launcher row as its open step.
+
 - The session token is the credential; the bearer is disposable. Hold the session token, mint a 600s
   bearer whenever one is needed, and each mint moves the session's expiry to now plus the site's
   window (one day on the probed site), written at most once every five minutes.

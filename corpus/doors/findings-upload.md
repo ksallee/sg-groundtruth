@@ -120,7 +120,11 @@ not measured: completing a field-less upload on Slate and reading where it links
   Attachment row, and no REST call returned the original.
 
 - Every other place keeps the exact bytes and answers them at the presigned URL as
-  `binary/octet-stream`, signed for 900 s (probe 125). Store the Attachment id, not the URL.
+  `binary/octet-stream`, signed for 900 s (probe 125). Store the Attachment id, not the URL. That type
+  is because these PUTs sent none: a PUT's `Content-Type` is what the GET serves (probe 152).
+
+- The `_2Dlod.jpeg` Attachment of (d) was added for a JPEG; a video on the same field got only the
+  `<hash>_<name>.mp4` (probe 151).
 
 - Only Note has a stock `attachments` field. Version has none (schema 404), which settles the
   contradiction in the upload cards: a field-less upload on Version links through
@@ -239,7 +243,7 @@ A stored file's GET sends Content-Length and Accept-Ranges, answers `*` to any O
 
 - The stored `Content-Type` is S3's default `binary/octet-stream` when the upload `PUT` sends none,
   as this one did; the `.jpg` name does not set it. `Content-Type` is not a signed header
-  (probe 125), so a `PUT` may send one; whether the download then answers with it was not measured.
+  (probe 125), so a `PUT` may send one, and the download then answers with it (probe 152).
 
 - Evidence is headers read by a process. A browser applying the CORS rules to them allows the above;
   no browser was run.
@@ -248,23 +252,20 @@ A stored file's GET sends Content-Length and Accept-Ranges, answers `*` to any O
 
 ## 151_video_on_take
 
-A Version takes a custom entity row as `entity`. On `sg_uploaded_movie` an `HEVC` .mov becomes an H.264 mp4 with thumbnail and filmstrip; as a plain Attachment, video gets a 480 px thumbnail only. **[partial]**
+On `sg_uploaded_movie` an `HEVC` .mov becomes an H.264 mp4 with a thumbnail and a filmstrip, ready in under a minute. As a plain Attachment, video gets a 480 px thumbnail and nothing else. **[partial]**
 
 not measured: playback in the web interface and an upload from iPad Safari. Needs a browser and a person with an iPad, see below
-
-- Link a take's video through a Version whose `entity` is the take row. Any custom slot is accepted at
-  201; a slot in `valid_types` also lists the Version in its `sg_versions` field, which is what turning
-  Versions on for the type in the web interface adds (on the probed site the take slot gained it during this work).
 
 - Only a Version gives a playable transcode. An `HEVC` `.mov` from an iPhone or iPad is stored as sent
   and its `sg_uploaded_movie_mp4` is H.264, which every browser plays. As a plain Attachment the same
   file gets a thumbnail and nothing a browser without `HEVC` can play.
 
-- Wait for `sg_uploaded_movie_transcoding_status` 1 on a fresh Version, and expect `image` to move a
-  second time (probe 124). `sg_uploaded_movie_webm` stayed null, as in probe 022.
+- Wait for `sg_uploaded_movie_transcoding_status` 1 on a fresh Version, under a minute for these
+  clips, and expect `image` to move a second time (probe 124).
 
-- `upload_type` is `Attachment` for a movie field and a multi_entity field alike; only `image` answers
-  `Thumbnail` (probe 013).
+- The server added one `<hash>_<name>.mp4` Attachment per Version and no `_2Dlod.jpeg`, which probe
+  123 saw for a JPEG on the same field. Each outlived its Version's `DELETE` and answered its own with
+  204, so delete them yourself.
 
 **Needs a browser or a person**
 
@@ -310,11 +311,11 @@ A presigned PUT started at once and ending at 965 s was stored, 3 runs of 3. Eve
 
 not measured: a PUT started between 4 s and 600 s, and a real upload at Wi-Fi speed. Blocked on time: each run takes 17 minutes
 
-- The expiry is not checked against the moment a PUT starts: E sent its headers 300 s before the
-  URL expired and was refused after its last byte, `ServerTime` 61 s past `Expires`.
+- Neither the start nor the end decides alone. E sent its headers 300 s before the URL expired and
+  was refused after its last byte, `ServerTime` 61 s past `Expires`. A sent its headers at 2 s,
+  ended 63 s past expiry, and was stored at the bytes sent.
 
-- A PUT started at once may outlast the URL: A ended 63 s past expiry and the stored object read
-  back at the bytes sent. Where between 4 s and 600 s a start stops being safe is unmeasured.
+- Where between 4 s and 600 s a start stops being accepted is unmeasured.
 
 - Sending more up front did not help a late start: 64 KiB, 256 KiB and 1 MiB at 861 s were all
   refused at the end.

@@ -412,7 +412,7 @@ for f in sorted(CORPUS.rglob("*.md")):
 # The map is what every session reads before it asks anything, so it is capped rather than allowed to
 # grow with the corpus. Over the cap, a list belongs on a door and the map keeps the names.
 # Raised from 11 KiB at probes 115-120 (#95): the map names every entry, so it was raised, not trimmed.
-# Raised from 12 KiB at probes 146-153 (#107), for the same reason.
+# Raised from 12 KiB at probes 146-156 (#107), for the same reason.
 INDEX_MAX = 13 * 1024
 index_file = CORPUS / "INDEX.md"
 if index_file.is_file() and index_file.stat().st_size > INDEX_MAX:
