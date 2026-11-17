@@ -65,6 +65,8 @@ Pages rows. An entity field is returned under `relationships` and never `attribu
   rules: `doors/findings-filter`
 - `030_complex_filters` (findings) — api3_hash nests and/or groups 265 deep and mixes leaves with sub-groups; api3_array cannot express or, query-string filter[] is ignored on _search, and {path,relation,values} runs nowhere.  
   rules: `doors/findings-filter`
+- `150_group_resolution` (findings) — `task_assignees is <person>` misses a Task assigned to their Group; filter `task_assignees.Group.users`. Group assignment makes the members followers once, and an Artist reads Groups and members.  
+  rules: `doors/findings-filter`
 - `011_create_project` (findings) — A script user can create a Project with nothing but {"name": ...}, at 201, but the response echoes only 6 attributes, so read the project back if you need anything else.  
   rules: `doors/findings-write`
 - `136_unique_scope_retired` (findings) — A deleted row frees its `unique` value: a new row may take it. Reviving the old row while another holds the value is a 400 code 104 PG transaction error, and the row stays retired.  
@@ -115,6 +117,8 @@ One row, and the only read where `fields` is honoured on a single record. A reti
   rules: `doors/findings-read`
 - `138_dotted_custom_field` (findings) — A dotted path reaches an `sg_` field through an `sg_` entity field, on a custom entity and on a built-in one, and across two hops: projection on GET and _search, and filter, all match.  
   rules: `doors/findings-read`
+- `150_group_resolution` (findings) — `task_assignees is <person>` misses a Task assigned to their Group; filter `task_assignees.Group.users`. Group assignment makes the members followers once, and an Artist reads Groups and members.  
+  rules: `doors/findings-filter`
 - `058_local_storage_roots` (findings) — One create fills every `local_path_*` the storage row defines, whichever platform's root the path was under. The server picks the deepest matching root, and no conditional-write header is honoured.  
   rules: `doors/findings-write`
 - `078_page_setting_write` (findings) — A script cannot create a Page (HumanUser expected), a person can. settings_json writes only as a JSON string, reads back identical. DELETE on a PageSetting is 400: every created row is permanent.  
@@ -145,8 +149,20 @@ One row, and the only read where `fields` is honoured on a single record. A reti
   rules: `doors/findings-write`
 - `113_batch_atomic_after_template_write` (findings) — A `_batch` holding a `task_template` apply is atomic: a later or earlier failing request left no Task, no claim, no field write, no edge and no EventLogEntry row.  
   rules: `doors/findings-write`
+- `148_note_author_fields` (findings) — `user` and `created_by` are both honoured on a Note or Version create, though the schema flags `created_by` read only; a PUT to it is 400. Under sudo_as_login all three author fields are the person.  
+  rules: `doors/findings-write`
+- `154_batch_multi_entity_mode` (findings) — `multi_entity_update_mode` in a `_batch` update's `data` adds, removes and sets as on a PUT, and several updates of one record in one batch apply in request order, each row echoing the state after it.  
+  rules: `doors/findings-write`
 - `134_attachment_field_second_upload` (findings) — A second `_upload` to a multi_entity field to Attachment adds: the field holds both. Each Attachment gets the row's `project` and the row in `attachment_links`, so a project filter finds it.  
   rules: `doors/findings-upload`
+- `151_video_on_take` (findings) — A Version takes a custom entity row as `entity`. On `sg_uploaded_movie` an `HEVC` .mov becomes an H.264 mp4 with thumbnail and filmstrip; as a plain Attachment, video gets a 480 px thumbnail only.  
+  rules: `doors/findings-upload`
+- `152_audio_on_take` (findings) — Audio on `sg_uploaded_movie` transcodes to an audio-only mp4 (`aac`), status 1, no thumbnail. The stored `content_type` is not the PUT's: an Opus `.webm` sent as `audio/webm` reads `video/webm`.  
+  rules: `doors/findings-upload`
+- `147_note_addressing` (findings) — A Note's To and cc people, and every member of an addressed Group, become its followers at create, with the author. Find a person's Notes with `addressings_to.Group.users` as well as `addressings_to`.  
+  rules: `doors/findings-observe`
+- `149_note_update_activity` (findings) — A person's Note create streams at once; a PUT to `content` or `addressings_to` writes no stream row in 150 s but turns the addressee back to unread. An addressee added later follows at once.  
+  rules: `doors/findings-observe`
 - `003_query_fields_and_pages` (recipes) — Resolve a query field's value, and run the rows a saved Page shows  
   rules: `doors/recipes`
 - `005_propagate_status` (recipes) — Roll a status up from a parent's Tasks and Versions onto the parent, without racing a concurrent write  
@@ -166,6 +182,10 @@ One row, and the only read where `fields` is honoured on a single record. A reti
 - `019_undo_task_template_merge` (recipes) — Undo a task template merge, returning an entity's Tasks, fields and dependencies to their state before it  
   rules: `doors/recipes`
 - `022_undo_task_template_merge_in_one_batch` (recipes) — Undo a task template merge in one atomic call, returning Tasks, fields and dependencies to their state before it  
+  rules: `doors/recipes`
+- `026_note_per_shot` (recipes) — Keep one Note per Shot, addressed to the people on the Shot's Tasks, found again by a client key and updated in place  
+  rules: `doors/recipes`
+- `027_media_on_a_take` (recipes) — Put a video or audio clip on a custom entity row so a browser can play it, and know when it is ready  
   rules: `doors/recipes`
 
 **Silent on this call**

@@ -52,6 +52,8 @@ the field flagged `mandatory` is optional, as on Asset, Task and Version (probe 
 | `project` + `client_note: true` | 400 `API create() Client Notes can not be created through the API`, as the script and under `sudo_as_login` alike |
 | `project` + `client_note: false` | 201; the 201 echo omits the key and a re-read returns `false` |
 | `project` + `created_at: "2019-03-04T05:06:07Z"` | 201, stored as sent, though the schema flags it `editable: false` (probe 070) |
+| `project` + `created_by: {"type": "HumanUser", ...}` | 201, stored as sent, the same flag; a later `PUT` is 400 `editable on create only` (probe 148) |
+| `project` + a unique text field added to Note, a value another Note holds | 400 code 104 `required to be unique`; `meta` with `contains` finds a key but refuses no duplicate (probe 146) |
 
 An omitted `subject` is not auto-filled, unlike `Asset.code` and `Task.content`: the row has no title.
 The 201 echoes the server's defaults, so read them off the response:
@@ -64,6 +66,7 @@ The 201 echoes the server's defaults, so read them off the response:
 ```
 
 `user` and `created_by` both hold the authenticating script's `ApiUser`, and every link field is `[]`.
+Under `sudo_as_login` they hold the person, and so does `updated_by` (probe 148).
 
 **Links** Written and read as described in `field_types/entity` and `field_types/multi_entity`.
 

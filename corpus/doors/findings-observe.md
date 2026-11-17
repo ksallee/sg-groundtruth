@@ -276,3 +276,57 @@ A template-generated Task logs like a hand-made one plus a `template_task` chang
   echo a client's own idempotent re-sends. Stamps are to the second; probe 024 covers read-after-write.
 
 `corpus/findings/124_updated_at_bumps.md`
+
+## 147_note_addressing
+
+A Note's To and cc people, and every member of an addressed Group, become its followers at create, with the author. Find a person's Notes with `addressings_to.Group.users` as well as `addressings_to`. **[partial]**
+
+not measured: the Inbox itself, which has no REST call. Needs a browser: `147 --write --hold 900`, then open each Artist's Inbox
+
+- To, cc and each Group member become followers when the Note is created, and so does the author.
+  Read them at `GET /entity/notes/<id>/followers`. Whether following is what puts a Note in an Inbox
+  is the browser step below.
+
+- A Group stays a Group in `addressings_to`. "Notes to me" is three filters joined with `or`
+  (probe 030): `addressings_to`, `addressings_cc`, and `addressings_to.Group.users`.
+
+- `read_by_current_user` reads `unread` for an addressee and for anyone else alike, so read state does
+  not show who was addressed. Probe 149 measures what an update does to it.
+
+- `suppress_email_notif` defaults to `false` on a REST create. Whether it changes anything here is
+  unmeasured.
+
+**Needs a browser**
+
+| question | step |
+|---|---|
+| does each Note reach B's and C's Inbox, and under which Inbox view | run `147 --write --hold 900`, sign in as B in a private window, open the Inbox, note which of `to B`, `cc B`, `to the group`, `none` show and where; then the same as C |
+
+`corpus/findings/147_note_addressing.md`
+
+## 149_note_update_activity
+
+A person's Note create streams at once; a PUT to `content` or `addressings_to` writes no stream row in 150 s but turns the addressee back to unread. An addressee added later follows at once. **[partial]**
+
+not measured: the Inbox, which has no REST call, and a launcher bearer. Needs a browser: see the table at the end
+
+- An edited Note is unread again for the people it is addressed to, though no stream row records the
+  edit. A feed built from streams misses the update; read the Note's `updated_at`, or its read state
+  as the person.
+
+- Adding an addressee later makes them a follower at once, as addressing at create does (probe 147).
+
+- A row written under `sudo_as_login` names the person in `created_by` and the script in
+  `meta.sudo_actual_user`, so anyone reading the stream can see a script acted for the person.
+
+- Step 5 marked B read and replied without a read in between; the `unread` after it is the Reply's or
+  the mark not holding, and the run does not separate the two.
+
+**Needs a browser**
+
+| question | step |
+|---|---|
+| does the edited Note come back into B's Inbox, and at the top | run `149 --write --wait 600`, sign in as B in a private window, open the Inbox after step 3 is printed |
+| is C notified when added in step 4 | the same run, signed in as C, after step 4 |
+
+`corpus/findings/149_note_update_activity.md`

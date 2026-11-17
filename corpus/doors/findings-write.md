@@ -1202,3 +1202,58 @@ date_time rounds to the second on POST and PUT (.999 goes up, .5 stays) but trun
   truncated toward zero, a clock string refused.
 
 `corpus/findings/145_time_fields.md`
+
+## 146_note_unique_key
+
+A `unique: true` text field on Note refuses a duplicate on create and on PUT, for a person too, case and outer spaces ignored. `Note.meta` with `contains` finds a key too, but enforces nothing. **[partial]**
+
+not measured: uniqueness across two projects. Probes write only into the sandbox. Blocked on the site: run `146 --write --second-project <name>` with a second writable project
+
+- Note takes a unique field as Version and custom entities do (probe 127). The refusal is the same code
+  104 under `sudo_as_login`, so a person's retry fails the same way: treat it as "already there" and read
+  the Note by the key. The title names the field's display name and ends in `<br> `.
+
+- `meta` is a working lookup with no admin step: seed `{"onset_uuid": ...}` in the create, find it with
+  `contains`. It does not stop a retry from making a second Note, so look up before every create, and
+  send the key in the case it was minted in.
+
+- `content` and the other fields stay editable on a Note found by `meta`; only `meta` itself is fixed.
+
+- Whether two projects can hold the same key is unmeasured (probe 136 stopped at the same place). A UUID
+  key makes the answer moot.
+
+`corpus/findings/146_note_unique_key.md`
+
+## 148_note_author_fields
+
+`user` and `created_by` are both honoured on a Note or Version create, though the schema flags `created_by` read only; a PUT to it is 400. Under sudo_as_login all three author fields are the person. **[partial]**
+
+not measured: a launcher session bearer (auth_type session_token). Needs a person: `052 --login`, then `148 --write --session`
+
+- `created_by` is writable once, on create, like `created_at` (probe 070) and `Note.meta`
+  (`field_types/jsonb`). The schema's `editable: false` describes the update path only. Any caller
+  can name another person as creator, so `created_by` is not proof of who wrote a row.
+
+- Under `sudo_as_login` the person is `created_by`, `updated_by` and `user` with nothing sent. A
+  script sending `user` alone still leaves itself in `created_by` and `updated_by`.
+
+- The launcher bearer's claim is `user: HumanUser` with `auth_type: session_token` (probe 052), unlike
+  the sudo bearer, whose `user` stays the ApiUser. What it records here is unmeasured. Run
+  `052 --login`, approve in the browser, then `148 --write --session`.
+
+`corpus/findings/148_note_author_fields.md`
+
+## 154_batch_multi_entity_mode
+
+`multi_entity_update_mode` in a `_batch` update's `data` adds, removes and sets as on a PUT, and several updates of one record in one batch apply in request order, each row echoing the state after it.
+
+- Write the mode inside `data` exactly as in a `PUT` body (recipe 009). A bare list still replaces the
+  set, in a batch as on a `PUT`.
+
+- Requests on one record run in order, each on the result of the one before: `add` then `set` ends at
+  the `set`, `set` then `add` keeps both. Each result row is the whole record after that request
+  (recipe 002), so the last row for a record is its final state.
+
+- Several link edits to one row can share a batch with no read in between.
+
+`corpus/findings/154_batch_multi_entity_mode.md`

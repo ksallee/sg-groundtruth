@@ -38,6 +38,8 @@ The two id keys bound the window that was searched, not the record's own history
   rules: `doors/findings-observe`
 - `067_notes_in_the_stream` (findings) — A Reply reaches every linked stream in 33 s as `create_reply`, creates too; a script's Note create and status changes were absent after 430 s. Write as a person.  
   rules: `doors/findings-observe`
+- `149_note_update_activity` (findings) — A person's Note create streams at once; a PUT to `content` or `addressings_to` writes no stream row in 150 s but turns the addressee back to unread. An addressee added later follows at once.  
+  rules: `doors/findings-observe`
 - `009_attention_500s_on_bad_input` (reports) — A record id that does not exist on activity_stream is a 500, and the follow body answers 500 for the plural entity name every URL on the API uses while an invalid name answers 400.  
   rules: `doors/reports`
 
@@ -69,8 +71,16 @@ The HumanUsers watching one record, whole and unpaged, with `name` the only attr
 
 **Measured by**
 
+- `150_group_resolution` (findings) — `task_assignees is <person>` misses a Task assigned to their Group; filter `task_assignees.Group.users`. Group assignment makes the members followers once, and an Artist reads Groups and members.  
+  rules: `doors/findings-filter`
 - `043_attention` (findings) — The six attention calls share no convention with the rest of the API: no paging, no `fields`, `links.self` spelled `/entity/Shot/7668`, and a missing record id on activity_stream is a 500.  
   rules: `doors/findings-observe`
+- `147_note_addressing` (findings) — A Note's To and cc people, and every member of an addressed Group, become its followers at create, with the author. Find a person's Notes with `addressings_to.Group.users` as well as `addressings_to`.  
+  rules: `doors/findings-observe`
+- `149_note_update_activity` (findings) — A person's Note create streams at once; a PUT to `content` or `addressings_to` writes no stream row in 150 s but turns the addressee back to unread. An addressee added later follows at once.  
+  rules: `doors/findings-observe`
+- `026_note_per_shot` (recipes) — Keep one Note per Shot, addressed to the people on the Shot's Tasks, found again by a client key and updated in place  
+  rules: `doors/recipes`
 
 **Silent on this call**
 

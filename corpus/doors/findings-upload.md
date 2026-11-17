@@ -245,3 +245,61 @@ A stored file's GET sends Content-Length and Accept-Ranges, answers `*` to any O
   no browser was run.
 
 `corpus/findings/141_download_headers.md`
+
+## 151_video_on_take
+
+A Version takes a custom entity row as `entity`. On `sg_uploaded_movie` an `HEVC` .mov becomes an H.264 mp4 with thumbnail and filmstrip; as a plain Attachment, video gets a 480 px thumbnail only. **[partial]**
+
+not measured: playback in the web interface and an upload from iPad Safari. Needs a browser and a person with an iPad, see below
+
+- Link a take's video through a Version whose `entity` is the take row. Any custom slot is accepted at
+  201; a slot in `valid_types` also lists the Version in its `sg_versions` field, which is what turning
+  Versions on for the type in the web interface adds (on the probed site the take slot gained it during this work).
+
+- Only a Version gives a playable transcode. An `HEVC` `.mov` from an iPhone or iPad is stored as sent
+  and its `sg_uploaded_movie_mp4` is H.264, which every browser plays. As a plain Attachment the same
+  file gets a thumbnail and nothing a browser without `HEVC` can play.
+
+- Wait for `sg_uploaded_movie_transcoding_status` 1 on a fresh Version, and expect `image` to move a
+  second time (probe 124). `sg_uploaded_movie_webm` stayed null, as in probe 022.
+
+- `upload_type` is `Attachment` for a movie field and a multi_entity field alike; only `image` answers
+  `Thumbnail` (probe 013).
+
+**Needs a browser or a person**
+
+| question | step |
+|---|---|
+| what the web interface plays inline for each row | `151 --write --hold 900`, then open the take and the Versions in the web interface |
+| an upload from iPad Safari, Content-Type and size as sent | upload one recorded clip from sg-onset on an iPad, then read the Attachment and Version as this probe does |
+
+`corpus/findings/151_video_on_take.md`
+
+## 152_audio_on_take
+
+Audio on `sg_uploaded_movie` transcodes to an audio-only mp4 (`aac`), status 1, no thumbnail. The stored `content_type` is not the PUT's: an Opus `.webm` sent as `audio/webm` reads `video/webm`. **[partial]**
+
+not measured: playback in the web interface and a recording from iPad Safari. Needs a browser and a person with an iPad, see below
+
+- A Version holds audio: status reaches 1 as for video (probe 151), and `sg_uploaded_movie_mp4` is an
+  `aac` mp4 every browser plays, Opus from Chrome's MediaRecorder included. There is no frame rate,
+  filmstrip or thumbnail, so draw the row's icon yourself.
+
+- `image` reads the transient placeholder until processing ends and then null. A client waiting for a
+  thumbnail on audio waits for nothing; wait on `processing_status` or the transcoding status.
+
+- The stored `content_type` is set by the server, not taken from the PUT: the `.webm` reads
+  `video/webm` although the PUT said `audio/webm`. Extension or bytes is not separated: a WebM
+  container is the same for both. Decide audio or video on the client, not from `content_type`.
+
+- The presigned GET serves back the PUT's `Content-Type`; probe 123 saw `binary/octet-stream` with
+  none sent.
+
+**Needs a browser or a person**
+
+| question | step |
+|---|---|
+| does the web interface play an audio Version, and with what player | `152 --write --hold 900`, then open each Version in the web interface |
+| what iPad Safari's MediaRecorder writes, container and Content-Type | record a sound note in sg-onset on an iPad and read the Attachment and Version as this probe does |
+
+`corpus/findings/152_audio_on_take.md`

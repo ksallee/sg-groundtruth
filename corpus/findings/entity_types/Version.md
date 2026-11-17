@@ -100,12 +100,13 @@ lists are site configuration. Write and filter: `field_types/status_list`.
   `Attachment.attachment_links`, never from the Version (probe 014).
 - **`user` is the Artist field and defaults to the caller**, so a script's Versions are authored by
   the script: 106 of 200 recent rows had `user` equal to their own `created_by` ApiUser. It is
-  editable, unlike `created_by`:
+  editable; `created_by` is accepted on create only, and a `PUT` to it is 400 (probe 148):
 
   | create | `created_by` | `user` (Artist) |
   |---|---|---|
   | script, `user` not sent | the ApiUser | the ApiUser |
   | script, `user` sent | the ApiUser | the HumanUser sent |
+  | script, `created_by` sent | the HumanUser sent | the ApiUser |
   | `scope=sudo_as_login:<login>` (probe 027) | the HumanUser | the HumanUser |
 
   A tool publishing for someone wants one of the last two. Sending `user` needs no impersonation

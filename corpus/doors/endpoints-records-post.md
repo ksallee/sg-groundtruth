@@ -22,8 +22,12 @@ Every call in this family: what the card records, the edge cases that live on th
 
 - `122_onset_entity_types` (findings) — Slate, Camera, MocapTake, ShootDay and Scene create like Version: `project` required, `code` generated. None has `attachments`, and only Version.entity and Note.note_links reach them all.  
   rules: `doors/findings-schema`
+- `155_slate_shots_reverse` (findings) — A multi_entity `<field>` on Slate to Shot makes `slate_<field>_slates` on Shot, editable and visible; by that rule `sg_shots` gives `slate_sg_shots_slates`. A link written at either end reads at both.  
+  rules: `doors/findings-schema`
 - `060_entity_dict_name` (findings) — The `name` in an entity dict is the target's `cached_display_name`, filled on every type measured, single and multi alike. Read it, not the per-type identity field, and expect decoration.  
   rules: `doors/findings-read`
+- `150_group_resolution` (findings) — `task_assignees is <person>` misses a Task assigned to their Group; filter `task_assignees.Group.users`. Group assignment makes the members followers once, and an Artist reads Groups and members.  
+  rules: `doors/findings-filter`
 - `011_create_project` (findings) — A script user can create a Project with nothing but {"name": ...}, at 201, but the response echoes only 6 attributes, so read the project back if you need anything else.  
   rules: `doors/findings-write`
 - `012_create_version` (findings) — The schema's mandatory flags are not the create contract: on every project-scoped type measured, `project` is required and the identity field is optional, server-generated and not unique.  
@@ -94,6 +98,14 @@ Every call in this family: what the card records, the edge cases that live on th
   rules: `doors/findings-write`
 - `145_time_fields` (findings) — date_time rounds to the second on POST and PUT (.999 goes up, .5 stays) but truncates in a _batch create. A new timecode field has no rate property; it is integer ms rendered at the site's fixed rate.  
   rules: `doors/findings-write`
+- `146_note_unique_key` (findings) — A `unique: true` text field on Note refuses a duplicate on create and on PUT, for a person too, case and outer spaces ignored. `Note.meta` with `contains` finds a key too, but enforces nothing.  
+  rules: `doors/findings-write`
+- `148_note_author_fields` (findings) — `user` and `created_by` are both honoured on a Note or Version create, though the schema flags `created_by` read only; a PUT to it is 400. Under sudo_as_login all three author fields are the person.  
+  rules: `doors/findings-write`
+- `151_video_on_take` (findings) — A Version takes a custom entity row as `entity`. On `sg_uploaded_movie` an `HEVC` .mov becomes an H.264 mp4 with thumbnail and filmstrip; as a plain Attachment, video gets a 480 px thumbnail only.  
+  rules: `doors/findings-upload`
+- `152_audio_on_take` (findings) — Audio on `sg_uploaded_movie` transcodes to an audio-only mp4 (`aac`), status 1, no thumbnail. The stored `content_type` is not the PUT's: an Opus `.webm` sent as `audio/webm` reads `video/webm`.  
+  rules: `doors/findings-upload`
 - `025_event_log` (findings) — meta.old_value and meta.new_value answer "what was this before", but meta is unfilterable and unsortable: narrow on entity, event_type and attribute_name, sort -id, read meta yourself.  
   rules: `doors/findings-observe`
 - `049_script_events` (findings) — A script's writes reach the event log only while its ApiUser has generate_event_log_entries True. The default is False and nothing errors when off. One create logs one row per field plus one _New.  
@@ -103,6 +115,10 @@ Every call in this family: what the card records, the edge cases that live on th
 - `090_template_task_events` (findings) — A template-generated Task logs like a hand-made one plus a `template_task` change row, `in_create` true, credited to the caller. Filter `attribute_name` `template_task` to find them.  
   rules: `doors/findings-observe`
 - `124_updated_at_bumps` (findings) — `updated_at` moves on a write, a finished upload and its transcode, and on a link set from either end, but not on a no-op PUT and not when a Note names the row in `note_links`.  
+  rules: `doors/findings-observe`
+- `147_note_addressing` (findings) — A Note's To and cc people, and every member of an addressed Group, become its followers at create, with the author. Find a person's Notes with `addressings_to.Group.users` as well as `addressings_to`.  
+  rules: `doors/findings-observe`
+- `149_note_update_activity` (findings) — A person's Note create streams at once; a PUT to `content` or `addressings_to` writes no stream row in 150 s but turns the addressee back to unread. An addressee added later follows at once.  
   rules: `doors/findings-observe`
 - `001_publish_version_with_media` (recipes) — Publish a generated image to Flow PT as a Version, with provenance and the workflow attached  
   rules: `doors/recipes`
@@ -117,6 +133,10 @@ Every call in this family: what the card records, the edge cases that live on th
 - `017_check_permission_before_writing` (recipes) — Learn whether the signed-in person may update, create or delete a type before writing, with calls that change nothing  
   rules: `doors/recipes`
 - `025_retry_safe_create` (recipes) — Create rows from a client that retries after timeouts, without duplicating any row  
+  rules: `doors/recipes`
+- `026_note_per_shot` (recipes) — Keep one Note per Shot, addressed to the people on the Shot's Tasks, found again by a client key and updated in place  
+  rules: `doors/recipes`
+- `027_media_on_a_take` (recipes) — Put a video or audio clip on a custom entity row so a browser can play it, and know when it is ready  
   rules: `doors/recipes`
 
 **Silent on this call**
@@ -193,6 +213,8 @@ The key is `requests`, not `data`, and sending `data` is 400 `requests is missin
 
 - `028_loud_and_silent` (findings) — A 400 is trustworthy and usually names the legal set, but a 200 proves nothing: an unknown field, sort key or query param is a no-op, and a batch can return an id for a row it never made.  
   rules: `doors/findings-protocol`
+- `155_slate_shots_reverse` (findings) — A multi_entity `<field>` on Slate to Shot makes `slate_<field>_slates` on Shot, editable and visible; by that rule `sg_shots` gives `slate_sg_shots_slates`. A link written at either end reads at both.  
+  rules: `doors/findings-schema`
 - `024_read_after_write` (findings) — Every write ignores ?fields. A create returns what you sent plus the server defaults, an update returns the whole record, and neither resolves a dotted path, so re-read for those and after an upload.  
   rules: `doors/findings-write`
 - `083_task_template_on_create` (findings) — A create with `task_template` makes the Tasks inside the same call, by `POST` and by `_batch`, copying every field set on the template tasks and their dependency types and offsets.  
@@ -233,11 +255,15 @@ The key is `requests`, not `data`, and sending `data` is 400 `requests is missin
   rules: `doors/findings-write`
 - `145_time_fields` (findings) — date_time rounds to the second on POST and PUT (.999 goes up, .5 stays) but truncates in a _batch create. A new timecode field has no rate property; it is integer ms rendered at the site's fixed rate.  
   rules: `doors/findings-write`
+- `154_batch_multi_entity_mode` (findings) — `multi_entity_update_mode` in a `_batch` update's `data` adds, removes and sets as on a PUT, and several updates of one record in one batch apply in request order, each row echoing the state after it.  
+  rules: `doors/findings-write`
 - `002_batch` (recipes) — Apply many creates, updates and deletes in one atomic call, and match the results back to the requests  
   rules: `doors/recipes`
 - `005_propagate_status` (recipes) — Roll a status up from a parent's Tasks and Versions onto the parent, without racing a concurrent write  
   rules: `doors/recipes`
 - `007_build_and_reconcile_a_cut` (recipes) — Write a Cut and its CutItems from an edit, read the timeline back, and reconcile a second edit against the Cut already there  
+  rules: `doors/recipes`
+- `009_multi_entity_safely` (recipes) — Add to and remove from a multi_entity field without destroying the links you did not mean to touch  
   rules: `doors/recipes`
 - `015_apply_task_template_without_duplicates` (recipes) — Apply a task template to an entity that already has Tasks, without duplicating the ones it already holds  
   rules: `doors/recipes`
@@ -266,5 +292,6 @@ The key is `requests`, not `data`, and sending `data` is 400 `requests is missin
 - `086_batch_tasks_with_dependencies` — Tasks and their dependencies take two `_batch` calls: create the Tasks, then create TaskDependency rows. `upstream_tasks` on a create links without rescheduling.
 - `002_batch` — Apply many creates, updates and deletes in one atomic call, and match the results back to the requests
 - `005_propagate_status` — Roll a status up from a parent's Tasks and Versions onto the parent, without racing a concurrent write
+- `009_multi_entity_safely` — Add to and remove from a multi_entity field without destroying the links you did not mean to touch
 
 `corpus/endpoints/post_entity_batch.md`

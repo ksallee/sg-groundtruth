@@ -92,6 +92,10 @@ feedback toolbar on the dev server alone, mounted behind `import.meta.env.DEV`, 
 `site/tools/shot.py` screenshots built pages headless. Playwright is not a dependency of anything: it is
 supplied per run by `uv run --with playwright`, so a clone builds and serves the site without it.
 
+Probes 151 and 152 call the `ffmpeg` and `ffprobe` binaries to build their test video and audio, so the
+codec of every upload is known and no file is committed. Nothing else needs them, and the two probes exit
+naming the binary when it is absent.
+
 ## Licence
 
 Permissive, when it goes public. The whole positioning against AGPL tooling in this industry depends on studio
