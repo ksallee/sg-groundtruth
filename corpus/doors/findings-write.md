@@ -1297,3 +1297,54 @@ not measured: a custom-protocol `url` opening an app, whether `permissions_group
 | Manager rights | turn on `can_impersonate_this_user` for an active Manager, run `156 --write` |
 
 `corpus/findings/156_action_menu_item.md`
+
+## 158_project_text_size
+
+A custom text field on Project stored 1,000,000 characters of JSON byte for byte, `\n`, `\r\n` and tabs kept, with no refusal. Leading and trailing whitespace is stripped.
+
+- Write `JSON.stringify(value)` and parse what reads back. A serializer that ends in a newline gets
+  one character fewer back: compare parsed values, not strings or hashes.
+
+- 1,000,000 characters was a 200 in about a second. Nothing larger was sent, so a limit, if any, is above it.
+
+- `GET /entity/projects/<id>` with no `fields` returns every field, a custom field of 1 MB included,
+  while the listing `GET /entity/projects` with no `fields` returns ids only. Name `fields` on every
+  read of a Project with a large field, or every client on the site pays for it.
+
+`corpus/findings/158_project_text_size.md`
+
+## 159_project_field_update_rights
+
+An Admin updates a custom field on a Project, member or not. An Artist in the project reads it and gets 400 code 104 `The field is not editable for this user` on a PUT; outside it, 404 on the read. **[partial]**
+
+not measured: Manager and Vendor writes; rights read, not exercised. Blocked on the site: impersonation on for one of each, then `159 --write`
+
+- Settings an Artist must read and an Admin writes fit a Project field: an Artist who is a member
+  reads it with a plain `GET`. An Artist cannot save them; route that write through an Admin or the script.
+
+- Per caller `editable` in `GET /schema/Project/fields/<field>?project_id=` predicted every answer
+  (probe 094). Read it to grey out a settings screen before the PUT.
+
+- Project membership gates an Artist's read: outside the project the Project is a 404, so a field
+  on it cannot be read either.
+
+- The Manager row allows `update`, but a rights table can still refuse what it lists (probe 094).
+  Treat Manager as unknown until measured.
+
+`corpus/findings/159_project_field_update_rights.md`
+
+## 161_link_to_deleted_row
+
+A link to a deleted row is hidden, not removed: it reads null or drops out, and returns on revive, even after a replace. A write naming a deleted row is 400 code 104 `Value is not legal.`
+
+- **A replace does not drop a hidden link.** On `Version.playlists`, with P1 retired, `[P2]` answered
+  200 and read `[P2]`; reviving P1 brought it back. `remove` naming P1 is the same 400, so nothing
+  measured removes it. Expect a revive to restore every link to the row. Not measured on an entity field.
+
+- Before writing a link, drop every target the client holds that may have been deleted elsewhere: one
+  retired id fails the whole update, the live ones with it.
+
+- `Value is not legal.` also answers a type the field does not take (`field_types/multi_entity`).
+  To tell a deleted row from a wrong type, read the target with `options[return_only]=retired`.
+
+`corpus/findings/161_link_to_deleted_row.md`

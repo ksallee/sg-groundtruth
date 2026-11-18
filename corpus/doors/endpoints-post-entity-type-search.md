@@ -140,6 +140,12 @@ The only way to send a filter the query string cannot express, and it refuses `a
   rules: `doors/findings-write`
 - `156_action_menu_item` (findings) — An ActionMenuItem creates from `{}` at 201 and `url` is not checked; an Artist is refused. Run from the web interface, an http `url` got a form POST in a new tab, `json` or not, with no token.  
   rules: `doors/findings-write`
+- `158_project_text_size` (findings) — A custom text field on Project stored 1,000,000 characters of JSON byte for byte, `\n`, `\r\n` and tabs kept, with no refusal. Leading and trailing whitespace is stripped.  
+  rules: `doors/findings-write`
+- `159_project_field_update_rights` (findings) — An Admin updates a custom field on a Project, member or not. An Artist in the project reads it and gets 400 code 104 `The field is not editable for this user` on a PUT; outside it, 404 on the read.  
+  rules: `doors/findings-write`
+- `161_link_to_deleted_row` (findings) — A link to a deleted row is hidden, not removed: it reads null or drops out, and returns on revive, even after a replace. A write naming a deleted row is 400 code 104 `Value is not legal.`  
+  rules: `doors/findings-write`
 - `014_attach_file` (findings) — Leave the field out of the _upload path and the file is stored as an Attachment on attachment_links; read it back with POST /entity/attachments/_search, never flat filter[].  
   rules: `doors/findings-upload`
 - `123_photos_per_record` (findings) — `image` keeps only a 480x320 thumbnail. A url field holds one original, a Note's attachments or a multi_entity to Attachment hold many; all return the bytes unchanged.  

@@ -71,6 +71,8 @@ Pages rows. An entity field is returned under `relationships` and never `attribu
   rules: `doors/findings-write`
 - `136_unique_scope_retired` (findings) — A deleted row frees its `unique` value: a new row may take it. Reviving the old row while another holds the value is a 400 code 104 PG transaction error, and the row stays retired.  
   rules: `doors/findings-write`
+- `158_project_text_size` (findings) — A custom text field on Project stored 1,000,000 characters of JSON byte for byte, `\n`, `\r\n` and tabs kept, with no refusal. Leading and trailing whitespace is stripped.  
+  rules: `doors/findings-write`
 - `010_status_icons` (findings) — Status.icon is an entity link under relationships; display_type picks one of three renderings; url is empty unless image_data is asked for beside it; the stock sprite is in the site's own stylesheet.  
   rules: `doors/findings-render`
 - `004_register_published_file` (recipes) — Register the next PublishedFile without overwriting the last one, and write a path the server resolves for every platform  
@@ -107,6 +109,8 @@ One row, and the only read where `fields` is honoured on a single record. A reti
 
 **Measured by**
 
+- `157_project_custom_field` (findings) — An Admin person creates a text field on Project with name and description at 201; it reads back like a field on any type. An Artist gets 500 code 105 `User doesn't have permission to create a Field`.  
+  rules: `doors/findings-schema`
 - `060_entity_dict_name` (findings) — The `name` in an entity dict is the target's `cached_display_name`, filled on every type measured, single and multi alike. Read it, not the per-type identity field, and expect decoration.  
   rules: `doors/findings-read`
 - `076_page_visibility` (findings) — The script user is not the widest reader of Page: an Admin read 2048 pages where the script read 1107 and 404s on the rest. An Artist read 107. Every level reads every person's override.  
@@ -155,6 +159,12 @@ One row, and the only read where `fields` is honoured on a single record. A reti
   rules: `doors/findings-write`
 - `156_action_menu_item` (findings) — An ActionMenuItem creates from `{}` at 201 and `url` is not checked; an Artist is refused. Run from the web interface, an http `url` got a form POST in a new tab, `json` or not, with no token.  
   rules: `doors/findings-write`
+- `158_project_text_size` (findings) — A custom text field on Project stored 1,000,000 characters of JSON byte for byte, `\n`, `\r\n` and tabs kept, with no refusal. Leading and trailing whitespace is stripped.  
+  rules: `doors/findings-write`
+- `159_project_field_update_rights` (findings) — An Admin updates a custom field on a Project, member or not. An Artist in the project reads it and gets 400 code 104 `The field is not editable for this user` on a PUT; outside it, 404 on the read.  
+  rules: `doors/findings-write`
+- `161_link_to_deleted_row` (findings) — A link to a deleted row is hidden, not removed: it reads null or drops out, and returns on revive, even after a replace. A write naming a deleted row is 400 code 104 `Value is not legal.`  
+  rules: `doors/findings-write`
 - `134_attachment_field_second_upload` (findings) — A second `_upload` to a multi_entity field to Attachment adds: the field holds both. Each Attachment gets the row's `project` and the row in `attachment_links`, so a project filter finds it.  
   rules: `doors/findings-upload`
 - `151_video_on_take` (findings) — On `sg_uploaded_movie` an `HEVC` .mov becomes an H.264 mp4 with a thumbnail and a filmstrip, ready in under a minute. As a plain Attachment, video gets a 480 px thumbnail and nothing else.  
@@ -188,6 +198,8 @@ One row, and the only read where `fields` is honoured on a single record. A reti
 - `026_note_per_shot` (recipes) — Keep one Note per Shot, addressed to the people on the Shot's Tasks, found again by a client key and updated in place  
   rules: `doors/recipes`
 - `027_media_on_a_take` (recipes) — Put a video or audio clip on a custom entity row so a browser can play it, and know when it is ready  
+  rules: `doors/recipes`
+- `028_settings_on_project` (recipes) — Keep an app's settings for a project as JSON on the Project row, written by an Admin and read by everyone in the project  
   rules: `doors/recipes`
 
 **Silent on this call**
@@ -275,6 +287,8 @@ The `entity` or `multi_entity` link list on its own, unpaged and unsorted. `page
 
 - `048_one_record_beyond_crud` (findings) — POST on one record is revive, not update: `?revive=1` is required and the body is ignored. `/<field>` reads image and attachment fields only, and `relationships/<field>` is the same data, unpaged.  
   rules: `doors/findings-read`
+- `161_link_to_deleted_row` (findings) — A link to a deleted row is hidden, not removed: it reads null or drops out, and returns on revive, even after a replace. A write naming a deleted row is 400 code 104 `Value is not legal.`  
+  rules: `doors/findings-write`
 
 **Silent on this call**
 

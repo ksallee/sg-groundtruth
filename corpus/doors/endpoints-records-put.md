@@ -101,6 +101,12 @@ Updates and returns the whole record, 77 attribute keys for a Shot. A key left o
   rules: `doors/findings-write`
 - `148_note_author_fields` (findings) — `user` and `created_by` are both honoured on a Note or Version create, though the schema flags `created_by` read only; a PUT to it is 400. Under sudo_as_login all three author fields are the person.  
   rules: `doors/findings-write`
+- `158_project_text_size` (findings) — A custom text field on Project stored 1,000,000 characters of JSON byte for byte, `\n`, `\r\n` and tabs kept, with no refusal. Leading and trailing whitespace is stripped.  
+  rules: `doors/findings-write`
+- `159_project_field_update_rights` (findings) — An Admin updates a custom field on a Project, member or not. An Artist in the project reads it and gets 400 code 104 `The field is not editable for this user` on a PUT; outside it, 404 on the read.  
+  rules: `doors/findings-write`
+- `161_link_to_deleted_row` (findings) — A link to a deleted row is hidden, not removed: it reads null or drops out, and returns on revive, even after a replace. A write naming a deleted row is 400 code 104 `Value is not legal.`  
+  rules: `doors/findings-write`
 - `123_photos_per_record` (findings) — `image` keeps only a 480x320 thumbnail. A url field holds one original, a Note's attachments or a multi_entity to Attachment hold many; all return the bytes unchanged.  
   rules: `doors/findings-upload`
 - `135_attachment_custom_field_filename` (findings) — Attachment takes a custom field over REST. `filename` keeps 90 and 200 characters but stores each space as `_`; `is` and `starts_with` ignore case, so filter on the name with `_` for spaces.  
@@ -132,6 +138,8 @@ Updates and returns the whole record, 77 attribute keys for a Shot. A key left o
 - `019_undo_task_template_merge` (recipes) — Undo a task template merge, returning an entity's Tasks, fields and dependencies to their state before it  
   rules: `doors/recipes`
 - `026_note_per_shot` (recipes) — Keep one Note per Shot, addressed to the people on the Shot's Tasks, found again by a client key and updated in place  
+  rules: `doors/recipes`
+- `028_settings_on_project` (recipes) — Keep an app's settings for a project as JSON on the Project row, written by an Admin and read by everyone in the project  
   rules: `doors/recipes`
 - `004_update_mode_ignored_in_query_string` (reports) — multi_entity_update_mode sent as a query parameter is accepted and ignored, and the whole link set is replaced when the caller asked to add.  
   rules: `doors/reports`

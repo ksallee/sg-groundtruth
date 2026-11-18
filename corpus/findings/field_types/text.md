@@ -36,6 +36,7 @@ as a bare string in the body. Only `String` and `NilClass` are accepted.
 | `'<b>&amp;</b> "q" \'s\''` | 200 | unchanged; stored verbatim, no escaping |
 | `'x' * 5000` | 200 | `len=5000` |
 | `'x' * 100000` | 200 | `len=100000`; no length cap found |
+| 1,000,000 characters of JSON with `\n`, `\r\n`, tabs, non-ASCII, on a custom field on Project | 200 | byte for byte (probe 158) |
 | `12345` (int) | 400 | `API update() Version.sg_department expected [String, NilClass] data type(s) but got Integer: 12345` |
 | `True` (bool) | 400 | `... but got TrueClass: true` |
 | `['a','b']` (list) | 400 | `... but got Array: ["a", "b"]` |

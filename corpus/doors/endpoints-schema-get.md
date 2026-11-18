@@ -98,6 +98,8 @@ Every field on one type with its `data_type`, `editable` and `mandatory`. The ex
   rules: `doors/findings-schema`
 - `142_reverse_field` (findings) — Every entity or multi_entity field makes a visible, editable multi_entity on each linked type. No create property stops it, and DELETE of the reverse field retires the forward field too.  
   rules: `doors/findings-schema`
+- `157_project_custom_field` (findings) — An Admin person creates a text field on Project with name and description at 201; it reads back like a field on any type. An Artist gets 500 code 105 `User doesn't have permission to create a Field`.  
+  rules: `doors/findings-schema`
 - `007_fill_rates` (findings) — On the sample project 30 of 71 Version fields are populated. Rank by fill rate, but drop checkbox, summary and computed fields first: False and 0 are not null and read as 100% filled.  
   rules: `doors/findings-read`
 - `023_pages` (findings) — A page's layout is the PageSetting row whose user is null; settings_json reads back as decoded JSON and body/list_content settings.columns is the column list. Every filter on it is ignored.  
@@ -129,6 +131,8 @@ Every field on one type with its `data_type`, `editable` and `mandatory`. The ex
 - `017_check_permission_before_writing` (recipes) — Learn whether the signed-in person may update, create or delete a type before writing, with calls that change nothing  
   rules: `doors/recipes`
 - `024_field_visibility_in_a_project` (recipes) — Read which fields of an entity type a project hides, and show or hide one field in one project without touching the others  
+  rules: `doors/recipes`
+- `028_settings_on_project` (recipes) — Keep an app's settings for a project as JSON on the Project row, written by an Admin and read by everyone in the project  
   rules: `doors/recipes`
 
 **Silent on this call**
@@ -181,6 +185,8 @@ One field's properties, at 1211 bytes against 48KB for the whole type. Pass `pro
   rules: `doors/findings-schema`
 - `142_reverse_field` (findings) — Every entity or multi_entity field makes a visible, editable multi_entity on each linked type. No create property stops it, and DELETE of the reverse field retires the forward field too.  
   rules: `doors/findings-schema`
+- `157_project_custom_field` (findings) — An Admin person creates a text field on Project with name and description at 201; it reads back like a field on any type. An Artist gets 500 code 105 `User doesn't have permission to create a Field`.  
+  rules: `doors/findings-schema`
 - `060_entity_dict_name` (findings) — The `name` in an entity dict is the target's `cached_display_name`, filled on every type measured, single and multi alike. Read it, not the per-type identity field, and expect decoration.  
   rules: `doors/findings-read`
 - `068_note_read_state` (findings) — read_by_current_user is per person and missing from the schema; `is` and `is_not` are evaluated, while `in`, `not_in` and an unknown `is` value all return the unread rows at 200.  
@@ -188,6 +194,8 @@ One field's properties, at 1211 bytes against 48KB for the whole type. Pass `pro
 - `080_query_field_cost` (findings) — One _summarize with the parent leaf as `in [N rows]`, grouped on that link, reproduced open_notes_count for 300 Shots in 573 ms, against ~290 ms a row one call at a time.  
   rules: `doors/findings-filter`
 - `084_task_template_reapply` (findings) — Changing `task_template` to T creates a Task per T task no Task links by `template_task`, duplicating a same-name hand-made one, and re-syncs the linked Tasks' fields and edges (probe 102).  
+  rules: `doors/findings-write`
+- `159_project_field_update_rights` (findings) — An Admin updates a custom field on a Project, member or not. An Artist in the project reads it and gets 400 code 104 `The field is not editable for this user` on a PUT; outside it, 404 on the read.  
   rules: `doors/findings-write`
 - `123_photos_per_record` (findings) — `image` keeps only a 480x320 thumbnail. A url field holds one original, a Note's attachments or a multi_entity to Attachment hold many; all return the bytes unchanged.  
   rules: `doors/findings-upload`
@@ -200,6 +208,8 @@ One field's properties, at 1211 bytes against 48KB for the whole type. Pass `pro
 - `008_delivery_progress` (recipes) — Keep a Delivery honest about what a long transfer is doing, including when it is cancelled and when it crashes  
   rules: `doors/recipes`
 - `010_status_picker` (recipes) — List the statuses a project actually offers, each with the label, colour and icon needed to draw it  
+  rules: `doors/recipes`
+- `028_settings_on_project` (recipes) — Keep an app's settings for a project as JSON on the Project row, written by an Admin and read by everyone in the project  
   rules: `doors/recipes`
 
 **Silent on this call**
@@ -228,6 +238,8 @@ not measured: a Manager or Vendor person; on the probed site none has impersonat
   rules: `doors/findings-schema`
 - `132_field_create_rights` (findings) — An Artist creating a field gets 500 code 105 `User doesn't have permission to create a Field`, with a traceback. An Admin person gets 201. Treat any 500 from a schema write as a possible refusal.  
   rules: `doors/findings-schema`
+- `159_project_field_update_rights` (findings) — An Admin updates a custom field on a Project, member or not. An Artist in the project reads it and gets 400 code 104 `The field is not editable for this user` on a PUT; outside it, 404 on the read.  
+  rules: `doors/findings-write`
 
 `corpus/endpoints/get_schema_permission_groups.md`
 
@@ -253,6 +265,8 @@ One permission group's rights on one entity type's rows: read, create, update, r
 - `132_field_create_rights` (findings) — An Artist creating a field gets 500 code 105 `User doesn't have permission to create a Field`, with a traceback. An Admin person gets 201. Treat any 500 from a schema write as a possible refusal.  
   rules: `doors/findings-schema`
 - `143_nonadmin_rows` (findings) — On the probed site an Artist may not create, edit or delete custom-entity rows (status only) and may create but not delete an Attachment, its own included. The group rights call predicts each answer.  
+  rules: `doors/findings-write`
+- `159_project_field_update_rights` (findings) — An Admin updates a custom field on a Project, member or not. An Artist in the project reads it and gets 400 code 104 `The field is not editable for this user` on a PUT; outside it, 404 on the read.  
   rules: `doors/findings-write`
 
 `corpus/endpoints/get_schema_permission_groups_code_entity_types_type.md`

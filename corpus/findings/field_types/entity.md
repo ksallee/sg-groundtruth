@@ -21,11 +21,11 @@ reader that only walks `attributes` sees every link as absent (probe 003, probe 
             "related": "/api/v1/entity/assets/1230"}}}
 ```
 
-`data` is `null` when unlinked. `name` is the target's `cached_display_name`, filled on every type
-measured, so a picker needs no second call. It matches the target's identity field only because
-`cached_display_name` copies it: Delivery reads `#<id>: <title>`, and a client wanting the raw `code`
-or `content` reads the target (probe 060). A dotted path reads back on a single link (unlike
-multi_entity, probe 016), but it is typed:
+`data` is `null` when unlinked or the target is deleted, and a revive restores it (probe 161). `name`
+is the target's `cached_display_name`, filled on every type measured, so a picker needs no second
+call. It matches the target's identity field only because `cached_display_name` copies it: Delivery
+reads `#<id>: <title>`, and a client wanting the raw `code` or `content` reads the target (probe 060).
+A dotted path reads back on a single link (unlike multi_entity, probe 016), but it is typed:
 
 | row | `attributes` |
 |---|---|
@@ -44,6 +44,7 @@ A middle segment outside this field's `valid_types` drops the key at 200 rather 
 | `{"id": 7479}` (no type) | 400 `API update() invalid/missing entity hash string 'type': {"id" => 7479} Valid entity types: ["ActionMenuItem", "ApiUser", ... all 113 site entity types listed in full ...]` |
 | `{"type": "Asset", "id": <a real Shot id>}` | 400 `Update failed for [Version.entity]: Value is not legal.` |
 | `{"type": "Shot", "id": 99999999}` | 400 `Update failed for [Version.entity]: Value is not legal.` |
+| a deleted row, on `PUT`, `POST` or `_batch` | 400 code 104, the same `Value is not legal.` (probe 161) |
 | a Shot in another project | 200, linked; no project-consistency check |
 
 `Value is not legal` is the only signal for both a wrong `type` and a missing id, and it has no `source`
