@@ -8,7 +8,8 @@ The feed the web application draws, paged by `max_id` and `min_id` rather than b
 
 `GET /entity/shots/999999999/activity_stream` answers 500 with the generic support message, not the
 404 the site's own `/spec.json` advertises. The same 500 came back on `notes`, `projects` and
-`versions`, so check the record exists before asking for its stream.
+`versions`, so check the record exists before asking for its stream. A row a see rule hides from the
+caller answers the same 500 (probe 165).
 
 The two id keys bound the window that was searched, not the record's own history:
 
@@ -32,6 +33,8 @@ The two id keys bound the window that was searched, not the record's own history
 
 **Measured by**
 
+- `165_hidden_row_paths` (findings) — A see rule hides a row from fetch, search, summarize, text search and links, but a dotted filter still matches through it, a grouped `_summarize` shows its id and total, the event log its values.  
+  rules: `doors/findings-read`
 - `043_attention` (findings) — The six attention calls share no convention with the rest of the API: no paging, no `fields`, `links.self` spelled `/entity/Shot/7668`, and a missing record id on activity_stream is a 500.  
   rules: `doors/findings-observe`
 - `066_user_feed` (findings) — A HumanUser's activity_stream is what the person created, not what they follow: 0 of 9 rows touched the 81 followed records. A feed is a fan-out over their tasks' Shots and Assets.  

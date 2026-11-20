@@ -260,6 +260,8 @@ The site publishes its own OpenAPI v3 document, `json` or `yaml`, and it lists 6
   rules: `doors/findings-schema`
 - `160_jsonb_field_create` (findings) — A `jsonb` or `serializable` field cannot be created over REST, on Project or any type tried: 400 code 103 `data_type is not valid`. Store JSON in a text field and parse it.  
   rules: `doors/findings-schema`
+- `162_permission_rules_rest` (findings) — Rules are readable over REST with their condition trees: an Admin person reads every group, a person only their own. No call writes one: PUT, POST and PATCH on the permission routes are 404.  
+  rules: `doors/findings-schema`
 - `084_task_template_reapply` (findings) — Changing `task_template` to T creates a Task per T task no Task links by `template_task`, duplicating a same-name hand-made one, and re-syncs the linked Tasks' fields and edges (probe 102).  
   rules: `doors/findings-write`
 - `007_reference_disagrees_with_spec` (reports) — Four calls in the published REST reference exist under no spelling in the deployment's own OpenAPI document, which names two of them differently.  

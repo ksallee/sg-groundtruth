@@ -10,6 +10,12 @@ Counts without paging rows. One `grouping` returns a field's distinct values and
 - `group_name` is the rendered label and `group_value` the raw one. For a `timecode` field the rendered
   form is `HH:MM:SS:FF`, which is how the frame rate is recovered when no field exposes it.
 
+- Several `summary_fields` on the same field return one key, holding the last type's answer: send one
+  call per type (`field_types/currency`). `min` and `max` are 400; the types are `minimum` and `maximum`.
+
+- Grouped on a link to a row a see rule hides from the caller, the group is still returned, with
+  `group_name` `""` and `group_value` holding the hidden row's id (probe 165).
+
 - One call per field at about 300ms. Over 71 fields that is 21 seconds. Rank a shortlist by fill rate
   first and summarize only the candidates.
 
@@ -25,6 +31,10 @@ Counts without paging rows. One `grouping` returns a field's distinct values and
   rules: `doors/findings-read`
 - `081_dotted_image` (findings) — entity.Shot.image returns the Shot's thumbnail as a presigned S3 URL under attributes, same object, fresh signature, in the same call. image is_not null matched 50 Shots whose image reads null.  
   rules: `doors/findings-read`
+- `163_vendor_rows` (findings) — On the probed site a Vendor reads every Bid in an assigned project, the other vendor's included: Vendor's `read` on Bid is `allowed`. A Group filter the client adds narrows the list, not the rights.  
+  rules: `doors/findings-read`
+- `165_hidden_row_paths` (findings) — A see rule hides a row from fetch, search, summarize, text search and links, but a dotted filter still matches through it, a grouped `_summarize` shows its id and total, the event log its values.  
+  rules: `doors/findings-read`
 - `020_summarize` (findings) — _summarize needs the same vendor Content-Type as _search, and one `grouping` call returns a field's distinct-value count and its empty count. At ~300ms a field, rank a shortlist, never scan.  
   rules: `doors/findings-filter`
 - `030_complex_filters` (findings) — api3_hash nests and/or groups 265 deep and mixes leaves with sub-groups; api3_array cannot express or, query-string filter[] is ignored on _search, and {path,relation,values} runs nowhere.  
@@ -38,6 +48,8 @@ Counts without paging rows. One `grouping` returns a field's distinct values and
 - `079_summarize_multi_grouping` (findings) — _summarize nests one group level per grouping entry, 3 deep tested, counts summing exactly. status_list rolls a group up to one status; status_percentage ignores any value and is no per-status share.  
   rules: `doors/findings-filter`
 - `080_query_field_cost` (findings) — One _summarize with the parent leaf as `in [N rows]`, grouped on that link, reproduced open_notes_count for 300 Shots in 573 ms, against ~290 ms a row one call at a time.  
+  rules: `doors/findings-filter`
+- `167_rollup_on_shot` (findings) — A query (summary) field cannot be created over REST: 400 `data_type is not valid`, with or without a query. Total each Shot's Bid Lines with one `_summarize` grouped on the link.  
   rules: `doors/findings-filter`
 - `145_time_fields` (findings) — date_time rounds to the second on POST and PUT (.999 goes up, .5 stays) but truncates in a _batch create. A new timecode field has no rate property; it is integer ms rendered at the site's fixed rate.  
   rules: `doors/findings-write`

@@ -444,3 +444,24 @@ not measured: A Note linked to two Shots: the probed project has none, so credit
   signed in as an Artist can expand assignees itself. `sg_people` is the site's own field and was empty.
 
 `corpus/findings/150_group_resolution.md`
+
+## 167_rollup_on_shot
+
+A query (summary) field cannot be created over REST: 400 `data_type is not valid`, with or without a query. Total each Shot's Bid Lines with one `_summarize` grouped on the link.
+
+- A query field is made in the web interface or not at all. REST reads one (`field_types/summary`) and
+  cannot change its `query`: a field `PUT` takes only the seven properties probe 116 lists.
+
+- `summary_default` on the amount field is one of those seven and accepts `"sum"`. It is the field's
+  default summary setting, not a value on any row.
+
+- The total per Shot is one `_summarize` on the child type, scoped with `[<link>, in, [Shots]]` and
+  grouped on `<link>`: `group_value.id` keys each total to its Shot, and sums are JSON numbers (the
+  amount itself reads as a string, `field_types/currency`). One call for N Shots (probe 080).
+
+- Through the reverse field on Shot a dotted read is absent (probe 016) and a `_summarize` of the path
+  is 400; only a filter works there.
+
+- Run as a vendor, the same call totals Shots they cannot see, under an empty `group_name` (probe 165).
+
+`corpus/findings/167_rollup_on_shot.md`

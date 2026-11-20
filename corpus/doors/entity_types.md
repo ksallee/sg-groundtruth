@@ -137,8 +137,8 @@ not measured: what an active user costs in seats, since the site refuses to crea
 - The only creatable user is a disabled one, and `PUT sg_status_list: "act"` is refused the same way.
   A script cannot onboard a person on this site.
 
-- `permission_rule_set` and `can_impersonate_this_user` are read only: what a person may do and who
-  may act as them are granted in the web interface and read over REST.
+- `can_impersonate_this_user` is read only. `permission_rule_set` reads `editable: false` and the script
+  still re-roled two people with it at 200, read back and restored (probes 162 to 166).
 
 - A deleted user is retired, not erased, and its `login` becomes reusable, so two rows can hold the
   same login with only one of them live.

@@ -562,3 +562,22 @@ A `jsonb` or `serializable` field cannot be created over REST, on Project or any
   field a client makes, because a client cannot make one.
 
 `corpus/findings/160_jsonb_field_create.md`
+
+## 162_permission_rules_rest
+
+Rules are readable over REST with their condition trees: an Admin person reads every group, a person only their own. No call writes one: PUT, POST and PATCH on the permission routes are 404.
+
+- Conditional rules are readable, correcting probe 027: `actions.<action>.condition` holds the tree and
+  the raw `permissions.see_condition` holds the same one. Only `conditional` has a tree.
+
+- Read rules as an Admin person through `sudo_as_login`, or as the person themselves. The script reads
+  no HumanUser group, and a person asking for another group gets 403 where the script gets 404.
+
+- No REST call creates or changes a rule: the three routes answer `GET` alone and `PermissionRuleSet`'s
+  10 fields are read only. A rule an app needs is added in the web interface; check for it, never write it.
+
+- On the probed site Vendor reads `<Bid>` and `<Bid Line>` as `allowed`, and Shot as conditional on the
+  five paths above. "See entities in assigned Projects only" is a setting of the role with no key in
+  any of these responses; probe 166 measures its effect.
+
+`corpus/findings/162_permission_rules_rest.md`

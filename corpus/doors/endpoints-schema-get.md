@@ -32,6 +32,8 @@ The enabled type list, and the enablement test for a `CustomEntityNN`: a slot ab
   rules: `doors/findings-schema`
 - `074_page_filter_coverage` (findings) — Every stored page filter with its tokens filled converts and runs 200 but one, yet recipe 003 kept unticked leaves (active "false"): 11 trees returned the wrong count. Drop them.  
   rules: `doors/findings-filter`
+- `029_check_site_ready_for_vendor_bids` (recipes) — Check that a site's Vendor permission group is set up for bidding, from its rules, before an app relies on it  
+  rules: `doors/recipes`
 
 `corpus/endpoints/get_schema.md`
 
@@ -124,6 +126,8 @@ Every field on one type with its `data_type`, `editable` and `mandatory`. The ex
   rules: `doors/findings-write`
 - `095_dependency_remove_undo` (findings) — Remove an edge with `DELETE` on its TaskDependency row: revive restores its type and offset. A `remove` on `upstream_tasks` or `downstream_tasks` erases the row for good.  
   rules: `doors/findings-write`
+- `164_vendor_writes` (findings) — On the probed site a Vendor creates no Bid or Bid Line, by POST or `_batch`, and updates only `sg_status_list`, each refusal 400 code 104. Both preflight reads predicted every answer.  
+  rules: `doors/findings-write`
 - `025_event_log` (findings) — meta.old_value and meta.new_value answer "what was this before", but meta is unfilterable and unsortable: narrow on entity, event_type and attribute_name, sort -id, read meta yourself.  
   rules: `doors/findings-observe`
 - `077_page_change_stamps` (findings) — PageSetting has no updated_at; Page.updated_at moves when its layout is saved. Poll Page.updated_at; Shotgun_PageSetting_Change names which setting changed but its entity is null on 131 of 500.  
@@ -133,6 +137,8 @@ Every field on one type with its `data_type`, `editable` and `mandatory`. The ex
 - `024_field_visibility_in_a_project` (recipes) — Read which fields of an entity type a project hides, and show or hide one field in one project without touching the others  
   rules: `doors/recipes`
 - `028_settings_on_project` (recipes) — Keep an app's settings for a project as JSON on the Project row, written by an Admin and read by everyone in the project  
+  rules: `doors/recipes`
+- `029_check_site_ready_for_vendor_bids` (recipes) — Check that a site's Vendor permission group is set up for bidding, from its rules, before an app relies on it  
   rules: `doors/recipes`
 
 **Silent on this call**
@@ -223,9 +229,9 @@ One field's properties, at 1211 bytes against 48KB for the whole type. Pass `pro
 
 ## `GET /schema/permission_groups` **[partial]**
 
-Lists the permission groups the caller may inspect: the script and an Artist see only their own, an Admin person sees every HumanUser group. In `/spec.json` since 2026-11-10, in no reference page.
+Lists the permission groups the caller may inspect: the script, an Artist and a Vendor see only their own, an Admin person every HumanUser group. In `/spec.json` since 2026-11-10, in no reference page.
 
-not measured: a Manager or Vendor person; on the probed site none has impersonation on. Blocked on the site
+not measured: a Manager person; on the probed site none has impersonation on. Blocked on the site
 
 - `/spec.json` says a caller without `set_permissions` sees only its own group. The script, an API
   Admin, got its own group and an empty list for `HumanUser`.
@@ -238,6 +244,8 @@ not measured: a Manager or Vendor person; on the probed site none has impersonat
   rules: `doors/findings-schema`
 - `132_field_create_rights` (findings) — An Artist creating a field gets 500 code 105 `User doesn't have permission to create a Field`, with a traceback. An Admin person gets 201. Treat any 500 from a schema write as a possible refusal.  
   rules: `doors/findings-schema`
+- `162_permission_rules_rest` (findings) — Rules are readable over REST with their condition trees: an Admin person reads every group, a person only their own. No call writes one: PUT, POST and PATCH on the permission routes are 404.  
+  rules: `doors/findings-schema`
 - `159_project_field_update_rights` (findings) — An Admin updates a custom field on a Project, member or not. An Artist in the project reads it and gets 400 code 104 `The field is not editable for this user` on a PUT; outside it, 404 on the read.  
   rules: `doors/findings-write`
 
@@ -245,7 +253,7 @@ not measured: a Manager or Vendor person; on the probed site none has impersonat
 
 ## `GET /schema/permission_groups/<code>/entity_types/<Type>`
 
-One permission group's rights on one entity type's rows: read, create, update, retire, delete, each `allowed`, `denied` or `conditional`. Nothing about changing the schema.
+One permission group's rights on one entity type's rows: read, create, update, retire, delete, each `allowed`, `denied` or `conditional`, a conditional one with its filter tree. Read only.
 
 - The actions are about rows. No key reports whether the group may create, update or retire a field.
 
@@ -258,16 +266,25 @@ One permission group's rights on one entity type's rows: read, create, update, r
 - `update.field_exceptions` lists the fields an update rule allows or denies against the type's
   default, e.g. `allow: ["sg_status_list"]` where `update` is `denied`.
 
+- A `conditional` action has `condition`, a filter tree in the `_search` hash shape. The signed-in
+  person is `{"valid": "logged_in_user_token", "id": 0}` when an Admin reads it, and the caller's own
+  `{"type": "HumanUser", "id": <me>, "valid": "valid"}` when a person reads their own group, whose
+  `field_exceptions` also drops the empty `deny` list (probe 162). Match both forms.
+
 **Measured by**
 
 - `119_field_absent_retired_live` (findings) — Revive is 204 only on a retired field: 404 `Retired field ... does not exist.` on an unused name, 400 `... is not retired.` on a live one. A retired field is a 404 to GET, PUT and DELETE.  
   rules: `doors/findings-schema`
 - `132_field_create_rights` (findings) — An Artist creating a field gets 500 code 105 `User doesn't have permission to create a Field`, with a traceback. An Admin person gets 201. Treat any 500 from a schema write as a possible refusal.  
   rules: `doors/findings-schema`
+- `162_permission_rules_rest` (findings) — Rules are readable over REST with their condition trees: an Admin person reads every group, a person only their own. No call writes one: PUT, POST and PATCH on the permission routes are 404.  
+  rules: `doors/findings-schema`
 - `143_nonadmin_rows` (findings) — On the probed site an Artist may not create, edit or delete custom-entity rows (status only) and may create but not delete an Attachment, its own included. The group rights call predicts each answer.  
   rules: `doors/findings-write`
 - `159_project_field_update_rights` (findings) — An Admin updates a custom field on a Project, member or not. An Artist in the project reads it and gets 400 code 104 `The field is not editable for this user` on a PUT; outside it, 404 on the read.  
   rules: `doors/findings-write`
+- `029_check_site_ready_for_vendor_bids` (recipes) — Check that a site's Vendor permission group is set up for bidding, from its rules, before an app relies on it  
+  rules: `doors/recipes`
 
 `corpus/endpoints/get_schema_permission_groups_code_entity_types_type.md`
 
@@ -275,7 +292,10 @@ One permission group's rights on one entity type's rows: read, create, update, r
 
 One permission group's `see` and `update` right on every field of an entity type, as a list. It is about field values, not about changing the field's definition.
 
-not measured: a group other than the caller's own, and `status_transitions` on a status field. Only `api_admin` was readable. Blocked on the site.
+not measured: `status_transitions` on a status field: no status field was read with it. Blocked on the work.
+
+- An Admin person reads any group's fields and a person their own group's (probe 162). As a Vendor,
+  the fields whose `update` is not `denied` were exactly the fields a `PUT` could write (probe 164).
 
 - `fields` is a list, where `GET /schema/<Type>/fields` is an object keyed by field name.
 
@@ -286,5 +306,9 @@ not measured: a group other than the caller's own, and `status_transitions` on a
 
 - `119_field_absent_retired_live` (findings) — Revive is 204 only on a retired field: 404 `Retired field ... does not exist.` on an unused name, 400 `... is not retired.` on a live one. A retired field is a 404 to GET, PUT and DELETE.  
   rules: `doors/findings-schema`
+- `162_permission_rules_rest` (findings) — Rules are readable over REST with their condition trees: an Admin person reads every group, a person only their own. No call writes one: PUT, POST and PATCH on the permission routes are 404.  
+  rules: `doors/findings-schema`
+- `164_vendor_writes` (findings) — On the probed site a Vendor creates no Bid or Bid Line, by POST or `_batch`, and updates only `sg_status_list`, each refusal 400 code 104. Both preflight reads predicted every answer.  
+  rules: `doors/findings-write`
 
 `corpus/endpoints/get_schema_permission_groups_code_entity_types_type_fields.md`

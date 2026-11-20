@@ -101,7 +101,8 @@ r = c.get("/entity/shots/862/activity_stream", params={"limit": 3, "max_id": 220
 
 `GET /entity/shots/999999999/activity_stream` answers 500 with the generic support message, not the
 404 the site's own `/spec.json` advertises. The same 500 came back on `notes`, `projects` and
-`versions`, so check the record exists before asking for its stream.
+`versions`, so check the record exists before asking for its stream. A row a see rule hides from the
+caller answers the same 500 (probe 165).
 
 The two id keys bound the window that was searched, not the record's own history:
 
