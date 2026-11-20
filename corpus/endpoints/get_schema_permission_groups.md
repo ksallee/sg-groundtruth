@@ -1,11 +1,11 @@
 ---
 endpoint: GET /schema/permission_groups
 coverage: partial
-unmeasured: a Manager or Vendor person; on the probed site none has impersonation on. Blocked on the site
+unmeasured: a Manager person; on the probed site none has impersonation on. Blocked on the site
 tags: [schema, permission, discovery]
 scope: api
-measured: site-wide; the script (probe 119), an Admin and an Artist via sudo (probe 132)
-verdict: Lists the permission groups the caller may inspect: the script and an Artist see only their own, an Admin person sees every HumanUser group. In `/spec.json` since 2026-11-10, in no reference page.
+measured: site-wide; the script (probe 119), an Admin and an Artist (probe 132) and a Vendor (probe 162) via sudo
+verdict: Lists the permission groups the caller may inspect: the script, an Artist and a Vendor see only their own, an Admin person every HumanUser group. In `/spec.json` since 2026-11-10, in no reference page.
 ---
 
 # GET /schema/permission_groups
@@ -51,6 +51,7 @@ As a person, through `sudo_as_login` (probe 132), `?permission_rule_set_entity_t
 | script, `api_admin` | none |
 | Admin person | every HumanUser group; five on the probed site |
 | Artist | `artist` only |
+| Vendor | `vendor` only, with or without the parameter (probe 162) |
 
 **Edge cases**
 

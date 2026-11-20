@@ -73,6 +73,23 @@ A checkbox is two-state, never null - an untouched row already reads false, null
 
 `corpus/findings/field_types/color.md`
 
+## currency
+
+A currency stores 2 decimals, rounding half up at 200, reads back as a JSON string and refuses Integer. No currency code exists on the field or the row: the symbol is a site display setting.
+
+- Two decimals, applied on write at 200: `0.004` stores `0.0` and `12.345` stores `12.35`. Round to cents
+  before writing when the stored value must equal what was computed.
+
+- Integer is refused on write and on filter, as for `float`: send `1234.0`, or a string such as
+  `"1234.56"`. A `_batch` update accepts it.
+
+- The value is a string on read and a number in `_summarize`. Cast both before comparing.
+
+- There is no currency code. `format_currency_fields_*` is display for the whole site; store the code
+  beside the amount.
+
+`corpus/findings/field_types/currency.md`
+
 ## date
 
 A date is the string "YYYY-MM-DD" and nothing else: any timestamp 400s on write and as a filter value. Every negating operator (is_not, not_in, not_in_last) also matches rows that are null.

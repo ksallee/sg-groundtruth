@@ -153,7 +153,8 @@ the script user who first measured it.
 
 **Unmeasured.** Which permission *rules* produce those numbers: `PermissionRuleSet` exposes no rule and the
 site's own settings are not on the REST surface, so only the effect is measurable, never the cause.
-Conditional permissions are therefore invisible here. Whether `password` or `session_token` yields a usable
+Conditional permissions are therefore invisible here; probe 162 reads them, condition trees included,
+from `GET /schema/permission_groups/<code>/entity_types/<Type>`. Whether `password` or `session_token` yields a usable
 REST token at all, and what `auth_type` then reads, is still untested: both were sent deliberately fake
 credentials. Only levels the probed site has *active* can be compared, and a site whose lower-level accounts
 are all disabled measures nothing.

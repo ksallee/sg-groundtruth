@@ -62,7 +62,8 @@ GET /entity/human_users/<new id>
 ```
 
 `login` and `email` are stored as sent. `firstname`, `lastname` and `name` are server-written when
-omitted, and `permission_rule_set` is the site's default for the type: the field is not editable.
+omitted, and `permission_rule_set` is the site's default for the type. Its schema says
+`editable: false`, yet the script writes it (below).
 
 **Seats** A disabled row is free, and neither call is a row count (`endpoints/get_license_info`).
 
@@ -138,7 +139,7 @@ disagree as well, 4 against 3 on the Admin. Impersonate and count rather than re
 |---|---|---|---|
 | `projects` | multi_entity | yes | `Project` |
 | `groups`, `sg_vendor_group` | multi_entity, entity | yes | `Group` |
-| `permission_rule_set` | entity | no | `PermissionRuleSet` |
+| `permission_rule_set` | entity | no, yet written by the script at 200 (probe 162) | `PermissionRuleSet` |
 | `department` | entity | yes | `Department` |
 | `pipeline_configurations` | multi_entity | yes | `PipelineConfiguration` |
 | `custom_home_page` | entity | yes | `Page` |
@@ -153,7 +154,7 @@ disagree as well, 4 against 3 on the Admin. Impersonate and count rather than re
   other create failure is `code: 103`.
 - The only creatable user is a disabled one, and `PUT sg_status_list: "act"` is refused the same way.
   A script cannot onboard a person on this site.
-- `permission_rule_set` and `can_impersonate_this_user` are read only: what a person may do and who
-  may act as them are granted in the web interface and read over REST.
+- `can_impersonate_this_user` is read only. `permission_rule_set` reads `editable: false` and the script
+  still re-roled two people with it at 200, read back and restored (probes 162 to 166).
 - A deleted user is retired, not erased, and its `login` becomes reusable, so two rows can hold the
   same login with only one of them live.
