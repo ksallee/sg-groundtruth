@@ -178,6 +178,8 @@ One row, and the only read where `fields` is honoured on a single record. A reti
   rules: `doors/findings-write`
 - `166_vendor_award` (findings) — On the probed site a Group added to `Shot.sg_vendor_groups` shows the Shot to its people on their next request; removing it hides it. `sg_people` grants as `users` does; other projects stay hidden.  
   rules: `doors/findings-write`
+- `168_group_create_rights` (findings) — On the probed site a Manager or Admin person creates, renames, re-members and retires any Group; Artist and Vendor get 400 code 104. The person's own group rights on Group predict each answer.  
+  rules: `doors/findings-write`
 - `134_attachment_field_second_upload` (findings) — A second `_upload` to a multi_entity field to Attachment adds: the field holds both. Each Attachment gets the row's `project` and the row in `attachment_links`, so a project filter finds it.  
   rules: `doors/findings-upload`
 - `151_video_on_take` (findings) — On `sg_uploaded_movie` an `HEVC` .mov becomes an H.264 mp4 with a thumbnail and a filmstrip, ready in under a minute. As a plain Attachment, video gets a 480 px thumbnail and nothing else.  
@@ -213,6 +215,8 @@ One row, and the only read where `fields` is honoured on a single record. A reti
 - `027_media_on_a_take` (recipes) — Put a video or audio clip on a custom entity row so a browser can play it, and know when it is ready  
   rules: `doors/recipes`
 - `028_settings_on_project` (recipes) — Keep an app's settings for a project as JSON on the Project row, written by an Admin and read by everyone in the project  
+  rules: `doors/recipes`
+- `030_create_a_group_as_a_person` (recipes) — Create a Group as the signed-in person, once their permission group allows it, without a second Group of the same name  
   rules: `doors/recipes`
 
 **Silent on this call**

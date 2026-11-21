@@ -106,6 +106,8 @@ Every call in this family: what the card records, the edge cases that live on th
   rules: `doors/findings-write`
 - `164_vendor_writes` (findings) — On the probed site a Vendor creates no Bid or Bid Line, by POST or `_batch`, and updates only `sg_status_list`, each refusal 400 code 104. Both preflight reads predicted every answer.  
   rules: `doors/findings-write`
+- `168_group_create_rights` (findings) — On the probed site a Manager or Admin person creates, renames, re-members and retires any Group; Artist and Vendor get 400 code 104. The person's own group rights on Group predict each answer.  
+  rules: `doors/findings-write`
 - `151_video_on_take` (findings) — On `sg_uploaded_movie` an `HEVC` .mov becomes an H.264 mp4 with a thumbnail and a filmstrip, ready in under a minute. As a plain Attachment, video gets a 480 px thumbnail and nothing else.  
   rules: `doors/findings-upload`
 - `152_audio_on_take` (findings) — Audio on `sg_uploaded_movie` transcodes to an audio-only mp4 (`aac`), status 1, no thumbnail. The stored `content_type` is not the PUT's: an Opus `.webm` sent as `audio/webm` reads `video/webm`.  
@@ -141,6 +143,8 @@ Every call in this family: what the card records, the edge cases that live on th
 - `026_note_per_shot` (recipes) — Keep one Note per Shot, addressed to the people on the Shot's Tasks, found again by a client key and updated in place  
   rules: `doors/recipes`
 - `027_media_on_a_take` (recipes) — Put a video or audio clip on a custom entity row so a browser can play it, and know when it is ready  
+  rules: `doors/recipes`
+- `030_create_a_group_as_a_person` (recipes) — Create a Group as the signed-in person, once their permission group allows it, without a second Group of the same name  
   rules: `doors/recipes`
 
 **Silent on this call**

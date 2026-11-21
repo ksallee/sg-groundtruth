@@ -113,6 +113,8 @@ Updates and returns the whole record, 77 attribute keys for a Shot. A key left o
   rules: `doors/findings-write`
 - `166_vendor_award` (findings) — On the probed site a Group added to `Shot.sg_vendor_groups` shows the Shot to its people on their next request; removing it hides it. `sg_people` grants as `users` does; other projects stay hidden.  
   rules: `doors/findings-write`
+- `168_group_create_rights` (findings) — On the probed site a Manager or Admin person creates, renames, re-members and retires any Group; Artist and Vendor get 400 code 104. The person's own group rights on Group predict each answer.  
+  rules: `doors/findings-write`
 - `123_photos_per_record` (findings) — `image` keeps only a 480x320 thumbnail. A url field holds one original, a Note's attachments or a multi_entity to Attachment hold many; all return the bytes unchanged.  
   rules: `doors/findings-upload`
 - `135_attachment_custom_field_filename` (findings) — Attachment takes a custom field over REST. `filename` keeps 90 and 200 characters but stores each space as `_`; `is` and `starts_with` ignore case, so filter on the name with `_` for spaces.  
@@ -146,6 +148,8 @@ Updates and returns the whole record, 77 attribute keys for a Shot. A key left o
 - `026_note_per_shot` (recipes) — Keep one Note per Shot, addressed to the people on the Shot's Tasks, found again by a client key and updated in place  
   rules: `doors/recipes`
 - `028_settings_on_project` (recipes) — Keep an app's settings for a project as JSON on the Project row, written by an Admin and read by everyone in the project  
+  rules: `doors/recipes`
+- `030_create_a_group_as_a_person` (recipes) — Create a Group as the signed-in person, once their permission group allows it, without a second Group of the same name  
   rules: `doors/recipes`
 - `004_update_mode_ignored_in_query_string` (reports) — multi_entity_update_mode sent as a query parameter is accepted and ignored, and the whole link set is replaced when the caller asked to add.  
   rules: `doors/reports`

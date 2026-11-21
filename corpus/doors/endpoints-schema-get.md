@@ -128,6 +128,8 @@ Every field on one type with its `data_type`, `editable` and `mandatory`. The ex
   rules: `doors/findings-write`
 - `164_vendor_writes` (findings) — On the probed site a Vendor creates no Bid or Bid Line, by POST or `_batch`, and updates only `sg_status_list`, each refusal 400 code 104. Both preflight reads predicted every answer.  
   rules: `doors/findings-write`
+- `168_group_create_rights` (findings) — On the probed site a Manager or Admin person creates, renames, re-members and retires any Group; Artist and Vendor get 400 code 104. The person's own group rights on Group predict each answer.  
+  rules: `doors/findings-write`
 - `025_event_log` (findings) — meta.old_value and meta.new_value answer "what was this before", but meta is unfilterable and unsortable: narrow on entity, event_type and attribute_name, sort -id, read meta yourself.  
   rules: `doors/findings-observe`
 - `077_page_change_stamps` (findings) — PageSetting has no updated_at; Page.updated_at moves when its layout is saved. Poll Page.updated_at; Shotgun_PageSetting_Change names which setting changed but its entity is null on 131 of 500.  
@@ -248,6 +250,8 @@ not measured: a Manager person; on the probed site none has impersonation on. Bl
   rules: `doors/findings-schema`
 - `159_project_field_update_rights` (findings) — An Admin updates a custom field on a Project, member or not. An Artist in the project reads it and gets 400 code 104 `The field is not editable for this user` on a PUT; outside it, 404 on the read.  
   rules: `doors/findings-write`
+- `168_group_create_rights` (findings) — On the probed site a Manager or Admin person creates, renames, re-members and retires any Group; Artist and Vendor get 400 code 104. The person's own group rights on Group predict each answer.  
+  rules: `doors/findings-write`
 
 `corpus/endpoints/get_schema_permission_groups.md`
 
@@ -283,7 +287,11 @@ One permission group's rights on one entity type's rows: read, create, update, r
   rules: `doors/findings-write`
 - `159_project_field_update_rights` (findings) — An Admin updates a custom field on a Project, member or not. An Artist in the project reads it and gets 400 code 104 `The field is not editable for this user` on a PUT; outside it, 404 on the read.  
   rules: `doors/findings-write`
+- `168_group_create_rights` (findings) — On the probed site a Manager or Admin person creates, renames, re-members and retires any Group; Artist and Vendor get 400 code 104. The person's own group rights on Group predict each answer.  
+  rules: `doors/findings-write`
 - `029_check_site_ready_for_vendor_bids` (recipes) — Check that a site's Vendor permission group is set up for bidding, from its rules, before an app relies on it  
+  rules: `doors/recipes`
+- `030_create_a_group_as_a_person` (recipes) — Create a Group as the signed-in person, once their permission group allows it, without a second Group of the same name  
   rules: `doors/recipes`
 
 `corpus/endpoints/get_schema_permission_groups_code_entity_types_type.md`
@@ -309,6 +317,8 @@ not measured: `status_transitions` on a status field: no status field was read w
 - `162_permission_rules_rest` (findings) — Rules are readable over REST with their condition trees: an Admin person reads every group, a person only their own. No call writes one: PUT, POST and PATCH on the permission routes are 404.  
   rules: `doors/findings-schema`
 - `164_vendor_writes` (findings) — On the probed site a Vendor creates no Bid or Bid Line, by POST or `_batch`, and updates only `sg_status_list`, each refusal 400 code 104. Both preflight reads predicted every answer.  
+  rules: `doors/findings-write`
+- `168_group_create_rights` (findings) — On the probed site a Manager or Admin person creates, renames, re-members and retires any Group; Artist and Vendor get 400 code 104. The person's own group rights on Group predict each answer.  
   rules: `doors/findings-write`
 
 `corpus/endpoints/get_schema_permission_groups_code_entity_types_type_fields.md`
