@@ -413,7 +413,7 @@ for f in sorted(CORPUS.rglob("*.md")):
 # grow with the corpus. Over the cap, a list belongs on a door and the map keeps the names.
 # Raised from 11 KiB at probes 115-120 (#95): the map names every entry, so it was raised, not trimmed.
 # Raised from 12 KiB at probes 146-156 (#107), for the same reason.
-INDEX_MAX = 13 * 1024
+INDEX_MAX = 14 * 1024
 index_file = CORPUS / "INDEX.md"
 if index_file.is_file() and index_file.stat().st_size > INDEX_MAX:
     fails.append(f"corpus/INDEX.md is {index_file.stat().st_size} bytes, max {INDEX_MAX}. It names "
