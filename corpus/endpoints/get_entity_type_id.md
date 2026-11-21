@@ -57,6 +57,8 @@ c.get("/entity/shots/7653", params={"options[return_only]": "retired"}).status_c
 - The 404 for "never existed" and the 404 for "retired" are the same message with the same code. Only a
   second call with `options[return_only]=retired` tells them apart, and that distinction is the whole of
   what `DELETE` does.
+- A row a conditional see rule hides from the caller answers the same 404, `Shot: <id> not found`
+  code 104 (probe 165), so a caller cannot tell hidden from absent.
 - Code 104 here, against code 103 for a bad type name. 104 is "this row is not there", 103 is "your
   request is wrong".
 - This is the only read where `fields` is honoured on a single record. Every write ignores it.

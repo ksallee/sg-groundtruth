@@ -1,12 +1,12 @@
 ---
-tags: [create, permission, sudo, url, browser]
+tags: [create, permission, sudo, url, browser, header]
 endpoints: [POST /entity/<type>, GET /entity/<type>/<id>, POST /entity/<type>/_search, DELETE /entity/<type>/<id>]
 phase: write
 scope: api
-measured: sandbox project written, 2026-11-17; 12 site rows made and deleted, as the script, an Admin and an Artist
+measured: sandbox project written twice, 2026-11-17; 12 then 14 rows made and deleted, 2 run in the operator's web session
 coverage: partial
-unmeasured: what the web interface sends to the URL, and Manager rights. Needs a person: `156 --write --listen 8765 --hold 900`, then run the items on a Shot
-verdict: An ActionMenuItem creates from `{}` at 201 though `title` is flagged mandatory, and `url` is not validated. An Artist is refused; `permissions_groups` does not filter what the API returns.
+unmeasured: a custom-protocol `url` opening an app, whether `permissions_groups` hides an item in the web interface, and Manager rights. Each needs a person, steps below. Blocked on the work
+verdict: An ActionMenuItem creates from `{}` at 201 and `url` is not checked; an Artist is refused. Run from the web interface, an http `url` got a form POST in a new tab, `json` or not, with no token.
 ---
 
 # 156_action_menu_item
@@ -56,19 +56,71 @@ three rows, permissions_groups [admin], [artist], none
 | `signature_algorithm` | list | `sha256` (default), `sha1` |
 | `secret_token` | text | `""` when not sent, `"*******"` on read once set |
 
+**Run from the web interface**
+
+The second run's two recorder rows (`entity_type` `Shot`, `url` `http://localhost:8765/ami/<kind>`,
+`payload_content_type` `form` and `json`, every checkbox false) were run from a Shots page in the
+sandbox project, in the operator's signed-in Chrome session, driven by Claude in Chrome. Each item ran
+once with one Shot selected, then once with two.
+
+```
+each run          a new browser tab on the url; the tab then sent GET /favicon.ico
+POST /ami/form, POST /ami/json, one Shot then two:
+  Content-Type    application/x-www-form-urlencoded     for both items
+  Origin          null
+  Sec-Fetch-Site  cross-site
+  Sec-Fetch-Mode  navigate
+  Sec-Fetch-Dest  document
+  Referer         absent
+  body            21 fields, form and json identical
+  selected_ids    <shot_a>                one Shot
+                  <shot_a>,<shot_b>       two Shots
+```
+
+The recorder kept `Content-Type`, `Origin`, `Referer`, `User-Agent` and the three `Sec-Fetch-*`
+headers. Any other header is unrecorded.
+
+| field | value, as recorded |
+|---|---|
+| `user_id`, `user_login` | the signed-in person's `HumanUser` id and login |
+| `title` | `undefined`, the literal string; the item's own title was `zzprobe 156 recorder <kind>` |
+| `entity_type` | `Shot` |
+| `server_hostname` | the site's host, `<site host>` |
+| `referrer_path` | `/detail/HumanUser/<user_id>`, while `page_id` named the Shots page |
+| `page_id` | the Shots page's id |
+| `session_uuid` | a 36-character UUID |
+| `project_name`, `project_id` | the sandbox project |
+| `target_column` | `sg_status_list` |
+| `ids` | every row on the page, comma-separated, not in id order: 87 on the probed page |
+| `selected_ids` | the selected rows, comma-separated |
+| `cols` | the page's column fields: `image,code,sg_sequence,sg_status_list`, five `step_<n>`, `sg_cut_in,sg_cut_out,sg_cut_duration` |
+| `column_display_names` | the same columns' display names, same order: `Thumbnail,Shot Code,Sequence,Status,LAY,...` |
+| `view` | `Default` |
+| `sort_column`, `sort_direction` | `code`, `asc` |
+| `grouping_column`, `grouping_method`, `grouping_direction` | `sg_sequence`, `exact`, `asc` |
+
 **Teaches**
 - Send `title`, `url`, `entity_type` and `projects` yourself: the server takes a row with none of
   them, and checks only `entity_type` (`field_types/entity_type`) and the list fields.
 - Creating one is an administrator's call on the probed site: Admin 201, Artist 400 code 104.
   Manager was not reachable (probe 132), so do not infer it.
 - `permissions_groups` is not a read filter: an Artist reads rows restricted to Admin. Whether it
-  hides the item in the web interface is the browser step below.
+  hides the item in the web interface is unmeasured.
 - `secret_token` is write-only through the API; keep the value on the client that checks signatures.
+- Parse the request as a form. With `payload_content_type` `json`, the browser posted the same
+  `application/x-www-form-urlencoded` body to an http `url` as with `form`, field for field, in this run.
+- Act on `selected_ids`, split on commas. `ids` is every row on the page, selected or not, and `title`
+  is the string `undefined`.
+- Check who sent it yourself. The body names a person (`user_id`, `user_login`) and holds no token,
+  key or password, so any client that can reach the `url` can post the same form. Whether
+  `secret_token` adds a signature was not measured.
+- Accept a cross-site navigation: `Origin: null`, `Sec-Fetch-Site: cross-site`, no `Referer`. A server
+  that refuses cross-origin form posts refuses every run. Its response is the page the new tab shows.
 
 **Needs a person**
 
 | question | step |
 |---|---|
-| the request the web interface sends: method, content type, fields, new window or overlay | `156 --write --listen 8765 --hold 900` on the machine with the browser; sign in, right-click a Shot in the sandbox project, run `zzprobe 156 recorder form` and `... json`, with one Shot selected and then two. The probe prints each request whole |
-| a custom-protocol `url` opening an app | the same run: `zzprobe 156 protocol` points at `sgonset://shot/1` |
+| a custom-protocol `url` opening an app | `156 --write --listen 8765 --hold 900` on the machine with the browser; sign in, right-click a Shot in the sandbox project, run `zzprobe 156 protocol`, which points at `sgonset://shot/1` |
+| whether `permissions_groups` hides an item in the web interface | the same run, signed in as an Artist: which of `zzprobe 156 for admin`, `... for artist` and `... for everyone` a Shot's menu lists |
 | Manager rights | turn on `can_impersonate_this_user` for an active Manager, run `156 --write` |

@@ -973,3 +973,67 @@ Put a video or audio clip on a custom entity row so a browser can play it, and k
 - A large clip goes up in parts (probe 044) and each part URL lives 900 s (probes 125, 153).
 
 `corpus/recipes/027_media_on_a_take.md`
+
+## 028_settings_on_project
+
+Keep an app's settings for a project as JSON on the Project row, written by an Admin and read by everyone in the project **[partial]**
+
+not measured: a Manager's create and write (probes 157, 159). Blocked on the site: nobody active in Manager has impersonation on
+
+- Compare parsed values, never the raw string: a leading or trailing newline is stripped on write.
+
+- An Artist cannot save settings. Show them read-only when `can_write` is false, or send the write
+  through the script.
+
+- A field on Project is site-wide: creating it adds it to every project. The value is per project.
+
+- `GET /entity/projects/<id>` with no `fields` returns the whole settings string, so every other
+  client reading a Project without `fields` pays for its size.
+
+`corpus/recipes/028_settings_on_project.md`
+
+## 029_check_site_ready_for_vendor_bids
+
+Check that a site's Vendor permission group is set up for bidding, from its rules, before an app relies on it
+
+- Read as an Admin person, or as the vendor themselves with `me` set to their HumanUser id: a person
+  reading their own group gets their own row in place of `logged_in_user_token`, so a check matching the
+  token alone answers `MISS` for a rule that is there (probe 162). The script, an API Admin, gets 404
+  `Unknown permission group code 'vendor'`; a person asking for another group gets 403.
+
+- `read: allowed` is every row (probe 163). A `MISS` on the two Bid lines means every vendor reads every
+  Bid, whatever the app filters.
+
+- A rule on Bid alone is not enough. A Bid Line visible to everyone still answers a filter on its Bid's
+  fields and groups its total, and the event log shows values written to hidden rows (probe 165).
+  Check Bid Line, and whether Vendor reads `EventLogEntry`.
+
+- The rule's path must be the one the app writes. A rule naming `users` ignores `sg_people` (probe 166).
+
+- "See entities in assigned Projects only" has no key in these responses. Its effect is that an award
+  reaches a vendor only in a project they are assigned to (probe 166); check `HumanUser.projects`.
+
+- No REST call adds a missing rule (probe 162). Report the `MISS` lines to an administrator.
+
+`corpus/recipes/029_check_site_ready_for_vendor_bids.md`
+
+## 030_create_a_group_as_a_person
+
+Create a Group as the signed-in person, once their permission group allows it, without a second Group of the same name **[partial]**
+
+not measured: an App Session Launcher bearer (recipe 012); it needs the person at a browser. `sudo_as_login` applies the same permission set (probe 094)
+
+- Show the control when `create` is `allowed`. On the probed site that is Manager and Admin; the
+  rule is site configuration and changes only in the web interface (probe 162).
+
+- The same rule lets the person rename, re-member and retire every Group on the site, not only the
+  ones they made. Keep those controls to the Groups the app made, by id.
+
+- Without `code` the server names the Group `New Group <id>` and answers 201. Always send one.
+
+- The `_search` and the `POST` are two calls, so two people creating the same name at once can still
+  make two Groups.
+
+- A new Group in `Shot.sg_vendor_groups` reaches the vendor's next request (probes 166, 168).
+
+`corpus/recipes/030_create_a_group_as_a_person.md`

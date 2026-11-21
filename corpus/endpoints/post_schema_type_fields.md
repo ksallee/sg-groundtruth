@@ -61,7 +61,7 @@ That error is what two or more types answers on a `multi_entity`, where one elem
 | status | when |
 |---|---|
 | 201 | created |
-| 400 | `{"data_type": ["data_type is not valid"]}` for `color` and `image` |
+| 400 | code 103 `{"data_type": ["data_type is not valid"]}` for `color`, `image`, `jsonb`, `serializable` (probe 160) and `summary`, with or without a `query` (probe 167), on any type. `/spec.json` enumerates the accepted ones |
 | 400 | `'valid_types' value expected Array with one element` for two or more on a `multi_entity` |
 | 400 | `missing required 'properties' ["valid_values"]` for a bare `status_list` |
 | 400 | code 105, `schema_field_create() failed, there is a retired field with the same field_name: <name>`, with `source.field_name` |

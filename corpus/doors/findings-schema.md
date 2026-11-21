@@ -523,3 +523,61 @@ Every entity or multi_entity field makes a visible, editable multi_entity on eac
   measured, because the reverse was gone by then.
 
 `corpus/findings/142_reverse_field.md`
+
+## 157_project_custom_field
+
+An Admin person creates a text field on Project with name and description at 201; it reads back like a field on any type. An Artist gets 500 code 105 `User doesn't have permission to create a Field`. **[partial]**
+
+not measured: Manager, Vendor and the Artist variant: nobody active in them has impersonation on. Blocked on the site; then `157 --write --only Manager`
+
+- The body is the same as on any type: `data_type` and a `properties` list holding `name`, plus
+  `description` if wanted. The `sg_` name is the last segment of `links.self` (probe 019).
+
+- The display name decides the `sg_` name by probe 117's rule: `Onset Templates` gives
+  `sg_onset_templates`, `Onset Reference Kinds` gives `sg_onset_reference_kinds`. A display name in use
+  gives `_1` (probe 019) and a retired one is a 400 code 105 until the Trash is emptied (probe 117).
+
+- A Project field is site-wide: `?project_id=` changes nothing for an Admin, and per caller `editable`
+  is false for an Artist (probe 159 has the write).
+
+- Match `doesn't have permission` in a 500's title before retrying a schema write (probe 132).
+
+`corpus/findings/157_project_custom_field.md`
+
+## 160_jsonb_field_create
+
+A `jsonb` or `serializable` field cannot be created over REST, on Project or any type tried: 400 code 103 `data_type is not valid`. Store JSON in a text field and parse it.
+
+| want | do |
+|---|---|
+| a JSON value on a type of your own | a `text` field holding `JSON.stringify(value)`: stored byte for byte to 1,000,000 characters (probe 158) |
+| a filter into the JSON | none on a text field beyond `contains` on the string. `jsonb` filtering exists only on the stock `Note.meta` (`field_types/jsonb`) |
+| a `jsonb` field | not reachable over REST. The refusal is the same 400 as `color` and `image` (probe 019) |
+
+- The spec's enum predicted every answer measured: each type outside it is this 400, here or in
+  probe 019, and each type inside it that has been sent was created (probes 019, 116, 117) except
+  `calculated`, a 500. `uuid` has not been sent.
+
+- `field_types/jsonb` stays the reference for the two stock `jsonb` fields. Nothing on it applies to a
+  field a client makes, because a client cannot make one.
+
+`corpus/findings/160_jsonb_field_create.md`
+
+## 162_permission_rules_rest
+
+Rules are readable over REST with their condition trees: an Admin person reads every group, a person only their own. No call writes one: PUT, POST and PATCH on the permission routes are 404.
+
+- Conditional rules are readable, correcting probe 027: `actions.<action>.condition` holds the tree and
+  the raw `permissions.see_condition` holds the same one. Only `conditional` has a tree.
+
+- Read rules as an Admin person through `sudo_as_login`, or as the person themselves. The script reads
+  no HumanUser group, and a person asking for another group gets 403 where the script gets 404.
+
+- No REST call creates or changes a rule: the three routes answer `GET` alone and `PermissionRuleSet`'s
+  10 fields are read only. A rule an app needs is added in the web interface; check for it, never write it.
+
+- On the probed site Vendor reads `<Bid>` and `<Bid Line>` as `allowed`, and Shot as conditional on the
+  five paths above. "See entities in assigned Projects only" is a setting of the role with no key in
+  any of these responses; probe 166 measures its effect.
+
+`corpus/findings/162_permission_rules_rest.md`

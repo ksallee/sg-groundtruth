@@ -137,8 +137,8 @@ not measured: what an active user costs in seats, since the site refuses to crea
 - The only creatable user is a disabled one, and `PUT sg_status_list: "act"` is refused the same way.
   A script cannot onboard a person on this site.
 
-- `permission_rule_set` and `can_impersonate_this_user` are read only: what a person may do and who
-  may act as them are granted in the web interface and read over REST.
+- `can_impersonate_this_user` is read only. `permission_rule_set` reads `editable: false` and the script
+  still re-roled two people with it at 200, read back and restored (probes 162 to 166).
 
 - A deleted user is retired, not erased, and its `login` becomes reusable, so two rows can hold the
   same login with only one of them live.
@@ -219,6 +219,12 @@ Project is site-wide and has no `project` field, so a scoping filter 400s on it;
 
 - `start_date`, `end_date` and `duration` are read only and derived. On the probed site all three are null on
   every project read, so do not filter or sort a project listing on them.
+
+- A custom field on Project is site-wide. An Admin creates and writes it; an Artist in the project
+  reads it, and a PUT is 400 code 104 `The field is not editable for this user` (probes 157, 159).
+
+- `GET /entity/projects/<id>` with no `fields` returns every field, custom ones included, at any size;
+  the listing returns ids only (probe 158). Name `fields`.
 
 - `landing_page_url` is a path, not a URL: `"/detail/Project/N?legacy=true"`. Prefix the site URL yourself.
 

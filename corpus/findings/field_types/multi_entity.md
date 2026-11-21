@@ -20,8 +20,8 @@ listing 15. `attachment_links` is a field on `Attachment`, not on `Version`: fil
 
 **Read** Under `relationships`, never `attributes`, as `{data: [...], links: {self}}`. Each element is
 `{id, name, type}`, where `name` is the target's `cached_display_name`, already resolved and identical
-to the single-link form on every type measured (probe 060). A deleted target is removed from the list
-rather than left as a stale element.
+to the single-link form on every type measured (probe 060). A deleted target is dropped from the list,
+and listed again when revived, even if the list was replaced meanwhile (probe 161).
 
 ```
 relationships.sg_ai_generated_from = {"data": [{"id": 26332, "name": "zzprobe_..._target_a",
@@ -58,6 +58,7 @@ Value shapes, on the bare-list form:
 | `[{"id": A}]` | 400 `API update() invalid/missing entity hash string 'type': {"id" => 26332} Valid entity types: ["ActionMenuItem", ... 113 types listed in full ...]` |
 | `[Version, Task]` mixed | 400 `Update failed for [Version.sg_ai_generated_from]: Value is not legal.` |
 | `[{type:Version,id:99999999}]` | 400 same `Value is not legal.` |
+| a deleted row, bare, beside a live one, or in `add` or `remove` | 400 code 104, the same; nothing applied (probe 161) |
 
 A dead id and a forbidden type are indistinguishable. `value` is the only accepted payload key: `values`,
 `entities`, `data` and inline `type`/`id` all 400 with `invalid/missing array of entity hashes 'value'`,

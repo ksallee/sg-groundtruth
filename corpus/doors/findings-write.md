@@ -1260,9 +1260,9 @@ not measured: a launcher session bearer (auth_type session_token). Needs a perso
 
 ## 156_action_menu_item
 
-An ActionMenuItem creates from `{}` at 201 though `title` is flagged mandatory, and `url` is not validated. An Artist is refused; `permissions_groups` does not filter what the API returns. **[partial]**
+An ActionMenuItem creates from `{}` at 201 and `url` is not checked; an Artist is refused. Run from the web interface, an http `url` got a form POST in a new tab, `json` or not, with no token. **[partial]**
 
-not measured: what the web interface sends to the URL, and Manager rights. Needs a person: `156 --write --listen 8765 --hold 900`, then run the items on a Shot
+not measured: a custom-protocol `url` opening an app, whether `permissions_groups` hides an item in the web interface, and Manager rights. Each needs a person, steps below. Blocked on the work
 
 - Send `title`, `url`, `entity_type` and `projects` yourself: the server takes a row with none of
   them, and checks only `entity_type` (`field_types/entity_type`) and the list fields.
@@ -1271,16 +1271,139 @@ not measured: what the web interface sends to the URL, and Manager rights. Needs
   Manager was not reachable (probe 132), so do not infer it.
 
 - `permissions_groups` is not a read filter: an Artist reads rows restricted to Admin. Whether it
-  hides the item in the web interface is the browser step below.
+  hides the item in the web interface is unmeasured.
 
 - `secret_token` is write-only through the API; keep the value on the client that checks signatures.
+
+- Parse the request as a form. With `payload_content_type` `json`, the browser posted the same
+  `application/x-www-form-urlencoded` body to an http `url` as with `form`, field for field, in this run.
+
+- Act on `selected_ids`, split on commas. `ids` is every row on the page, selected or not, and `title`
+  is the string `undefined`.
+
+- Check who sent it yourself. The body names a person (`user_id`, `user_login`) and holds no token,
+  key or password, so any client that can reach the `url` can post the same form. Whether
+  `secret_token` adds a signature was not measured.
+
+- Accept a cross-site navigation: `Origin: null`, `Sec-Fetch-Site: cross-site`, no `Referer`. A server
+  that refuses cross-origin form posts refuses every run. Its response is the page the new tab shows.
 
 **Needs a person**
 
 | question | step |
 |---|---|
-| the request the web interface sends: method, content type, fields, new window or overlay | `156 --write --listen 8765 --hold 900` on the machine with the browser; sign in, right-click a Shot in the sandbox project, run `zzprobe 156 recorder form` and `... json`, with one Shot selected and then two. The probe prints each request whole |
-| a custom-protocol `url` opening an app | the same run: `zzprobe 156 protocol` points at `sgonset://shot/1` |
+| a custom-protocol `url` opening an app | `156 --write --listen 8765 --hold 900` on the machine with the browser; sign in, right-click a Shot in the sandbox project, run `zzprobe 156 protocol`, which points at `sgonset://shot/1` |
+| whether `permissions_groups` hides an item in the web interface | the same run, signed in as an Artist: which of `zzprobe 156 for admin`, `... for artist` and `... for everyone` a Shot's menu lists |
 | Manager rights | turn on `can_impersonate_this_user` for an active Manager, run `156 --write` |
 
 `corpus/findings/156_action_menu_item.md`
+
+## 158_project_text_size
+
+A custom text field on Project stored 1,000,000 characters of JSON byte for byte, `\n`, `\r\n` and tabs kept, with no refusal. Leading and trailing whitespace is stripped.
+
+- Write `JSON.stringify(value)` and parse what reads back. A serializer that ends in a newline gets
+  one character fewer back: compare parsed values, not strings or hashes.
+
+- 1,000,000 characters was a 200 in about a second. Nothing larger was sent, so a limit, if any, is above it.
+
+- `GET /entity/projects/<id>` with no `fields` returns every field, a custom field of 1 MB included,
+  while the listing `GET /entity/projects` with no `fields` returns ids only. Name `fields` on every
+  read of a Project with a large field, or every client on the site pays for it.
+
+`corpus/findings/158_project_text_size.md`
+
+## 159_project_field_update_rights
+
+An Admin updates a custom field on a Project, member or not. An Artist in the project reads it and gets 400 code 104 `The field is not editable for this user` on a PUT; outside it, 404 on the read. **[partial]**
+
+not measured: Manager and Vendor writes; rights read, not exercised. Blocked on the site: impersonation on for one of each, then `159 --write`
+
+- Settings an Artist must read and an Admin writes fit a Project field: an Artist who is a member
+  reads it with a plain `GET`. An Artist cannot save them; route that write through an Admin or the script.
+
+- Per caller `editable` in `GET /schema/Project/fields/<field>?project_id=` predicted every answer
+  (probe 094). Read it to grey out a settings screen before the PUT.
+
+- Project membership gates an Artist's read: outside the project the Project is a 404, so a field
+  on it cannot be read either.
+
+- The Manager row allows `update`, but a rights table can still refuse what it lists (probe 094).
+  Treat Manager as unknown until measured.
+
+`corpus/findings/159_project_field_update_rights.md`
+
+## 161_link_to_deleted_row
+
+A link to a deleted row is hidden, not removed: it reads null or drops out, and returns on revive, even after a replace. A write naming a deleted row is 400 code 104 `Value is not legal.`
+
+- **A replace does not drop a hidden link.** On `Version.playlists`, with P1 retired, `[P2]` answered
+  200 and read `[P2]`; reviving P1 brought it back. `remove` naming P1 is the same 400, so nothing
+  measured removes it. Expect a revive to restore every link to the row. Not measured on an entity field.
+
+- Before writing a link, drop every target the client holds that may have been deleted elsewhere: one
+  retired id fails the whole update, the live ones with it.
+
+- `Value is not legal.` also answers a type the field does not take (`field_types/multi_entity`).
+  To tell a deleted row from a wrong type, read the target with `options[return_only]=retired`.
+
+`corpus/findings/161_link_to_deleted_row.md`
+
+## 164_vendor_writes
+
+On the probed site a Vendor creates no Bid or Bid Line, by POST or `_batch`, and updates only `sg_status_list`, each refusal 400 code 104. Both preflight reads predicted every answer.
+
+- A Vendor on the probed site cannot enter a bid: no row can be created and no amount written, on a
+  row assigned to their own Group as on any other. `_batch` is refused like a single `POST`; it skips
+  validation (probe 137), not permission.
+
+- The refusal is checked before anything is written and names the type or the field (probe 094). An
+  app reads it in advance from either call above; both listed exactly the one field that took a write.
+
+- For vendors to enter their own lines, the site gives Vendor create on Bid Line and update on the
+  amount, ideally conditional on the Bid's Group, in the web interface (probe 162). Otherwise the app
+  writes through a script after checking who is asking, and the row's `created_by` is the script.
+
+`corpus/findings/164_vendor_writes.md`
+
+## 166_vendor_award
+
+On the probed site a Group added to `Shot.sg_vendor_groups` shows the Shot to its people on their next request; removing it hides it. `sg_people` grants as `users` does; other projects stay hidden.
+
+- Award with `{"multi_entity_update_mode": "add", "value": [<group>]}` and withdraw with `remove`
+  (recipe 009). A bare list replaces the field, and with it every other vendor's award.
+
+- The rule is evaluated per request: a bearer minted before the change sees the new answer on its next
+  call, both ways. There is no token to refresh and no delay to wait out.
+
+- `sg_people` counts because the rule names it. On another site read the rule first (probe 162): one
+  naming only `users` ignores `sg_people`, which is a site field, not a stock one.
+
+- On the probed site "See entities in assigned Projects only" holds: a Group's Shots in a project the
+  person is not assigned to stay hidden. Here both vendors' `HumanUser.projects` held the sandbox
+  alone; assign the vendor to the project before an award there can reach them.
+
+- Vendor reads Groups (probe 162), so each vendor sees which other Groups hold a Shot they see.
+
+`corpus/findings/166_vendor_award.md`
+
+## 168_group_create_rights
+
+On the probed site a Manager or Admin person creates, renames, re-members and retires any Group; Artist and Vendor get 400 code 104. The person's own group rights on Group predict each answer. **[partial]**
+
+not measured: an App Session Launcher bearer (probe 052); it needs the person to approve at a browser. `sudo_as_login` applies the same permission set (probe 094)
+
+- Check before showing the control: read the person's own `permission_rule_set`, its `code`, then
+  `actions.create.access` on Group. An Admin lists every group, so the listing alone does not name theirs.
+
+- A refusal is 400 code 104, not 403, with no `source` or `detail`. Probe 094's shape holds for Group.
+
+- The right is per type, not per creator: a Manager renames, re-members and retires a Group someone
+  else made, a vendor's included. An app that lets production create Groups lets it retire any Group.
+
+- `code` is neither required nor unique, whatever the schema says. Search by `code` before creating,
+  and keep the id: two Groups may share a name. A retired Group drops out of `HumanUser.groups`.
+
+- A Group made by a person works in `Shot.sg_vendor_groups` on the vendor's next request (probe 166).
+
+`corpus/findings/168_group_create_rights.md`

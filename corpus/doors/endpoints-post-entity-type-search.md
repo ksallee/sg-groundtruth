@@ -11,6 +11,10 @@ The only way to send a filter the query string cannot express, and it refuses `a
 | `filters: []` | 200, unscoped, every row on the site |
 | an `or` under `api3_array` | not expressible; the array form is `and` only |
 
+- A filter on a dotted path is evaluated against the linked row even where a see rule hides that row
+  from the caller: `[<link>.Shot.code, "is", <code>]` matches, while `[<link>, "is", <the row>]` does not
+  (probe 165).
+
 - The unknown-operator 400 enumerates the legal set for that field's data type. It is the cheapest way
   to discover the vocabulary, and it is where the site's filter matrix comes from.
 
@@ -66,6 +70,10 @@ The only way to send a filter the query string cannot express, and it refuses `a
   rules: `doors/findings-read`
 - `138_dotted_custom_field` (findings) — A dotted path reaches an `sg_` field through an `sg_` entity field, on a custom entity and on a built-in one, and across two hops: projection on GET and _search, and filter, all match.  
   rules: `doors/findings-read`
+- `163_vendor_rows` (findings) — On the probed site a Vendor reads every Bid in an assigned project, the other vendor's included: Vendor's `read` on Bid is `allowed`. A Group filter the client adds narrows the list, not the rights.  
+  rules: `doors/findings-read`
+- `165_hidden_row_paths` (findings) — A see rule hides a row from fetch, search, summarize, text search and links, but a dotted filter still matches through it, a grouped `_summarize` shows its id and total, the event log its values.  
+  rules: `doors/findings-read`
 - `016_dotted_multi_entity` (findings) — A dotted path through a multi_entity field reads back nothing: HTTP 200 with the key silently absent from attributes. Filters on that same path work, including two hops.  
   rules: `doors/findings-filter`
 - `017_filter_operators` (findings) — is/is_not/contains/not_contains/starts_with/ends_with/in/not_in all work, on text fields and through dotted paths; an unknown operator 400s on all 21 data types, naming the valid list on 16.  
@@ -77,6 +85,8 @@ The only way to send a filter the query string cannot express, and it refuses `a
 - `071_note_link_name_filter` (findings) — Filter notes about a thing on `note_links.<Type>.cached_display_name`: it resolves for every valid type, `code` 400s on Booking and `name` on all but Department. The path cannot be read back.  
   rules: `doors/findings-filter`
 - `150_group_resolution` (findings) — `task_assignees is <person>` misses a Task assigned to their Group; filter `task_assignees.Group.users`. Group assignment makes the members followers once, and an Artist reads Groups and members.  
+  rules: `doors/findings-filter`
+- `167_rollup_on_shot` (findings) — A query (summary) field cannot be created over REST: 400 `data_type is not valid`, with or without a query. Total each Shot's Bid Lines with one `_summarize` grouped on the link.  
   rules: `doors/findings-filter`
 - `069_client_note` (findings) — `client_note` cannot be set over REST: `true` on create is 400 and any `PUT` is 400 `editable on create only`. `sg_note_type: "Client"` is the one marker a caller can write.  
   rules: `doors/findings-write`
@@ -138,7 +148,15 @@ The only way to send a filter the query string cannot express, and it refuses `a
   rules: `doors/findings-write`
 - `146_note_unique_key` (findings) — A `unique: true` text field works on Note as on Version (probe 127), and refuses a duplicate on PUT and under sudo too. A `Note.meta` key is found by `contains`, case-sensitive, and enforces nothing.  
   rules: `doors/findings-write`
-- `156_action_menu_item` (findings) — An ActionMenuItem creates from `{}` at 201 though `title` is flagged mandatory, and `url` is not validated. An Artist is refused; `permissions_groups` does not filter what the API returns.  
+- `156_action_menu_item` (findings) — An ActionMenuItem creates from `{}` at 201 and `url` is not checked; an Artist is refused. Run from the web interface, an http `url` got a form POST in a new tab, `json` or not, with no token.  
+  rules: `doors/findings-write`
+- `158_project_text_size` (findings) — A custom text field on Project stored 1,000,000 characters of JSON byte for byte, `\n`, `\r\n` and tabs kept, with no refusal. Leading and trailing whitespace is stripped.  
+  rules: `doors/findings-write`
+- `159_project_field_update_rights` (findings) — An Admin updates a custom field on a Project, member or not. An Artist in the project reads it and gets 400 code 104 `The field is not editable for this user` on a PUT; outside it, 404 on the read.  
+  rules: `doors/findings-write`
+- `161_link_to_deleted_row` (findings) — A link to a deleted row is hidden, not removed: it reads null or drops out, and returns on revive, even after a replace. A write naming a deleted row is 400 code 104 `Value is not legal.`  
+  rules: `doors/findings-write`
+- `166_vendor_award` (findings) — On the probed site a Group added to `Shot.sg_vendor_groups` shows the Shot to its people on their next request; removing it hides it. `sg_people` grants as `users` does; other projects stay hidden.  
   rules: `doors/findings-write`
 - `014_attach_file` (findings) — Leave the field out of the _upload path and the file is stored as an Attachment on attachment_links; read it back with POST /entity/attachments/_search, never flat filter[].  
   rules: `doors/findings-upload`
@@ -191,6 +209,8 @@ The only way to send a filter the query string cannot express, and it refuses `a
 - `025_retry_safe_create` (recipes) — Create rows from a client that retries after timeouts, without duplicating any row  
   rules: `doors/recipes`
 - `026_note_per_shot` (recipes) — Keep one Note per Shot, addressed to the people on the Shot's Tasks, found again by a client key and updated in place  
+  rules: `doors/recipes`
+- `030_create_a_group_as_a_person` (recipes) — Create a Group as the signed-in person, once their permission group allows it, without a second Group of the same name  
   rules: `doors/recipes`
 - `003_sort_fails_silently` (reports) — A sort on an unknown or unsortable field answers 200 with the rows in default order, while the same field name in a filter answers 400 and names the reason.  
   rules: `doors/reports`

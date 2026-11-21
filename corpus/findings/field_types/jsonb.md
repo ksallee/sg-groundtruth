@@ -10,7 +10,8 @@ verdict: jsonb filters, where serializable cannot: is, is_not, contains, not_con
 
 **Data type** `jsonb`, probed on `Note.meta` (create-only, project scoped) and
 `EventLogEntry.audit_trail` (read only, site-wide audit log). A sweep of `/schema/<Type>/fields` over the
-114 entity types in `/schema` found these two and no others. Both declare `editable: false`; only
+114 entity types in `/schema` found these two and no others. A client cannot add one: `POST /schema/<Type>/fields`
+with `data_type: jsonb` is 400 `data_type is not valid` on every type tried (probe 160). Both declare `editable: false`; only
 `Note.meta` honours that on update and not on create. `properties` holds `default_value` (null) and
 `summary_default` for both.
 

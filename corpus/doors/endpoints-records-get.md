@@ -61,6 +61,8 @@ Pages rows. An entity field is returned under `relationships` and never `attribu
   rules: `doors/findings-read`
 - `138_dotted_custom_field` (findings) — A dotted path reaches an `sg_` field through an `sg_` entity field, on a custom entity and on a built-in one, and across two hops: projection on GET and _search, and filter, all match.  
   rules: `doors/findings-read`
+- `163_vendor_rows` (findings) — On the probed site a Vendor reads every Bid in an assigned project, the other vendor's included: Vendor's `read` on Bid is `allowed`. A Group filter the client adds narrows the list, not the rights.  
+  rules: `doors/findings-read`
 - `016_dotted_multi_entity` (findings) — A dotted path through a multi_entity field reads back nothing: HTTP 200 with the key silently absent from attributes. Filters on that same path work, including two hops.  
   rules: `doors/findings-filter`
 - `030_complex_filters` (findings) — api3_hash nests and/or groups 265 deep and mixes leaves with sub-groups; api3_array cannot express or, query-string filter[] is ignored on _search, and {path,relation,values} runs nowhere.  
@@ -70,6 +72,8 @@ Pages rows. An entity field is returned under `relationships` and never `attribu
 - `011_create_project` (findings) — A script user can create a Project with nothing but {"name": ...}, at 201, but the response echoes only 6 attributes, so read the project back if you need anything else.  
   rules: `doors/findings-write`
 - `136_unique_scope_retired` (findings) — A deleted row frees its `unique` value: a new row may take it. Reviving the old row while another holds the value is a 400 code 104 PG transaction error, and the row stays retired.  
+  rules: `doors/findings-write`
+- `158_project_text_size` (findings) — A custom text field on Project stored 1,000,000 characters of JSON byte for byte, `\n`, `\r\n` and tabs kept, with no refusal. Leading and trailing whitespace is stripped.  
   rules: `doors/findings-write`
 - `010_status_icons` (findings) — Status.icon is an entity link under relationships; display_type picks one of three renderings; url is empty unless image_data is asked for beside it; the stock sprite is in the site's own stylesheet.  
   rules: `doors/findings-render`
@@ -100,6 +104,9 @@ One row, and the only read where `fields` is honoured on a single record. A reti
   second call with `options[return_only]=retired` tells them apart, and that distinction is the whole of
   what `DELETE` does.
 
+- A row a conditional see rule hides from the caller answers the same 404, `Shot: <id> not found`
+  code 104 (probe 165), so a caller cannot tell hidden from absent.
+
 - Code 104 here, against code 103 for a bad type name. 104 is "this row is not there", 103 is "your
   request is wrong".
 
@@ -107,6 +114,8 @@ One row, and the only read where `fields` is honoured on a single record. A reti
 
 **Measured by**
 
+- `157_project_custom_field` (findings) — An Admin person creates a text field on Project with name and description at 201; it reads back like a field on any type. An Artist gets 500 code 105 `User doesn't have permission to create a Field`.  
+  rules: `doors/findings-schema`
 - `060_entity_dict_name` (findings) — The `name` in an entity dict is the target's `cached_display_name`, filled on every type measured, single and multi alike. Read it, not the per-type identity field, and expect decoration.  
   rules: `doors/findings-read`
 - `076_page_visibility` (findings) — The script user is not the widest reader of Page: an Admin read 2048 pages where the script read 1107 and 404s on the rest. An Artist read 107. Every level reads every person's override.  
@@ -117,7 +126,13 @@ One row, and the only read where `fields` is honoured on a single record. A reti
   rules: `doors/findings-read`
 - `138_dotted_custom_field` (findings) — A dotted path reaches an `sg_` field through an `sg_` entity field, on a custom entity and on a built-in one, and across two hops: projection on GET and _search, and filter, all match.  
   rules: `doors/findings-read`
+- `163_vendor_rows` (findings) — On the probed site a Vendor reads every Bid in an assigned project, the other vendor's included: Vendor's `read` on Bid is `allowed`. A Group filter the client adds narrows the list, not the rights.  
+  rules: `doors/findings-read`
+- `165_hidden_row_paths` (findings) — A see rule hides a row from fetch, search, summarize, text search and links, but a dotted filter still matches through it, a grouped `_summarize` shows its id and total, the event log its values.  
+  rules: `doors/findings-read`
 - `150_group_resolution` (findings) — `task_assignees is <person>` misses a Task assigned to their Group; filter `task_assignees.Group.users`. Group assignment makes the members followers once, and an Artist reads Groups and members.  
+  rules: `doors/findings-filter`
+- `167_rollup_on_shot` (findings) — A query (summary) field cannot be created over REST: 400 `data_type is not valid`, with or without a query. Total each Shot's Bid Lines with one `_summarize` grouped on the link.  
   rules: `doors/findings-filter`
 - `058_local_storage_roots` (findings) — One create fills every `local_path_*` the storage row defines, whichever platform's root the path was under. The server picks the deepest matching root, and no conditional-write header is honoured.  
   rules: `doors/findings-write`
@@ -153,7 +168,17 @@ One row, and the only read where `fields` is honoured on a single record. A reti
   rules: `doors/findings-write`
 - `154_batch_multi_entity_mode` (findings) — `multi_entity_update_mode` in a `_batch` update's `data` adds, removes and sets as on a PUT, and several updates of one record in one batch apply in request order, each row echoing the state after it.  
   rules: `doors/findings-write`
-- `156_action_menu_item` (findings) — An ActionMenuItem creates from `{}` at 201 though `title` is flagged mandatory, and `url` is not validated. An Artist is refused; `permissions_groups` does not filter what the API returns.  
+- `156_action_menu_item` (findings) — An ActionMenuItem creates from `{}` at 201 and `url` is not checked; an Artist is refused. Run from the web interface, an http `url` got a form POST in a new tab, `json` or not, with no token.  
+  rules: `doors/findings-write`
+- `158_project_text_size` (findings) — A custom text field on Project stored 1,000,000 characters of JSON byte for byte, `\n`, `\r\n` and tabs kept, with no refusal. Leading and trailing whitespace is stripped.  
+  rules: `doors/findings-write`
+- `159_project_field_update_rights` (findings) — An Admin updates a custom field on a Project, member or not. An Artist in the project reads it and gets 400 code 104 `The field is not editable for this user` on a PUT; outside it, 404 on the read.  
+  rules: `doors/findings-write`
+- `161_link_to_deleted_row` (findings) — A link to a deleted row is hidden, not removed: it reads null or drops out, and returns on revive, even after a replace. A write naming a deleted row is 400 code 104 `Value is not legal.`  
+  rules: `doors/findings-write`
+- `166_vendor_award` (findings) — On the probed site a Group added to `Shot.sg_vendor_groups` shows the Shot to its people on their next request; removing it hides it. `sg_people` grants as `users` does; other projects stay hidden.  
+  rules: `doors/findings-write`
+- `168_group_create_rights` (findings) — On the probed site a Manager or Admin person creates, renames, re-members and retires any Group; Artist and Vendor get 400 code 104. The person's own group rights on Group predict each answer.  
   rules: `doors/findings-write`
 - `134_attachment_field_second_upload` (findings) — A second `_upload` to a multi_entity field to Attachment adds: the field holds both. Each Attachment gets the row's `project` and the row in `attachment_links`, so a project filter finds it.  
   rules: `doors/findings-upload`
@@ -188,6 +213,10 @@ One row, and the only read where `fields` is honoured on a single record. A reti
 - `026_note_per_shot` (recipes) — Keep one Note per Shot, addressed to the people on the Shot's Tasks, found again by a client key and updated in place  
   rules: `doors/recipes`
 - `027_media_on_a_take` (recipes) — Put a video or audio clip on a custom entity row so a browser can play it, and know when it is ready  
+  rules: `doors/recipes`
+- `028_settings_on_project` (recipes) — Keep an app's settings for a project as JSON on the Project row, written by an Admin and read by everyone in the project  
+  rules: `doors/recipes`
+- `030_create_a_group_as_a_person` (recipes) — Create a Group as the signed-in person, once their permission group allows it, without a second Group of the same name  
   rules: `doors/recipes`
 
 **Silent on this call**
@@ -275,6 +304,10 @@ The `entity` or `multi_entity` link list on its own, unpaged and unsorted. `page
 
 - `048_one_record_beyond_crud` (findings) — POST on one record is revive, not update: `?revive=1` is required and the body is ignored. `/<field>` reads image and attachment fields only, and `relationships/<field>` is the same data, unpaged.  
   rules: `doors/findings-read`
+- `165_hidden_row_paths` (findings) — A see rule hides a row from fetch, search, summarize, text search and links, but a dotted filter still matches through it, a grouped `_summarize` shows its id and total, the event log its values.  
+  rules: `doors/findings-read`
+- `161_link_to_deleted_row` (findings) — A link to a deleted row is hidden, not removed: it reads null or drops out, and returns on revive, even after a replace. A write naming a deleted row is 400 code 104 `Value is not legal.`  
+  rules: `doors/findings-write`
 
 **Silent on this call**
 

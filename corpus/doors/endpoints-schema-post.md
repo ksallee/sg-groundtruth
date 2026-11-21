@@ -43,6 +43,12 @@ Display name to programmatic name, measured:
   rules: `doors/findings-schema`
 - `142_reverse_field` (findings) — Every entity or multi_entity field makes a visible, editable multi_entity on each linked type. No create property stops it, and DELETE of the reverse field retires the forward field too.  
   rules: `doors/findings-schema`
+- `157_project_custom_field` (findings) — An Admin person creates a text field on Project with name and description at 201; it reads back like a field on any type. An Artist gets 500 code 105 `User doesn't have permission to create a Field`.  
+  rules: `doors/findings-schema`
+- `160_jsonb_field_create` (findings) — A `jsonb` or `serializable` field cannot be created over REST, on Project or any type tried: 400 code 103 `data_type is not valid`. Store JSON in a text field and parse it.  
+  rules: `doors/findings-schema`
+- `167_rollup_on_shot` (findings) — A query (summary) field cannot be created over REST: 400 `data_type is not valid`, with or without a query. Total each Shot's Bid Lines with one `_summarize` grouped on the link.  
+  rules: `doors/findings-filter`
 - `127_retry_and_client_uuid` (findings) — A text field created with `unique: true` refuses a second create with the same value, case and outer spaces ignored, in a batch too. It is the only idempotency key: the API has no header for it.  
   rules: `doors/findings-write`
 - `136_unique_scope_retired` (findings) — A deleted row frees its `unique` value: a new row may take it. Reviving the old row while another holds the value is a 400 code 104 PG transaction error, and the row stays retired.  
@@ -53,6 +59,8 @@ Display name to programmatic name, measured:
   rules: `doors/findings-write`
 - `146_note_unique_key` (findings) — A `unique: true` text field works on Note as on Version (probe 127), and refuses a duplicate on PUT and under sudo too. A `Note.meta` key is found by `contains`, case-sensitive, and enforces nothing.  
   rules: `doors/findings-write`
+- `158_project_text_size` (findings) — A custom text field on Project stored 1,000,000 characters of JSON byte for byte, `\n`, `\r\n` and tabs kept, with no refusal. Leading and trailing whitespace is stripped.  
+  rules: `doors/findings-write`
 - `123_photos_per_record` (findings) — `image` keeps only a 480x320 thumbnail. A url field holds one original, a Note's attachments or a multi_entity to Attachment hold many; all return the bytes unchanged.  
   rules: `doors/findings-upload`
 - `134_attachment_field_second_upload` (findings) — A second `_upload` to a multi_entity field to Attachment adds: the field holds both. Each Attachment gets the row's `project` and the row in `attachment_links`, so a project filter finds it.  
@@ -60,6 +68,8 @@ Display name to programmatic name, measured:
 - `135_attachment_custom_field_filename` (findings) — Attachment takes a custom field over REST. `filename` keeps 90 and 200 characters but stores each space as `_`; `is` and `starts_with` ignore case, so filter on the name with `_` for spaces.  
   rules: `doors/findings-upload`
 - `025_retry_safe_create` (recipes) — Create rows from a client that retries after timeouts, without duplicating any row  
+  rules: `doors/recipes`
+- `028_settings_on_project` (recipes) — Keep an app's settings for a project as JSON on the Project row, written by an Admin and read by everyone in the project  
   rules: `doors/recipes`
 - `006_duplicate_field_name_is_201` (reports) — Creating a custom field whose display name is taken answers 201 for a suffixed field instead of a conflict, and every retry burns a programmatic name no REST call frees.  
   rules: `doors/reports`
@@ -107,6 +117,10 @@ Revive a retired field, at 204. It is the only way to get a burnt name back, and
   rules: `doors/findings-schema`
 - `132_field_create_rights` (findings) — An Artist creating a field gets 500 code 105 `User doesn't have permission to create a Field`, with a traceback. An Admin person gets 201. Treat any 500 from a schema write as a possible refusal.  
   rules: `doors/findings-schema`
+- `158_project_text_size` (findings) — A custom text field on Project stored 1,000,000 characters of JSON byte for byte, `\n`, `\r\n` and tabs kept, with no refusal. Leading and trailing whitespace is stripped.  
+  rules: `doors/findings-write`
+- `028_settings_on_project` (recipes) — Keep an app's settings for a project as JSON on the Project row, written by an Admin and read by everyone in the project  
+  rules: `doors/recipes`
 
 **Silent on this call**
 

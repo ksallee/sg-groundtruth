@@ -31,6 +31,8 @@ Free-text search across several types at once, returning a flattened row that is
 
 **Measured by**
 
+- `165_hidden_row_paths` (findings) — A see rule hides a row from fetch, search, summarize, text search and links, but a dotted filter still matches through it, a grouped `_summarize` shows its id and total, the event log its values.  
+  rules: `doors/findings-read`
 - `046_search_without_a_path` (findings) — `/hierarchy/_expand` and `/hierarchy/_search` refuse the vendor content types every other POST requires and take `application/json` alone, so one shared POST helper 415s on half the API.  
   rules: `doors/findings-filter`
 - `053_text_search_matching` (findings) — `page.size` caps at 25 and defaults to 25 with no `links`, so page with `page.number`. Every word must match a case-insensitive substring of the name or of the linked row's name.  
