@@ -1348,3 +1348,41 @@ A link to a deleted row is hidden, not removed: it reads null or drops out, and 
   To tell a deleted row from a wrong type, read the target with `options[return_only]=retired`.
 
 `corpus/findings/161_link_to_deleted_row.md`
+
+## 164_vendor_writes
+
+On the probed site a Vendor creates no Bid or Bid Line, by POST or `_batch`, and updates only `sg_status_list`, each refusal 400 code 104. Both preflight reads predicted every answer.
+
+- A Vendor on the probed site cannot enter a bid: no row can be created and no amount written, on a
+  row assigned to their own Group as on any other. `_batch` is refused like a single `POST`; it skips
+  validation (probe 137), not permission.
+
+- The refusal is checked before anything is written and names the type or the field (probe 094). An
+  app reads it in advance from either call above; both listed exactly the one field that took a write.
+
+- For vendors to enter their own lines, the site gives Vendor create on Bid Line and update on the
+  amount, ideally conditional on the Bid's Group, in the web interface (probe 162). Otherwise the app
+  writes through a script after checking who is asking, and the row's `created_by` is the script.
+
+`corpus/findings/164_vendor_writes.md`
+
+## 166_vendor_award
+
+On the probed site a Group added to `Shot.sg_vendor_groups` shows the Shot to its people on their next request; removing it hides it. `sg_people` grants as `users` does; other projects stay hidden.
+
+- Award with `{"multi_entity_update_mode": "add", "value": [<group>]}` and withdraw with `remove`
+  (recipe 009). A bare list replaces the field, and with it every other vendor's award.
+
+- The rule is evaluated per request: a bearer minted before the change sees the new answer on its next
+  call, both ways. There is no token to refresh and no delay to wait out.
+
+- `sg_people` counts because the rule names it. On another site read the rule first (probe 162): one
+  naming only `users` ignores `sg_people`, which is a site field, not a stock one.
+
+- On the probed site "See entities in assigned Projects only" holds: a Group's Shots in a project the
+  person is not assigned to stay hidden. Here both vendors' `HumanUser.projects` held the sandbox
+  alone; assign the vendor to the project before an award there can reach them.
+
+- Vendor reads Groups (probe 162), so each vendor sees which other Groups hold a Shot they see.
+
+`corpus/findings/166_vendor_award.md`

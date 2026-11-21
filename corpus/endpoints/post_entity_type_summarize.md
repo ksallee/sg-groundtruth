@@ -65,6 +65,10 @@ r = c.post("/entity/versions/_summarize", headers=ARR,
   not 400. Test that the key you asked for is in `summaries` before reading it.
 - `group_name` is the rendered label and `group_value` the raw one. For a `timecode` field the rendered
   form is `HH:MM:SS:FF`, which is how the frame rate is recovered when no field exposes it.
+- Several `summary_fields` on the same field return one key, holding the last type's answer: send one
+  call per type (`field_types/currency`). `min` and `max` are 400; the types are `minimum` and `maximum`.
+- Grouped on a link to a row a see rule hides from the caller, the group is still returned, with
+  `group_name` `""` and `group_value` holding the hidden row's id (probe 165).
 - One call per field at about 300ms. Over 71 fields that is 21 seconds. Rank a shortlist by fill rate
   first and summarize only the candidates.
 

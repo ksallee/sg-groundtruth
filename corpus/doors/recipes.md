@@ -991,3 +991,28 @@ not measured: a Manager's create and write (probes 157, 159). Blocked on the sit
   client reading a Project without `fields` pays for its size.
 
 `corpus/recipes/028_settings_on_project.md`
+
+## 029_check_site_ready_for_vendor_bids
+
+Check that a site's Vendor permission group is set up for bidding, from its rules, before an app relies on it
+
+- Read as an Admin person, or as the vendor themselves with `me` set to their HumanUser id: a person
+  reading their own group gets their own row in place of `logged_in_user_token`, so a check matching the
+  token alone answers `MISS` for a rule that is there (probe 162). The script, an API Admin, gets 404
+  `Unknown permission group code 'vendor'`; a person asking for another group gets 403.
+
+- `read: allowed` is every row (probe 163). A `MISS` on the two Bid lines means every vendor reads every
+  Bid, whatever the app filters.
+
+- A rule on Bid alone is not enough. A Bid Line visible to everyone still answers a filter on its Bid's
+  fields and groups its total, and the event log shows values written to hidden rows (probe 165).
+  Check Bid Line, and whether Vendor reads `EventLogEntry`.
+
+- The rule's path must be the one the app writes. A rule naming `users` ignores `sg_people` (probe 166).
+
+- "See entities in assigned Projects only" has no key in these responses. Its effect is that an award
+  reaches a vendor only in a project they are assigned to (probe 166); check `HumanUser.projects`.
+
+- No REST call adds a missing rule (probe 162). Report the `MISS` lines to an administrator.
+
+`corpus/recipes/029_check_site_ready_for_vendor_bids.md`

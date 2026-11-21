@@ -68,6 +68,8 @@ Retires a row at 204 with an empty body. It is not erased: the row reads 404 nor
   rules: `doors/findings-write`
 - `161_link_to_deleted_row` (findings) — A link to a deleted row is hidden, not removed: it reads null or drops out, and returns on revive, even after a replace. A write naming a deleted row is 400 code 104 `Value is not legal.`  
   rules: `doors/findings-write`
+- `164_vendor_writes` (findings) — On the probed site a Vendor creates no Bid or Bid Line, by POST or `_batch`, and updates only `sg_status_list`, each refusal 400 code 104. Both preflight reads predicted every answer.  
+  rules: `doors/findings-write`
 - `025_event_log` (findings) — meta.old_value and meta.new_value answer "what was this before", but meta is unfilterable and unsortable: narrow on entity, event_type and attribute_name, sort -id, read meta yourself.  
   rules: `doors/findings-observe`
 - `049_script_events` (findings) — A script's writes reach the event log only while its ApiUser has generate_event_log_entries True. The default is False and nothing errors when off. One create logs one row per field plus one _New.  

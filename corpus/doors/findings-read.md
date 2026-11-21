@@ -606,3 +606,43 @@ A dotted path reaches an `sg_` field through an `sg_` entity field, on a custom 
   (probe 016). An `sg_` multi_entity field was not measured here.
 
 `corpus/findings/138_dotted_custom_field.md`
+
+## 163_vendor_rows
+
+On the probed site a Vendor reads every Bid in an assigned project, the other vendor's included: Vendor's `read` on Bid is `allowed`. A Group filter the client adds narrows the list, not the rights.
+
+- `read: allowed` on a type is every row of it in every project the person sees. Nothing on the row,
+  its Group field included, narrows that, and every read call agrees: list, fetch, filter, count.
+
+- A filter on `<vendor groups field>.Group.users is <person>` returns only the person's own Bid. It is a
+  view the client chose: the same person omitting it reads the other vendor's Bid and its amounts.
+
+- Keeping vendors apart needs a conditional see rule on Bid, made in the web interface (probe 162), and
+  one on Bid Line. Probe 165 measures what a see rule still lets through, on Shot.
+
+- On the probed site the Vendor and Artist groups read custom entities alike (probe 143), so an app
+  cannot rely on the stock roles to separate vendors on a type it adds.
+
+`corpus/findings/163_vendor_rows.md`
+
+## 165_hidden_row_paths
+
+A see rule hides a row from fetch, search, summarize, text search and links, but a dotted filter still matches through it, a grouped `_summarize` shows its id and total, the event log its values. **[partial]**
+
+not measured: the same paths under a see rule on Bid: no REST call adds a rule (probe 162) and the web interface was out of bounds. Blocked on the site
+
+- Fetches, lists, counts, text search and links treat a hidden row as absent. Three paths do not:
+  a dotted filter through a visible row's link, a `_summarize` grouped on that link, and the event log.
+
+- For bids: a see rule on Bid hides the Bid rows, and a visible Bid Line linking one still answers a
+  filter on the Bid's fields and groups its total. Give Bid Line the same rule, through its link to the Bid.
+
+- The event log is not filtered by a see rule on the row it describes. On the probed site Vendor reads
+  `EventLogEntry`, so an amount written to a hidden Bid reaches every vendor as a `new_value`. An app
+  holding prices from rivals keeps them off rows a vendor's event log can read, or the site denies
+  Vendor `EventLogEntry`.
+
+- `<link> is <hidden row>` matches nothing while `<link>.Shot.code is <its code>` matches: the
+  comparison against the row is filtered and the dotted one is not.
+
+`corpus/findings/165_hidden_row_paths.md`

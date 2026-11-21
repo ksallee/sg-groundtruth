@@ -47,6 +47,8 @@ Display name to programmatic name, measured:
   rules: `doors/findings-schema`
 - `160_jsonb_field_create` (findings) — A `jsonb` or `serializable` field cannot be created over REST, on Project or any type tried: 400 code 103 `data_type is not valid`. Store JSON in a text field and parse it.  
   rules: `doors/findings-schema`
+- `167_rollup_on_shot` (findings) — A query (summary) field cannot be created over REST: 400 `data_type is not valid`, with or without a query. Total each Shot's Bid Lines with one `_summarize` grouped on the link.  
+  rules: `doors/findings-filter`
 - `127_retry_and_client_uuid` (findings) — A text field created with `unique: true` refuses a second create with the same value, case and outer spaces ignored, in a batch too. It is the only idempotency key: the API has no header for it.  
   rules: `doors/findings-write`
 - `136_unique_scope_retired` (findings) — A deleted row frees its `unique` value: a new row may take it. Reviving the old row while another holds the value is a 400 code 104 PG transaction error, and the row stays retired.  

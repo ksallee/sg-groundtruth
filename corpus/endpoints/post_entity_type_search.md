@@ -82,6 +82,9 @@ Without a vendor content type:
 | `filters: []` | 200, unscoped, every row on the site |
 | an `or` under `api3_array` | not expressible; the array form is `and` only |
 
+- A filter on a dotted path is evaluated against the linked row even where a see rule hides that row
+  from the caller: `[<link>.Shot.code, "is", <code>]` matches, while `[<link>, "is", <the row>]` does not
+  (probe 165).
 - The unknown-operator 400 enumerates the legal set for that field's data type. It is the cheapest way
   to discover the vocabulary, and it is where the site's filter matrix comes from.
 
