@@ -1016,3 +1016,24 @@ Check that a site's Vendor permission group is set up for bidding, from its rule
 - No REST call adds a missing rule (probe 162). Report the `MISS` lines to an administrator.
 
 `corpus/recipes/029_check_site_ready_for_vendor_bids.md`
+
+## 030_create_a_group_as_a_person
+
+Create a Group as the signed-in person, once their permission group allows it, without a second Group of the same name **[partial]**
+
+not measured: an App Session Launcher bearer (recipe 012); it needs the person at a browser. `sudo_as_login` applies the same permission set (probe 094)
+
+- Show the control when `create` is `allowed`. On the probed site that is Manager and Admin; the
+  rule is site configuration and changes only in the web interface (probe 162).
+
+- The same rule lets the person rename, re-member and retire every Group on the site, not only the
+  ones they made. Keep those controls to the Groups the app made, by id.
+
+- Without `code` the server names the Group `New Group <id>` and answers 201. Always send one.
+
+- The `_search` and the `POST` are two calls, so two people creating the same name at once can still
+  make two Groups.
+
+- A new Group in `Shot.sg_vendor_groups` reaches the vendor's next request (probes 166, 168).
+
+`corpus/recipes/030_create_a_group_as_a_person.md`

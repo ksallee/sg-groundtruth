@@ -1386,3 +1386,24 @@ On the probed site a Group added to `Shot.sg_vendor_groups` shows the Shot to it
 - Vendor reads Groups (probe 162), so each vendor sees which other Groups hold a Shot they see.
 
 `corpus/findings/166_vendor_award.md`
+
+## 168_group_create_rights
+
+On the probed site a Manager or Admin person creates, renames, re-members and retires any Group; Artist and Vendor get 400 code 104. The person's own group rights on Group predict each answer. **[partial]**
+
+not measured: an App Session Launcher bearer (probe 052); it needs the person to approve at a browser. `sudo_as_login` applies the same permission set (probe 094)
+
+- Check before showing the control: read the person's own `permission_rule_set`, its `code`, then
+  `actions.create.access` on Group. An Admin lists every group, so the listing alone does not name theirs.
+
+- A refusal is 400 code 104, not 403, with no `source` or `detail`. Probe 094's shape holds for Group.
+
+- The right is per type, not per creator: a Manager renames, re-members and retires a Group someone
+  else made, a vendor's included. An app that lets production create Groups lets it retire any Group.
+
+- `code` is neither required nor unique, whatever the schema says. Search by `code` before creating,
+  and keep the id: two Groups may share a name. A retired Group drops out of `HumanUser.groups`.
+
+- A Group made by a person works in `Shot.sg_vendor_groups` on the vendor's next request (probe 166).
+
+`corpus/findings/168_group_create_rights.md`
